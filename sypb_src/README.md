@@ -1,4 +1,4 @@
-# SyPB AMXX API
+# SyPB 
 
 SyPB Bot 
 

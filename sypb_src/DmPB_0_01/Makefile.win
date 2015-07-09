@@ -1,0 +1,91 @@
+# Project: DeathMatch PoD-BOT
+# Makefile created by Dev-C++ 4.9.9.3
+
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+RES      = DeathMatch_PoD-BOT_private.res
+OBJ      = src/bot.o src/bot_ai.o src/bot_chat.o src/bot_client.o src/bot_combat.o src/bot_globals.o src/bot_navigate.o src/bot_sounds.o src/compress.o src/cstrike.o src/dllapi.o src/engine_api.o src/h_export.o src/intl.o src/linkgame.o src/meta_api.o src/namefunc.o src/util.o src/waypoint.o $(RES)
+LINKOBJ  = src/bot.o src/bot_ai.o src/bot_chat.o src/bot_client.o src/bot_combat.o src/bot_globals.o src/bot_navigate.o src/bot_sounds.o src/compress.o src/cstrike.o src/dllapi.o src/engine_api.o src/h_export.o src/intl.o src/linkgame.o src/meta_api.o src/namefunc.o src/util.o src/waypoint.o $(RES)
+LIBS     = -L"lib" -L"lib/gcc" -static-libstdc++ -static-libgcc --add-stdcall-alias -s -lgmon    
+INCS     = -I"include"  -I"./src/include/hlsdk/common"  -I"./src/include/hlsdk/dlls"  -I"./src/include/hlsdk/engine"  -I"./src/include/hlsdk/pm_shared"  -I"./src/include/metamod" 
+CXXINCS  = -I"include"  -I"include/sys"  -I"include/ddk"  -I"include/gdiplus"  -I"include/GL"  -I"./src/include/hlsdk/common"  -I"./src/include/hlsdk/dlls"  -I"./src/include/hlsdk/engine"  -I"./src/include/hlsdk/pm_shared"  -I"./src/include/metamod" 
+BIN      = dmpb.dll
+CXXFLAGS = $(CXXINCS) -DBUILDING_DLL=0   -traditional-cpp -fno-access-control -w -pedantic -pg
+CFLAGS   = $(INCS) -DBUILDING_DLL=0   -traditional-cpp -fno-access-control -w -pedantic -pg
+RM       = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before dmpb.dll all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+DLLWRAP=dllwrap.exe
+DEFFILE=libdmpb.def
+STATICLIB=libdmpb.a
+
+$(BIN): $(LINKOBJ)
+	$(DLLWRAP) --output-def $(DEFFILE) --driver-name c++ --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)
+
+src/bot.o: src/bot.cpp
+	$(CPP) -c src/bot.cpp -o src/bot.o $(CXXFLAGS)
+
+src/bot_ai.o: src/bot_ai.cpp
+	$(CPP) -c src/bot_ai.cpp -o src/bot_ai.o $(CXXFLAGS)
+
+src/bot_chat.o: src/bot_chat.cpp
+	$(CPP) -c src/bot_chat.cpp -o src/bot_chat.o $(CXXFLAGS)
+
+src/bot_client.o: src/bot_client.cpp
+	$(CPP) -c src/bot_client.cpp -o src/bot_client.o $(CXXFLAGS)
+
+src/bot_combat.o: src/bot_combat.cpp
+	$(CPP) -c src/bot_combat.cpp -o src/bot_combat.o $(CXXFLAGS)
+
+src/bot_globals.o: src/bot_globals.cpp
+	$(CPP) -c src/bot_globals.cpp -o src/bot_globals.o $(CXXFLAGS)
+
+src/bot_navigate.o: src/bot_navigate.cpp
+	$(CPP) -c src/bot_navigate.cpp -o src/bot_navigate.o $(CXXFLAGS)
+
+src/bot_sounds.o: src/bot_sounds.cpp
+	$(CPP) -c src/bot_sounds.cpp -o src/bot_sounds.o $(CXXFLAGS)
+
+src/compress.o: src/compress.cpp
+	$(CPP) -c src/compress.cpp -o src/compress.o $(CXXFLAGS)
+
+src/cstrike.o: src/cstrike.cpp
+	$(CPP) -c src/cstrike.cpp -o src/cstrike.o $(CXXFLAGS)
+
+src/dllapi.o: src/dllapi.cpp
+	$(CPP) -c src/dllapi.cpp -o src/dllapi.o $(CXXFLAGS)
+
+src/engine_api.o: src/engine_api.cpp
+	$(CPP) -c src/engine_api.cpp -o src/engine_api.o $(CXXFLAGS)
+
+src/h_export.o: src/h_export.cpp
+	$(CPP) -c src/h_export.cpp -o src/h_export.o $(CXXFLAGS)
+
+src/intl.o: src/intl.cpp
+	$(CPP) -c src/intl.cpp -o src/intl.o $(CXXFLAGS)
+
+src/linkgame.o: src/linkgame.cpp
+	$(CPP) -c src/linkgame.cpp -o src/linkgame.o $(CXXFLAGS)
+
+src/meta_api.o: src/meta_api.cpp
+	$(CPP) -c src/meta_api.cpp -o src/meta_api.o $(CXXFLAGS)
+
+src/namefunc.o: src/namefunc.cpp
+	$(CPP) -c src/namefunc.cpp -o src/namefunc.o $(CXXFLAGS)
+
+src/util.o: src/util.cpp
+	$(CPP) -c src/util.cpp -o src/util.o $(CXXFLAGS)
+
+src/waypoint.o: src/waypoint.cpp
+	$(CPP) -c src/waypoint.cpp -o src/waypoint.o $(CXXFLAGS)
+
+DeathMatch_PoD-BOT_private.res: DeathMatch_PoD-BOT_private.rc src/DMPB.rc 
+	$(WINDRES) -i DeathMatch_PoD-BOT_private.rc --input-format=rc -o DeathMatch_PoD-BOT_private.res -O coff 
