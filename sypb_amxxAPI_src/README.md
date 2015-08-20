@@ -2,7 +2,7 @@
 
 SyPB - AMXX API DLL File
 
-Lastly: 1.35.31049.31
+Lastly: 1.38.31269.34
 
 Source File
 
