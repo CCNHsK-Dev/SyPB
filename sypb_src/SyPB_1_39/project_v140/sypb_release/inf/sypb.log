@@ -1,0 +1,46 @@
+﻿已經開始建置於 27/8/2015 2:24:16。
+     1>節點 2 (Rebuild 目標) 上的專案 "C:\Users\mikeg\Desktop\sypb_src\project_v140\sypb.vcxproj"。
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /I.\ /I..\ /I..\include /ZI /nologo /W0 /Od /Oi /Oy- /D NDEBUG /D WIN32 /D _WINDLL /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Yc"core.h" /Fp".\sypb_release\inf\sypb.pch" /Fo".\sypb_release\obj\\" /Fd".\sypb_release\inf\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt ..\source\precomp.cpp
+         precomp.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /I.\ /I..\ /I..\include /ZI /nologo /W0 /Od /Oi /Oy- /D NDEBUG /D WIN32 /D _WINDLL /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Yu"core.h" /Fp".\sypb_release\inf\sypb.pch" /Fo".\sypb_release\obj\\" /Fd".\sypb_release\inf\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt ..\source\basecode.cpp ..\source\callbacks.cpp ..\source\chatlib.cpp ..\source\combat.cpp ..\source\control.cpp ..\source\engine.cpp ..\source\Experience.cpp ..\source\globals.cpp ..\source\interface.cpp ..\source\navigate.cpp ..\source\netmsg.cpp ..\source\support.cpp ..\source\waypoint.cpp
+         basecode.cpp
+         callbacks.cpp
+         chatlib.cpp
+         combat.cpp
+         control.cpp
+         engine.cpp
+         Experience.cpp
+         globals.cpp
+         interface.cpp
+         navigate.cpp
+         netmsg.cpp
+         support.cpp
+         waypoint.cpp
+         正在產生程式碼...
+       ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D NDEBUG /l"0x0409" /nologo /fo".\sypb_release\inf\sypb.res" ..\include\sypb.rc 
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:".\sypb_release/sypb.dll" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST:NO /Debug /PDB:".\sypb_release\sypb.pdb" /OPT:REF /OPT:ICF /TLBID:1 /DYNAMICBASE:NO /NOASSEMBLY /IMPLIB:".\sypb_release\inf\sypb.lib" /MACHINE:X86 /SAFESEH /DLL .\sypb_release\inf\sypb.res
+         .\sypb_release\obj\basecode.obj
+         .\sypb_release\obj\callbacks.obj
+         .\sypb_release\obj\chatlib.obj
+         .\sypb_release\obj\combat.obj
+         .\sypb_release\obj\control.obj
+         .\sypb_release\obj\engine.obj
+         .\sypb_release\obj\Experience.obj
+         .\sypb_release\obj\globals.obj
+         .\sypb_release\obj\interface.obj
+         .\sypb_release\obj\navigate.obj
+         .\sypb_release\obj\netmsg.obj
+         .\sypb_release\obj\precomp.obj
+         .\sypb_release\obj\support.obj
+         .\sypb_release\obj\waypoint.obj
+     1>basecode.obj : warning LNK4075: 忽略 '/EDITANDCONTINUE'，由於 '/OPT:ICF' 規格
+            正在建立程式庫 .\sypb_release\inf\sypb.lib 和物件 .\sypb_release\inf\sypb.exp
+         sypb.vcxproj -> C:\Users\mikeg\Desktop\sypb_src\project_v140\.\sypb_release\sypb.dll
+     1>專案 "C:\Users\mikeg\Desktop\sypb_src\project_v140\sypb.vcxproj" (Rebuild 目標) 建置完成。
+
+建置成功。
+
+經過時間 00:00:03.17
