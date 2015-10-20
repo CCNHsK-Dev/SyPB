@@ -3,7 +3,7 @@
 SyPB Bot 
 Counter-Strike 1.6 Bot, Based on YaPB
 
-Lastly: 1.39.31275.499
+Lastly: 1.41.31468.581
 
 Source File
 
