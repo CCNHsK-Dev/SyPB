@@ -3,7 +3,7 @@
 SwNPC - Cs1.6 NPC 
 Use SyPB Waypoints, and need SyPB
 
-Lastly: Coming Soon
+Lastly: Beta 1.42 (Build: 1.42.40760.98)
 
 Source File
 
