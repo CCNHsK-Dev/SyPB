@@ -3,13 +3,13 @@
 #ifndef RESOURCE_INCLUDED
 #define RESOURCE_INCLUDED
 
-#define PRODUCT_VERSION "Beta 1.42"
+#define PRODUCT_VERSION "Beta 1.42 - Upgrade 1"
 #define PRODUCT_VERSION_F 1.42
-#define PRODUCT_VERSION_DWORD 1,42,20160312,98 // yyyy/mm/dd   
+#define PRODUCT_VERSION_DWORD 1,42,20160316,101 // yyyy/mm/dd   
 
-//#define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
+#define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
 //#define PRODUCT_DEV_VERSION_FORTEST "(Preview-1)"
-#define PRODUCT_DEV_VERSION_FORTEST ""
+//#define PRODUCT_DEV_VERSION_FORTEST ""
 
 // general product information
 #define PRODUCT_NAME "SwNPC"

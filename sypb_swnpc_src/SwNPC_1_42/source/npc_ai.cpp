@@ -37,8 +37,8 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 
 NPC::~NPC(void)
 {		
-	m_pmodel = null;
 	DeleteSearchNodes();
+	m_pmodel = null;
 
 	pev = null;
 	pvData = null;
@@ -86,6 +86,9 @@ void NPC::NewNPCSetting(void)
 	m_workNPC = false;
 	m_nextThinkTime = gpGlobals->time + 999.9f;
 	m_pmodel = null;
+
+	m_navNode = null;
+	m_navNodeStart = null;
 
 	for (i = 0; i < AS_ALL; i++)
 	{
@@ -763,7 +766,7 @@ void NPC::MoveAction(void)
 			GetDistance2D(pev->origin, g_waypoint->g_waypointPointOrigin[m_oldNavIndex]) <= 10.0f))
 		pev->movetype = MOVETYPE_FLY;
 	else
-		pev->movetype = MOVETYPE_STEP;
+		pev->movetype = MOVETYPE_PUSHSTEP;
 
 	float oldSpeed = pev->speed;
 	pev->speed = m_moveSpeed;
@@ -776,8 +779,7 @@ void NPC::MoveAction(void)
 
 	if (IsOnLadder(GetEntity()) || pev->solid == SOLID_NOT)
 	{
-		Vector direction = GetSpeedVector(pev->origin, m_destOrigin, pev->speed);
-		pev->velocity = direction;
+		pev->velocity = GetSpeedVector(pev->origin, m_destOrigin, pev->speed);
 
 		if (pev->solid == SOLID_NOT)
 			goto lastly;
@@ -794,7 +796,7 @@ void NPC::MoveAction(void)
 		pev->velocity.y = vecFwd.y * pev->speed;
 	}
 
-	if (m_jumpAction)// && IsOnFloor(GetEntity()))
+	if (m_jumpAction)
 	{
 		pev->velocity.z = (270.0f * pev->gravity) + 32.0f; // client gravity 1 = 270.0f , and jump+duck + 32.0f
 		m_jumpAction = false;
@@ -968,7 +970,7 @@ void NPC::ChangeAnim()
 	pev->frame = 0;
 	pev->sequence = animDesired;
 	pev->animtime = gpGlobals->time;
-	pev->framerate = 1.0f;
+	pev->framerate = 1.0;
 }
 
 void NPC::SetUpPModel(void)
@@ -1009,8 +1011,8 @@ void NPC::SetUpPModel(void)
 
 void NPC::DeleteSearchNodes(void)
 {
-	PathNode *node = m_navNode;
 	PathNode *deletingNode = null;
+	PathNode *node = m_navNodeStart;
 
 	while (node != null)
 	{
@@ -1019,7 +1021,7 @@ void NPC::DeleteSearchNodes(void)
 
 		node = deletingNode;
 	}
-
+	m_navNodeStart = null;
 	m_navNode = null;
 	m_oldNavIndex = -1;
 }
@@ -1032,7 +1034,9 @@ void NPC::FindShortestPath(int srcIndex, int destIndex)
 
 	node->index = srcIndex;
 	node->next = null;
-	m_navNode = node;
+
+	m_navNodeStart = node;
+	m_navNode = m_navNodeStart;
 
 	while (srcIndex != destIndex)
 	{
@@ -1044,7 +1048,7 @@ void NPC::FindShortestPath(int srcIndex, int destIndex)
 			return;
 		}
 
-		node->next = new PathNode;
+		node->next = new PathNode ();
 		node = node->next;
 
 		node->index = srcIndex;
@@ -1242,6 +1246,9 @@ void NPC::SetSound(const char *attackSound, const char *damageSound, const char 
 void NPC::DebugModeMsg(void)
 {
 	if (FNullEnt(g_hostEntity))
+		return;
+
+	if (IsValidPlayer(INDEXENT(g_hostEntity->v.iuser2)))
 		return;
 
 	char gamemodName[12];

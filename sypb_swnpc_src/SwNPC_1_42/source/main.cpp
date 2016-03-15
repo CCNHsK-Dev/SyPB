@@ -11,6 +11,9 @@ int g_callTakeDamage_Pre = -1;
 int g_callKill_Post = -1;
 int g_callTakeDamage_Post = -1;
 
+int g_TDP_damageValue = -1;
+bool g_TDP_cvOn = false;
+
 int g_sModelIndexBloodDrop = -1;
 int g_sModelIndexBloodSpray = -1;
 int g_bloodIndex[12];
@@ -51,7 +54,6 @@ void OnPluginsLoaded()
 		g_callTakeDamage_Pre = MF_RegisterForward("SwNPC_TakeDamage_Pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_DONE);
 		// (npcId)
 		g_callStuck_Pre = MF_RegisterForward("SwNPC_Stuck_Pre", ET_CONTINUE, FP_CELL, FP_DONE);
-
 
 		// (victimId, killerId)
 		g_callKill_Post = MF_RegisterForward("SwNPC_Kill_Post", ET_IGNORE, FP_CELL, FP_CELL, FP_DONE);

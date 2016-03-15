@@ -1,13 +1,13 @@
 
 /*
 * This is SwNPC for AMXX
-* Version : 1.42
-* Support Build: 1.42.40760.98 or new
+* Version : 1.42 - Upgrade 1
+* Support Build: 1.42.40764.101 or new
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.42.40760.619 or new
 *
-* Date: 12/3/2016
+* Date: 16/3/2016
 */
 
 /* -----------------------------------------------------------------------
@@ -104,6 +104,7 @@ native SwNPC_FakeKill (victim);
 forward SwNPC_TakeDamage_Pre(victim, attack, damage);
 forward SwNPC_TakeDamage_Post(victim, attack, damage);
 native SwNPC_FakeTakeDamage (victim, attack, damage);
+native SetDamageValue (damage); // For SwNPC_TakeDamage_Pre Only
 
 // About NPC stuck 
 forward SwNPC_Stuck_Pre (npcId);

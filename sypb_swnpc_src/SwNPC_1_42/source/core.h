@@ -107,6 +107,7 @@ private:
 	float m_changeActionTime;
 
 	PathNode *m_navNode;
+	PathNode *m_navNodeStart;
 	float m_navTime;
 	int m_oldNavIndex;
 	int m_currentWaypointIndex;
@@ -139,7 +140,6 @@ private:
 	void CheckStuck(float oldSpeed);
 	bool WalkMove(void);
 
-	void DeleteSearchNodes(void);
 	bool DoWaypointNav(void);
 	bool GoalIsValid(void);
 	void HeadTowardWaypoint(void);
@@ -221,6 +221,8 @@ public:
 	void Spawn(Vector origin);
 	void DeadThink(void);
 	void SetUpPModel(void);
+
+	void DeleteSearchNodes(void);
 
 	int CheckPointAPI(void) { return m_currentWaypointIndex; };
 	int GetNavDataAPI(int data);
@@ -324,6 +326,10 @@ extern int g_callTakeDamage_Pre;
 // Post
 extern int g_callKill_Post;
 extern int g_callTakeDamage_Post;
+
+// For Take Damage Pre only
+extern int g_TDP_damageValue;
+extern bool g_TDP_cvOn;
 
 // About Blood
 extern int g_sModelIndexBloodDrop;

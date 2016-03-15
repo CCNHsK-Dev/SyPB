@@ -253,6 +253,15 @@ static cell AMX_NATIVE_CALL amxx_FakeKill(AMX *amx, cell *params)
 	return 1;
 }
 
+static cell AMX_NATIVE_CALL amxx_TDP_SetDamageValue(AMX *amx, cell *params)
+{
+	if (!g_TDP_cvOn)
+		return -1;
+
+	g_TDP_damageValue = params[1];
+	return 1;
+}
+
 AMX_NATIVE_INFO swnpc_natives[] =
 {
 	// Base SwNPC
@@ -297,5 +306,8 @@ AMX_NATIVE_INFO swnpc_natives[] =
 	// 
 	{ "SwNPC_FakeTakeDamage", amxx_FakeTakeDamage }, 
 	{ "SwNPC_FakeKill", amxx_FakeKill}, 
+
+	// Only For TakeDamage_Pre
+	{ "SetDamageValue", amxx_TDP_SetDamageValue  }, 
 	{NULL, NULL}, 
 };

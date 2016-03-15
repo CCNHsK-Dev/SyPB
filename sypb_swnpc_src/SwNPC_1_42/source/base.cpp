@@ -143,7 +143,7 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 	TakeDamage(victim, attacker, damage, bitsDamageType, ptr->vecEndPos, vecDir);
 }
 
-void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, /*TraceResult *ptr*/ Vector endPos, Vector vecDir)
+void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vector endPos, Vector vecDir)
 {
 	if (FNullEnt(victim) || !IsAlive(victim) || victim->v.takedamage == DAMAGE_NO)
 		return;
@@ -169,9 +169,18 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, /*Tr
 	if (FNullEnt(attacker))
 		attackId = -1;
 
+	g_TDP_damageValue = -1;
+	g_TDP_cvOn = true;
+
 	int block = MF_ExecuteForward(g_callTakeDamage_Pre, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
 	if (block)
 		return;
+
+	if (g_TDP_damageValue >= 0)
+		damage = g_TDP_damageValue;
+
+	g_TDP_damageValue = -1;
+	g_TDP_cvOn = false;
 
 	if (damage > 0.0f)
 	{

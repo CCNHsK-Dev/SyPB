@@ -1,13 +1,13 @@
 
 /*
 * This is SwNPC for AMXX
-* Version : 1.42
-* Support Build: 1.42.40760.98 or new
+* Version : 1.42 - Upgrade 1
+* Support Build: 1.42.40764.101 or new
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.42.40760.619 or new
 *
-* Date: 12/3/2016
+* Date: 16/3/2016
 */
 
 #include <amxmodx>
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in"
-#define VERSION	"1.42.40760.98"
+#define VERSION	"1.42.40764.101"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -52,8 +52,11 @@ public SwNPC_Stuck_Pre (npcId)
 public SwNPC_TakeDamage_Pre(victim, attack, damage)
 {
 	//client_print(0, print_chat, "TakeDamage_Pre | attack:%d | victim:%d | damage:%d", attack, victim, damage);
+	
+	
 	if (victim == 1 || attack == 1)
-		return PLUGIN_HANDLED;
+		//return PLUGIN_HANDLED;  // < block attack
+		SetDamageValue (1); // Chanage damage value to 1
 	
 	return PLUGIN_CONTINUE;
 }
