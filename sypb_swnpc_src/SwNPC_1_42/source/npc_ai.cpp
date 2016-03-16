@@ -1106,6 +1106,9 @@ bool NPC::DoWaypointNav (void)
 		return false;
 	}
 
+	if (GetDistance(m_waypointOrigin, pev->origin) <= 2.0f)
+		HeadTowardWaypoint();
+
 	return false;
 }
 
@@ -1115,6 +1118,8 @@ void NPC::HeadTowardWaypoint(void)
 
 	if (m_navNode == null)
 		return;
+
+	m_jumpAction = false;
 
 	if (m_navNode->next != null)
 	{

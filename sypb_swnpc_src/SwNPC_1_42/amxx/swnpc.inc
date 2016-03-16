@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.42 - Upgrade 1
-* Support Build: 1.42.40764.101 or new
+* Support Build: 1.42.40765.101 or new
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.42.40760.619 or new
 *
-* Date: 16/3/2016
+* Date: 17/3/2016
 */
 
 /* -----------------------------------------------------------------------
