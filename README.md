@@ -4,7 +4,7 @@ Counter-Strike 1.6 Bot, Based on YaPB
 SyPB - Lastly Version: Beta 1.42 (Build: 1.42.40760.619)
  - Counter-Strike 1.6 Bot
 
-SwNPC - Lastly Version: Beta 1.42 (Build: 1.42.40760.98)
+SwNPC - Lastly Version: Beta 1.42 - Upgrade 1 (Build: 1.42.40765.101)
  - Counter-Strike 1.6 NPC System
  - Use SyPB Waypoint, Need SyPB 
 
