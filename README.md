@@ -1,7 +1,7 @@
 # SyPB
 Counter-Strike 1.6 Bot, Based on YaPB
 
-SyPB - Lastly Version: Beta 1.43 (Build: 1.43.40979.640)
+SyPB - Lastly Version: Beta 1.44 (Build: 1.44.41061.642)
  - Counter-Strike 1.6 Bot
 
 SwNPC - Lastly Version: Beta 1.42 - Upgrade 1 (Build: 1.42.40765.101)
