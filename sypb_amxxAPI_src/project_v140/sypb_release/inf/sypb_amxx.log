@@ -1,7 +1,0 @@
-﻿  base.cpp
-  main.cpp
-  amxxmodule.cpp
-  正在產生程式碼...
-base.obj : warning LNK4075: 忽略 '/EDITANDCONTINUE'，由於 '/OPT:ICF' 規格
-     正在建立程式庫 .\sypb_release\inf\sypb_amxx.lib 和物件 .\sypb_release\inf\sypb_amxx.exp
-  sypb_amxx.vcxproj -> C:\Users\mikeg\Desktop\sypb_amxx_src\project_v140\.\sypb_release\sypb_amxx.dll
