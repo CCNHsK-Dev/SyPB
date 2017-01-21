@@ -31,8 +31,12 @@ ConVar sypb_password_key ("sypb_password_key", "_sypb_wp");
 ConVar sypb_language ("sypb_language", "en");
 ConVar sypb_version ("sypb_version", PRODUCT_VERSION, VARTYPE_READONLY);
 
-int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, const String &arg2, const String &arg3, const String &arg4, const String &arg5)
+ConVar sypb_lockzbot("sypb_lockzbot", "1");
+ConVar sypb_showwp("sypb_showwp", "0");
+
+int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, const String &arg2, const String &arg3, const String &arg4, const String /*&arg5*/)
 {
+	/*
    // adding one bot with random parameters to random team
    if (stricmp (arg0, "addbot") == 0 || stricmp (arg0, "add") == 0)
       g_botManager->AddBot (arg4, arg1, arg2, arg3, arg5);
@@ -47,7 +51,13 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
    // adding one bot with random parameters to counter-terrorist team
    else if (stricmp (arg0, "addbot_ct") == 0 || stricmp (arg0, "add_ct") == 0)
-      g_botManager->AddBot (arg4, arg1, arg2, "2", arg5);
+      g_botManager->AddBot (arg4, arg1, arg2, "2", arg5); */
+
+	if (stricmp(arg0, "addbot") == 0 || stricmp(arg0, "add") == 0 || 
+		stricmp(arg0, "addbot_hs") == 0 || stricmp(arg0, "addhs") == 0 || 
+		stricmp(arg0, "addbot_t") == 0 || stricmp(arg0, "add_t") == 0 || 
+		stricmp(arg0, "addbot_ct") == 0 || stricmp(arg0, "add_ct") == 0)
+		ServerPrint("Pls use the command to change it");
          
    // kicking off one bot from the terrorist team
    else if (stricmp (arg0, "kickbot_t") == 0 || stricmp (arg0, "kick_t") == 0)
@@ -169,7 +179,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
       char aboutData[] =
          "+---------------------------------------------------------------------------------+\n"
-         " The SyPB for Counter-Strike Version " PRODUCT_SUPPORT_VERSION "\n"
+         " The SyPB for Counter-Strike " PRODUCT_SUPPORT_VERSION "\n"
          " Created by " PRODUCT_AUTHOR ", Using PODBot Code\n"
          " Website: " PRODUCT_URL "\n"
          "+---------------------------------------------------------------------------------+\n";
@@ -201,6 +211,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 		   "------------------------------------------------\n"
 		   "The AMXX API: %s \n"
 		   "AMXX API Version: %.2f (%u.%u.%u.%u)\n"
+		   "%s"
 		   "------------------------------------------------\n"
 		   "Builded by: %s\n"
 		   "URL: %s \n"
@@ -209,12 +220,16 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 		   "Meta-Interface Version: %s\n"
 		   "------------------------------------------------";
 
-	   ClientPrint(ent, print_console, versionData, 
-		   PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION, "") != 0) ? "(Dev Version)" : "",
-		   PRODUCT_VERSION, PRODUCT_DEV_VERSION, bV16[0], bV16[1], bV16[2], bV16[3],
-		   API_Version, (amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
-		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version, 
+	   // SyPB Pro P.39 - New Ver Msg
+	   ClientPrint(ent, print_console, versionData,
+		   PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
+		   PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
+		   float(SUPPORT_API_VERSION_F),
+		   //API_Version, 
+		   (amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
+		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
 		   amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
+		   (amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
 		   PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
    }
 
@@ -607,6 +622,66 @@ void CommandHandler (void)
       ServerPrint ("Unknown command: %s", CMD_ARGV (1));
 }
 
+// SyPB Pro P.35 - new command
+void SyPB_Version_Command(void)
+{
+	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+
+	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
+	if (amxxDLL_Version == -1.0)
+	{
+		amxxbV16[0] = 0;
+		amxxbV16[1] = 0;
+		amxxbV16[2] = 0;
+		amxxbV16[3] = 0;
+	}
+
+	char versionData[] =
+		"------------------------------------------------\n"
+		"Name: %s%s\n"
+		"Version: %s%s (%u.%u.%u.%u)\n"
+		"Support API Version:%.2f\n"
+		"------------------------------------------------\n"
+		"The AMXX API: %s \n"
+		"AMXX API Version: %.2f (%u.%u.%u.%u)\n"
+		"%s"
+		"------------------------------------------------\n"
+		"Builded by: %s\n"
+		"URL: %s \n"
+		"Compiled: %s, %s (UTC +08:00)\n"
+		"Optimization: %s\n"
+		"Meta-Interface Version: %s\n"
+		"------------------------------------------------";
+
+	// SyPB Pro P.39 - New Ver Msg
+	ServerPrintNoTag(versionData,
+		PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
+		PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
+		float(SUPPORT_API_VERSION_F),
+		//API_Version, 
+		(amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
+		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
+		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
+		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
+		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
+}
+
+void AddBot(void)
+{
+	g_botManager->AddBot("", -1, -1, -1, -1);
+}
+
+void AddBot_TR(void)
+{
+	g_botManager->AddBotAPI("", -1, 1);
+}
+
+void AddBot_CT(void)
+{
+	g_botManager->AddBotAPI("", -1, 2);
+}
+
 void ParseVoiceEvent (Array <String> base, int type, float timeToRepeat)
 {
    // this function does common work of parsing single line of voice chatter
@@ -654,7 +729,7 @@ void InitConfig (void)
          NameItem item;
 
          char Name[33];
-         sprintf (Name, "[SyPB] %s", line);
+         sprintf (Name, "%s", line);
 
          item.name = Name;
          item.isUsed = false;
@@ -939,6 +1014,7 @@ void InitConfig (void)
       fp.Close ();
    }
 
+   /*
    // RADIO/VOICE SYSTEM INITIALIZATION
    if (OpenConfig ("chatter.cfg", "Couldn't open chatter system configuration", &fp) && g_gameVersion != CSVER_VERYOLD && sypb_commtype.GetInt () == 2)
    {
@@ -1045,6 +1121,7 @@ void InitConfig (void)
       sypb_commtype.SetInt (1);
       AddLogEntry (true, LOG_DEFAULT, "Voice Communication disabled.");
    }
+   */
 
    // LOCALIZER INITITALIZATION
    if (OpenConfig ("lang.cfg", "Specified language not found", &fp, true) && g_gameVersion != CSVER_VERYOLD)
@@ -1133,6 +1210,13 @@ void GameDLLInit (void)
 
    engine->PushRegisteredConVarsToEngine ();
 
+   // SyPB Pro P.35 - new command
+   RegisterCommand("sypb_about", SyPB_Version_Command);
+
+   RegisterCommand("sypb_add_t", AddBot_TR);
+   RegisterCommand("sypb_add_ct", AddBot_CT);
+   RegisterCommand("sypb_add", AddBot);
+
    // register server command(s)
    RegisterCommand ("sypb", CommandHandler);
 
@@ -1176,10 +1260,30 @@ int Spawn (edict_t *ent)
       g_mapType = null; // reset map type as worldspawn is the first entity spawned
       g_worldEdict = ent; // save the world entity for future use
    }
-   else if (strcmp (STRING (ent->v.classname), "player_weaponstrip") == 0 && (STRING (ent->v.target))[0] == '0')
+   /*
+   else if (strcmp(STRING(ent->v.classname), "player_weaponstrip") == 0 && (STRING(ent->v.target))[0] == '0')
    {
-      ent->v.target = MAKE_STRING ("fake");
-      ent->v.targetname = MAKE_STRING ("fake");
+   ent->v.target = MAKE_STRING("fake");
+   ent->v.targetname = MAKE_STRING("fake");
+   }
+   */
+   // SyPB Pro P.34 - Base Change
+   else if (strcmp(STRING(ent->v.classname), "player_weaponstrip") == 0)
+   {
+	   if (g_gameVersion == CSVER_VERYOLD && (STRING(ent->v.target))[0] == '\0')
+	   {
+		   ent->v.target = MAKE_STRING("fake");
+		   ent->v.targetname = MAKE_STRING("fake");
+	   }
+	   else
+	   {
+		   REMOVE_ENTITY(ent);
+
+		   if (g_isMetamod)
+			   RETURN_META_VALUE(MRES_SUPERCEDE, 0);
+
+		   return (*g_functionTable.pfnSpawn) (ent);
+	   }
    }
    else if (strcmp (STRING (ent->v.classname), "info_player_start") == 0)
    {
@@ -1228,63 +1332,51 @@ int Spawn (edict_t *ent)
    else if (strncmp(GetMapName(), "awp_", 4) == 0) // SyPB Pro P.32 - AWP MAP TYPE
 	   g_mapType |= MAP_AWP;
 
-   // SyPB Pro P.24 - Testing
-   else if (strcmp (STRING (ent->v.classname), "player") == 0)
-	   SET_MODEL (ent, "models/player/urban/urban.mdl");
-
-   /*
-   // SyPB Pro P.21 - HL Model [gordon] Debug 
-   bool HLModel = TryFileOpen (FormatBuffer ("valve/models/player/gordon/gordon.mdl"));
-   if (!HLModel && TryFileOpen (FormatBuffer ("%s/addons/sypb/game_data/gordon.mdl", GetModName ())))
-   {
-	   _mkdir("valve/models/player");
-	   _mkdir("valve/models/player/gordon");
-
-	   char oldModelName[80], newModelName[80];
-	   sprintf (oldModelName, "%s/addons/sypb/game_data/gordon.mdl", GetModName ());
-	   sprintf (newModelName, "valve/models/player/gordon/gordon.mdl");
-
-	   File oldModel, newModel;
-	   if (oldModel.Open (oldModelName, "rb") && newModel.Open (newModelName, "ab"))
-	   {
-		   int *value;
-		   oldModel.Read (value, sizeof (int));
-		   newModel.Write (value, sizeof (int)); // This is fake model value...
-
-		   oldModel.Close ();
-		   newModel.Close ();
-	   }
-	   HLModel = TryFileOpen (FormatBuffer ("valve/models/player/gordon/gordon.mdl"));
-   }
-   */
    if (g_isMetamod)
       RETURN_META_VALUE (MRES_IGNORED, 0);
 
-   int result = (*g_functionTable.pfnSpawn) (ent); // get result
 
+   // SyPB Pro P.34 - Base Change
    if (ent->v.rendermode == kRenderTransTexture)
-      ent->v.flags &= ~FL_WORLDBRUSH; // clear the FL_WORLDBRUSH flag out of transparent ents
+	   ent->v.flags &= ~FL_WORLDBRUSH; // clear the FL_WORLDBRUSH flag out of transparent ents
+
+   if (g_isMetamod)
+	   RETURN_META_VALUE(MRES_IGNORED, 0);
+
+   int result = (*g_functionTable.pfnSpawn) (ent); // get result
+   /*
+   if (ent->v.rendermode == kRenderTransTexture)
+   ent->v.flags &= ~FL_WORLDBRUSH; // clear the FL_WORLDBRUSH flag out of transparent ents
+   */
 
    return result;
 }
 
 void Touch (edict_t *pentTouched, edict_t *pentOther)
 {
-   // this function is called when two entities' bounding boxes enter in collision. For example,
-   // when a player walks upon a gun, the player entity bounding box collides to the gun entity
-   // bounding box, and the result is that this function is called. It is used by the game for
-   // taking the appropriate action when such an event occurs (in our example, the player who
-   // is walking upon the gun will "pick it up"). Entities that "touch" others are usually
-   // entities having a velocity, as it is assumed that static entities (entities that don't
-   // move) will never touch anything. Hence, in our example, the pentTouched will be the gun
-   // (static entity), whereas the pentOther will be the player (as it is the one moving). When
-   // the two entities both have velocities, for example two players colliding, this function
-   // is called twice, once for each entity moving.
+	// this function is called when two entities' bounding boxes enter in collision. For example,
+	// when a player walks upon a gun, the player entity bounding box collides to the gun entity
+	// bounding box, and the result is that this function is called. It is used by the game for
+	// taking the appropriate action when such an event occurs (in our example, the player who
+	// is walking upon the gun will "pick it up"). Entities that "touch" others are usually
+	// entities having a velocity, as it is assumed that static entities (entities that don't
+	// move) will never touch anything. Hence, in our example, the pentTouched will be the gun
+	// (static entity), whereas the pentOther will be the player (as it is the one moving). When
+	// the two entities both have velocities, for example two players colliding, this function
+	// is called twice, once for each entity moving.
 
-   if (g_isMetamod)
-      RETURN_META (MRES_IGNORED);
+	// SyPB Pro P.38 - Breakable improve
+	if (!FNullEnt(pentTouched) && (pentOther->v.flags & FL_FAKECLIENT))
+	{
+		Bot *bot = g_botManager->GetBot(const_cast <edict_t *> (pentOther));
+		if (bot != null)
+			bot->CheckTouchEntity(pentTouched);
+	}
 
-   (*g_functionTable.pfnTouch) (pentTouched, pentOther);
+	if (g_isMetamod)
+		RETURN_META(MRES_IGNORED);
+
+	(*g_functionTable.pfnTouch) (pentTouched, pentOther);
 }
 
 void ClientPutInServer (edict_t *ent)
@@ -1785,7 +1877,9 @@ void ClientCommand(edict_t *ent)
 			{
 				DisplayMenuToClient(ent, null); // reset menu display
 
+#if defined(PRODUCT_DEV_VERSION)
 				extern ConVar sypb_debug;
+#endif
 
 				switch (selection)
 				{
@@ -1802,7 +1896,12 @@ void ClientCommand(edict_t *ent)
 					break;
 
 				case 4:
+#if defined(PRODUCT_DEV_VERSION)
 					sypb_debug.SetInt(sypb_debug.GetInt() ^ 1);
+#else
+					ChartPrint("[SyPB Dev] This function for Dev-Version only");
+#endif
+
 					break;
 
 				case 5:
@@ -1964,6 +2063,8 @@ void ClientCommand(edict_t *ent)
 					DisplayMenuToClient(ent, &g_menus[21]);
 					g_sautoWaypoint = g_sautoWaypoint ? false : true; // Auto Put Waypoint Mode
 					g_waypoint->SetLearnJumpWaypoint(g_sautoWaypoint ? 1 : 0);
+					// SyPB Pro P.34 - SgdWP
+					ChartPrint("[SgdWP] Auto Put Waypoint Mode: %s", (g_sautoWaypoint ? "On" : "Off"));
 					break;
 
 				case 9:
@@ -2059,6 +2160,8 @@ void ClientCommand(edict_t *ent)
 
 				case 8:
 					g_waypoint->SetLearnJumpWaypoint();
+					// SyPB Pro P.34 - SgdWP
+					ChartPrint("[SgdWP] You could Jump now, system will auto save your Jump Point");
 					break;
 
 				case 9:
@@ -2516,6 +2619,12 @@ void ClientCommand(edict_t *ent)
 					}
 				}
 			}
+
+			// SyPB Pro P.38 - Change the ZM Camp Point TESTTEST
+			if (radioCommand == Radio_HoldPosition && !IsValidBot(ent) &&
+				GetGameMod() == 2 && !IsZombieEntity(ent))
+				g_waypoint->TestFunction(GetEntityOrigin (ent));
+
 			g_lastRadioTime[g_clients[clientIndex].team] = engine->GetTime();
 		}
 		g_radioSelect[clientIndex] = 0;
@@ -2539,13 +2648,11 @@ void ServerActivate (edict_t *pentEdictList, int edictCount, int clientMax)
    // loading the bot profiles, and drawing the world map (ie, filling the navigation hashtable).
    // Once this function has been called, the server can be considered as "running".
 
-
-
-
    InitConfig (); // initialize all config files
 
    // do level initialization stuff here...
    g_waypoint->Initialize ();
+   g_exp.Unload(); // SyPB Pro P.35 - Debug new maps
    g_waypoint->Load ();
 
    // execute main config
@@ -2616,6 +2723,20 @@ void StartFrame (void)
 
    // g_Server.FrameUpdate ();
 
+   // SyPB Pro P.37 - Lock Add Zbot
+	if (sypb_lockzbot.GetBool())
+	{
+		if (CVAR_GET_FLOAT("bot_quota") > 0)
+		{
+			CVAR_SET_FLOAT("bot_quota", 0);
+
+			// SyPB Pro P.39 - Add Msg
+			ServerPrint("sypb_lockzbot is on, you cannot add ZBot");
+			ServerPrint("You can input sypb_lockzbot unlock add Zbot");
+			ServerPrint("But, If you have use AMXX plug-in, I think this is not good choose");
+		}
+	}
+
    // record some stats of all players on the server
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
@@ -2631,34 +2752,65 @@ void StartFrame (void)
          else
             g_clients[i].flags &= ~CFLAG_ALIVE;
 
-         if (g_clients[i].flags & CFLAG_ALIVE)
-         {
-            // keep the clipping mode enabled, or it can be turned off after new round has started
-            if (g_hostEntity == player && g_editNoclip && g_waypointOn)  // SyPB Pro P.12
-               g_hostEntity->v.movetype = MOVETYPE_NOCLIP;
+		 if (g_clients[i].flags & CFLAG_ALIVE)
+		 {
+			 // keep the clipping mode enabled, or it can be turned off after new round has started
+			 if (g_hostEntity == player && g_editNoclip && g_waypointOn)  // SyPB Pro P.12
+				 g_hostEntity->v.movetype = MOVETYPE_NOCLIP;
 
-            g_clients[i].origin = GetEntityOrigin (player);
+			 g_clients[i].origin = GetEntityOrigin(player);
 
-			// SyPB Pro P.30 - new get head origin (test)
-			Vector hAngles, hOrigin;
-			(*g_engfuncs.pfnGetBonePosition) (player, 8, hOrigin, hAngles);
-			if (hOrigin.z <= g_clients[i].origin.z)
-			{
-				hOrigin = g_clients[i].origin;
-				hOrigin.z += RANDOM_FLOAT((player->v.mins.z) / 2, (player->v.maxs.z - 3.0f));
-			}
+			 // SyPB Pro P.38 - Improve Get Head Origin Fps 
+			 Vector hOrigin;
+
+			 if (g_clients[i].getHeadOriginTime < engine->GetTime() ||
+				 g_clients[i].ent->v.button & IN_DUCK)
+			 {
+				 if (g_clients[i].ent->v.button & IN_DUCK)
+					 g_clients[i].getHeadOriginTime = engine->GetTime() + 0.2f;
+				 else if (!!(g_clients[i].ent->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
+					 g_clients[i].getHeadOriginTime = engine->GetTime() + 3.0f;
+				 else
+					 g_clients[i].getHeadOriginTime = engine->GetTime() + 0.2f;
+
+				 Vector hAngles;
+				 (*g_engfuncs.pfnGetBonePosition) (player, 8, hOrigin, hAngles);
+
+				 if (hOrigin.z <= g_clients[i].origin.z)
+				 {
+					 hOrigin = g_clients[i].origin;
+
+					 if ((hOrigin.z + (player->v.maxs.z)) > g_clients[i].origin.z)
+						 hOrigin.z += (player->v.maxs.z) - 1.0f;
+					 else
+						 hOrigin.z += 8.0f;
+				 }
+
+				 g_clients[i].headOriginZP = hOrigin.z - g_clients[i].origin.z;
+			 }
+			 else
+			 {
+				 hOrigin = g_clients[i].origin;
+				 hOrigin.z += g_clients[i].headOriginZP;
+			 }
+
 			g_clients[i].headOrigin = hOrigin;
+
 
 			SoundSimulateUpdate(i);
          }
 		 else
+		 {
 			 g_clients[i].headOrigin = nullvec;
+			 g_clients[i].m_isZombieBotAPI = -1;
+		 }
       }
       else
       {
          g_clients[i].flags &= ~(CFLAG_USED | CFLAG_ALIVE);
          g_clients[i].ent = null;
 		 g_clients[i].headOrigin = nullvec;
+		 g_clients[i].m_isZombieBotAPI = -1;
       }
    }
    static float secondTimer = 0.0f;
@@ -2685,7 +2837,13 @@ void StartFrame (void)
 
 		   if (!hasBot)
 			   g_waypoint->Think();
+
+		   if (sypb_showwp.GetBool() == true)
+			   sypb_showwp.SetInt(0);
 	   }
+	   // SyPB Pro P.38 - Show Waypoint Msg
+	   else if (sypb_showwp.GetBool() == true)
+		   g_waypoint->ShowWaypointMsg();
 
 	   CheckWelcomeMessage();
    }
@@ -2949,7 +3107,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_SCOREINFO);
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_DEATH);
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_TEXTMSG);
-
+	  
       if (msgType == SVC_INTERMISSION)
       {
          for (int i = 0; i < engine->GetMaxClients (); i++)
@@ -3563,10 +3721,9 @@ export void Meta_Init (void)
 }
 
 // SyPB Pro P.30 - AMXX API
-
 export bool Amxx_RunSypb(void)
 {
-	API_Version = float(1.31); // SyPB API_P
+	API_Version = float(SUPPORT_API_VERSION_F); // SyPB API_P
 	API_TestMSG("Amxx_RunSypb Checking - Done");
 	return true;
 }
@@ -3623,16 +3780,21 @@ export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 		return;
 
 	bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
-	API_TestMSG("Amxx_SetEnemy Checking - id:%d | blockCheckTime:%.2f - Done", target, blockCheckTime);
 
-	edict_t *targetEnt = INDEXENT(target + 1);
+	edict_t *targetEnt = INDEXENT(target);
 	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
 	{
 		bot->m_enemyAPI = null;
-		return;
+		API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
+			"Not target", blockCheckTime);
+	}
+	else
+	{
+		bot->m_enemyAPI = targetEnt;
+		API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
+			STRING(targetEnt->v.netname), blockCheckTime);
 	}
 
-	bot->m_enemyAPI = targetEnt;
 }
 
 export void Amxx_SetMoveTarget(int index, int target, float blockCheckTime) // 1.30
@@ -3643,16 +3805,22 @@ export void Amxx_SetMoveTarget(int index, int target, float blockCheckTime) // 1
 		return;
 
 	bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
-	API_TestMSG("Amxx_SetMoveTarget Checking - id:%d | blockCheckTime:%.2f - Done", target, blockCheckTime);
+	//API_TestMSG("Amxx_SetMoveTarget Checking - id:%d | blockCheckTime:%.2f - Done", target, blockCheckTime);
 
-	edict_t *targetEnt = INDEXENT(target + 1);
+	edict_t *targetEnt = INDEXENT(target);
 	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
 	{
 		bot->m_moveTargetEntityAPI = null;
-		return;
+		API_TestMSG("Amxx_SetMoveTarget Checking - targetName:%s | blockCheckTime:%.2f - Done",
+			"Not target", blockCheckTime);
+	}
+	else
+	{
+		bot->m_moveTargetEntityAPI = targetEnt;
+		API_TestMSG("Amxx_SetMoveTarget Checking - targetName:%s | blockCheckTime:%.2f - Done",
+			STRING(targetEnt->v.netname), blockCheckTime);
 	}
 	
-	bot->m_moveTargetEntityAPI = targetEnt;
 }
 
 export void Amxx_SetBotMove(int index, int pluginSet) // 1.30
@@ -3698,7 +3866,7 @@ export void Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
 	bot->m_weaponReloadAPI = (blockWeaponReload == 0) ? false : true;
 	API_TestMSG("Amxx_BlockWeaponReload Checking - %s - Done", (bot->m_weaponReloadAPI) ? "True" : "False");
 }
-
+/*
 export void Amxx_AddSyPB(const char *name, int skill, int team) // 1.30
 {
 	//g_botManager->AddBot(name, skill, -1, team, -1);
@@ -3706,7 +3874,7 @@ export void Amxx_AddSyPB(const char *name, int skill, int team) // 1.30
 
 	API_TestMSG("Amxx_AddSyPB Checking - %s | Skill:%d  | Team:%d - Done", name, skill, team);
 }
-
+*/
 // SyPB Pro P.31 - AMXX API
 export void Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
 {
@@ -3719,6 +3887,179 @@ export void Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
 	bot->m_knifeDistance2API = k2d;
 
 	API_TestMSG("Amxx_Set_KA_Distance Checking - %d %d - Done", k1d, k2d);
+}
+
+
+// SyPB Pro P.34 - AMXX API
+export int Amxx_AddSyPB(const char *name, int skill, int team) // 1.34
+{
+	int botId = g_botManager->AddBotAPI(name, skill, team);
+
+	if (botId < 0)
+	{
+		API_TestMSG("Amxx_AddSyPB Checking - Fail");
+		return -1;
+	}
+
+	API_TestMSG("Amxx_AddSyPB Checking - %s | Skill:%d  | Team:%d - Done", name, skill, team);
+	return botId + 1;
+}
+
+// SyPB Pro P.35 - AMXX API
+export void Amxx_SetGunADistance(int index, int minDistance, int maxDistance)  // 1.35
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_gunMinDistanceAPI = minDistance;
+	bot->m_gunMaxDistanceAPI = maxDistance;
+
+	API_TestMSG("Amxx_Set_GunA_Distance Checkimh - min:%d max:%d - Done", minDistance, maxDistance);
+}
+
+// SyPB Pro P.38 - AMXX API
+export int Amxx_IsZombieBot(int index)
+{
+	edict_t *player = INDEXENT(index);
+
+	if (FNullEnt(player))
+		return -2;
+
+	API_TestMSG("Amxx_IsZombieBot Checking - Done - %d - %s -", index, STRING (player->v.netname));
+	if (IsZombieEntity(player))
+		return 1;
+	else
+		return 0;
+}
+
+export void Amxx_SetZombieBot(int index, int zombieBot)
+{
+	index -= 1;
+	if (FNullEnt(g_clients[index].ent))
+		return;
+
+	if (zombieBot > 0)
+		g_clients[index].m_isZombieBotAPI = 1;
+	else if (zombieBot == 0)
+		g_clients[index].m_isZombieBotAPI = 0;
+	else
+		g_clients[index].m_isZombieBotAPI = -1;
+
+	API_TestMSG("Amxx_SetZombieBot Checking - ZombieBot:%s - Done - %s -",
+		g_clients[index].m_isZombieBotAPI == 1 ? "True" : (g_clients[index].m_isZombieBotAPI == -1 ? "Not Set" : "False"),
+		STRING (g_clients[index].ent->v.netname));
+}
+
+export int Amxx_GetOriginPoint(Vector origin) // 1.38
+{
+	int pointId = g_waypoint->FindNearest(origin);
+
+	API_TestMSG("Amxx_GetOriginPoint Checking - %.2f | %.2f | %.2f", origin[0], origin[1], origin[2]);
+	API_TestMSG("Amxx_GetOriginPoint Checking - point:%d - Done", pointId);
+
+	if (pointId >= 0 && pointId < g_numWaypoints)
+		return pointId;
+
+	return -1;
+}
+
+export int Amxx_GetBotPoint(int index, int mod) // 1.38
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+
+	int pointId = bot->CheckBotPointAPI (mod);
+	API_TestMSG("Amxx_GetBotPoint Checking - pointId:%d - Done", pointId);
+
+	if (pointId >= 0 && pointId < g_numWaypoints)
+		return pointId;
+
+	return -1;
+}
+
+// SyPB Pro P.40 - AMXX API
+export int Amxx_GetBotNavNum(int index) // 1.40
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+
+	int navNum = bot->GetNavData(-1);
+	API_TestMSG("Amxx_GetBotNavNum Checking - navNum:%d - Done", navNum);
+
+	return navNum;
+}
+
+export int Amxx_GetBotNavPointId(int index, int pointNum) // 1.40
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+
+	int navId = bot->GetNavData(pointNum);
+	API_TestMSG("Amxx_GetBotNavPointId Checking - navNum:%d navId:%d - Done", pointNum, navId);
+	return navId;
+}
+
+export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
+{
+	if (index == -1)
+	{
+		g_entityIdAPI.RemoveAll();
+		g_entityTeamAPI.RemoveAll();
+		g_entityActionAPI.RemoveAll();
+
+		API_TestMSG("Amxx_SetEntityAction Checking - Del All - Done");
+		return 1;
+	}
+
+	if (IsValidPlayer(INDEXENT(index)))
+	{
+		API_TestMSG("Amxx_SetEntityAction Checking - Cannot Set the player - Done");
+		return -1;
+	}
+
+	for (int i = 0; i != g_entityIdAPI.GetElementNumber(); i++)
+	{
+		if (g_entityIdAPI.GetAt(i) != index)
+			continue;
+
+		g_entityIdAPI.RemoveAt(i);
+		g_entityTeamAPI.RemoveAt(i);
+		g_entityActionAPI.RemoveAt(i);
+
+		if (action != -1)
+		{
+			g_entityIdAPI.Push(index);
+			g_entityTeamAPI.Push(team);
+			g_entityActionAPI.Push(action);
+
+			API_TestMSG("Amxx_SetEntityAction Checking - Change Id:%d Team:%d Action:%d - Done", index, team, action);
+			return 1;
+		}
+
+		API_TestMSG("Amxx_SetEntityAction Checking - Del Id:%d - Done", index);
+		return 1;
+	}
+
+	if (action != -1)
+	{
+		g_entityIdAPI.Push(index);
+		g_entityTeamAPI.Push(team);
+		g_entityActionAPI.Push(action);
+
+		API_TestMSG("Amxx_SetEntityAction Checking - Add Id:%d Team:%d Action:%d - Done", index, team, action);
+		return 1;
+	}
+
+	API_TestMSG("Amxx_SetEntityAction Checking - Cannot Del Id:%d - Not Find - Done", index);
+	return -1;
 }
 // AMXX SyPB API End
 
@@ -3737,7 +4078,7 @@ DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t 
    
    // initialize random generator
    engine->InitFastRNG ();
-
+   
    static struct ModSupport_t
    {
       char name[32];
@@ -3752,7 +4093,6 @@ DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t 
       {"csv15", "cs_i386.so", "mp.dll", "CS 1.5 for Steam", CSVER_VERYOLD},
       {"cs13", "cs_i386.so", "mp.dll", "Counter-Strike v1.3", CSVER_VERYOLD}, // assume cs13 = cs15
       {"retrocs", "rcs_i386.so", "rcs.dll", "Retro Counter-Strike", CSVER_VERYOLD},
-	  { "csbte", "rcs_i386.so", "rcs.dll", "CS:BTE", CSVER_CSTRIKE },
       {"", "", "", "", 0}
    };
 

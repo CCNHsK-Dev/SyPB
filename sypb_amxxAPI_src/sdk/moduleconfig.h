@@ -1,16 +1,18 @@
 // Configuration
 
+
+
 #ifndef __MODULECONFIG_H__
 #define __MODULECONFIG_H__
 
-// Module info
-#define MODULE_NAME "AI Control Module"
-#define MODULE_VERSION "1.0"
-#define MODULE_AUTHOR "Doge"
-#define MODULE_URL ""
-#define MODULE_LOGTAG "AI Control"
-#define MODULE_LIBRARY "ai_control"
+#define MODULE_NAME "SyPB AMXX DLL"
+#define MODULE_VERSION "1.40"
+#define MODULE_AUTHOR "HsK Dev-Blog @ CCN"
+#define MODULE_URL "http://ccnhsk-dev.blogspot.com/"
+#define MODULE_LOGTAG "SyPB"
+#define MODULE_LIBRARY "sypb_amxx"
 #define MODULE_LIBCLASS ""
+
 // If you want the module not to be reloaded on mapchange, remove / comment out the next line
 #define MODULE_RELOAD_ON_MAPCHANGE
 

@@ -42,7 +42,7 @@ FILETYPE 0x2
           VALUE "LegalCopyright",    PRODUCT_COPYRIGHT     "\0"
           VALUE "LegalTrademarks",   PRODUCT_LEGAL         "\0"
           VALUE "ProductName",       PRODUCT_NAME          "\0"
-		  VALUE "ProductVersion",    PRODUCT_VERSION PRODUCT_DEV_VERSION       "\0"
+		  VALUE "ProductVersion",    PRODUCT_VERSION PRODUCT_DEV_VERSION_FORTEST       "\0"
           VALUE "SpecialBuild",      PRODUCT_OPT_TYPE      "\0"
           VALUE "InternalName",      PRODUCT_INTERNAL_NAME "\0"
       }

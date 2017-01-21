@@ -330,7 +330,6 @@ enum NetMsg
    NETMSG_SAYTEXT = 18,
    NETMSG_BOTVOICE = 19,
    NETMSG_RESETHUD = 20,
-   NETMSG_ALL = 29,
    NETMSG_UNDEFINED = 0
 };
 
@@ -597,7 +596,14 @@ struct Client_old
    float timeSoundLasting; // time sound is played/heared
    float maxTimeSoundLasting; // max time sound is played/heared (to divide the difference between that above one and the current one)
 
+   // SyPB Pro P.38 - Improve Get Head Origin Fps 
+   float getHeadOriginTime;
+   float headOriginZP;
+
    Vector headOrigin; // SyPB Pro P.26 - Get Head Origin
+
+   // SyPB Pro P.38 - AMXX API
+   int m_isZombieBotAPI = -1;
 };
 
 // bot creation tab
@@ -690,6 +696,13 @@ private:
    bool m_checkTerrain; // check for terrain
    bool m_moveToC4; // ct is moving to bomb
 
+   // SyPB Pro P.37 - Fall Ai
+   bool m_checkFall; // check bot fall
+   //float m_checkFallDistance; // check bot fall distance
+   //int m_checkFallPoint[2]; // check fall point index
+   Vector m_checkFallPoint[2];
+   // ---
+
    float m_prevTime; // time previously checked movement speed
    float m_prevSpeed; // speed some frames before
    Vector m_prevOrigin; // origin some frames before
@@ -778,7 +791,7 @@ private:
    int m_msecBuiltin; // random msec method for this bot
    uint8_t m_msecVal; // calculated msec value
    float m_msecDel; // used for msec calculation
-   float m_msecNum; // also used for mseccalculation
+   //float m_msecNum; // also used for mseccalculation
    float m_msecInterval; // used for leon hartwig's method for msec calculation
 
    float m_frameInterval; // bot's frame interval
@@ -824,6 +837,10 @@ private:
    float m_playerTargetTime; // time last targeting
 
    float m_checkCampPointTime; // SyPB Pro P.30 - Zombie Mode Human Camp
+   int m_zhCampPointIndex; // SyPB Pro P.38 - Zombie Mode Human Camp
+
+   Vector m_moveAnglesForRunMove;
+   float m_moveSpeedForRunMove, m_strafeSpeedForRunMove;
 
    void SwitchChatterIcon (bool show);
    void InstantChatterMessage (int type);
@@ -843,14 +860,16 @@ private:
    void CheckMessageQueue (void);
    void CheckRadioCommands (void);
    void CheckReload (void);
-   void AvoidGrenades (void);
+   //void AvoidGrenades (void);
    void CheckBurstMode (float distance);
    
+   int CheckMaxClip(int weaponId, int *weaponIndex);
+
    void AvoidEntity (void);
    bool GetEntityItem (int mod);
 
    void ZombieModeAi (void);
-   void ZmCampPointAction(void);
+   void ZmCampPointAction(int action = 1);
 
    void CheckSilencer (void);
    bool CheckWallOnLeft (void);
@@ -867,7 +886,7 @@ private:
    bool IsInViewCone (Vector origin);
    void ReactOnSound (void);
    bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart);
-   bool IsEnemyViewable (edict_t *player, int setEnemy = 0);
+   bool IsEnemyViewable (edict_t *player, bool setEnemy = false, bool allCheck = false, bool checkOnly = false);
 
    edict_t *FindNearestButton (const char *className);
    edict_t *FindBreakable (void);
@@ -887,7 +906,8 @@ private:
    bool IsBlockedRight (void);
    bool IsWaypointUsed (int index);
    
-   bool Attack_Invisible (edict_t *entity);
+   bool IsNotAttackLab (edict_t *entity);
+   bool IsAntiBlock(edict_t *entity);
 
    inline bool IsOnLadder (void) { return pev->movetype == MOVETYPE_FLY; }
    inline bool IsOnFloor (void) { return (pev->flags & (FL_ONGROUND | FL_PARTIALGROUND)) != 0; }
@@ -918,10 +938,12 @@ private:
 
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
-   void ChangeWptIndex (int waypointIndex, int action = 0);
+   void ChangeWptIndex (int waypointIndex);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);
+
+   void SetWaypointOrigin(void);
 
    Vector CheckToss (const Vector &start, Vector end);
    Vector CheckThrow (const Vector &start, Vector end);
@@ -938,7 +960,7 @@ private:
    void FireWeapon (void);
    void FocusEnemy (void);
 
-   bool KnifeAttack(edict_t *entity);
+   bool KnifeAttack(float attackDistance = 0.0f);
 
    void SelectBestWeapon (void);
    void SelectPistol (void);
@@ -979,6 +1001,9 @@ public:
 
    // SyPB Pro P.31 - AMXX API
    int m_knifeDistance1API, m_knifeDistance2API;
+
+   // SyPB Pro P.35 - AMXX API
+   int m_gunMinDistanceAPI, m_gunMaxDistanceAPI;
 
    int m_wantedTeam; // player team bot wants select
    int m_wantedClass; // player model bot wants to select
@@ -1064,6 +1089,8 @@ public:
    float m_idealReactionTime; // time of base reaction
    float m_actualReactionTime; // time of current reaction time
 
+   float m_backCheckEnemyTime; // SyPB Pro P.37 - Aim OS
+
    edict_t *m_lastEnemy; // pointer to last enemy entity
    edict_t *m_lastVictim; // pointer to killed entity
    edict_t *m_trackingEdict; // pointer to last tracked player when camping/hiding
@@ -1099,7 +1126,7 @@ public:
    void EquipInBuyzone (int buyCount);
    void PushMessageQueue (int message);
    void PrepareChatMessage (char *text);
-   bool FindWaypoint (void);
+   int FindWaypoint (bool notSet = false);
    bool EntityIsVisible (Vector dest, bool fromBody = false);
 
    void SetMoveTarget (edict_t *entity);
@@ -1107,7 +1134,8 @@ public:
    void DeleteSearchNodes (void);
    Task *GetCurrentTask (void);
 
-   void MoveTargetSrc(void);
+   //void MoveTargetSrc(void);
+   void CheckTouchEntity(edict_t *entity);
 
    void RemoveCertainTask (BotTask taskID);
    void ResetTasks (void);
@@ -1142,6 +1170,12 @@ public:
    bool HasPrimaryWeapon (void);
    bool HasShield (void);
    bool IsShieldDrawn (void);
+
+   // SyPB Pro P.38 - AMXX API
+   int CheckBotPointAPI(int mod);
+
+   // SyPB Pro P.40 - AMXX API
+   int GetNavData(int data);
 };
 
 // manager class
@@ -1198,7 +1232,7 @@ public:
    void SetWeaponMode (int selection);
    void CheckTeamEconomics (int team);
 
-   void AddBotAPI(const String &name, int skill, int team);
+   int AddBotAPI(const String &name, int skill, int team);
 
    static void CallGameEntity (entvars_t *vars);
 };
@@ -1224,7 +1258,7 @@ private:
    int m_state;
    int m_message;
    //int m_registerdMessages[NETMSG_BOTVOICE + 1];
-   int m_registerdMessages[NETMSG_ALL + 1];  // SyPB Pro P.29
+   int m_registerdMessages[NETMSG_RESETHUD + 1];  // SyPB Pro P.29 // SyPB Pro P.38 - Base improve
 
 public:
    NetworkMsg (void);
@@ -1248,6 +1282,9 @@ class Waypoint : public Singleton <Waypoint>
 
 private:
    Path *m_paths[Const_MaxWaypoints];
+
+   // SyPB Pro P.40 - Waypoint Name Change?
+   bool m_badMapName;
 
    bool m_waypointPaths;
    bool m_isOnLadder;
@@ -1303,7 +1340,7 @@ public:
    void Initialize (void);
    void InitVisibilityTab (void);
 
-   void InitTypes (void);
+   void InitTypes (int mode);
    void AddPath (int addIndex, int pathIndex, float distance);
 
    int GetFacingIndex (void);
@@ -1311,6 +1348,9 @@ public:
    int FindNearest (Vector origin, float minDistance = 9999.0, int flags = -1);
    void FindInRadius (Vector origin, float radius, int *holdTab, int *count);
    void FindInRadius (Array <int> &queueID, float radius, Vector origin);
+
+   void TestFunction(Vector origin);
+   bool IsZBCampPoint(int pointID);
 
    void Add (int flags, Vector waypointOrigin = nullvec);
    void Delete (void);
@@ -1334,13 +1374,14 @@ public:
    bool IsDuckVisible (int srcIndex, int destIndex);
    void CalculateWayzone (int index);
 
-   bool Load (void);
+   bool Load (int mode = 0);
    void Save (void);
    void SaveXML (void);
 
-   bool Reachable (Bot *bot, int index);
+   bool Reachable (Bot *bot, int index, Vector origin = nullvec);
    bool IsNodeReachable (Vector src, Vector destination);
    void Think (void);
+   void ShowWaypointMsg(void); // SyPB Pro P.38 - Show Waypoint Msg
    bool NodesValid (void);
    void SaveVisibilityTab (void);
    void CreateBasic (void);
@@ -1380,7 +1421,7 @@ public:
 extern int GetWeaponReturn (bool isString, const char *weaponAlias, int weaponID = -1);
 extern int GetTeam (edict_t *ent);
 extern int GetGameMod (void);
-extern bool IsZombieBot (edict_t *ent);
+extern bool IsZombieEntity (edict_t *ent);
 
 extern float GetShootingConeDeviation (edict_t *ent, Vector *position);
 extern float GetWaveLength (const char *fileName);
@@ -1402,7 +1443,7 @@ extern const char *GetWaypointDir (void);
 extern const char *GetModName (void);
 extern const char *GetField (const char *string, int fieldId, bool endLine = false);
 
-extern uint16 GenerateBuildNumber (void);
+//extern uint16 GenerateBuildNumber (void);
 extern Vector GetEntityOrigin (edict_t *ent);
 
 extern void FreeLibraryMemory (void);

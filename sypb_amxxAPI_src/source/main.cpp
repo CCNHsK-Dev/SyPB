@@ -38,10 +38,7 @@ int LogToFile(char *szLogText, ...)
 	vsprintf(szText, szLogText, vArgptr);
 	va_end(vArgptr);
 
-
-
 	fprintf(fp, " %s\n", szText);
 	fclose(fp);
 	return 1;
 }
-

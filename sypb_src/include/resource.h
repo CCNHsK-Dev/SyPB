@@ -26,22 +26,37 @@
 #ifndef RESOURCE_INCLUDED
 #define RESOURCE_INCLUDED
 
-#define SUPPORT_API_VERSION "1.31" // SyPB API_P
+// This is test version?
+//#define PRODUCT_DEV_VERSION
+
+#if defined(PRODUCT_DEV_VERSION)
+#define PRODUCT_DEV_VERSION_FORTEST "(PRV)"
+//#define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
+//#define PRODUCT_DEV_VERSION_FORTEST "(Preview-1)"
+// Dev Version Date
+#define PV_VERSION_YEAR 2015
+#define PV_VERSION_MON 9
+#define PV_VERSION_DAY 28
+#else
+#define PRODUCT_DEV_VERSION_FORTEST ""
+#endif
+
+// AMXX API Version
+#define SUPPORT_API_VERSION "1.40" // SyPB API_P
+#define SUPPORT_API_VERSION_F 1.40 // SyPB API_P
+
+// SyPB Version
+#define PRODUCT_VERSION_DWORD 1,40,20150920,550 // yyyy/mm/dd  
+#define PRODUCT_VERSION "Beta 1.40"
 
 // general product information
 #define PRODUCT_NAME "SyPB"
-#define PRODUCT_VERSION_DWORD 1,32,22022015,371    // dd/mm/yyyy      
-#define PRODUCT_VERSION "Beta1.3.2"
-//#define PRODUCT_DEV_VERSION "(Dev)"
-//#define PRODUCT_DEV_VERSION " (Preview)"
-#define PRODUCT_DEV_VERSION ""
 #define PRODUCT_AUTHOR "HsK Dev-Blog @ CCN"
 #define PRODUCT_URL "http://ccnhsk-dev.blogspot.com/"
-#define PRODUCT_EMAIL "mikeg2342001@outlook.com"
+#define PRODUCT_EMAIL "ccndevblog@outlook.com"
 #define PRODUCT_LOGTAG "SyPB"
-#define PRODUCT_DESCRIPTION PRODUCT_NAME " v" PRODUCT_VERSION PRODUCT_DEV_VERSION " - API Version:" SUPPORT_API_VERSION
-#define PRODUCT_COPYRIGHT_YEAR "2003-2015"
-#define PRODUCT_COPYRIGHT "Copyright ?" PRODUCT_COPYRIGHT_YEAR ", by " PRODUCT_AUTHOR " & YaPB Team"
+#define PRODUCT_DESCRIPTION PRODUCT_NAME " v" PRODUCT_VERSION PRODUCT_DEV_VERSION_FORTEST " - API Version:" SUPPORT_API_VERSION
+#define PRODUCT_COPYRIGHT PRODUCT_AUTHOR " & YaPB Team"
 #define PRODUCT_LEGAL "Half-Life, Counter-Strike, Steam, Valve is a trademark of Valve Corporation"
 #define PRODUCT_ORIGINAL_NAME "sypb.dll"
 #define PRODUCT_INTERNAL_NAME "sypb"

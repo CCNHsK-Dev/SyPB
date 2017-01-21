@@ -43,12 +43,43 @@ _SetWeaponClip Amxx_SetWeaponClip;
 typedef void(*_BlockWeaponReload) (int, int);
 _BlockWeaponReload Amxx_BlockWeaponReload;
 
-typedef void(*_AddSyPB)(const char *, int, int);
-_AddSyPB Amxx_AddSyPB;
+//typedef void(*_AddSyPB)(const char *, int, int);
+//_AddSyPB Amxx_AddSyPB;
 
 // API 1.31
 typedef void(*_SetKaDistance) (int, int, int);
 _SetKaDistance Amxx_SetKaDistance;
+
+// API 1.34
+typedef int(*_AddSyPB)(const char *, int, int);
+_AddSyPB Amxx_AddSyPB;
+
+// API 1.35
+typedef void(*_SetGunDistance) (int, int, int);
+_SetGunDistance Amxx_SetGunDistance;
+
+// API 1.38
+typedef int(*_IsZombieBot) (int);
+_IsZombieBot Amxx_IsZombieBot;
+
+typedef void(*_SetZombieBot) (int, int);
+_SetZombieBot Amxx_SetZombieBot;
+
+typedef int(*_GetOriginPoint) (Vector);
+_GetOriginPoint Amxx_GetOriginPoint;
+
+typedef int(*_GetBotPoint) (int, int);
+_GetBotPoint Amxx_GetBotPoint;
+
+// API 1.40
+typedef int(*_GetBotNavNum) (int);
+_GetBotNavNum Amxx_GetBotNavNum;
+
+typedef int(*_GetBotNavPointId) (int, int);
+_GetBotNavPointId Amxx_GetBotNavPointId;
+
+typedef int(*_SetEntityAction) (int, int, int);
+_SetEntityAction Amxx_SetEntityAction;
 
 float api_version = 0.0;
 
@@ -96,21 +127,21 @@ void think(HMODULE dll)
 		LogToFile("***************************");
 		return;
 	}
-	AMXX_Check_APIVersion(dllVersion, PRODUCT_VERSION_DWORD);
+	AMXX_Check_APIVersion(amxxDLLVersion, PRODUCT_VERSION_DWORD);
 	// ---- API part start
 	
 	api_version = Amxx_APIVersion();
 
-	if (dllVersion != api_version)
+	if (amxxDLLVersion != api_version)
 	{
 		//LogToFile("Error: sypb_amxx version:%.2f & SyPB API Version: %.2f", dllVersion, api_version);
 
 		LogToFile("***************************");
 		LogToFile("Error: API Version Error");
-		if (dllVersion > api_version)
-			LogToFile("-Your SyPB API Version [%.2f] is old [SyPB AMXX Version is %.2f", api_version, dllVersion);
+		if (amxxDLLVersion > api_version)
+			LogToFile("-Your SyPB API Version [%.2f] is old [SyPB AMXX Version is %.2f", api_version, amxxDLLVersion);
 		else
-			LogToFile("-Your SyPB AMXX Version [%.2f] is old [SyPB API Version is %.2f]", dllVersion, api_version);
+			LogToFile("-Your SyPB AMXX Version [%.2f] is old [SyPB API Version is %.2f]", amxxDLLVersion, api_version);
 
 		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
 		LogToFile("***************************");
@@ -160,6 +191,41 @@ void think(HMODULE dll)
 	Amxx_SetKaDistance = (_SetKaDistance)GetProcAddress(dll, "Amxx_SetKADistance");
 	if (!Amxx_SetKaDistance)
 		LogToFile("Load API::Amxx_SetKaDistance Failed");
+
+	// 1.35
+	Amxx_SetGunDistance = (_SetGunDistance)GetProcAddress(dll, "Amxx_SetGunADistance");
+	if (!Amxx_SetGunDistance)
+		LogToFile("Load API::Amxx_SetGunADistance Failed");
+
+	// 1.38
+	Amxx_IsZombieBot = (_IsZombieBot)GetProcAddress(dll, "Amxx_IsZombieBot");
+	if (!Amxx_IsZombieBot)
+		LogToFile("Load API::Amxx_IsZombieBot Failed");
+
+	Amxx_SetZombieBot = (_SetZombieBot)GetProcAddress(dll, "Amxx_SetZombieBot");
+	if (!Amxx_SetZombieBot)
+		LogToFile("Load API::Amxx_SetZombieBo Failed");
+
+	Amxx_GetOriginPoint = (_GetOriginPoint)GetProcAddress(dll, "Amxx_GetOriginPoint");
+	if (!Amxx_GetOriginPoint)
+		LogToFile("Load API::Amxx_GetOriginPoint Failed");
+
+	Amxx_GetBotPoint = (_GetBotPoint)GetProcAddress(dll, "Amxx_GetBotPoint");
+	if (!Amxx_GetBotPoint)
+		LogToFile("Load API::Amxx_GetBotPoint Failed");
+
+	// 1.40 
+	Amxx_GetBotNavNum = (_GetBotNavNum)GetProcAddress(dll, "Amxx_GetBotNavNum");
+	if (!Amxx_GetBotNavNum)
+		LogToFile("Load API::Amxx_GetBotNavNum Failed");
+
+	Amxx_GetBotNavPointId = (_GetBotNavPointId)GetProcAddress(dll, "Amxx_GetBotNavPointId");
+	if (!Amxx_GetBotNavPointId)
+		LogToFile("Load API::Amxx_GetBotNavPointId Failed");
+
+	Amxx_SetEntityAction = (_SetEntityAction)GetProcAddress(dll, "Amxx_SetEntityAction");
+	if (!Amxx_SetEntityAction)
+		LogToFile("Load API::Amxx_SetEntityAction Failed");
 }
 
 static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params)
@@ -274,18 +340,6 @@ static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.
 	Amxx_BlockWeaponReload(id, blockReload);
 }
 
-static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params) // 1.30
-{
-	if (!Amxx_AddSyPB || api_version < float(1.30))
-		return -2;
-
-	const char *name = g_fn_GetAmxString(amx, params[1], 0, NULL);
-	int skill = params[2];
-	int team = params[3];
-
-	Amxx_AddSyPB(name, skill, team);
-}
-
 static cell AMX_NATIVE_CALL amxx_SetKaDistance(AMX *amx, cell *params) // 1.31
 {
 	if (!Amxx_SetKaDistance || api_version < float (1.31))
@@ -296,6 +350,105 @@ static cell AMX_NATIVE_CALL amxx_SetKaDistance(AMX *amx, cell *params) // 1.31
 	int kad2 = params[3];
 
 	Amxx_SetKaDistance(id, kad1, kad2);
+}
+
+static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params) // 1.34
+{
+	if (!Amxx_AddSyPB || api_version < float(1.34))
+		return -2;
+
+	const char *name = g_fn_GetAmxString(amx, params[1], 0, NULL);
+	int skill = params[2];
+	int team = params[3];
+
+	return Amxx_AddSyPB(name, skill, team);
+}
+
+static cell AMX_NATIVE_CALL amxx_SetGunDistance(AMX *amx, cell *params) // 1.35
+{
+	if (!Amxx_SetGunDistance || api_version < float(1.35))
+		return -2;
+
+	int id = params[1];
+	int minD = params[2];
+	int maxD = params[3];
+
+	Amxx_SetGunDistance(id, minD, maxD);
+}
+
+static cell AMX_NATIVE_CALL amxx_IsZombotBot(AMX *amx, cell *params) // 1.38
+{
+	if (!Amxx_IsZombieBot || api_version < float(1.38))
+		return -2;
+
+	int id = params[1];
+	return Amxx_IsZombieBot(id);
+}
+
+static cell AMX_NATIVE_CALL amxx_SetZombieBot(AMX *amx, cell *params) // 1.38
+{
+	if (!Amxx_SetZombieBot || api_version < float(1.38))
+		return -2;
+
+	int id = params[1];
+	int zombieBot = params[2];
+
+	Amxx_SetZombieBot(id, zombieBot);
+}
+
+static cell AMX_NATIVE_CALL amxx_GetOriginPoint(AMX *amx, cell *params) // 1.38
+{
+	if (!Amxx_GetOriginPoint || api_version < float(1.38))
+		return -2;
+
+	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[1]);
+	Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
+
+	return Amxx_GetOriginPoint(origin);
+}
+
+static cell AMX_NATIVE_CALL amxx_GetBotPoint(AMX *amx, cell *params) // 1.38
+{
+	if (!Amxx_GetBotPoint || api_version < float(1.38))
+		return -2;
+
+	int id = params[1];
+	int mod = params[2];
+
+	return Amxx_GetBotPoint(id, mod);
+}
+
+static cell AMX_NATIVE_CALL amxx_GetBotNavNum(AMX *amx, cell *params) // 1.40
+{
+	if (!Amxx_GetBotNavNum || api_version < float(1.40))
+		return -2;
+
+	int id = params[1];
+
+	return Amxx_GetBotNavNum(id);
+}
+
+static cell AMX_NATIVE_CALL amxx_GetBotNavPointId(AMX *amx, cell *params) // 1.40
+{
+	if (!Amxx_GetBotNavPointId || api_version < float(1.40))
+		return -2;
+
+	int id = params[1];
+	int pointId = params[2];
+
+	return Amxx_GetBotNavPointId(id, pointId);
+}
+
+static cell AMX_NATIVE_CALL amxx_SetEntityAction(AMX *amx, cell *params) // 1.40
+{
+	if (!Amxx_SetEntityAction || api_version < float(1.40))
+		return -2;
+
+	int id = params[1];
+	int team = params[2];
+	int action = params[3];
+
+	return Amxx_SetEntityAction(id, team, action);
 }
 
 AMX_NATIVE_INFO sypb_natives[] =
@@ -311,8 +464,21 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ "sypb_set_lookat", amxx_SetBotLookAt}, 
 	{ "sypb_set_weapon_clip", amxx_SetWeaponClip}, 
 	{ "sypb_block_weapon_reload", amxx_BlockWeaponReload},
-	{ "sypb_add_bot", amxx_AddSyPB},
+	//{ "sypb_add_bot", amxx_AddSyPB},
 	// 1.31
 	{ "sypb_set_ka_distance", amxx_SetKaDistance }, 
+	// 1.34
+	{ "sypb_add_bot", amxx_AddSyPB } ,
+	// 1.35
+	{ "sypb_set_guna_distance", amxx_SetGunDistance},
+	// 1.38
+	{ "sypb_is_zombie_player", amxx_IsZombotBot},
+	{ "sypb_set_zombie_player", amxx_SetZombieBot}, 
+	{ "sypb_get_origin_point", amxx_GetOriginPoint},
+	{ "sypb_get_bot_point", amxx_GetBotPoint}, 
+	// 1.40
+	{ "sypb_get_bot_nav_num", amxx_GetBotNavNum },
+	{ "sypb_get_bot_nav_pointid", amxx_GetBotNavPointId },
+	{ "sypb_set_entity_action", amxx_SetEntityAction }, 
 	{ NULL, NULL },
 };

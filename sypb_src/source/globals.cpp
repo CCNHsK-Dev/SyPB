@@ -46,8 +46,10 @@ bool g_autoWaypoint = false;
 bool g_bLearnJumpWaypoint = false;
 bool g_leaderChoosen[2] = {false, false};
 
+float g_sgdNonCheckSave = 0.0f;
 bool g_sgdWaypoint = false;
 bool g_sautoWaypoint = false;
+int m_sautoRadius = 32;
 
 float g_lastChatTime = 0.0f;
 float g_timeRoundStart = 0.0f;
@@ -81,6 +83,11 @@ Array <KwChat> g_replyFactory;
 Array <String> g_entityName;
 Array <int> g_entityTeam;
 Array <int> g_entityAction;
+
+// SyPB Pro P.40 - AMXX API
+Array <int> g_entityIdAPI;
+Array <int> g_entityTeamAPI;
+Array <int> g_entityActionAPI;
 
 Library *g_gameLib = null;
 
@@ -189,36 +196,40 @@ Task g_taskFilters[] =
    {null, null, TASK_MOVETOTARGET, 0, -1, 0.0f, true}
 };
 
+// SyPB Pro P.35 - Weapon Data Change
 // weapons and their specifications
 WeaponSelect g_weaponSelect[Const_NumWeapons + 1] =
 {
-   {WEAPON_KNIFE,      "weapon_knife",     "knife.mdl",     0,    0, -1, -1,  0,  0,  0,  0,  false, true },
-   {WEAPON_USP,        "weapon_usp",       "usp.mdl",       500,  1, -1, -1,  1,  1,  2,  2,  false, false},
-   {WEAPON_GLOCK18,    "weapon_glock18",   "glock18.mdl",   400,  1, -1, -1,  1,  2,  1,  1,  false, false},
-   {WEAPON_DEAGLE,     "weapon_deagle",    "deagle.mdl",    650,  1,  2,  2,  1,  3,  4,  4,  true,  false},
-   {WEAPON_P228,    "weapon_p228",      "p228.mdl",      600,  1,  2,  2,  1,  4,  3,  3,  false, false},
-   {WEAPON_ELITE,      "weapon_elite",     "elite.mdl",     1000, 1,  0,  0,  1,  5,  5,  5,  false, false},
-   {WEAPON_FN57,  "weapon_fiveseven", "fiveseven.mdl", 750,  1,  1,  1,  1,  6,  5,  5,  false, false},
-   {WEAPON_M3,         "weapon_m3",        "m3.mdl",        1700, 1,  2, -1,  2,  1,  1,  1,  false, false},
-   {WEAPON_XM1014,     "weapon_xm1014",    "xm1014.mdl",    3000, 1,  2, -1,  2,  2,  2,  2,  false, false},
-   {WEAPON_MP5,    "weapon_mp5navy",   "mp5.mdl",       1500, 1,  2,  1,  3,  1,  2,  2,  false, true },
-   {WEAPON_TMP,        "weapon_tmp",       "tmp.mdl",       1250, 1,  1,  1,  3,  2,  1,  1,  false, true },
-   {WEAPON_P90,        "weapon_p90",       "p90.mdl",       2350, 1,  2,  1,  3,  3,  4,  4,  false, true },
-   {WEAPON_MAC10,      "weapon_mac10",     "mac10.mdl",     1400, 1,  0,  0,  3,  4,  1,  1,  false, true },
-   {WEAPON_UMP45,      "weapon_ump45",     "ump45.mdl",     1700, 1,  2,  2,  3,  5,  3,  3,  false, true },
-   {WEAPON_AK47,       "weapon_ak47",      "ak47.mdl",      2500, 1,  0,  0,  4,  1,  2,  2,  true,  true },
-   {WEAPON_SG552,     "weapon_sg552",     "sg552.mdl",     3500, 1,  0, -1,  4,  2,  4,  4,  true,  true },
-   {WEAPON_M4A1,       "weapon_m4a1",      "m4a1.mdl",      3100, 1,  1,  1,  4,  3,  3,  3,  true,  true },
-   {WEAPON_GALIL,      "weapon_galil",     "galil.mdl",     2000, 1,  0,  0,  4,  -1, 1,  1,  true,  true },
-   {WEAPON_FAMAS,      "weapon_famas",     "famas.mdl",     2250, 1,  1,  1,  4,  -1, 1,  1,  true,  true },
-   {WEAPON_AUG,        "weapon_aug",       "aug.mdl",       3500, 1,  1,  1,  4,  4,  4,  4,  true,  true },
-   {WEAPON_SCOUT,      "weapon_scout",     "scout.mdl",     2750, 1,  2,  0,  4,  5,  3,  2,  true,  false},
-   {WEAPON_AWP,     "weapon_awp",       "awp.mdl",       4750, 1,  2,  0,  4,  6,  5,  6,  true,  false},
-   {WEAPON_G3SG1,      "weapon_g3sg1",     "g3sg1.mdl",     5000, 1,  0,  2,  4,  7,  6,  6,  true,  false},
-   {WEAPON_SG550,     "weapon_sg550",     "sg550.mdl",     4200, 1,  1,  1,  4,  8,  5,  5,  true,  false},
-   {WEAPON_M249,       "weapon_m249",      "m249.mdl",      5750, 1,  2,  1,  5,  1,  1,  1,  true,  true },
-   {WEAPON_SHIELDGUN,  "weapon_shield",    "shield.mdl",    2200, 0,  1,  1,  8,  -1, 8,  8,  false, false},
-   {0,                 "",                 "",              0,    0,  0,  0,  0,   0, 0,  0,  false, false}
+   {WEAPON_KNIFE,		"weapon_knife",     "knife.mdl",     0,    0, -1, -1,  0,  0,  0,  0,  false, true },
+   {WEAPON_USP,			"weapon_usp",       "usp.mdl",       500,  1, -1, -1,  1,  1,  2,  2,  false, false},
+   {WEAPON_GLOCK18,		"weapon_glock18",   "glock18.mdl",   400,  1, -1, -1,  1,  2,  1,  1,  false, false},
+//   {WEAPON_DEAGLE,		"weapon_deagle",    "deagle.mdl",    650,  1,  2,  2,  1,  3,  4,  4,  true,  false},
+   {WEAPON_DEAGLE,		"weapon_deagle",	"deagle.mdl",	 650,  1,  0,  0,  1,  3,  4,  4,  true,  false},
+   {WEAPON_P228,		"weapon_p228",      "p228.mdl",      600,  1,  2,  2,  1,  4,  3,  3,  false, false},
+  //{WEAPON_ELITE,		"weapon_elite",		"elite.mdl",	 1000, 1,  0,  0,  1,  5,  5,  5, false, false },
+   {WEAPON_ELITE,		"weapon_elite",     "elite.mdl",     1000, 1,  2,  2,  1,  5,  5,  5,  false, false},
+   {WEAPON_FN57,		"weapon_fiveseven", "fiveseven.mdl", 750,  1,  1,  1,  1,  6,  5,  5,  false, false},
+   {WEAPON_M3,			"weapon_m3",        "m3.mdl",        1700, 1,  2, -1,  2,  1,  1,  1,  false, false},
+   {WEAPON_XM1014,		"weapon_xm1014",    "xm1014.mdl",    3000, 1,  2, -1,  2,  2,  2,  2,  false, false},
+   {WEAPON_MP5,			"weapon_mp5navy",   "mp5.mdl",       1500, 1,  2,  1,  3,  1,  2,  2,  false, true },
+   {WEAPON_TMP,			"weapon_tmp",       "tmp.mdl",       1250, 1,  1,  1,  3,  2,  1,  1,  false, true },
+   {WEAPON_P90,			"weapon_p90",       "p90.mdl",       2350, 1,  2,  1,  3,  3,  4,  4,  false, true },
+   {WEAPON_MAC10,		"weapon_mac10",     "mac10.mdl",     1400, 1,  0,  0,  3,  4,  1,  1,  false, true },
+   {WEAPON_UMP45,		"weapon_ump45",     "ump45.mdl",     1700, 1,  2,  2,  3,  5,  3,  3,  false, true },
+   {WEAPON_AK47,		"weapon_ak47",      "ak47.mdl",      2500, 1,  0,  0,  4,  1,  2,  2,  true,  true },
+   {WEAPON_SG552,		"weapon_sg552",     "sg552.mdl",     3500, 1,  0, -1,  4,  2,  4,  4,  true,  true },
+   {WEAPON_M4A1,		"weapon_m4a1",      "m4a1.mdl",      3100, 1,  1,  1,  4,  3,  3,  3,  true,  true },
+   {WEAPON_GALIL,		"weapon_galil",     "galil.mdl",     2000, 1,  0,  0,  4,  -1, 1,  1,  true,  true },
+   {WEAPON_FAMAS,		"weapon_famas",     "famas.mdl",     2250, 1,  1,  1,  4,  -1, 1,  1,  true,  true },
+   {WEAPON_AUG,			"weapon_aug",       "aug.mdl",       3500, 1,  1,  1,  4,  4,  4,  4,  true,  true },
+   //{WEAPON_SCOUT,		"weapon_scout",     "scout.mdl",     2750, 1,  2,  0,  4,  5,  3,  2,  true,  false},
+   {WEAPON_SCOUT,		"weapon_scout",		"scout.mdl",	 2750, 1,  2,  0,  4,  5,  3,  2,  false, false },
+   {WEAPON_AWP,			"weapon_awp",       "awp.mdl",       4750, 1,  2,  0,  4,  6,  5,  6,  true,  false},
+   {WEAPON_G3SG1,		"weapon_g3sg1",     "g3sg1.mdl",     5000, 1,  0,  2,  4,  7,  6,  6,  true,  false},
+   {WEAPON_SG550,		"weapon_sg550",     "sg550.mdl",     4200, 1,  1,  1,  4,  8,  5,  5,  true,  false},
+   {WEAPON_M249,		"weapon_m249",      "m249.mdl",      5750, 1,  2,  1,  5,  1,  1,  1,  true,  true },
+   {WEAPON_SHIELDGUN,	"weapon_shield",    "shield.mdl",    2200, 0,  1,  1,  8,  -1, 8,  8,  false, false},
+   {0,					"",                 "",              0,    0,  0,  0,  0,   0, 0,  0,  false, false}
 };
 
 // weapon firing delay based on skill (min and max delay for each weapon)
@@ -502,21 +513,6 @@ MenuText g_menus[25] =
 		"4. Delete Path\v"
 		"\v0. Exit"
 	},
-
-	/*
-	// SyPB Pro P.20 - SgdWP
-	{
-	0x3ff,
-	"\\y SgdWP Menu \\w\v\v"
-	"1. Add Waypoint \v"
-	"2. Delete Waypoint \v"
-	"3. Teleport to Waypoint \v\v"
-	"4. Create Path \v\v"   // SyPB Pro P.30 - Sgdwp
-	"7. Auto put Waypoint \v\v"
-	"8. Sgd Wp Mod Off \v"
-	"9. Save Wp\v"
-	"\v0. Exit"
-	}, */
 
 	// SyPB Pro P.30 - SgdWP
 	{

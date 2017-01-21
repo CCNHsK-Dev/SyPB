@@ -3,18 +3,19 @@
 #define RESOURCE_INCLUDED
 
 // SyPB AMXX API Version
-#define PRODUCT_VERSION "1.31"
-float dllVersion = 1.31;
+#define PRODUCT_VERSION "1.40"
+float amxxDLLVersion = 1.40;
 
-#define PRODUCT_VERSION_DWORD 1,31,8022015,28  // dd/mm/yyyy   
+#define PRODUCT_VERSION_DWORD 1,40,20150920,36    // yyyy/mm/dd   
 
 // general product information
 #define PRODUCT_NAME "SyPB AMXX DLL"
 #define PRODUCT_AUTHOR "HsK Dev-Blog @ CCN"
 #define PRODUCT_LOGTAG "SyPB"
 #define PRODUCT_DESCRIPTION PRODUCT_NAME " Version: v" PRODUCT_VERSION
-#define PRODUCT_COPYRIGHT "by " PRODUCT_AUTHOR
+#define PRODUCT_COPYRIGHT PRODUCT_AUTHOR
 #define PRODUCT_LEGAL "SyPB, " PRODUCT_AUTHOR
+#define PRODUCT_URL "http://ccnhsk-dev.blogspot.com/"
 
 // product optimization type (we're not using crt builds anymore)
 #ifndef PRODUCT_OPT_TYPE

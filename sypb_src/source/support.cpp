@@ -29,7 +29,6 @@
 // clean up the code.
 // create classes: Tracer, PrintManager, GameManager
 //
-ConVar sypb_loglevel ("sypb_loglevel", "2");
 ConVar sypb_apitestmsg("sypb_apitestmsg", "0");
 
 void TraceLine (const Vector &start, const Vector &end, bool ignoreMonsters, bool ignoreGlass, edict_t *ignoreEntity, TraceResult *ptr)
@@ -558,9 +557,13 @@ void RoundInit (void)
 
    g_roundEnded = false;
 
-   // check team economics
-   g_botManager->CheckTeamEconomics (TEAM_TERRORIST);
-   g_botManager->CheckTeamEconomics (TEAM_COUNTER);
+   // SyPB Pro P.35 - Game Mode Setting
+   if (GetGameMod() == 0)
+   {
+	   // check team economics
+	   g_botManager->CheckTeamEconomics(TEAM_TERRORIST);
+	   g_botManager->CheckTeamEconomics(TEAM_COUNTER);
+   }
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
@@ -571,6 +574,9 @@ void RoundInit (void)
    }
    g_waypoint->SetBombPosition (true);
    g_waypoint->ClearGoalScore ();
+
+   // SyPB Pro P.38 - Zombie Mode Human Camp 
+   g_waypoint->InitTypes(1);
 
    g_bombSayString = false;
    g_timeBombPlanted = 0.0f;
@@ -583,6 +589,10 @@ void RoundInit (void)
    g_lastRadioTime[1] = 0.0f;
    g_botsCanPause = false;
 
+   g_entityIdAPI.RemoveAll();
+   g_entityTeamAPI.RemoveAll();
+   g_entityActionAPI.RemoveAll();
+
    // SyPB Pro P.15
    char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
    if (TryFileOpen(Plugin_INI))
@@ -593,17 +603,33 @@ void RoundInit (void)
 		   sypb_gamemod.SetInt(0);
    }
 
-   // SyPB Pro P.2 // SyPB Pro P.15
-   Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-zplague.ini", GetModName());
-   if (TryFileOpen(Plugin_INI)) // Getting GameMod
+   // SyPB Pro P.35 - ZP5.0 Fixed
+   char *zpGameVersion[] =
    {
-	   float delayTime = (CVAR_GET_FLOAT("zp_delay") > 0) ? CVAR_GET_FLOAT("zp_delay") : CVAR_GET_FLOAT("zp_gamemode_delay");
+	   "plugins-zplague",  // ZP4.3
+	   "plugins-zp50_ammopacks", // ZP5.0
+	   "plugins-zp50_money" //ZP5.0
+   };
 
-	   if (delayTime > 0)
+   for (int i = 0; i < 3; i++)
+   {
+	   Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zpGameVersion[i]);
+	   if (TryFileOpen(Plugin_INI))
 	   {
-		   sypb_gamemod.SetInt(2);
-		   sypb_walkallow.SetInt(0);
-		   g_DelayTimer = engine->GetTime() + delayTime + 6.0f;
+		   float delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
+		   if (i != 0)
+			   delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
+
+		   if (delayTime > 0)
+		   {
+			   sypb_gamemod.SetInt(2);
+			   sypb_walkallow.SetInt(0);
+			   //g_DelayTimer = engine->GetTime() + delayTime + 6.0f;
+
+			   // SyPB Pro P.34 - ZP TIME FIXED
+			   g_DelayTimer = engine->GetTime() + delayTime;// +1.99f;
+			   break;
+		   }
 	   }
    }
 
@@ -622,33 +648,34 @@ void RoundInit (void)
    Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
    if (TryFileOpen(Plugin_INI))
    {
-	   const int Const_GameModes = 12;
+	   const int Const_GameModes = 13;
 	   int bteGameModAi[Const_GameModes] =
 	   {
-		   0, 0, 1, 3, 0, 2, 2, 2, 2, 4, 2, 3
-	   };//n, t, d, d, g, g, z, z, z, z, z, n
+		   0, 0, 1, 3, 0, 2, 2, 2, 2, 4, 2, 3, 2
+	   };//1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13
 
 	   char *bteGameINI[Const_GameModes] =
 	   {
-		   "plugins-none",
-		   "plugins-td",
-		   "plugins-dm",
-		   "plugins-dr",
-		   "plugins-gd",
-		   "plugins-ghost",
-		   "plugins-zb1",
-		   "plugins-zb3",
-		   "plugins-zb4",
-		   "plugins-ze",
-		   "plugins-zse",
-		   "plugins-npc"
+		   "plugins-none", //1
+		   "plugins-td",   //2
+		   "plugins-dm",   //3
+		   "plugins-dr",   //4
+		   "plugins-gd",   //5
+		   "plugins-ghost",//6
+		   "plugins-zb1",  //7
+		   "plugins-zb3",  //8
+		   "plugins-zb4",  //9 
+		   "plugins-ze",   //10
+		   "plugins-zse",  //11
+		   "plugins-npc",  //12
+		   "plugins-zb5"   //13
 	   };
 
 	   for (int i = 0; i < Const_GameModes; i++)
 	   {
 		   if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
 		   {
-			   sypb_gamemod.SetInt(bteGameModAi[i]);
+			   //sypb_gamemod.SetInt(bteGameModAi[i]);
 
 			   if (bteGameModAi[i] == 2 && i != 5)
 			   {
@@ -659,25 +686,34 @@ void RoundInit (void)
 			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
 			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
 			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
-			   if (i == 3 || i == 9 || i == 10)
+			   if (i == 3 || i == 9)
 			   {
 				   ServerPrint("***** SyPB not support the mode now :( *****");
 				   ServerPrint("***** SyPB not support the mode now :( *****");
 				   ServerPrint("***** SyPB not support the mode now :( *****");
 				   ServerPrint("***** SyPB not support the mode now :( *****");
 				   ServerPrint("***** SyPB not support the mode now :( *****");
+
+				   sypb_gamemod.SetInt(10);
 			   }
+			   else
+				   sypb_gamemod.SetInt(bteGameModAi[i]);
+
+			   // SyPB Pro P.36 - bte support 
+			   g_gameVersion = CSVER_CZERO;
 
 			   break;
 		   }
 	   }
    }
 
-   // SyPB Pro P.25 - Zombie Ai
-   if (GetGameMod() == 2 || GetGameMod() == 4)
+   // SyPB Pro P.38 - Base Change 
+   if (GetGameMod() != 0)
 	   g_mapType |= MAP_DE;
 
-   g_exp.UpdateGlobalKnowledge (); // update experience data on round start
+   // SyPB Pro P.35 - Game Mode Setting
+   if (GetGameMod () == 0)
+	   g_exp.UpdateGlobalKnowledge (); // update experience data on round start
 
    // calculate the round mid/end in world time
    g_timeRoundStart = engine->GetTime () + engine->GetFreezeTime ();
@@ -735,6 +771,17 @@ int GetTeam (edict_t *ent)
 				}
 			}
 		}
+
+		// SyPB Pro P.40 - AMXX API
+		ITERATE_ARRAY(g_entityIdAPI, j)
+		{
+			if (ent == INDEXENT(g_entityIdAPI[j]))
+			{
+				player_team = g_entityTeamAPI[j];
+				break;
+			}
+		}
+
 		player_team--;
 
 		return player_team;
@@ -749,6 +796,10 @@ int GetTeam (edict_t *ent)
 	if ((GetGameMod () == 2 && g_DelayTimer > engine->GetTime ()) || GetGameMod () == 3)
 		player_team = 2;
 
+	// SyPB Pro P.35 - Zombie Mode Game End not attack
+	if (GetGameMod() == 2 && g_roundEnded)
+		player_team = TEAM_TERRORIST;  // SyPB Pro P.38 - Small Change
+
 	g_clients[client].realTeam = player_team;
 	g_clients[client].team = g_clients[client].realTeam ;
 
@@ -756,15 +807,28 @@ int GetTeam (edict_t *ent)
 }
 
 
-bool IsZombieBot (edict_t *ent)
+bool IsZombieEntity(edict_t *ent)
 {
 	if (FNullEnt(ent))
 		return false;
 
+	// SyPB Pro P.40 - NPC Fixed
+	if (!IsValidPlayer(ent))
+		return false;
+
+	// SyPB Pro P.38 - AMXX API
+	int playerId = ENTINDEX(ent) - 1;
+	if (g_clients[playerId].m_isZombieBotAPI != -1)
+		return (g_clients[playerId].m_isZombieBotAPI == 1) ? true : false;
+
+	// SyPB Pro P.38 - Knife Mode Use Zombie Ai
+	if (sypb_knifemode.GetBool() == true)
+		return true;
+
 	// SyPB Pro P.12
 	if (GetGameMod() == 2 || GetGameMod() == 4) // Zombie Mod
 		return (GetTeam(ent) == TEAM_TERRORIST);
-	
+
 	return false;
 }
 
@@ -925,7 +989,6 @@ void ChartPrint (const char *format, ...)
       WRITE_BYTE (HUD_PRINTTALK);
       WRITE_STRING (string);
    MESSAGE_END ();
-
 }
 
 void ClientPrint (edict_t *ent, int dest, const char *format, ...)
@@ -1076,22 +1139,21 @@ void CheckWelcomeMessage (void)
 
    if (receiveTime > 0.0f && receiveTime < engine->GetTime() && !isReceived && (g_numWaypoints > 0 ? g_isCommencing : true))
    {
-	   // SyPB Pro P.31 - New Msg
-	   if (strcmp(PRODUCT_DEV_VERSION, "") != 0)
+#if defined(PRODUCT_DEV_VERSION)
+	   // SyPB Pro P.31 - New Msg		   
+	   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+
+	   ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
+	   ChartPrint("***** Dev Version: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
+
+	   if (amxxDLL_Version != -1.0)
 	   {
-		   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-		   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
-
-		   ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
-		   ChartPrint("***** Dev Version: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
-
-		   if (amxxDLL_Version != -1.0)
-		   {
-			   ChartPrint("***** Dev Msg: Find API, Support API Version:%.2f", API_Version);
-			   ChartPrint("***** amxx dll version:%.2f (%u.%u.%u.%u)",
-				   amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
-		   }
+		   ChartPrint("***** Dev Msg: Find API, Support API Version:%.2f", API_Version);
+		   ChartPrint("***** amxx dll version:%.2f (%u.%u.%u.%u)",
+			   amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
 	   }
+#endif
 
 	   receiveTime = 0.0f;
 	   isReceived = true;
@@ -1193,7 +1255,7 @@ void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...)
    // this function logs a message to the message log file root directory.
 
    va_list ap;
-   char buffer[512] = {0, }, levelString[32] = {0, }, logLine[1024] = {0, };
+   char buffer[512] = {0, }, levelString[32] = {0, }, logLine[1024] = {0, }, buildVersionName[64];
 
    va_start (ap, format);
    vsprintf (buffer, g_localizer->TranslateInput (format), ap);
@@ -1221,23 +1283,25 @@ void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...)
    if (outputToConsole)
       ServerPrintNoTag ("%s%s", levelString, buffer);
 
-   // now check if logging disabled
-   if (!(logLevel & LOG_IGNORE))
+   // SyPB Pro P.35 - New log file
+   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+
+   // SyPB Pro P.40 - Log File Change
+   sprintf(buildVersionName, "build_%u_%u_%u_%u.txt", bV16[0], bV16[1], bV16[2], bV16[3]);
+
+   // SyPB Pro P.37 - new logs file 
+   File checkLogFP (FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "rb");
+   File fp(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "at");
+
+   if (!checkLogFP.IsValid())
    {
-      if (logLevel == LOG_DEFAULT && sypb_loglevel.GetInt () < 3)
-         return; // no log, default logging is disabled
-
-      if (logLevel == LOG_WARNING && sypb_loglevel.GetInt () < 2)
-         return; // no log, warning logging is disabled
-
-      if (logLevel == LOG_ERROR && sypb_loglevel.GetInt () < 1)
-         return; // no log, error logging is disabled
+	   fp.Print("---------- SyPB Log  \n"); 
+	   fp.Print("---------- SyPB Version: %s  \n", PRODUCT_VERSION);
+	   fp.Print("---------- SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
+	   fp.Print("----------------------------- \n\n");
    }
-
-   // open file in a standard stream
-   File fp ("sypb_log.txt", "at");
-
-   //File fp (("%s/addons/sypb/SyPB_Log.txt", GetModName ()), "at");
+   checkLogFP.Close();
 
    // check if we got a valid handle
    if (!fp.IsValid ())
@@ -1249,6 +1313,7 @@ void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...)
    sprintf (logLine, "[%02d:%02d:%02d] %s%s", time->tm_hour, time->tm_min, time->tm_sec, levelString, buffer);
 
    fp.Print ("%s\n", logLine);
+   fp.Print("----------------------------- \n");
    fp.Close ();
 
    if (logLevel == LOG_FATAL)
@@ -1522,7 +1587,7 @@ void SoundSimulateUpdate (int playerIndex)
       g_clients[playerIndex].soundPosition = GetEntityOrigin (player);
    }
 }
-
+/*
 uint16 GenerateBuildNumber (void)
 {
    // this function generates build number from the compiler date macros
@@ -1559,7 +1624,7 @@ uint16 GenerateBuildNumber (void)
 
    return (buildNumber - 1114);
 }
-
+*/
 int GetWeaponReturn (bool needString, const char *weaponAlias, int weaponID)
 {
    // this function returning weapon id from the weapon alias and vice versa.

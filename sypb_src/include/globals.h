@@ -46,8 +46,10 @@ extern bool g_sendAudioFinished;
 extern bool g_isCommencing;
 extern bool g_leaderChoosen[2];
 
+extern float g_sgdNonCheckSave;
 extern bool g_sgdWaypoint;
 extern bool g_sautoWaypoint;
+extern int m_sautoRadius;
 
 extern float g_autoPathDistance;
 extern float g_timeBombPlanted;
@@ -89,6 +91,10 @@ extern Array <KwChat> g_replyFactory;
 extern Array <String> g_entityName;
 extern Array <int> g_entityTeam;
 extern Array <int> g_entityAction;
+
+extern Array <int> g_entityIdAPI;
+extern Array <int> g_entityTeamAPI;
+extern Array <int> g_entityActionAPI;
 
 extern FireDelay g_fireDelay[Const_NumWeapons + 1];
 extern WeaponSelect g_weaponSelect[Const_NumWeapons + 1];

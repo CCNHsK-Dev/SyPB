@@ -64,11 +64,37 @@ int Bot::FindGoal(void)
 	// SyPB Pro P.30 - Zombie Mode Human Camp
 	else if (GetGameMod() == 2)
 	{
-		if (!IsZombieBot(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
+		if (!IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
 			offensiveWpts = g_waypoint->m_zmHmPoints;
 		else
-			return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+			//return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+			// SyPB Pro P.40 - Zombie Mode improve 
+		{
+			if ((FNullEnt(m_moveTargetEntity) || FNullEnt(m_enemy)) || engine->RandomInt (0, 100) <= 5)
+			{
+				for (int i = 0; i < g_numWaypoints; i++)
+				{
+					int checkRadius = g_waypoint->GetPath(i)->radius;
+					if (checkRadius <= 16.0f)
+						checkRadius = 16.0f;
+
+					edict_t *ent = null;
+					while (!FNullEnt(ent = FIND_ENTITY_IN_SPHERE(ent, g_waypoint->GetPath(i)->origin, checkRadius)))
+					{
+						if (ent != GetEntity() && IsValidPlayer(ent) && IsAlive(ent) && GetTeam (ent) != GetTeam (GetEntity ()))
+							return m_chosenGoalIndex = i;
+					}
+				}
+			}
+			else
+				return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+		}
 	}
+	// SyPB Pro P.40 - Goal Point change
+	else
+		return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+
+	/*
 	else
 	{
 		offensiveWpts = g_waypoint->m_terrorPoints;
@@ -77,7 +103,7 @@ int Bot::FindGoal(void)
 		{
 			offensiveWpts.Push(g_waypoint->m_ctPoints[i]);
 		}
-	}
+	} */
 
    // terrorist carrying the C4?
    if (pev->weapons & (1 << WEAPON_C4) || m_isVIP)
@@ -97,7 +123,7 @@ int Bot::FindGoal(void)
    defensive = static_cast <int> (m_fearLevel * 100);
 
    // SyPB Pro P.28 - Game Mode
-   if (GetGameMod() == 0 || GetGameMod() == 3)
+   if (GetGameMod() == 0)
    {
 	   if (g_mapType & (MAP_AS | MAP_CS))
 	   {
@@ -161,14 +187,9 @@ int Bot::FindGoal(void)
 		   }
 	   }
    }
-   else if (GetGameMod() == 1)
-   {
-	   defensive += 30;
-	   offensive -= 30;
-   }
    else if (GetGameMod() == 2 || GetGameMod() == 4)
    {
-	   if (IsZombieBot(GetEntity()))
+	   if (IsZombieEntity(GetEntity()))
 	   {
 		   defensive += 30;
 		   offensive -= 30;
@@ -287,7 +308,12 @@ TacticChoosen:
    // SyPB Pro P.30 - Zombie Mode Human Camp
    else if (tactic == 4 && !offensiveWpts.IsEmpty()) // offensive goal
    {   
-	   int playerWpIndex = g_waypoint->FindNearest(pev->origin);
+	   //int playerWpIndex = g_waypoint->FindNearest(pev->origin);
+
+	   int playerWpIndex = m_currentWaypointIndex;
+	   if (playerWpIndex < 0 || playerWpIndex >= g_numWaypoints)
+		   playerWpIndex = m_currentWaypointIndex;
+
 	   int targetWpIndex = -1;
 	   float distance = 9999.9f;
 	   
@@ -314,8 +340,9 @@ TacticChoosen:
 		   return m_chosenGoalIndex = targetWpIndex; 
    } 
 
-   if (m_currentWaypointIndex == -1 || m_currentWaypointIndex >= g_numWaypoints)
-      ChangeWptIndex (g_waypoint->FindNearest (pev->origin));
+   if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
+	   // SyPB Pro P.40 - Small Change
+	   GetValidWaypoint();
 
    if (goalChoices[0] == -1)
       return m_chosenGoalIndex = engine->RandomInt (0, g_numWaypoints - 1);
@@ -382,30 +409,14 @@ bool Bot::DoWaypointNav (void)
 {
    // this function is a main path navigation
 
-   TraceResult tr, tr2;
-
-   // SyPB Pro P.24 - Bot Fall Debug
-   if (IsOnFloor () && m_jumpFinished && m_currentWaypointIndex > 0)
-   {
-	   Vector navOrigin = g_waypoint->GetPath (m_currentWaypointIndex)->origin;
-	   float navDistance = (pev->origin - navOrigin).GetLength2D ();
-
-	   if (navDistance <= 100 && (navOrigin.z > pev->origin.z + 20.0f))
-		   m_currentWaypointIndex = -1;
-   }
+	TraceResult tr;//, tr2;
 
    // check if we need to find a waypoint...
-   if (m_currentWaypointIndex == -1)
+   if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
    {
       GetValidWaypoint ();
-      m_waypointOrigin = g_waypoint->GetPath (m_currentWaypointIndex)->origin;
+	  SetWaypointOrigin();
 
-      // if wayzone radios non zero vary origin a bit depending on the body angles
-      if (g_waypoint->GetPath (m_currentWaypointIndex)->radius > 0)
-      {
-         MakeVectors (Vector (pev->angles.x, AngleNormalize (pev->angles.y + engine->RandomFloat (-90, 90)), 0.0f));
-         m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * engine->RandomFloat (0, g_waypoint->GetPath (m_currentWaypointIndex)->radius);
-      }
       m_navTimeset = engine->GetTime ();
    }
 
@@ -438,75 +449,103 @@ bool Bot::DoWaypointNav (void)
         SelectBestWeapon ();
    }
 
-   if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
+   // SyPB Pro P.40 - Ladder improve
+   if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER || IsOnLadder ()) 
    {
-      if (m_waypointOrigin.z >= (pev->origin.z + 16.0f))
-         m_waypointOrigin = g_waypoint->GetPath (m_currentWaypointIndex)->origin + Vector (0, 0, 16);
-      else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder () && IsOnFloor () && !(pev->flags & FL_DUCKING))
-      {
-         m_moveSpeed = waypointDistance;
+	   if (m_waypointOrigin.z >= (pev->origin.z + 16.0f))
+		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0, 0, 16);
+	   else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
+	   {
+		   m_moveSpeed = waypointDistance;
 
-         if (m_moveSpeed < 150.0f)
-            m_moveSpeed = 150.0f;
-         else if (m_moveSpeed > pev->maxspeed)
-            m_moveSpeed = pev->maxspeed;
-      }
+		   if (m_moveSpeed < GetWalkSpeed ())
+			   m_moveSpeed = GetWalkSpeed ();
+		   else if (m_moveSpeed > pev->maxspeed)
+			   m_moveSpeed = pev->maxspeed;
+	   }
+
+	   if (!IsAntiBlock(GetEntity()))
+	   {
+		   for (int i = 0; i < engine->GetMaxClients(); i++)
+		   {
+			   Bot *bot = g_botManager->GetBot(i);
+
+			   if (bot == null || bot == this)
+				   continue;
+
+			   if (m_currentWaypointIndex == bot->m_currentWaypointIndex &&
+				   (pev->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength() >
+				   (bot->pev->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength())
+			   {
+				   PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 0.5f, false);
+				   break;
+			   }
+
+			   if (IsOnLadder())
+			   {
+				   if (m_currentWaypointIndex == bot->m_prevWptIndex[0] && m_navNode != null && 
+					   m_navNode->next != null && m_navNode->next->index == bot->m_currentWaypointIndex)
+				   {
+					   m_moveSpeed = bot->m_moveSpeed;
+
+					   if (m_moveSpeed > pev->maxspeed)
+						   m_moveSpeed = pev->maxspeed;
+					   else if (m_moveSpeed < GetWalkSpeed())
+						   m_moveSpeed = GetWalkSpeed();
+
+					   break;
+				   }
+
+				   continue;
+			   }
+		   }
+	   }
    }
 
    // check if we are going through a door...
    TraceLine (pev->origin, m_waypointOrigin, true, GetEntity (), &tr);
    
-   // SyPB Pro P.13
-   if (!FNullEnt (tr.pHit))
+   // SyPB Pro P.40 - Door Nav Ai improve
+   if (!FNullEnt(tr.pHit) && strncmp(STRING(tr.pHit->v.classname), "func_door", 9))
    {
-   	   if (strncmp (STRING (tr.pHit->v.classname), "func_door", 9))
-   	   {
-   	   	   if ((GetEntityOrigin (tr.pHit) - pev->origin).GetLength () < 150)
-   	   	   {
-   	   	   	   m_lastCollTime = engine->GetTime () + 0.5f;
-   	   	   	   
-   	   	   	   edict_t *button = FindNearestButton (STRING (tr.pHit->v.classname));
-   	   	   	   
-   	   	   	   if (!FNullEnt (button))
-   	   	   	   {
-   	   	   	   	   m_pickupItem = button;
-   	   	   	   	   m_pickupType = PICKTYPE_BUTTON;
-   	   	   	   	   
-   	   	   	   	   m_navTimeset = engine->GetTime ();
-   	   	   	   }
-   	   	   	   
-   	   	   	   if (m_timeDoorOpen < engine->GetTime ())
-   	   	   	   {
-   	   	   	   	   m_doorOpenAttempt++;
-   	   	   	   	   m_timeDoorOpen = engine->GetTime () + 1.0f; // retry in 1 sec until door is open
-   	   	   	   	   
-   	   	   	   	   if (m_doorOpenAttempt >= 5)
-   	   	   	   	   	   m_doorOpenAttempt = 0;
-   	   	   	   	   else if (m_doorOpenAttempt >= 2)
-   	   	   	   	   {
-   	   	   	   	   	   DeleteSearchNodes ();
-   	   	   	   	   	   ResetTasks ();
-   	   	   	   	   }
-   	   	   	   	   else
-   	   	   	   	   	   PushTask (TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime () + 1, false);
-   	   	   	   }
-   	   	   }
-   	   	   else
-   	   	   	   m_doorOpenAttempt = 0;
-   	   }
-   	   else
-   	   	   m_doorOpenAttempt = 0;
+	   if (m_isStuck || (GetEntityOrigin(tr.pHit) - pev->origin).GetLength() < 150)
+	   {
+		   m_lastCollTime = engine->GetTime() + 0.5f;
+		   edict_t *button = FindNearestButton(STRING(tr.pHit->v.classname));
+
+		   if (!FNullEnt(button))
+		   {
+			   m_pickupItem = button;
+			   m_pickupType = PICKTYPE_BUTTON;
+
+			   m_navTimeset = engine->GetTime();
+		   }
+
+		   if (m_timeDoorOpen < engine->GetTime())
+		   {
+			   m_doorOpenAttempt++;
+			   m_timeDoorOpen = engine->GetTime() + 0.5f;
+
+			   if (m_isStuck && m_doorOpenAttempt >= 10)
+				   ResetTasks();
+
+			   PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 0.5f, false);
+		   }
+	   }
+	   else
+		   m_doorOpenAttempt = 0;
    }
-   
+   else m_doorOpenAttempt = 0;
+
    float desiredDistance = 0.0f;
 
    // initialize the radius for a special waypoint type, where the wpt is considered to be reached
    if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_LIFT)
-      desiredDistance = 50;
+      desiredDistance = 50.0f;
    else if ((pev->flags & FL_DUCKING) || (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_GOAL))
-      desiredDistance = 25;
+      desiredDistance = 25.0f;
    else if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
-      desiredDistance = 15;
+      desiredDistance = 15.0f;
    else if (m_currentTravelFlags & PATHFLAG_JUMP)
       desiredDistance = 0.0f;
    else
@@ -523,12 +562,12 @@ bool Bot::DoWaypointNav (void)
    }
 
    // needs precise placement - check if we get past the point
-   if (desiredDistance < 16.0f && waypointDistance < 30)
+   if (desiredDistance < 16.0f && waypointDistance < 30.0f)
    {
       Vector nextFrameOrigin = pev->origin + (pev->velocity * m_frameInterval);
 
-      if ((nextFrameOrigin - m_waypointOrigin).GetLength () > waypointDistance)
-         desiredDistance = waypointDistance + 1.0f;
+	  if ((nextFrameOrigin - m_waypointOrigin).GetLength() >= waypointDistance)
+		  desiredDistance = waypointDistance + 1.0f;
    }
 
    if (waypointDistance < desiredDistance)
@@ -562,7 +601,13 @@ bool Bot::DoWaypointNav (void)
             g_waypoint->SetGoalVisited (m_tasks->data); // doesn't hear so not a good goal
       }
       HeadTowardWaypoint (); // do the actual movement checking
+	  return false;
    }
+
+   // SyPB Pro P.40 - Base Change for Waypoint OS TESTTEST 
+   if ((m_waypointOrigin - pev->origin).GetLength() <= 2.0f)
+	   HeadTowardWaypoint();
+
    return false;
 }
 
@@ -572,13 +617,10 @@ void Bot::FindShortestPath(int srcIndex, int destIndex)
 
 	DeleteSearchNodes();
 
-	m_chosenGoalIndex = srcIndex;
 	m_goalValue = 0.0f;
+	m_chosenGoalIndex = srcIndex;
 
 	PathNode *node = new PathNode;
-
-	if (node == null)
-		TerminateOnMalloc();
 
 	node->index = srcIndex;
 	node->next = null;
@@ -606,29 +648,6 @@ void Bot::FindShortestPath(int srcIndex, int destIndex)
 		node->index = srcIndex;
 		node->next = null;
 	}
-
-	/*
-	while (srcIndex != destIndex)
-	{
-	srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
-
-	if (srcIndex < 0)
-	{
-	m_prevGoalIndex = -1;
-	GetCurrentTask ()->data = -1;
-
-	return;
-	}
-
-	node->next = new PathNode;
-	node = node->next;
-
-	if (node == null)
-	TerminateOnMalloc ();
-
-	node->index = srcIndex;
-	node->next = null;
-	} */
 }
 
 
@@ -992,97 +1011,76 @@ void Bot::DeleteSearchNodes (void)
    m_chosenGoalIndex = -1;
 }
 
-// SyPB Pro P.30 - Move Target
-void Bot::MoveTargetSrc(void)
+// SyPB Pro P.38 - Breakable improve 
+void Bot::CheckTouchEntity(edict_t *entity)
 {
-	float gDistance = 9999.9f, minDistance[3];
-	int i, wpGIndex = -1, wpIndex[3];
+	// SyPB Pro P.40 - Touch Entity Attack Action
+	if (m_currentWeapon == WEAPON_KNIFE && 
+		(!FNullEnt(m_enemy) || !FNullEnt(m_breakableEntity)) && 
+		(m_enemy == entity || m_breakableEntity == entity))
+		KnifeAttack((pev->origin - GetEntityOrigin(entity)).GetLength() + 50.0f);
 
-	for (i = 0; i < 3; i++)
+	if (IsShootableBreakable(entity))
 	{
-		minDistance[i] = 9999.9f;
-		wpIndex[i] = -1;
-	}
-
-	for (i = 0; i < g_numWaypoints; i++)
-	{
-		float distance = (g_waypoint->m_paths[i]->origin - pev->origin).GetLength();
-		if (distance < minDistance[3] && distance <= 100)
+		bool attackBreakable = false;
+		// SyPB Pro P.40 - Breakable 
+		if (m_isStuck || &m_navNode[0] == null)
+			attackBreakable = true;
+		else if (m_currentWaypointIndex != -1)
 		{
-			if (m_currentWaypointIndex && !g_waypoint->IsVisible(m_currentWaypointIndex, i))
-				continue;
-			else if (g_waypoint->m_paths[i]->origin.z >= pev->origin.z + 40.0f)
-				continue;
+			TraceResult tr;
+			TraceLine(pev->origin, g_waypoint->GetPath (m_currentWaypointIndex)->origin, false, false, GetEntity(), &tr);
+			if (tr.pHit == entity && tr.flFraction < 1.0f)
+				attackBreakable = true;
+		}
 
-			minDistance[2] = distance;
-			wpIndex[2] = i;
+		if (attackBreakable)
+		{
+			m_breakableEntity = entity;
+			m_breakable = GetEntityOrigin(entity);
+			m_destOrigin = m_breakable;
 
-			for (int j = 1; j >= 0; j--)
-			{
-				if (distance < minDistance[j])
-				{
-					minDistance[j + 1] = minDistance[j];
-					wpIndex[j + 1] = wpIndex[j];
+			if (pev->origin.z > m_breakable.z)
+				m_campButtons = IN_DUCK;
+			else
+				m_campButtons = pev->button & IN_DUCK;
 
-					minDistance[j] = distance;
-					wpIndex[j] = i;
-				}
-			}
+			PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
 		}
 	}
-
-	for (i = 0; i < 3; i++)
-	{
-		if (wpIndex[i] != -1)
-		{
-			float distance = (g_waypoint->m_paths[wpIndex[i]]->origin - m_moveTargetOrigin).GetLength();
-			if (distance < gDistance)
-			{
-				gDistance = distance;
-				wpGIndex = wpIndex[i];
-			}
-		}
-	}
-
-	if (wpGIndex != -1)
-		ChangeWptIndex(wpGIndex);
 }
 
-//SyPB Pro P.24 - Move Target
+// SyPB Pro P.40 - Move Target
 void Bot::SetMoveTarget (edict_t *entity)
 {
-	Vector entityOrigin = GetEntityOrigin (entity);
-	if (entityOrigin == nullvec)
+	m_moveTargetOrigin = GetEntityOrigin(entity);
+	if (FNullEnt(entity) || m_moveTargetOrigin == nullvec)
 	{
 		m_moveTargetEntity = null;
 		m_moveTargetOrigin = nullvec;
-		DeleteSearchNodes ();
-
-		GetCurrentTask ()->data = -1;
 		return;
 	}
 
-	// SyPB Pro P.28 - Zombie Ai
-	if (m_moveTargetEntity != entity)
+	// SyPB Pro P.40 - Base Change for Waypoint OS
+	if (!FNullEnt(m_enemy))
 	{
-		DeleteSearchNodes();
-		GetCurrentTask()->data = -1;
+		m_currentWaypointIndex = -1;
+		GetValidWaypoint();
 	}
 
 	m_enemy = null;
 	m_moveTargetEntity = entity;
-	m_moveTargetOrigin = entityOrigin;
 
-	if (GetCurrentTask()->taskID != TASK_MOVETOTARGET || m_navNode == null || m_navNode->next == null) // SyPB Pro P.27 - Zombie Ai
-		PushTask (TASK_MOVETOTARGET, TASKPRI_MOVETOTARGET, -1, 0.0, true);
+	PushTask(TASK_MOVETOTARGET, TASKPRI_MOVETOTARGET, -1, 0.0, true);
 }
 
 int Bot::GetAimingWaypoint (Vector targetOriginPos)
 {
    // return the most distant waypoint which is seen from the Bot to the Target and is within count
 
-   if (m_currentWaypointIndex == -1)
-      ChangeWptIndex (g_waypoint->FindNearest (pev->origin));
+	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
+		// SyPB Pro P.40 - Small Change
+		GetValidWaypoint();
 
    int srcIndex = m_currentWaypointIndex;
    int destIndex = g_waypoint->FindNearest (targetOriginPos);
@@ -1131,111 +1129,203 @@ int Bot::GetAimingWaypoint (Vector targetOriginPos)
    return bestIndex;
 }
 
-bool Bot::FindWaypoint (void)
+int Bot::FindWaypoint (bool notSet)
 {
    // this function find a waypoint in the near of the bot if bot had lost his path of pathfinder needs
    // to be restarted over again.
 
-   int waypointIndeces[3], coveredWaypoint = -1;
-   float reachDistances[3];
+   // SyPB Pro P.40 - Base Change for Waypoint OS TESTTEST
+	int checkWaypointI[10], waypointIndeces[3], coveredWaypoint = -1;
+	float checkWaypointD[10], reachDistances[3];
 
-   // nullify all waypoint search stuff
-   for (int i = 0; i < 3; i++)
+   for (int i = 0; i < 10; i++)
    {
-      waypointIndeces[i] = -1;
-      reachDistances[i] = 9999.0f;
+	   if (i < 3)
+	   {
+		   waypointIndeces[i] = -1;
+		   reachDistances[i] = 9999.0f;
+	   }
+
+	   checkWaypointI[i] = -1;
+	   checkWaypointD[i] = 9999.0f;
    }
 
-   // do main search loop
    for (int i = 0; i < g_numWaypoints; i++)
    {
-      // ignore current waypoint and previous recent waypoints...
-      if (i == m_currentWaypointIndex || i == m_prevWptIndex[0] || i == m_prevWptIndex[1] || i == m_prevWptIndex[2] || i == m_prevWptIndex[3] || i == m_prevWptIndex[4])
-         continue;
+	   if (i == m_currentWaypointIndex)
+		   continue;
 
-      // ignore non-reacheable waypoints and check if waypoint is already used by another bot...
-      if (!g_waypoint->Reachable (this, i))
-         continue;
+	   float distance = (g_waypoint->GetPath(i)->origin - pev->origin).GetLengthSquared();
 
-      if (IsWaypointUsed (i))
-      {
-         coveredWaypoint = i;
-         continue;
-      }
+	   if ((g_waypoint->GetPath(i)->origin - pev->origin).GetLength2D() <= 30.0f &&
+		   pev->origin.z + 16.0f < g_waypoint->GetPath(i)->origin.z)
+		   continue;
 
-      // now pick 1-2 random waypoints that near the bot
-      float distance = (g_waypoint->GetPath (i)->origin - pev->origin).GetLengthSquared ();
+	   for (int j = 0; j < 10; j++)
+	   {
+		   if (distance < checkWaypointD[j])
+		   {
+			   if (j < 9)
+			   {
+				   int oldPoint = -1;
+				   float oldDistance = 9999.0f;
+				   for (int z = j + 1; z < 10; z++)
+				   {
+					   oldPoint = checkWaypointI[z - 1];
+					   oldDistance = checkWaypointD[z - 1];
 
-      // now fill the waypoint list
-      for (int j = 0; j < 3; j++)
-      {
-         if (distance < reachDistances[j])
-         {
-            waypointIndeces[j] = i;
-            reachDistances[j] = distance;
-         }
-      }
+					   checkWaypointI[z] = oldPoint;
+					   checkWaypointD[z] = oldDistance;
+				   }
+			   }
+
+			   checkWaypointI[j] = i;
+			   checkWaypointD[j] = distance;
+		   }
+	   }
    }
-   int random = 0;
+
+   for (int i = 0; i < 10; i++)
+   {
+	   if (checkWaypointI[i] == -1)
+		   continue;
+
+	   if (!g_waypoint->Reachable(this, checkWaypointI[i]))
+		   continue;
+
+	   if (IsWaypointUsed(checkWaypointI[i]))
+	   {
+		   coveredWaypoint = checkWaypointI[i];
+		   continue;
+	   }
+
+	   for (int j = 0; j < 3; j++)
+	   {
+		   if (checkWaypointD[i] < reachDistances[j])
+		   {
+			   waypointIndeces[j] = checkWaypointI[i];
+			   reachDistances[j] = checkWaypointI[i];
+		   }
+	   }
+   }
+
+   int random = -1;
 
    // now pick random one from choosen
    if (waypointIndeces[2] != -1)
-      random = engine->RandomInt (0, 2);
+	   random = engine->RandomInt(0, 2);
    else if (waypointIndeces[1] != -1)
-      random = engine->RandomInt (0, 1);
+	   random = engine->RandomInt(0, 1);
    else if (waypointIndeces[0] != -1)
-      random = 0;
+	   random = 0;
    else if (coveredWaypoint != -1)
-      waypointIndeces[random = 0] = coveredWaypoint;
-
+	   waypointIndeces[random = 0] = coveredWaypoint;
    else
    {
-      Array <int> found;
-      g_waypoint->FindInRadius (found, 600.0, pev->origin);
-
-      if (!found.IsEmpty ())
-         waypointIndeces[random = 0] = found.GetRandomElement ();
-      else
-         waypointIndeces[random = 0] = engine->RandomInt (0, g_numWaypoints - 1);
+	   // SyPB Pro P.40 - Base Change for Waypoint OS
+	   waypointIndeces[random = 0] = g_waypoint->FindNearest(pev->origin);
    }
 
-   m_collideTime = engine->GetTime ();
-   ChangeWptIndex (waypointIndeces[random]);
+   if (!notSet)
+   {
+	   m_collideTime = engine->GetTime();
+	   ChangeWptIndex(waypointIndeces[random]);
+   }
 
-   return true;
+   return waypointIndeces[random];
 }
 
-void Bot::GetValidWaypoint (void)
+// SyPB Pro P.40 - Base Change for Waypoint OS
+void Bot::SetWaypointOrigin(void)
 {
-   // checks if the last waypoint the bot was heading for is still valid
+	m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
 
-   // if bot hasn't got a waypoint we need a new one anyway or if time to get there expired get new one as well
-   if (m_currentWaypointIndex == -1)
-   {
-      DeleteSearchNodes ();
-      FindWaypoint ();
+	if (g_waypoint->GetPath(m_currentWaypointIndex)->radius > 0)
+	{
+		MakeVectors(Vector(pev->angles.x, AngleNormalize(pev->angles.y + engine->RandomFloat(-90, 90)), 0.0f));
+		float radius = g_waypoint->GetPath(m_currentWaypointIndex)->radius;
 
-      m_waypointOrigin = g_waypoint->GetPath (m_currentWaypointIndex)->origin;
+		if (&m_navNode[0] != null && m_navNode->next != null)
+		{
+			Vector waypointOrigin[5];
+			for (int i = 0; i < 5; i++)
+			{
+				waypointOrigin[i] = m_waypointOrigin;
+				waypointOrigin[i] += Vector(engine->RandomFloat(-radius, radius), engine->RandomFloat(-radius, radius), 0.0f);
+			}
 
-      // FIXME: Do some error checks if we got a waypoint
-   }
-   else if ((m_navTimeset + GetEstimatedReachTime () < engine->GetTime ()) && FNullEnt (m_enemy))
-   {
-      g_exp.CollectValidDamage (m_currentWaypointIndex, GetTeam (GetEntity ()));
+			int destIndex = m_navNode->next->index;
 
-      DeleteSearchNodes ();
-      FindWaypoint ();
+			float sDistance = 9999.0f;
+			int sPoint = -1;
+			for (int i = 0; i < 5; i++)
+			{
+				float distance = (waypointOrigin[i] - g_waypoint->GetPath(destIndex)->origin).GetLength2D();
+				if (distance < sDistance)
+				{
+					sPoint = i;
+					sDistance = distance;
+				}
+			}
 
-      m_waypointOrigin = g_waypoint->GetPath (m_currentWaypointIndex)->origin;
-   }
+			if (sPoint != -1)
+			{
+				m_waypointOrigin = waypointOrigin[sPoint];
+				return;
+			}
+		}
+
+		m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * engine->RandomFloat(0, radius);
+	}
 }
 
-void Bot::ChangeWptIndex (int waypointIndex, int action)
+void Bot::GetValidWaypoint(void)
 {
-   m_prevWptIndex[4] = m_prevWptIndex[3];
-   m_prevWptIndex[3] = m_prevWptIndex[2];
-   m_prevWptIndex[2] = m_prevWptIndex[1];
-   m_prevWptIndex[0] = waypointIndex;
+	// checks if the last waypoint the bot was heading for is still valid
+
+	// SyPB Pro P.38 - Find Waypoint Improve
+	bool needFindWaypont = false;
+	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
+		needFindWaypont = true;
+	else if ((m_navTimeset + GetEstimatedReachTime() < engine->GetTime()))
+		needFindWaypont = true;
+
+	if (needFindWaypont)
+	{
+		if (m_currentWaypointIndex != -1 && GetGameMod () == 0)
+			g_exp.CollectValidDamage(m_currentWaypointIndex, GetTeam(GetEntity()));
+
+		DeleteSearchNodes();
+		FindWaypoint();
+
+		SetWaypointOrigin();
+	}
+}
+
+void Bot::ChangeWptIndex (int waypointIndex)
+{
+	// SyPB Pro P.40 - Base Change for Waypoint OS
+	bool badPrevWpt = true;
+	if (waypointIndex != -1)
+	{
+		m_prevWptIndex[4] = m_prevWptIndex[3];
+		m_prevWptIndex[3] = m_prevWptIndex[2];
+		m_prevWptIndex[2] = m_prevWptIndex[1];
+		m_prevWptIndex[1] = m_prevWptIndex[0];
+		m_prevWptIndex[0] = m_currentWaypointIndex;
+
+		for (int i = 0; i < Const_MaxPathIndex; i++)
+		{
+			if (g_waypoint->GetPath(waypointIndex)->index[i] == m_prevWptIndex[0])
+				badPrevWpt = false;
+		}
+	}
+
+	if (badPrevWpt == true)
+	{
+		for (int i = 0; i < 5; i++)
+			m_prevWptIndex[i] = -1;
+	}
 
    m_currentWaypointIndex = waypointIndex;
    m_navTimeset = engine->GetTime ();
@@ -1578,56 +1668,58 @@ bool Bot::HeadTowardWaypoint (void)
    // we're not at the end of the list?
    if (m_navNode != null)
    {
-      // if in between a route, postprocess the waypoint (find better alternatives)...
-      if (m_navNode != m_navNodeStart && m_navNode->next != null)
-      {
-         GetBestNextWaypoint ();
-         int taskID= GetCurrentTask ()->taskID;
+	   if (m_navNode->next != null && !(g_waypoint->GetPath(m_navNode->next->index)->flags & WAYPOINT_LADDER))
+	   {
+		   if (m_navNodeStart != m_navNode)
+		   {
+			   GetBestNextWaypoint();
+			   int taskID = GetCurrentTask()->taskID;
 
-         m_minSpeed = pev->maxspeed;
+			   m_minSpeed = pev->maxspeed;
 
-         // only if we in normal task and bomb is not planted
-         if (taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER && !(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && GetTeam (GetEntity ()) == TEAM_TERRORIST))
-         {
-            m_campButtons = 0;
+			   // only if we in normal task and bomb is not planted
+			   if (GetGameMod() == 0 && taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER && !(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && GetTeam(GetEntity()) == TEAM_TERRORIST))
+			   {
+				   m_campButtons = 0;
 
-            int waypoint = m_navNode->next->index;
-            int kills = g_exp.GetDamage (waypoint, waypoint, GetTeam (GetEntity ()));
+				   int waypoint = m_navNode->next->index;
+				   int kills = g_exp.GetDamage(waypoint, waypoint, GetTeam(GetEntity()));
 
-            // if damage done higher than one
-            if (kills > 1 && g_timeRoundMid > engine->GetTime () && g_killHistory > 0)
-            {
-               kills = (kills * 100) / g_killHistory;
-               kills /= 100;
+				   // if damage done higher than one
+				   if (kills > 1 && g_timeRoundMid > engine->GetTime() && g_killHistory > 0)
+				   {
+					   kills = (kills * 100) / g_killHistory;
+					   kills /= 100;
 
-               switch (m_personality)
-               {
-               case PERSONALITY_NORMAL:
-                  kills /= 3;
-                  break;
+					   switch (m_personality)
+					   {
+					   case PERSONALITY_NORMAL:
+						   kills /= 3;
+						   break;
 
-               default:
-                  kills /= 2;
-                  break;
-               }
+					   default:
+						   kills /= 2;
+						   break;
+					   }
 
-               if (m_baseAgressionLevel < static_cast <float> (kills))
-               {
-                  PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + (m_fearLevel * (g_timeRoundMid - engine->GetTime ()) * 0.5f), true); // push camp task on to stack
-                  PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint (g_waypoint->GetPath (waypoint)->origin), 0.0f, true);
+					   if (m_baseAgressionLevel < static_cast <float> (kills))
+					   {
+						   PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + (m_fearLevel * (g_timeRoundMid - engine->GetTime()) * 0.5f), true); // push camp task on to stack
+						   PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint(g_waypoint->GetPath(waypoint)->origin), 0.0f, true);
 
-                  m_campButtons |= IN_DUCK;
-               }
-            }
-            else if (g_botsCanPause && !IsOnLadder () && !IsInWater () && !m_currentTravelFlags && IsOnFloor ())
-            {
-               if (static_cast <float> (kills) == m_baseAgressionLevel)
-                  m_campButtons |= IN_DUCK;
-               else if (engine->RandomInt (1, 100) > (m_skill + engine->RandomInt (1, 20)))
-                  m_minSpeed = GetWalkSpeed ();
-            }
-         }
-      }
+						   m_campButtons |= IN_DUCK;
+					   }
+				   }
+				   else if (g_botsCanPause && !IsOnLadder() && !IsInWater() && !m_currentTravelFlags && IsOnFloor())
+				   {
+					   if (static_cast <float> (kills) == m_baseAgressionLevel)
+						   m_campButtons |= IN_DUCK;
+					   else if (engine->RandomInt(1, 100) > (m_skill + engine->RandomInt(1, 20)))
+						   m_minSpeed = GetWalkSpeed();
+				   }
+			   }
+		   }
+	   }
 
       if (m_navNode != null)
       {
@@ -1676,49 +1768,27 @@ bool Bot::HeadTowardWaypoint (void)
             }
 
             // is there a jump waypoint right ahead and do we need to draw out the light weapon ?
-            if (willJump && (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D () < 50 && jumpDistance > 60)) && !(m_states & STATE_SEEINGENEMY) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading)
+            if (willJump && (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D () < 50 && jumpDistance > 60) || pev->maxspeed <= 210) && !(m_states & STATE_SEEINGENEMY) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading)
                SelectWeaponByName ("weapon_knife"); // draw out the knife if we needed
-
-            // bot not already on ladder but will be soon?
-            //if ((g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER) && !IsOnLadder () && GetGameMod () != 99) // SyPB Pro P.12
-            // SyPB Pro P.22 - New Player Stuck
-			extern ConVar sypb_antiblock;
-			bool antiblockMod = (sypb_antiblock.GetBool () || GetGameMod () == 99);
-
-			if ((g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER) && !IsOnLadder () && !antiblockMod)
-			{
-               // get ladder waypoints used by other (first moving) bots
-               for (int c = 0; c < engine->GetMaxClients (); c++)
-               {
-                  Bot *otherBot = g_botManager->GetBot (c);
-
-                  // if another bot uses this ladder, wait 3 secs
-                  if (otherBot != null && otherBot != this && IsAlive (otherBot->GetEntity ()) && otherBot->m_currentWaypointIndex == m_navNode->index)
-                  {
-                     PushTask (TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime () + 3.0f, false);
-                     return true;
-                  }
-               }
-            }
          }
          ChangeWptIndex (destIndex);
       }
    }
-   m_waypointOrigin = g_waypoint->GetPath (m_currentWaypointIndex)->origin;
 
-   // if wayzone radius non zero vary origin a bit depending on the body angles
-   if (g_waypoint->GetPath (m_currentWaypointIndex)->radius > 0.0f)
-   {
-      MakeVectors (Vector (pev->angles.x, AngleNormalize (pev->angles.y + engine->RandomFloat (-90, 90)), 0.0f));
-      m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * engine->RandomFloat (0, g_waypoint->GetPath (m_currentWaypointIndex)->radius);
-   }
+   SetWaypointOrigin();
 
    if (IsOnLadder ())
    {
       TraceLine (Vector (pev->origin.x, pev->origin.y, pev->absmin.z), m_waypointOrigin, true, true, GetEntity (), &tr);
 
-      if (tr.flFraction < 1.0f)
-         m_waypointOrigin = m_waypointOrigin + (pev->origin - m_waypointOrigin) * 0.5f + Vector (0, 0, 32);
+	  // SyPB Pro P.36 - ladder improve
+	  if (tr.flFraction < 1.0f)
+	  {
+		  if (m_waypointOrigin.z >= pev->origin.z)
+			  m_waypointOrigin += tr.vecPlaneNormal;
+		  else
+			  m_waypointOrigin -= tr.vecPlaneNormal;
+	  }
    }
    m_navTimeset = engine->GetTime ();
 
@@ -1959,7 +2029,7 @@ bool Bot::CanJumpUp (Vector normal)
    // here we check if a duck jump would work...
 CheckDuckJump:
    // SyPB Pro P.20 - Zombie Duck Jump?
-   if (IsZombieBot (GetEntity ()))
+   if (IsZombieEntity (GetEntity ()))
    {
 	   for (int i = 0; i < engine->GetMaxClients (); i++)
 	   {
@@ -1967,7 +2037,11 @@ CheckDuckJump:
 			   continue;
 
 		   edict_t *ent = g_clients[i].ent;
-		   if (IsZombieBot (ent))
+		   //if (IsZombieEntity (ent))
+			 //  continue;
+
+		   // SyPB Pro P.38 - Small Change
+		   if (GetTeam(GetEntity()) == GetTeam(ent))
 			   continue;
 
 		   if (!(IsVisible (GetEntityOrigin (ent), GetEntity ())))
@@ -2261,7 +2335,6 @@ int Bot::GetAimingWaypoint (void)
    return engine->RandomInt (0, g_numWaypoints - 1);
 }
 
-// SyPB Pro P.26 - no aim type var
 void Bot::FacePosition(void)
 {
 	// SyPB Pro P.30 - AMXX API
@@ -2278,12 +2351,61 @@ void Bot::FacePosition(void)
 	direction.ClampAngles();
 	deviation.ClampAngles();
 
-	// SyPB Pro P.29 - Aim Os
-	if (!FNullEnt(m_enemy) && (m_wantsToFire || m_currentWeapon == WEAPON_AWP) && m_skill >= 80)
+	// SyPB Pro P.37 - Aim OS
+	bool godAim = false;
+	/*
+	if (!FNullEnt(m_enemy))
+	{
+		if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || GetGameMod () != 0))
+			godAim = true;
+		else if (m_wantsToFire)
+		{
+			if (GetGameMod() == 0 && (m_skill >= 90 || (IsInViewCone(m_enemyOrigin) && m_skill >= 60)))
+				godAim = true;
+			else if (m_skill >= 70 || IsInViewCone(m_enemyOrigin))
+				godAim = true;
+		}
+	} */
+
+	// SyPB Pro P.40 - Aim OS improve
+	if (!FNullEnt(m_enemy))
+	{
+		if (IsInViewCone(m_enemyOrigin))
+		{
+			if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || GetGameMod() != 0))
+				godAim = true;
+			else if (m_wantsToFire && m_skill >= 70)
+				godAim = true;
+		}
+	}
+
+	if (godAim)
 		pev->v_angle = direction;
 	else
 	{
-		Vector springStiffness(13.0f, 13.0f, 0);
+		Vector springStiffness(4.0f, 4.0f, 0);  // SyPB Pro P.34 - Game think change
+
+		// SyPB Pro P.40 - Aim OS improve
+		if (!FNullEnt(m_enemy))
+		{
+			if (IsInViewCone(m_enemyOrigin))
+				springStiffness = Vector(5.0f, 5.0f, 0);
+			else
+				springStiffness = Vector(10.0f, 10.0f, 0);
+		}
+		else if (!IsInViewCone(m_lookAt))
+			springStiffness = Vector(8.0f, 8.0f, 0);
+
+		/*
+		// SyPB Pro P.35 - Bot Think improve
+		if (!FNullEnt(m_enemy))
+		{
+			float gameFps = CVAR_GET_FLOAT("fps_max");
+			if (gameFps > 60)
+				springStiffness = Vector(14.0f, 14.0f, 0);
+			else
+				springStiffness = Vector(6.0f, 6.0f, 0);
+		} */
 
 		Vector stiffness = nullvec;
 
@@ -2296,7 +2418,9 @@ void Bot::FacePosition(void)
 			m_playerTargetTime = engine->GetTime();
 			m_randomizedIdealAngles = m_idealAngles;
 
-			if (IsValidPlayer(m_enemy))
+			//if (IsValidPlayer(m_enemy))
+			// SyPB Pro P.40 - NPC Fixed
+			if (!FNullEnt (m_enemy)) 
 			{
 				m_targetOriginAngularSpeed = ((m_enemyOrigin - pev->origin + 1.5f * m_frameInterval * (1.0f * m_enemy->v.velocity) - 0.0f * g_pGlobals->frametime * pev->velocity).ToAngles() - (m_enemyOrigin - pev->origin).ToAngles()) * 0.45f * 2.2f * static_cast <float> (m_skill / 100);
 
@@ -2462,6 +2586,10 @@ bool Bot::IsWaypointUsed (int index)
    if (index < 0 || index >= g_numWaypoints)
       return true;
 
+   // SyPB Pro P.40 - AntiBlock Check 
+   if (IsAntiBlock(GetEntity()))
+	   return false;
+
    // first check if current waypoint of one of the bots is index waypoint
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
@@ -2471,8 +2599,13 @@ bool Bot::IsWaypointUsed (int index)
          continue;
 
       // check if this waypoint is already used
-      if (IsAlive (bot->GetEntity ()) && (bot->m_currentWaypointIndex == index || bot->GetCurrentTask ()->data == index || (g_waypoint->GetPath (index)->origin - bot->pev->origin).GetLength () < 50.0f))
-         return true;
+	  if (IsAlive(bot->GetEntity()) && (bot->m_currentWaypointIndex == index || bot->GetCurrentTask()->data == index || (g_waypoint->GetPath(index)->origin - bot->pev->origin).GetLength() < 50.0f))
+	  {
+		  if (IsAntiBlock(bot->GetEntity()))
+			  continue;
+
+		  return true;
+	  }
    }
 
    // secondary check waypoint radius for any player
@@ -2481,8 +2614,13 @@ bool Bot::IsWaypointUsed (int index)
    // search player entities in waypoint radius
    while (!FNullEnt (ent = FIND_ENTITY_IN_SPHERE (ent, g_waypoint->GetPath (index)->origin, 50)))
    {
-      if (ent != GetEntity () && IsValidBot (ent) && IsAlive (ent))
-         return true;
+	   if (ent != GetEntity() && IsValidBot(ent) && IsAlive(ent))
+	   {
+		   if (IsAntiBlock(ent))
+			   continue;
+
+		   return true;
+	   }
    }
    return false;
 }
@@ -2517,4 +2655,41 @@ edict_t *Bot::FindNearestButton (const char *className)
       }
    }
    return foundEntity;
+}
+
+// SyPB Pro P.38 - AMXX API
+int Bot::CheckBotPointAPI(int mod)
+{
+	if (mod == 0)
+		return g_waypoint->FindNearest(GetEntityOrigin(GetEntity()));
+	else if (mod == 1)
+		return m_currentWaypointIndex;
+	else if (mod == 2)
+	{
+		if (&m_navNode[0] != null)
+			return m_navNode->index;
+	}
+
+	return -1;
+}
+
+// SyPB Pro P.40 - AMXX API
+int Bot::GetNavData(int data)
+{
+	PathNode *navid = &m_navNode[0];
+	int pointNum = 0;
+
+	while (navid != null)
+	{
+		pointNum++;
+		if (pointNum == data)
+			return navid->index;
+
+		navid = navid->next;
+	}
+
+	if (data == -1)
+		return pointNum;
+
+	return -1;
 }

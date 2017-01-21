@@ -25,11 +25,16 @@
 #include <core.h>
 
 ConVar sypb_autovacate ("sypb_autovacate", "-1");
-ConVar sypb_quota ("sypb_quota", "0");
+ConVar sypb_quota ("sypb_quota", "9");
 ConVar sypb_forceteam ("sypb_forceteam", "any");
+
 ConVar sypb_minskill ("sypb_minskill", "60");
-ConVar sypb_maxskill ("sypb_maxskill", "100");
+ConVar sypb_maxskill ("sypb_maxskill", "100"); 
+
+
 ConVar sypb_tagbots ("sypb_tagbots", "0");
+
+ConVar sypb_difficulty("sypb_difficulty", "4");
 
 ConVar sypb_join_after_player ("sypb_join_after_player", "0"); 
 
@@ -80,112 +85,182 @@ void BotControl::CallGameEntity (entvars_t *vars)
 }
 
 // SyPB Pro P.20 - Bot Name
-int BotControl::CreateBot (String name, int skill, int personality, int team, int member)
+int BotControl::CreateBot(String name, int skill, int personality, int team, int member)
 {
-   // this function completely prepares bot entity (edict) for creation, creates team, skill, sets name etc, and
-   // then sends result to bot constructor
+	// this function completely prepares bot entity (edict) for creation, creates team, skill, sets name etc, and
+	// then sends result to bot constructor
 
-   // SyPB Pro P.22 - join after player
-   if (sypb_join_after_player.GetBool () == true)
-   {
-	   int playerNum = GetHumansNum (1);
-	   if (playerNum == 0)
-		   return 1;
-   }
+#if defined(PRODUCT_DEV_VERSION)
+	// SyPB Pro P.34 - Preview DeadLine
+	time_t rawtime;
+	struct tm * timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	int year = timeinfo->tm_year + 1900, mon = timeinfo->tm_mon + 1, day = timeinfo->tm_mday;
+	int today = (year * 10000) + (mon * 100) + (day);
+	int deadline = (PV_VERSION_YEAR * 10000) + (PV_VERSION_MON * 100) + PV_VERSION_DAY;
 
-   edict_t *bot = null;
-   char outputName[33];
+	if ((deadline - today) < 0)
+	{
+		m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
+		sypb_quota.SetInt(0); // reset quota
 
-   if (g_numWaypoints < 1) // don't allow creating bots with no waypoints loaded
-   {
-      CenterPrint ("Map not waypointed. Can't Create Bot");
-      return 0;
-   }
-   else if (g_waypointsChanged) // don't allow creating bots with changed waypoints (distance tables are messed up)
-   {
-      CenterPrint ("Waypoints has been changed. Load waypoints again...");
-      return 0;
-   }
+		ChartPrint("[SyPB Preview] This Preview version outdate *****");
+		ChartPrint("[SyPB Preview] This Preview version outdate *****");
+		ChartPrint("[SyPB Preview] This Preview version outdate *****");
+		return -3;
+	}
+#endif
 
-   if (skill < 0 || skill > 100)
-      skill = engine->RandomInt (sypb_minskill.GetInt (), sypb_maxskill.GetInt ());
+	// SyPB Pro P.22 - join after player
+	if (sypb_join_after_player.GetBool() == true)
+	{
+		int playerNum = GetHumansNum(1);
+		if (playerNum == 0)
+			return -3;
+	}
 
-   if (skill > 100 || skill < 0)
-      skill = engine->RandomInt (0, 100);
+	edict_t *bot = null;
 
-   if (personality < 0 || personality > 2)
-   {
-      int randomPrecent = engine->RandomInt (0, 100);
+	if (g_numWaypoints < 1) // don't allow creating bots with no waypoints loaded
+	{
+		/*
+		CenterPrint("Map not waypointed. Can't Create Bot");
 
-      if (randomPrecent < 50)
-         personality = PERSONALITY_NORMAL;
-      else
-      {
-         if (engine->RandomInt (0, randomPrecent) < randomPrecent * 0.5)
-            personality = PERSONALITY_CAREFUL;
-         else
-            personality = PERSONALITY_RUSHER;
-      }
-   }
+		// SyPB Pro P.37 - Lock Add Zbot
+		extern ConVar sypb_lockzbot;
+		if (sypb_lockzbot.GetBool())
+		sypb_lockzbot.SetInt(0); */
 
-   if (name.GetLength () <= 0)  // SyPB Pro P.30 - Set Bot Name
-   {
-	   bool getName = false;
-	   if (!g_botNames.IsEmpty())
-	   {
-		   ITERATE_ARRAY(g_botNames, j)
-		   {
-			   if (!g_botNames[j].isUsed)
-			   {
-				   getName = true;
-				   break;
-			   }
-		   }
-	   }
+		// SyPB Pro P.39 - Add Msg
+		ServerPrint("Not Find Waypoint, Cannot Add SyPB");
+		ServerPrint("You can input 'sypb sgdwp on' to make waypoint");
+		CenterPrint("Not Find Waypoint, Cannot Add SyPB");
+		CenterPrint("You can input 'sypb sgdwp on' to make waypoint");
 
-	   if (getName)
-	   {
-		   bool nameUse = true;
+		extern ConVar sypb_lockzbot;
+		if (sypb_lockzbot.GetBool())
+		{
+			sypb_lockzbot.SetInt(0);
+			ServerPrint("Unlock Add Zbot, You can Add Zbot (If your cs have install this)");
+		}
 
-		   while (nameUse)
-		   {
-			   NameItem &botName = g_botNames.GetRandomElement();
-			   if (!botName.isUsed)
-			   {
-				   nameUse = false;
-				   botName.isUsed = true;
-				   sprintf(outputName, "%s", botName.name);
-			   }
-		   }
-	   }
-	   else
-		   sprintf(outputName, "[SyPB] bot%i", engine->RandomInt(-9999, 9999)); // just pick ugly random name
-   }
-   else
-	   sprintf(outputName, "[SyPB] %s", name);
+		return -1;
+	}
+	else if (g_waypointsChanged) // don't allow creating bots with changed waypoints (distance tables are messed up)
+	{
+		CenterPrint("Waypoints has been changed. Load waypoints again...");
+		return -1;
+	}
+	
+	// SyPB Pro P.35 - New skill level
+	if (skill <= 0 || skill > 100)
+	{
+		if (sypb_difficulty.GetInt() >= 4)
+			skill = 100;
+		else if (sypb_difficulty.GetInt() == 3)
+			skill = engine->RandomInt(80, 99);
+		else if (sypb_difficulty.GetInt() == 2)
+			skill = engine->RandomInt(50, 79);
+		else if (sypb_difficulty.GetInt() == 1)
+			skill = engine->RandomInt(30, 49);
+		// SyPB Pro P.37 - skill level improve
+		else if (sypb_difficulty.GetInt() == 0)
+			skill = engine->RandomInt(1, 29);
+		else
+		{
+			int maxSkill = sypb_maxskill.GetInt();
+			int minSkill = (sypb_minskill.GetInt() == 0) ? 1 : sypb_minskill.GetInt();
+
+			if (maxSkill <= 100 && minSkill > 0)
+				skill = engine->RandomInt(minSkill, maxSkill);
+			else
+				skill = engine->RandomInt(0, 100);
+		}
+
+		/*
+		else if (sypb_difficulty.GetInt() <= 0)
+			skill = engine->RandomInt(10, 29); */
+	}
 
 
+	if (personality < 0 || personality > 2)
+	{
+		int randomPrecent = engine->RandomInt(0, 100);
 
-   if (FNullEnt ((bot = (*g_engfuncs.pfnCreateFakeClient) (outputName))))
-   {
-      CenterPrint ("Maximum players reached (%d/%d). Unable to create Bot.", engine->GetMaxClients (), engine->GetMaxClients ());
-      return 2;
-   }
+		if (randomPrecent < 50)
+			personality = PERSONALITY_NORMAL;
+		else
+		{
+			if (engine->RandomInt(0, randomPrecent) < randomPrecent * 0.5)
+				personality = PERSONALITY_CAREFUL;
+			else
+				personality = PERSONALITY_RUSHER;
+		}
+	}
 
-   int index = ENTINDEX (bot) - 1;
+	char outputName[33];
+	if (name.GetLength() <= 0)  // SyPB Pro P.30 - Set Bot Name
+	{
+		bool getName = false;
+		if (!g_botNames.IsEmpty())
+		{
+			ITERATE_ARRAY(g_botNames, j)
+			{
+				if (!g_botNames[j].isUsed)
+				{
+					getName = true;
+					break;
+				}
+			}
+		}
 
-   InternalAssert (index >= 0 && index <= 32); // check index
-   InternalAssert (m_bots[index] == null); // check bot slot
+		if (getName)
+		{
+			bool nameUse = true;
 
-   m_bots[index] = new Bot (bot, skill, personality, team, member);
- 
-   if (m_bots == null)
-      TerminateOnMalloc ();
+			while (nameUse)
+			{
+				NameItem &botName = g_botNames.GetRandomElement();
+				if (!botName.isUsed)
+				{
+					nameUse = false;
+					botName.isUsed = true;
+					sprintf(outputName, "%s", botName.name);
+				}
+			}
+		}
+		else
+			sprintf(outputName, "bot%i", engine->RandomInt(-9999, 9999)); // just pick ugly random name
+	}
+	else
+		sprintf(outputName, "%s", name);
 
-   ServerPrint ("Connecting SyPB Bot - [%s] Skill [%d]", STRING (bot->v.netname), skill);
+	// SyPB Pro P.37 - Bot Name / Tag
+	char botName[33];
+	sprintf(botName, "%s%s", sypb_tagbots.GetBool () == true ? "" : "[SyPB] ", outputName);
 
-   return 1;
+	if (FNullEnt((bot = (*g_engfuncs.pfnCreateFakeClient) (botName))))
+	{
+		CenterPrint("Maximum players reached (%d/%d). Unable to create Bot.", engine->GetMaxClients(), engine->GetMaxClients());
+		return -2;
+	}
+
+	int index = ENTINDEX(bot) - 1;
+
+	InternalAssert(index >= 0 && index <= 32); // check index
+	InternalAssert(m_bots[index] == null); // check bot slot
+
+	m_bots[index] = new Bot(bot, skill, personality, team, member);
+
+	if (m_bots == null)
+		TerminateOnMalloc();
+
+	ServerPrint("Connecting SyPB Bot - [%s] Skill [%d]", STRING(bot->v.netname), skill);
+
+	return index;
 }
+
 
 int BotControl::GetIndex (edict_t *ent)
 {
@@ -243,28 +318,63 @@ Bot *BotControl::FindOneValidAliveBot (void)
    return null;
 }
 
+// SyPB Pro P.38 - Bot think improve
 void BotControl::Think(void)
 {
-
-	// this function calls think () function for all available at call moment bots, and
-	// try to catch internal error if such shit occurs
-
-	// SyPB Pro P.27 - OS Change
 	for (int i = 0; i < engine->GetMaxClients(); i++)
 	{
 		if (m_bots[i] == null)
 			continue;
-		/*
+
+		bool runThink = false;
 		if (m_bots[i]->m_thinkTimer <= engine->GetTime())
 		{
-		m_bots[i]->m_thinkTimer = engine->GetTime() + 1.0f / 30.0f;
+			if (m_bots[i]->m_lastThinkTime <= engine->GetTime())
+				runThink = true;
+		}
 
-		if (m_bots[i]->m_lastThinkTime <= engine->GetTime())
-		m_bots[i]->Think ();
-		} */
+		if (runThink)
+		{
+			float gameFps = CVAR_GET_FLOAT("fps_max");
+			if (gameFps < 30.0f)
+				gameFps = 30.0f;
 
-		// SyPB Pro P.29 - Bot fps
-		m_bots[i]->Think();
+			m_bots[i]->m_thinkTimer = engine->GetTime() + 1.0f / gameFps;
+
+			m_bots[i]->Think();
+
+			m_bots[i]->m_moveAnglesForRunMove = m_bots[i]->m_moveAngles;
+			m_bots[i]->m_moveSpeedForRunMove = m_bots[i]->m_moveSpeed;
+			m_bots[i]->m_strafeSpeedForRunMove = m_bots[i]->m_strafeSpeed;
+		}
+		else
+		{
+			if (!FNullEnt(m_bots[i]->m_enemy))
+			{
+				if (!m_bots[i]->IsEnemyViewable(m_bots[i]->m_enemy, true, true))
+				{
+					m_bots[i]->m_states &= ~STATE_SEEINGENEMY;
+					m_bots[i]->m_enemy = null;
+				}
+				else
+				{
+					m_bots[i]->m_states |= STATE_SEEINGENEMY;
+					m_bots[i]->m_aimFlags |= AIM_ENEMY;
+				}
+			}
+
+			// SyPB Pro P.39 - Aim speed improve
+			m_bots[i]->ChooseAimDirection();
+			m_bots[i]->FacePosition();
+
+			if (m_bots[i]->m_wantsToFire && !m_bots[i]->m_isUsingGrenade && m_bots[i]->m_shootTime <= engine->GetTime())
+				m_bots[i]->FireWeapon();
+		}
+
+		m_bots[i]->pev->angles.ClampAngles();
+		m_bots[i]->pev->v_angle.ClampAngles();
+
+		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
 }
 
@@ -318,7 +428,7 @@ void BotControl::CheckAutoVacate (edict_t * /*ent*/)
 }
 
 // SyPB Pro P.30 - AMXX API
-void BotControl::AddBotAPI(const String &name, int skill, int team)
+int BotControl::AddBotAPI(const String &name, int skill, int team)
 {
 	if (g_botManager->GetBotsNum() + 1 > sypb_quota.GetInt())
 		sypb_quota.SetInt(g_botManager->GetBotsNum() + 1);
@@ -326,7 +436,7 @@ void BotControl::AddBotAPI(const String &name, int skill, int team)
 	int resultOfCall = CreateBot(name, skill, -1, team, -1);
 
 	// check the result of creation
-	if (resultOfCall == 0)
+	if (resultOfCall == -1)
 	{
 		m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
 		sypb_quota.SetInt(0); // reset quota
@@ -334,13 +444,15 @@ void BotControl::AddBotAPI(const String &name, int skill, int team)
 		// SyPB Pro P.23 - SgdWP
 		ChartPrint("[SyPB] You can input [sypb sgdwp on] make the new waypoints!!");
 	}
-	else if (resultOfCall == 2)
+	else if (resultOfCall == -2)
 	{
 		m_creationTab.RemoveAll(); // maximum players reached, so set quota to maximum players
 		sypb_quota.SetInt(GetBotsNum());
 	}
 
 	m_maintainTime = engine->GetTime() + 0.2f;
+
+	return resultOfCall;  // SyPB Pro P.34 - AMXX API
 }
 
 void BotControl::MaintainBotQuota (void)
@@ -354,20 +466,20 @@ void BotControl::MaintainBotQuota (void)
 
       int resultOfCall = CreateBot (last.name, last.skill, last.personality, last.team, last.member);
 
-      // check the result of creation
-      if (resultOfCall == 0)
-      {
-         m_creationTab.RemoveAll (); // something wrong with waypoints, reset tab of creation
-         sypb_quota.SetInt (0); // reset quota
+	  // check the result of creation
+	  if (resultOfCall == -1)
+	  {
+		  m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
+		  sypb_quota.SetInt(0); // reset quota
 
-		 // SyPB Pro P.23 - SgdWP
-		 ChartPrint ("[SyPB] You can input [sypb sgdwp on] make the new waypoints!!");
-      }
-      else if (resultOfCall == 2)
-      {
-         m_creationTab.RemoveAll (); // maximum players reached, so set quota to maximum players
-         sypb_quota.SetInt (GetBotsNum ());
-      }
+		  // SyPB Pro P.23 - SgdWP
+		  ChartPrint("[SyPB] You can input [sypb sgdwp on] make the new waypoints!!");
+	  }
+	  else if (resultOfCall == -2)
+	  {
+		  m_creationTab.RemoveAll(); // maximum players reached, so set quota to maximum players
+		  sypb_quota.SetInt(GetBotsNum());
+	  }
 
       m_maintainTime = engine->GetTime () + 0.2f;
    }
@@ -593,9 +705,6 @@ void BotControl::RemoveRandom (void)
 void BotControl::SetWeaponMode (int selection)
 {
    // this function sets bots weapon mode
-	// SyPB Pro P.27 - Game Mode Setting
-	if (GetGameMod() != 0)
-		return;
 
    int tabMapStandart[7][Const_NumWeapons] =
    {
@@ -877,7 +986,7 @@ Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
 
 
    // initialize msec value
-   m_msecNum = m_msecDel = 0.0f;
+   //m_msecNum = m_msecDel = 0.0f;
    m_msecInterval = engine->GetTime ();
    m_msecVal = static_cast <uint8_t> (g_pGlobals->frametime * 1000.0f);
    m_msecBuiltin = engine->RandomInt (1, 4);
@@ -983,6 +1092,9 @@ void Bot::NewRound (void)
    m_knifeDistance1API = 0;
    m_knifeDistance2API = 0;
 
+   // SyPB Pro P.35 - AMXX API
+   m_gunMinDistanceAPI = 0;
+   m_gunMaxDistanceAPI = 0;
 
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
@@ -1053,6 +1165,14 @@ void Bot::NewRound (void)
 
    SetMoveTarget (null);
 
+   //m_checkFallDistance = -1.0f;
+   //m_checkFallPoint[0] = -1;
+   //m_checkFallPoint[1] = -1;
+
+   m_checkFallPoint[0] = nullvec;
+   m_checkFallPoint[1] = nullvec;
+   m_checkFall = false;
+
    m_enemy = null;
    m_lastVictim = null;
    m_lastEnemy = null;
@@ -1065,6 +1185,8 @@ void Bot::NewRound (void)
    m_seeEnemyTime = 0.0f;
    m_shootAtDeadTime = 0.0f;
    m_oldCombatDesire = 0.0f;
+
+   m_backCheckEnemyTime = 0.0f;
 
    m_avoidGrenade = null;
    m_needAvoidGrenade = 0;

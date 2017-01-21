@@ -2154,12 +2154,43 @@ typedef void(*AMXX_SET_WEAPON_CLIP)(int index, int weaponClip);
 C_DLLEXPORT void Amxx_BlockWeaponReload(int index, int blockWeaponReload);
 typedef void(*AMXX_BLOCK_WEAPON_RELOAD)(int index, int blockWeaponReload);
 
-C_DLLEXPORT void Amxx_AddSyPB(const char *name, int skill, int team);
-typedef void(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
+//C_DLLEXPORT void Amxx_AddSyPB(const char *name, int skill, int team);
+//typedef void(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
 
 // SyPB Pro P.31 - AMXX API
 C_DLLEXPORT void Amxx_SetKADistance(int index, int k1d, int k2d);
 typedef void(*AMXX_SET_KA_DISTANCE)(int index, int k1d, int k2d);
+
+// SyPB Pro P.34 - AMXX API
+C_DLLEXPORT int Amxx_AddSyPB(const char *name, int skill, int team);
+typedef int(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
+
+// SyPB Pro P.35 - AMXX API
+C_DLLEXPORT void Amxx_SetGunADistance(int index, int minDistance, int maxDistance);
+typedef void(*AMXX_SET_GUNA_DISTANCE) (int index, int minDistance, int maxDistance);
+
+// SyPB Pro P.38 - AMXX API
+C_DLLEXPORT int Amxx_IsZombieBot(int index);
+typedef int(*AMXX_IS_ZOMBIE_BOT) (int index);
+
+C_DLLEXPORT void Amxx_SetZombieBot(int index, int zombieBot);
+typedef void(*_AMXX_SET_ZOMBIE_BOT) (int index, int zombieBot);
+
+C_DLLEXPORT int Amxx_GetOriginPoint(Vector origin);
+typedef int(*AMXX_GET_ORIGIN_POINT) (Vector origin);
+
+C_DLLEXPORT int Amxx_GetBotPoint(int index, int mod);
+typedef int(*AMXX_GET_BOT_POINT) (int index, int mod);
+
+// SyPB Pro P.40 - AMXX API
+C_DLLEXPORT int Amxx_GetBotNavNum(int index);
+typedef int(*AMXX_GET_BOT_NAV_NUM) (int index);
+
+C_DLLEXPORT int Amxx_GetBotNavPointId(int index, int pointNum);
+typedef int(*AMXX_GET_BOT_NAV_POINTID) (int index, int pointNum);
+
+C_DLLEXPORT int Amxx_SetEntityAction(int index, int team, int action);
+typedef int(*AMXX_SET_ENTITY_ACTION) (int index, int team, int action);
 // AMXX SyPB API End
 
 #define MDLL_FUNC   gpGamedllFuncs->dllapi_table

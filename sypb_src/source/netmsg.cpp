@@ -31,7 +31,7 @@ NetworkMsg::NetworkMsg (void)
     m_bot = null;
 
 	//for (register int i = 0; i < NETMSG_BOTVOICE; i++)
-	for (register int i = 0; i < NETMSG_ALL; i++)  // SyPB Pro P.29
+	for (register int i = 0; i < NETMSG_RESETHUD; i++)  // SyPB Pro P.29 // SyPB Pro P.38 - Base improve
 		m_registerdMessages[i] = -1;
 }
 
@@ -43,8 +43,8 @@ void NetworkMsg::HandleMessageIfRequired (int messageType, int requiredType)
 
 void NetworkMsg::Execute (void *p)
 {
-   if (m_message == NETMSG_UNDEFINED)
-      return; // no message or not for bot, return
+	if (m_message == NETMSG_UNDEFINED)
+		return; // no message or not for bot, return
 
    // some needed variables
    static uint8_t r, g, b;
@@ -239,29 +239,44 @@ void NetworkMsg::Execute (void *p)
       break;
 
    case NETMSG_STATUSICON:
-      switch (m_state)
-      {
-      case 0:
-         enabled = PTR_TO_BYTE (p);
-         break;
+	   switch (m_state)
+	   {
+	   case 0:
+		   enabled = PTR_TO_BYTE(p);
+		   break;
 
-      case 1:
-         if (strcmp (PTR_TO_STR (p), "defuser") == 0)
-            m_bot->m_hasDefuser = (enabled != 0);
-         else if (strcmp (PTR_TO_STR (p), "buyzone") == 0)
-         {
-            m_bot->m_inBuyZone = (enabled != 0);
+	   case 1:
+		   // SyPB Pro P.34 - Base Change
+		   if (GetGameMod() == 0)
+		   {
+			   if (strcmp(PTR_TO_STR(p), "defuser") == 0)
+				   m_bot->m_hasDefuser = (enabled != 0);
+			   else if (strcmp(PTR_TO_STR(p), "buyzone") == 0)
+			   {
+				   m_bot->m_inBuyZone = (enabled != 0);
+				   m_bot->EquipInBuyzone(0);
+			   }
+			   else if (strcmp(PTR_TO_STR(p), "vipsafety") == 0)
+				   m_bot->m_inVIPZone = (enabled != 0);
+			   else if (strcmp(PTR_TO_STR(p), "c4") == 0)
+				   m_bot->m_inBombZone = (enabled == 2);
+		   }
+		   else
+		   {
+			   m_bot->m_hasDefuser = false;
+			   m_bot->m_inVIPZone = false;
+			   m_bot->m_inBombZone = false;
 
-            // try to equip in buyzone
-            m_bot->EquipInBuyzone (0);
-         }
-         else if (strcmp (PTR_TO_STR (p), "vipsafety") == 0)
-            m_bot->m_inVIPZone = (enabled != 0);
-         else if (strcmp (PTR_TO_STR (p), "c4") == 0)
-            m_bot->m_inBombZone = (enabled == 2);
-         break;
-      }
-      break;
+			   if (strcmp(PTR_TO_STR(p), "buyzone") == 0)
+			   {
+				   m_bot->m_inBuyZone = (enabled != 0);
+				   m_bot->EquipInBuyzone(0);
+			   }
+		   }
+
+		   break;
+	   }
+	   break;
 
    case NETMSG_DEATH: // this message sends on death
       switch (m_state)
@@ -275,74 +290,75 @@ void NetworkMsg::Execute (void *p)
          break;
 
       case 2:
-		  if (killerIndex != victimIndex &&
-			  killerIndex != 0 && killerIndex <= 31 &&
-			  victimIndex != 0 && victimIndex <= 31) // SyPB Pro P.28 - Msg Debug (TEST) 
-         {
-            edict_t *killer = INDEXENT (killerIndex);
-            edict_t *victim = INDEXENT (victimIndex);
+		  // SyPB Pro P.40 - Death Msg improve
+		  if (killerIndex != victimIndex)
+		  {
+			  edict_t *killer = INDEXENT(killerIndex);
+			  edict_t *victim = INDEXENT(victimIndex);
 
-            if (FNullEnt (killer) || FNullEnt (victim))
-               break;
+			  if (FNullEnt(killer) || FNullEnt(victim) || !IsValidPlayer(victim))
+				  break;
 
-            // need to send congrats on well placed shot
-            for (int i = 0; i < engine->GetMaxClients (); i++)
-            {
-               Bot *bot = g_botManager->GetBot (i);
+			  Bot *victimer = g_botManager->GetBot(victim);
+			  if (victimer != null)
+			  {
+				  victimer->GetCurrentTask()->data = -1;
+				  victimer->DeleteSearchNodes();
+			  }
 
-               if (bot != null && IsAlive (bot->GetEntity ()) && killer != bot->GetEntity () && bot->EntityIsVisible (GetEntityOrigin (victim)) && GetTeam (killer) == GetTeam (bot->GetEntity ()) && GetTeam (killer) != GetTeam (victim))
-               {
-                  if (killer == g_hostEntity)
-                     bot->HandleChatterMessage ("#Bot_NiceShotCommander");
-                  else
-                     bot->HandleChatterMessage ("#Bot_NiceShotPall");
+			  if (!IsZombieEntity(victim) && IsAlive(victim))
+				  break;
 
-                  break;
-               }
-            }
-            
-            // SyPB Pro P.15
-            if (GetGameMod () == 0)
-            {
-	            // notice nearby to victim teammates, that attacker is near
-	            for (int i = 0; i < engine->GetMaxClients (); i++)
-	            {
-	               Bot *bot = g_botManager->GetBot (i);
-	               if (bot != null && IsAlive (bot->GetEntity ()) && GetTeam (bot->GetEntity ()) == GetTeam (victim) && IsVisible (GetEntityOrigin (killer), bot->GetEntity ()) && FNullEnt (bot->m_enemy) && GetTeam (killer) != GetTeam (victim))
-	               {
-					   // SyPB Pro P.30 - AMXX API
-					   if (bot->m_blockCheckEnemyTime > engine->GetTime())
-						   continue;
+			  for (int i = 0; i < engine->GetMaxClients(); i++)
+			  {
+				  Bot *bot = g_botManager->GetBot(i);
+				  if (bot == null || !IsAlive(bot->GetEntity()))
+					  continue;
 
-	                  bot->m_actualReactionTime = 0.0f;
-	                  bot->m_seeEnemyTime = engine->GetTime ();
-	                  bot->m_enemy = killer;
-	                  bot->m_lastEnemy = killer;
-	                  bot->m_lastEnemyOrigin = GetEntityOrigin (killer);
-	               }
-	            }
-	        }
+				  if (IsZombieEntity(bot->GetEntity()))
+					  continue;
 
-            Bot *bot = g_botManager->GetBot (killer);
+				  if (GetGameMod() == 0 && killer != bot->GetEntity() && bot->EntityIsVisible(GetEntityOrigin(victim)) &&
+					  GetTeam(killer) == GetTeam(bot->GetEntity()) && GetTeam(killer) != GetTeam(victim))
+				  {
+					  if (killer == g_hostEntity)
+						  bot->HandleChatterMessage("#Bot_NiceShotCommander");
+					  else
+						  bot->HandleChatterMessage("#Bot_NiceShotPall");
 
-            // is this message about a bot who killed somebody?
-            if (bot != null)
-               bot->m_lastVictim = victim;
+					  break;
+				  }
 
-            else // did a human kill a bot on his team?
-            {
-               Bot *iter = g_botManager->GetBot (victim);
+				  if (GetTeam(bot->GetEntity()) == GetTeam(victim) && IsVisible(GetEntityOrigin(killer), bot->GetEntity()) && FNullEnt(bot->m_enemy) && GetTeam(killer) != GetTeam(victim))
+				  {
+					  // SyPB Pro P.30 - AMXX API
+					  if (bot->m_blockCheckEnemyTime > engine->GetTime())
+						  continue;
 
-               if (iter != null)
-               {
-                  if (GetTeam (killer) == GetTeam (victim))
-                     iter->m_voteKickIndex = killerIndex;
+					  bot->m_actualReactionTime = 0.0f;
+					  bot->m_seeEnemyTime = engine->GetTime();
+					  bot->m_enemy = killer;
+					  bot->m_lastEnemy = killer;
+					  bot->m_lastEnemyOrigin = GetEntityOrigin(killer);
+				  }
+			  }
 
-                  iter->m_notKilled = false;
-               }
-            }
-         }
-         break;
+			  Bot *bot = g_botManager->GetBot(killer);
+
+			  if (bot != null)
+				  bot->m_lastVictim = victim;
+			  else if (GetGameMod () == 0)
+			  {
+				  if (victimer != null)
+				  {
+					  if (GetTeam(killer) == GetTeam(victim))
+						  victimer->m_voteKickIndex = killerIndex;
+
+					  victimer->m_notKilled = false;
+				  }
+			  }
+		  }
+		  break;
       }
       break;
 
@@ -368,15 +384,15 @@ void NetworkMsg::Execute (void *p)
       break;
 
    case NETMSG_HLTV: // round restart in steam cs
-      switch (m_state)
-      {
-      case 0:
-         numPlayers = PTR_TO_INT (p);
-         break;
+	   switch (m_state)
+	   {
+	   case 0:
+		   numPlayers = PTR_TO_INT(p);
+		   break;
 
-      case 1:
-         if (numPlayers == 0 && PTR_TO_INT (p) == 0)
-            RoundInit ();
+	   case 1:
+		   if (numPlayers == 0 && PTR_TO_INT(p) == 0)
+			   RoundInit();
          break;
       }
       break;
@@ -484,14 +500,20 @@ void NetworkMsg::Execute (void *p)
       break;
 
    case NETMSG_BARTIME:
-      if (m_state == 0)
-      {
-         if (PTR_TO_INT (p) > 0)
-            m_bot->m_hasProgressBar = true; // the progress bar on a hud
-         else if (PTR_TO_INT (p) == 0)
-            m_bot->m_hasProgressBar = false; // no progress bar or disappeared
-      }
-      break;
+	   if (m_state == 0)
+	   {
+		   // SyPB Pro P.34 - Base Change
+		   if (GetGameMod() == 0)
+		   {
+			   if (PTR_TO_INT(p) > 0)
+				   m_bot->m_hasProgressBar = true; // the progress bar on a hud
+			   else if (PTR_TO_INT(p) == 0)
+				   m_bot->m_hasProgressBar = false; // no progress bar or disappeared
+		   }
+		   else
+			   m_bot->m_hasProgressBar = false;
+	   }
+	   break;
 
    default:
       AddLogEntry (true, LOG_FATAL, "Network message handler error. Call to unrecognized message id (%d).\n", m_message);

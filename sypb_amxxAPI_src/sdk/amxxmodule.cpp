@@ -2431,8 +2431,10 @@ static amxx_module_info_s g_ModuleInfo =
 	0,
 #endif // MODULE_RELOAD_ON_MAPCHANGE
 	MODULE_LOGTAG,
-	MODULE_LIBRARY,
-	MODULE_LIBCLASS
+	"SyPB",
+	""
+	//PRODUCT_LIBRARY,
+	//PRODUCT_LIBCLASS
 };
 
 // Storage for the requested functions
