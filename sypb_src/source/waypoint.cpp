@@ -151,6 +151,10 @@ void Waypoint::ChangeZBCampPoint(Vector origin)
 
 bool Waypoint::IsZBCampPoint(int pointID)
 {
+	// SyPB Pro P.47 - Zombie Mode Human Camp small improve
+	if (g_waypoint->m_zmHmPoints.IsEmpty())
+		return false;
+
 	for (int i = 0; i <= m_zmHmPoints.GetElementNumber(); i++)
 	{
 		int wpIndex;
@@ -1044,7 +1048,7 @@ void Waypoint::CalculateWayzone (int index)
 
    if ((path->flags & (WAYPOINT_LADDER | WAYPOINT_GOAL | WAYPOINT_CAMP | WAYPOINT_RESCUE | WAYPOINT_CROUCH)) || m_learnJumpWaypoint)
    {
-      path->radius = 0;
+      path->radius = 0.0f;
       return;
    }
 
@@ -1052,7 +1056,7 @@ void Waypoint::CalculateWayzone (int index)
    {
       if (path->index[i] != -1 && (m_paths[path->index[i]]->flags & WAYPOINT_LADDER))
       {
-         path->radius = 0;
+         path->radius = 0.0f;
          return;
       }
    }
@@ -1067,7 +1071,7 @@ void Waypoint::CalculateWayzone (int index)
 
       path->radius = scanDistance;
 
-      for (float circleRadius = 0.0f; circleRadius < 180.0f; circleRadius += 5)
+      for (float circleRadius = 0.0f; circleRadius < 180.0f; circleRadius += 5.0f)
       {
          MakeVectors (direction);
 
@@ -1082,49 +1086,49 @@ void Waypoint::CalculateWayzone (int index)
 
             if (FClassnameIs (tr.pHit, "func_door") || FClassnameIs (tr.pHit, "func_door_rotating"))
             {
-               path->radius = 0;
+               path->radius = 0.0f;
                wayBlocked = true;
 
                break;
             }
 
             wayBlocked = true;
-            path->radius -= 16;
+            path->radius -= 16.0f;
 
             break;
          }
 
          Vector dropStart = start + (g_pGlobals->v_forward * scanDistance);
-         Vector dropEnd = dropStart - Vector (0, 0, scanDistance + 60);
+         Vector dropEnd = dropStart - Vector (0.0f, 0.0f, scanDistance + 60.0f);
 
          TraceHull (dropStart, dropEnd, true, head_hull, null, &tr);
 
          if (tr.flFraction >= 1.0f)
          {
             wayBlocked = true;
-            path->radius -= 16;
+            path->radius -= 16.0f;
 
             break;
          }
          dropStart = start - (g_pGlobals->v_forward * scanDistance);
-         dropEnd = dropStart - Vector (0, 0, scanDistance + 60);
+         dropEnd = dropStart - Vector (0.0f, 0.0f, scanDistance + 60.0f);
 
          TraceHull (dropStart, dropEnd, true, head_hull, null, &tr);
 
          if (tr.flFraction >= 1.0f)
          {
             wayBlocked = true;
-            path->radius -= 16;
+            path->radius -= 16.0f;
             break;
          }
 
-         radiusEnd.z += 34;
+         radiusEnd.z += 34.0f;
          TraceHull (radiusStart, radiusEnd, true, head_hull, null, &tr);
 
          if (tr.flFraction < 1.0f)
          {
             wayBlocked = true;
-            path->radius -= 16;
+            path->radius -= 16.0f;
             break;
          }
 
@@ -1133,10 +1137,10 @@ void Waypoint::CalculateWayzone (int index)
       if (wayBlocked)
          break;
    }
-   path->radius -= 16;
+   path->radius -= 16.0f;
 
-   if (path->radius < 0)
-      path->radius = 0;
+   if (path->radius < 0.0f)
+      path->radius = 0.0f;
 }
 
 void Waypoint::SaveVisibilityTab (void)
@@ -1565,7 +1569,7 @@ bool Waypoint::IsNodeReachable (Vector src, Vector destination)
       {
          Vector sourceNew = destination;
          Vector destinationNew = destination;
-         destinationNew.z = destinationNew.z - 50; // straight down 50 units
+         destinationNew.z = destinationNew.z - 50.0f; // straight down 50 units
 
          TraceLine (sourceNew, destinationNew, ignore_monsters, g_hostEntity, &tr);
 
@@ -1995,7 +1999,7 @@ void Waypoint::ShowWaypointMsg(void)
 
 				// draw node without additional flags
 				if (nodeFlagColor.red == -1)
-					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0, 0, nodeHalfHeight), m_paths[i]->origin + Vector(0, 0, nodeHalfHeight), nodeColor, 15, 0, 0, 10);
+					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight), m_paths[i]->origin + Vector(0.0f, 0.0f, nodeHalfHeight), nodeColor, 15, 0, 0, 10);
 				else // draw node with flags
 				{
 					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight), m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), nodeColor, 14, 0, 0, 10); // draw basic path
@@ -2630,7 +2634,7 @@ void Waypoint::CreateBasic (void)
       TraceResult tr;
       Vector up, down, front, back;
 
-      Vector diff = ((ladderLeft - ladderRight) ^ Vector (0, 0, 0)).Normalize () * 15.0f;
+      Vector diff = ((ladderLeft - ladderRight) ^ Vector (0.0f, 0.0f, 0.0f)).Normalize () * 15.0f;
       front = back = GetEntityOrigin (ent);
 
       front = front + diff; // front
@@ -2647,10 +2651,10 @@ void Waypoint::CreateBasic (void)
          down.z = ent->v.absmax.z;
       }
 
-      TraceHull (down, up - Vector (0, 0, 1000), true, point_hull, null, &tr);
+      TraceHull (down, up - Vector (0.0f, 0.0f, 1000.0f), true, point_hull, null, &tr);
       up = tr.vecEndPos;
 
-      Vector pointOrigin = up + Vector (0, 0, 39);
+      Vector pointOrigin = up + Vector (0.0f, 0.0f, 39.0f);
       m_isOnLadder = true;
 
       do
@@ -2658,10 +2662,10 @@ void Waypoint::CreateBasic (void)
          if (FindNearest (pointOrigin, 50.0f) == -1)
             Add (3, pointOrigin);
 
-         pointOrigin.z += 160;
-      } while (pointOrigin.z < down.z - 40);
+         pointOrigin.z += 160.0f;
+      } while (pointOrigin.z < down.z - 40.0f);
 
-      pointOrigin = down + Vector (0, 0, 38);
+      pointOrigin = down + Vector (0.0f, 0.0f, 38.0f);
 
       if (FindNearest (pointOrigin, 50.0f) == -1)
          Add (3, pointOrigin);

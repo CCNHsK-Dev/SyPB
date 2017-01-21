@@ -48,7 +48,6 @@ extern bool g_editNoclip;
 extern bool g_isMetamod;
 extern bool g_isFakeCommand;
 extern bool g_sendAudioFinished;
-extern bool g_isCommencing;
 extern bool g_leaderChoosen[2];
 
 extern bool g_sgdWaypoint;

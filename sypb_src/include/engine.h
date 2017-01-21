@@ -2593,17 +2593,17 @@ extern Vector GetEntityOrigin (entvars_t * pevBModel);
 #define PUSH_BLOCK_ONLY_X    1
 #define PUSH_BLOCK_ONLY_Y    2
 
-#define VEC_HULL_MIN         Vector(-16, -16, -36)
-#define VEC_HULL_MAX         Vector( 16,  16,  36)
-#define VEC_HUMAN_HULL_MIN   Vector( -16, -16, 0 )
-#define VEC_HUMAN_HULL_MAX   Vector( 16, 16, 72 )
-#define VEC_HUMAN_HULL_DUCK  Vector( 16, 16, 36 )
+#define VEC_HULL_MIN         Vector(-16.0f, -16.0f, -36.0f)
+#define VEC_HULL_MAX         Vector( 16.0f,  16.0f,  36.0f)
+#define VEC_HUMAN_HULL_MIN   Vector( -16.0f, -16.0f, 0.0f )
+#define VEC_HUMAN_HULL_MAX   Vector( 16.0f, 16.0f, 72.0f )
+#define VEC_HUMAN_HULL_DUCK  Vector( 16.0f, 16.0f, 36.0f )
 
-#define VEC_VIEW             Vector( 0, 0, 28 )
+#define VEC_VIEW             Vector( 0.0f, 0.0f, 2.0f8 )
 
-#define VEC_DUCK_HULL_MIN    Vector(-16, -16, -18 )
-#define VEC_DUCK_HULL_MAX    Vector( 16,  16,  18)
-#define VEC_DUCK_VIEW        Vector( 0, 0, 12 )
+#define VEC_DUCK_HULL_MIN    Vector(-16.0f, -16.0f, -18.0f )
+#define VEC_DUCK_HULL_MAX    Vector( 16.0f,  16.0f,  18.0f )
+#define VEC_DUCK_VIEW        Vector( 0.0f, 0.0f, 12.0f )
 
 #define SVC_TEMPENTITY      23
 #define SVC_INTERMISSION    30

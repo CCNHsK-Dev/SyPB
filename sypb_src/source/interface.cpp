@@ -34,6 +34,70 @@ ConVar sypb_version ("sypb_version", PRODUCT_VERSION, VARTYPE_READONLY);
 ConVar sypb_lockzbot("sypb_lockzbot", "1");
 ConVar sypb_showwp("sypb_showwp", "0");
 
+// SyPB Pro P.47 - SyPB Version MSG
+char *SyPBVersionMSG(void)
+{
+	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
+
+	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
+	if (amxxDLL_Version == -1.0)
+	{
+		amxxbV16[0] = 0;
+		amxxbV16[1] = 0;
+		amxxbV16[2] = 0;
+		amxxbV16[3] = 0;
+	}
+
+	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
+	if (SwNPC_Version == -1.0)
+	{
+		swnpcbV16[0] = 0;
+		swnpcbV16[1] = 0;
+		swnpcbV16[2] = 0;
+		swnpcbV16[3] = 0;
+	}
+
+	char versionData[1024];
+	sprintf(versionData,
+		"------------------------------------------------\n"
+		"%s %s%s\n"
+		"Build: %u.%u.%u.%u\n"
+		"Support API Version:%.2f\n"
+		"Support SwNPC Version:%.2f\n"
+		"------------------------------------------------\n"
+		"SyPB AMXX API: %s \n"
+		"SyPB AMXX API Version: %.2f (%u.%u.%u.%u)\n"
+		"%s"
+		"------------------------------------------------\n"
+		"SwNPC: %s \n"
+		"SwNPC Version: %.2f (%u.%u.%u.%u)\n"
+		"%s"
+		"------------------------------------------------\n"
+		"Builded by: %s\n"
+		"URL: %s \n"
+		"Compiled: %s, %s (UTC +08:00)\n"
+		"Meta-Interface Version: %s\n"
+		"------------------------------------------------",
+		PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, 
+		bV16[0], bV16[1], bV16[2], bV16[3],
+		float(SUPPORT_API_VERSION_F),
+		float(SUPPORT_SWNPC_VERSION_F),
+		//API_Version, 
+		(amxxDLL_Version == -1.0) ? "FAIL" : "RUNNING",
+		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
+		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
+		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
+		// SwNPC
+		(SwNPC_Version == -1.0) ? "FAIL" : "RUNNING",
+		(SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
+		swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3],
+		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
+		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, META_INTERFACE_VERSION);
+
+	return &versionData[0];
+}
+
 int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, const String &arg2, const String &arg3, const String &arg4, const String /*&arg5*/)
 {
 	/*
@@ -189,75 +253,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
    // displays version information
    else if (stricmp(arg0, "version") == 0 || stricmp(arg0, "ver") == 0)
-   {
-	   // SyPB Pro P.31 - New Msg
-	   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	   uint16 bV16[4] = { (uint16) buildVersion[0], (uint16)buildVersion[1], 
-		   (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-	   uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
-	   if (amxxDLL_Version == -1.0)
-	   {
-		   amxxbV16[0] = 0;
-		   amxxbV16[1] = 0;
-		   amxxbV16[2] = 0;
-		   amxxbV16[3] = 0;
-	   }
-
-	   uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
-	   if (SwNPC_Version == -1.0)
-	   {
-		   swnpcbV16[0] = 0;
-		   swnpcbV16[1] = 0;
-		   swnpcbV16[2] = 0;
-		   swnpcbV16[3] = 0;
-	   }
-
-	   char versionData[] =
-		   "------------------------------------------------\n"
-		   "Name: %s%s\n"
-		   "Version: %s%s (%u.%u.%u.%u)\n"
-		   "Support API Version:%.2f\n"
-		   "Support SwNPC Version:%.2f\n"
-#if defined(PRODUCT_DEV_VERSION)
-		   "Dev Version Outdate: %d/%d/%d \n"
-#endif
-		   "------------------------------------------------\n"
-		   "The AMXX API: %s \n"
-		   "AMXX API Version: %.2f (%u.%u.%u.%u)\n"
-		   "%s"
-		   "------------------------------------------------\n"
-		   "SwNPC: %s \n"
-		   "SwNPC Version: %.2f (%u.%u.%u.%u)\n"
-		   "%s"
-		   "------------------------------------------------\n"
-		   "Builded by: %s\n"
-		   "URL: %s \n"
-		   "Compiled: %s, %s (UTC +08:00)\n"
-		   "Optimization: %s\n"
-		   "Meta-Interface Version: %s\n"
-		   "------------------------------------------------";
-
-	   // SyPB Pro P.39 - New Ver Msg
-	   ClientPrint(ent, print_console, versionData,
-		   PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
-		   PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
-		   float(SUPPORT_API_VERSION_F), float(SUPPORT_SWNPC_VERSION_F),
-#if defined(PRODUCT_DEV_VERSION)
-		   PV_VERSION_DAY, PV_VERSION_MON, PV_VERSION_YEAR, 
-#endif
-		   //API_Version, 
-		   (amxxDLL_Version == -1.0) ? "FAIL" : "RUNNING",
-		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
-		   amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
-		   (amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
-		   // SwNPC
-		   (SwNPC_Version == -1.0) ? "FAIL" : "RUNNING",
-		   (SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
-		   swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3], 
-		   (SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
-		   PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
-   }
+	   ClientPrint(ent, print_console, SyPBVersionMSG());
 
    // display some sort of help information
    else if (stricmp (arg0, "?") == 0 || stricmp (arg0, "help") == 0)
@@ -353,24 +349,6 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
          CenterPrint ("You're dead, and have no access to this menu");
       }
    }
-
-#if 0 // @TODO@
-   // sets public server bot cvar
-   else if (stricmp (arg0, "setcvar") == 0 || stricmp (arg0, "set") == 0)
-   {
-      for (int i = 0; i < Variable_Total; i++)
-      {
-         if (stricmp (&g_botVar[i]->GetName ()[3], arg1) == 0)
-         {
-            if (i == Variable_Password || i == Variable_PasswordKey)
-               return 3;
-
-            g_botVar[i]->SetString (const_cast <char *> (arg2));
-            break;
-         }
-      }
-   }
-#endif
    // some debug routines
    else if (stricmp (arg0, "debug") == 0)
    {
@@ -654,66 +632,7 @@ void CommandHandler (void)
 // SyPB Pro P.35 - new command
 void SyPB_Version_Command(void)
 {
-	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
-	if (amxxDLL_Version == -1.0)
-	{
-		amxxbV16[0] = 0;
-		amxxbV16[1] = 0;
-		amxxbV16[2] = 0;
-		amxxbV16[3] = 0;
-	}
-
-	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
-	if (SwNPC_Version == -1.0)
-	{
-		swnpcbV16[0] = 0;
-		swnpcbV16[1] = 0;
-		swnpcbV16[2] = 0;
-		swnpcbV16[3] = 0;
-	}
-
-	char versionData[] =
-		"------------------------------------------------\n"
-		"Name: %s%s\n"
-		"Version: %s%s (%u.%u.%u.%u)\n"
-		"Support API Version:%.2f\n"
-		"Support SwNPC Version:%.2f\n"
-		"------------------------------------------------\n"
-		"The AMXX API: %s \n"
-		"AMXX API Version: %.2f (%u.%u.%u.%u)\n"
-		"%s"
-		"------------------------------------------------\n"
-		"SwNPC: %s \n"
-		"SwNPC Version: %.2f (%u.%u.%u.%u)\n"
-		"%s"
-		"------------------------------------------------\n"
-		"Builded by: %s\n"
-		"URL: %s \n"
-		"Compiled: %s, %s (UTC +08:00)\n"
-		"Optimization: %s\n"
-		"Meta-Interface Version: %s\n"
-		"------------------------------------------------";
-
-	// SyPB Pro P.39 - New Ver Msg
-	ServerPrintNoTag(versionData,
-		PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
-		PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
-		float(SUPPORT_API_VERSION_F),
-		float(SUPPORT_SWNPC_VERSION_F),
-		//API_Version, 
-		(amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
-		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
-		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
-		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
-		// SwNPC
-		(SwNPC_Version == -1.0) ? "FAIL" : "RUN",
-		(SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
-		swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3],
-		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
-		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
+	ServerPrintNoTag(SyPBVersionMSG());
 }
 
 // SyPB Pro P.46 - Entity Action Check Cvar
@@ -732,9 +651,24 @@ void CheckEntityAction(void)
 		if (FNullEnt(entity) || entity->v.effects & EF_NODRAW)
 			continue;
 
-		ServerPrintNoTag("Entity Num: %d | Action: %d | Team: %d", 
-			workEntityWork+1, g_entityAction[i], g_entityTeam[i]);
+		// SyPB Pro P.47 - Entity Action Check Cvar improve
+		char action[33], team[33];
+		if (g_entityAction[i] == 1)
+			sprintf(action, "Enemy");
+		else if (g_entityAction[i] == 2)
+			sprintf(action, "Need Avoid");
+		else if (g_entityAction[i] == 3)
+			sprintf(action, "Pick Up");
+		sprintf(team, 
+			(g_entityTeam[i] == TEAM_COUNTER) ? "CT" : (g_entityTeam[i] == TEAM_TERRORIST) ? "TR" : "Team-%d",
+			g_entityTeam[i]);
+
 		workEntityWork++;
+		ServerPrintNoTag("Entity Num: %d | Action: %d (%s) | Team: %d (%s) | Entity Name: %s", 
+			workEntityWork, 
+			g_entityAction[i], action, 
+			g_entityTeam[i], team, 
+			GetEntityName (entity));
 	}
 
 	ServerPrintNoTag("Total Entity Action Num: %d", workEntityWork);
@@ -742,7 +676,7 @@ void CheckEntityAction(void)
 
 void AddBot(void)
 {
-	g_botManager->AddBot("", -1, -1, -1, -1);
+	g_botManager->AddRandom();
 }
 
 void AddBot_TR(void)
@@ -1067,115 +1001,6 @@ void InitConfig (void)
       fp.Close ();
    }
 
-   /*
-   // RADIO/VOICE SYSTEM INITIALIZATION
-   if (OpenConfig ("chatter.cfg", "Couldn't open chatter system configuration", &fp) && g_gameVersion != CSVER_VERYOLD && sypb_commtype.GetInt () == 2)
-   {
-      Array <String> array;
-
-      while (fp.GetBuffer (line, 511))
-      {
-         SKIP_COMMENTS ();
-
-         if (strncmp (line, "RewritePath", 11) == 0)
-         {
-            extern ConVar sypb_chatterpath;
-            sypb_chatterpath.SetString (String (&line[12]).Trim ());
-         }
-         else if (strncmp (line, "Event", 5) == 0)
-         {
-            array = String (&line[6]).Split ("=");
-
-            if (array.GetElementNumber () != 2)
-               AddLogEntry (true, LOG_FATAL, "Error in chatter config file syntax... Please correct all Errors.");
-
-            ITERATE_ARRAY (array, i)
-               array[i].Trim ().Trim (); // double trim
-
-            // just to be more unique :)
-            array[1].TrimLeft ('(');
-            array[1].TrimRight (';');
-            array[1].TrimRight (')');
-
-            #define PARSE_VOICE_EVENT(type, timeToRepeatAgain) { if (strcmp (array[0], #type) == 0) ParseVoiceEvent (array, type, timeToRepeatAgain); }
-
-            // radio system
-            PARSE_VOICE_EVENT (Radio_CoverMe, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_YouTakePoint, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_HoldPosition, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_RegroupTeam, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_FollowMe, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_TakingFire, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_GoGoGo, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_Fallback, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_StickTogether, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_GetInPosition, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_StormTheFront, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_ReportTeam, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_Affirmative, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_EnemySpotted, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_NeedBackup, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_SectorClear, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_InPosition, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_ReportingIn, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_ShesGonnaBlow, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_Negative, FLT_MAX);
-            PARSE_VOICE_EVENT (Radio_EnemyDown, FLT_MAX);
-
-            // voice system
-            PARSE_VOICE_EVENT (Chatter_SpotTheBomber, 4.3f);
-            PARSE_VOICE_EVENT (Chatter_VIPSpotted, 5.3f);
-            PARSE_VOICE_EVENT (Chatter_FriendlyFire, 2.1f);
-            PARSE_VOICE_EVENT (Chatter_DiePain, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_GotBlinded, 5.0f);
-            PARSE_VOICE_EVENT (Chatter_GoingToPlantBomb, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_GoingToGuardVIPSafety, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_RescuingHostages, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_GoingToCamp, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_TeamKill, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_ReportingIn, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_GuardDroppedC4, 3.0f);
-            PARSE_VOICE_EVENT (Chatter_Camp, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_GuardingVipSafety, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_PlantingC4, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_DefusingC4, 3.0f);
-            PARSE_VOICE_EVENT (Chatter_InCombat, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_SeeksEnemy, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_Nothing, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_EnemyDown, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_UseHostage, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_FoundC4, 5.5f);
-            PARSE_VOICE_EVENT (Chatter_WonTheRound, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_ScaredEmotion, 6.1f);
-            PARSE_VOICE_EVENT (Chatter_HeardEnemy, 12.2f);
-            PARSE_VOICE_EVENT (Chatter_SniperWarning, 4.3f);
-            PARSE_VOICE_EVENT (Chatter_SniperKilled, 2.1f);
-            PARSE_VOICE_EVENT (Chatter_QuicklyWonTheRound, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_OneEnemyLeft, 2.5f);
-            PARSE_VOICE_EVENT (Chatter_TwoEnemiesLeft, 2.5f);
-            PARSE_VOICE_EVENT (Chatter_ThreeEnemiesLeft, 2.5f);
-            PARSE_VOICE_EVENT (Chatter_NoEnemiesLeft, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_FoundBombPlace, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_WhereIsTheBomb, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_DefendingBombSite, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_BarelyDefused, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_NiceshotCommander, FLT_MAX);
-            PARSE_VOICE_EVENT (Chatter_NiceshotPall, 2.0f);
-            PARSE_VOICE_EVENT (Chatter_GoingToGuardHostages, 3.0f);
-            PARSE_VOICE_EVENT (Chatter_GoingToGuardDoppedBomb, 3.0f);
-            PARSE_VOICE_EVENT (Chatter_OnMyWay, 1.5f);
-            PARSE_VOICE_EVENT (Chatter_LeadOnSir, 5.0f);
-         }
-      }
-      fp.Close ();
-   }
-   else
-   {
-      sypb_commtype.SetInt (1);
-      AddLogEntry (true, LOG_DEFAULT, "Voice Communication disabled.");
-   }
-   */
-
    // LOCALIZER INITITALIZATION
    if (OpenConfig ("lang.cfg", "Specified language not found", &fp, true) && g_gameVersion != CSVER_VERYOLD)
    {
@@ -1457,9 +1282,6 @@ int ClientConnect (edict_t *ent, const char *name, const char *addr, char reject
    if (strcmp (addr, "loopback") == 0)
       g_hostEntity = ent; // save the edict of the listen server client...
 
-	// SyPB Pro P.43 - New Cvar for auto sypb number
-   //g_botManager->CheckAutoBotNum();
-
    if (g_isMetamod)
       RETURN_META_VALUE (MRES_IGNORED, 0);
 
@@ -1485,14 +1307,8 @@ void ClientDisconnect (edict_t *ent)
 	InternalAssert(i >= 0 && i < 32);
 
 	// check if its a bot
-	if (g_botManager->GetBot(i) != null)
-	{
-		if (g_botManager->GetBot(i)->pev == &ent->v)
-			g_botManager->Free(i);
-	}
-
-	// SyPB Pro P.43 - New Cvar for auto sypb number
-	//g_botManager->CheckAutoBotNum();
+	if (g_botManager->GetBot(i) != null && g_botManager->GetBot(i)->pev == &ent->v)
+		g_botManager->Free(i);
 
 	if (g_isMetamod)
 		RETURN_META(MRES_IGNORED);
@@ -2636,7 +2452,7 @@ void ClientCommand(edict_t *ent)
 
 			// SyPB Pro P.41 - Change the ZM Camp Point
 			if (radioCommand == Radio_HoldPosition && !IsValidBot(ent) &&
-				GetGameMod() == 2 && !IsZombieEntity(ent))
+				GetGameMod() == MODE_ZP && !IsZombieEntity(ent))
 				g_waypoint->ChangeZBCampPoint(GetEntityOrigin (ent));
 
 			// SyPB Pro P.42 - Fixed 

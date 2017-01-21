@@ -421,6 +421,16 @@ enum PathConnection
    PATHCON_BOTHWAYS
 };
 
+// SyPB Support Game Mode
+enum GameMode
+{
+	MODE_DM = 1,
+	MODE_ZP = 2,
+	MODE_NOTEAM = 3,
+	MODE_ZH = 4, 
+	MODE_BASE = 0
+};
+
 // bot known file headers
 const char FH_WAYPOINT[] = "PODWAY!";
 const char FH_VISTABLE[] = "PODVIS!";
@@ -732,7 +742,6 @@ private:
 
    // SyPB Pro P.24 - Move Target
    float m_damageTime;
-   float m_checkDTime;
 
    float m_askCheckTime; // time to ask team
    float m_collideTime; // time last collision
@@ -740,7 +749,7 @@ private:
    float m_probeTime; // time of probing different moves
    float m_lastCollTime; // time until next collision check
    int m_collisionProbeBits; // bits of possible collision moves
-   int m_collideMoves[4]; // sorted array of movements
+   int m_collideMoves[3]; // sorted array of movements
    int m_collStateIndex; // index into collide moves
    CollisionState m_collisionState; // collision State
 
@@ -748,6 +757,8 @@ private:
    PathNode *m_navNodeStart; // pointer to start of path finding nodes
    uint8_t m_pathType; // which pathfinder to use
    uint8_t m_visibility; // visibility flags
+
+   uint8_t *m_fatPVS; // SyPB Pro P.47 - check enemy improve
 
    int m_currentWaypointIndex; // current waypoint index
    int m_travelStartIndex; // travel start index to double jump action
@@ -773,8 +784,8 @@ private:
    float m_timeWaypointMove; // last time bot followed waypoints
    bool m_wantsToFire; // bot needs consider firing
    float m_shootAtDeadTime; // time to shoot at dying players
-   edict_t *m_avoidGrenade; // pointer to grenade entity to avoid
-   char m_needAvoidGrenade; // which direction to strafe away
+   edict_t *m_avoidEntity; // pointer to grenade entity to avoid
+   char m_needAvoidEntity; // which direction to strafe away
 
    float m_followWaitTime; // wait to follow time
    edict_t *m_targetEntity; // the entity that the bot is trying to reach
@@ -871,7 +882,7 @@ private:
    void AvoidEntity (void);
 
    void ZombieModeAi (void);
-   void ZmCampPointAction(int action = 1);
+   void ZmCampPointAction(int mode = 0);
 
    void CheckSilencer (void);
    bool CheckWallOnLeft (void);
@@ -900,6 +911,8 @@ private:
    int FindDefendWaypoint (Vector origin);
    int FindGoal (void);
    void FindItem (void);
+
+   void CheckCloseAvoidance(const Vector &dirNormal);
 
    void GetCampDirection (Vector *dest);
    int GetMessageQueue (void);
@@ -1140,6 +1153,7 @@ public:
    int FindWaypoint ();
    bool EntityIsVisible (Vector dest, bool fromBody = false);
 
+   void SetEnemy(edict_t *entity);
    void SetMoveTarget (edict_t *entity);
    void SetLastEnemy(edict_t *entity);
 
@@ -1226,7 +1240,7 @@ public:
    void Free (void);
    void Free (int index);
    //void CheckAutoVacate (edict_t *ent);
-   void CheckAutoBotNum(void);
+   void CheckBotNum(void);
 
    void AddRandom (void) { AddBot ("", -1, -1, -1, -1); }
    void AddBot (const String &name, int skill, int personality, int team, int member);
@@ -1440,6 +1454,8 @@ extern int GetWeaponReturn (bool isString, const char *weaponAlias, int weaponID
 extern int GetTeam (edict_t *ent);
 extern int GetGameMod (void);
 extern bool IsZombieEntity (edict_t *ent);
+
+extern void SetGameMod(int gamemode);
 
 extern int GetEntityWaypoint(edict_t *ent);
 extern int SetEntityWaypoint(edict_t *ent, float waitTime = engine->RandomFloat (1.0f, 2.0f), int mode = -1);

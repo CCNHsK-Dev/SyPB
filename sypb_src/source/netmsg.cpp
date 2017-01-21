@@ -285,74 +285,6 @@ void NetworkMsg::Execute (void *p)
 			  victimer->DeleteSearchNodes();
 		  }
 
-		  /*
-		  // SyPB Pro P.40 - Death Msg improve
-		  if (killerIndex != victimIndex)
-		  {
-			  edict_t *killer = INDEXENT(killerIndex);
-			  edict_t *victim = INDEXENT(victimIndex);
-
-			  if (FNullEnt(killer) || FNullEnt(victim) || !IsValidPlayer(victim))
-				  break;
-
-			  Bot *victimer = g_botManager->GetBot(victim);
-			  if (victimer != null)
-			  {
-				  victimer->GetCurrentTask()->data = -1;
-				  victimer->DeleteSearchNodes();
-			  }
-
-			  if (!IsZombieEntity(victim) && IsAlive(victim))
-				  break;
-
-			  for (int i = 0; i < engine->GetMaxClients(); i++)
-			  {
-				  Bot *bot = g_botManager->GetBot(i);
-				  if (bot == null || !IsAlive(bot->GetEntity()))
-					  continue;
-
-				  if (IsZombieEntity(bot->GetEntity()))
-					  continue;
-
-				  if (GetGameMod() == 0 && killer != bot->GetEntity() && bot->EntityIsVisible(GetEntityOrigin(victim)) &&
-					  GetTeam(killer) == GetTeam(bot->GetEntity()) && GetTeam(killer) != GetTeam(victim))
-				  {
-					  if (killer == g_hostEntity)
-						  bot->HandleChatterMessage("#Bot_NiceShotCommander");
-					  else
-						  bot->HandleChatterMessage("#Bot_NiceShotPall");
-
-					  break;
-				  }
-
-				  if (GetTeam(bot->GetEntity()) == GetTeam(victim) && IsVisible(GetEntityOrigin(killer), bot->GetEntity()) && FNullEnt(bot->m_enemy) && GetTeam(killer) != GetTeam(victim))
-				  {
-					  // SyPB Pro P.30 - AMXX API
-					  if (bot->m_blockCheckEnemyTime > engine->GetTime())
-						  continue;
-
-					  bot->m_actualReactionTime = 0.0f;
-					  bot->m_seeEnemyTime = engine->GetTime();
-					  bot->m_enemy = killer;
-					  bot->SetLastEnemy(killer);
-				  }
-			  }
-
-			  Bot *bot = g_botManager->GetBot(killer);
-
-			  if (bot != null)
-				  bot->m_lastVictim = victim;
-			  else if (GetGameMod () == 0)
-			  {
-				  if (victimer != null)
-				  {
-					  if (GetTeam(killer) == GetTeam(victim))
-						  victimer->m_voteKickIndex = killerIndex;
-
-					  victimer->m_notKilled = false;
-				  }
-			  }
-		  } */
 		  break;
       }
       break;
@@ -418,16 +350,13 @@ void NetworkMsg::Execute (void *p)
             FStrEq (PTR_TO_STR (p), "#Terrorists_Escaped") ||
             FStrEq (PTR_TO_STR (p), "#CTs_PreventEscape") ||
             FStrEq (PTR_TO_STR (p), "#Target_Bombed") ||
-            FStrEq (PTR_TO_STR (p), "#Game_Commencing") ||
+            //FStrEq (PTR_TO_STR (p), "#Game_Commencing") ||
             FStrEq (PTR_TO_STR (p), "#Game_will_restart_in"))
          {
             g_roundEnded = true;
 
-            if (FStrEq (PTR_TO_STR (p), "#Game_Commencing"))
-               g_isCommencing = true;
-
 			// SyPB Pro P.29 - msg setting
-			if (GetGameMod() == 0)
+			if (GetGameMod() == MODE_BASE)
 			{
 				if (FStrEq(PTR_TO_STR(p), "#CTs_Win"))
 					g_botManager->SetLastWinner(TEAM_COUNTER); // update last winner for economics
@@ -466,27 +395,11 @@ void NetworkMsg::Execute (void *p)
       }
       break;
 
-   //case NETMSG_SCOREINFO:
-	   // SyPB Pro P.45 - TESTTEST
-	   /*
-	   switch (m_state)
-	   {
-	   case 0:
-		   playerIndex = PTR_TO_INT(p);
-		   break;
-
-	   case 4:
-		   // SyPB Pro P.29 - msg set team
-		   if (playerIndex >= 0 && playerIndex <= engine->GetMaxClients())
-			   GetTeam(ENT(playerIndex));
-      } */
-    //  break;
-
    case NETMSG_BARTIME:
 	   if (m_state == 0)
 	   {
 		   // SyPB Pro P.34 - Base Change
-		   if (GetGameMod() == 0)
+		   if (GetGameMod() == MODE_BASE)
 		   {
 			   if (PTR_TO_INT(p) > 0)
 				   m_bot->m_hasProgressBar = true; // the progress bar on a hud

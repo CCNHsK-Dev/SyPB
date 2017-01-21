@@ -112,6 +112,7 @@ float Bot::GetEntityDistance(edict_t *entity)
 // SyPB Pro P.29 - new Look UP Enemy
 bool Bot::LookupEnemy(void)
 {
+	m_fatPVS = null;
 	m_visibility = 0;
 	m_enemyOrigin = nullvec;
 
@@ -157,8 +158,7 @@ bool Bot::LookupEnemy(void)
 		//if (GetTeam(GetEntity()) == GetTeam(m_enemy) || IsNotAttackLab(m_enemy) || !IsAlive(m_enemy))
 		{
 			// SyPB Pro P.41 - LookUp Enemy fixed
-			m_enemy = null;
-			m_enemyOrigin = nullvec;
+			SetEnemy(null);
 			SetLastEnemy(null);
 			m_enemyUpdateTime = 0.0f;
 		}
@@ -182,8 +182,6 @@ bool Bot::LookupEnemy(void)
 		if ((!FNullEnt(m_enemyAPI) && m_enemyAPI != m_moveTargetEntity) ||
 			GetTeam(GetEntity()) == GetTeam(m_moveTargetEntity) || !IsAlive(m_moveTargetEntity) ||
 			GetEntityOrigin(m_moveTargetEntity) == nullvec)
-		//if (GetTeam(GetEntity()) == GetTeam(m_moveTargetEntity) || !IsAlive(m_moveTargetEntity) || 
-		//	GetEntityOrigin(m_moveTargetEntity) == nullvec)
 			SetMoveTarget(null);
 
 		targetEntity = m_moveTargetEntity;
@@ -458,7 +456,7 @@ bool Bot::LookupEnemy(void)
 
 		m_actualReactionTime = 0.0f;
 
-		m_enemy = targetEntity;
+		SetEnemy(targetEntity);
 		SetLastEnemy(m_enemy);
 		m_enemyReachableTimer = 0.0f;
 		m_seeEnemyTime = engine->GetTime();
@@ -511,7 +509,7 @@ Vector Bot::GetAimPosition(void)
 
 	if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)))
 	{
-		if (GetGameMod() == 2 || ((m_skill >= 80 || m_skill >= engine->RandomInt(0, 100)) &&
+		if (GetGameMod() == MODE_ZP || ((m_skill >= 80 || m_skill >= engine->RandomInt(0, 100)) &&
 			(m_currentWeapon != WEAPON_AWP || m_enemy->v.health > 100)))
 			enemyOrigin = GetPlayerHeadOrigin(m_enemy);
 	}
@@ -522,7 +520,7 @@ Vector Bot::GetAimPosition(void)
 	else
 		enemyOrigin = m_lastEnemyOrigin;
 
-	if ((GetGameMod() == 0 || GetGameMod() == 1) && m_skill <= engine->RandomInt(30, 60))
+	if ((GetGameMod() == MODE_BASE || GetGameMod() == 1) && m_skill <= engine->RandomInt(30, 60))
 	{
 		enemyOrigin.x += engine->RandomFloat(m_enemy->v.mins.x, m_enemy->v.maxs.x);
 		enemyOrigin.y += engine->RandomFloat(m_enemy->v.mins.y, m_enemy->v.maxs.y);
@@ -648,7 +646,7 @@ bool Bot::IsFriendInLineOfFire (float distance)
 // SyPB Pro P.29 - new value for correct gun
 int CorrectGun(int weaponID)
 {
-	if (GetGameMod() != 0)
+	if (GetGameMod() != MODE_BASE)
 		return 0;
 
 	if (weaponID == WEAPON_AWP || weaponID == WEAPON_DEAGLE)
@@ -849,7 +847,7 @@ WeaponSelectEnd:
 
 	// SyPB Pro P.42 - Zombie Mode Human Knife
 	if (m_currentWeapon == WEAPON_KNIFE && selectId != WEAPON_KNIFE && 
-		GetGameMod() == 2 && !IsZombieEntity(GetEntity()))
+		GetGameMod() == MODE_ZP && !IsZombieEntity(GetEntity()))
 	{
 		m_reloadState = RSTATE_PRIMARY;
 		m_reloadCheckTime = engine->GetTime() + 1.5f;
@@ -1169,7 +1167,7 @@ bool Bot::IsWeaponBadInDistance(int weaponIndex, float distance)
 	if ((weaponID == WEAPON_M3 || weaponID == WEAPON_XM1014) && distance > 750.0f)
 		return true;
 
-	if (GetGameMod() == 0)
+	if (GetGameMod() == MODE_BASE)
 	{
 		if ((weaponID == WEAPON_SCOUT || weaponID == WEAPON_AWP || weaponID == WEAPON_G3SG1 || weaponID == WEAPON_SG550) && distance < 300.0f)
 			return true;
@@ -1244,18 +1242,25 @@ void Bot::CombatFight(void)
 	m_destOrigin = GetEntityOrigin(m_enemy);
 
 	// SyPB Pro P.30 - Zombie Mod
-	if (GetGameMod() == 2 || GetGameMod () == 4) // SyPB Pro P.37 - small change
+	if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH) // SyPB Pro P.37 - small change
 	{
 		m_prevGoalIndex = -1;
 		m_moveToGoal = false;
 		m_navTimeset = engine->GetTime();
 	}
 
+	// SyPB Pro P.47 - Attack Ai improve
+	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) &&
+		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
+		(pev->velocity.GetLength() < 2.0f))
+		pev->button |= IN_DUCK;
+
+	/*
 	// SyPB Pro P.43 - Attack Ai improve 
 	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) && 
 		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
 		(pev->velocity.GetLength() < GetWalkSpeed() || m_isStuck))
-		pev->button |= IN_DUCK;
+		pev->button |= IN_DUCK; */
 
 	// SyPB Pro P.39 - Zombie Ai improve
 	if (IsZombieEntity(GetEntity()))
@@ -1282,7 +1287,7 @@ void Bot::CombatFight(void)
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		if (GetGameMod() == 2 || GetGameMod () == 4)
+		if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH)
 		{
 			float baseDistance = 600.0f;
 
@@ -1354,7 +1359,7 @@ void Bot::CombatFight(void)
 				}
 			}
 		}
-		else if (GetGameMod() == 1)
+		else if (GetGameMod() == MODE_DM)
 		{
 			if (m_currentWeapon == WEAPON_KNIFE)
 				m_moveSpeed = pev->maxspeed;
@@ -1496,15 +1501,15 @@ void Bot::CombatFight(void)
 			if (m_skill > 80 && (m_jumpTime + 5.0f < engine->GetTime() && IsOnFloor() && engine->RandomInt(0, 1000) < (m_isReloading ? 8 : 2) && pev->velocity.GetLength2D() > 150.0f))
 				pev->button |= IN_JUMP;
 		}
-		else if ((GetGameMod() != 2 && m_fightStyle) || (m_fightStyle && m_moveSpeed == 0.0f))
+		else if ((GetGameMod() != MODE_ZP && m_fightStyle) || (m_fightStyle && m_moveSpeed == 0.0f))
 		{
 			bool shouldDuck = true; // should duck
 
 			// check the enemy height
-			float enemyHalfHeight = ((m_enemy->v.flags & FL_DUCKING) == FL_DUCKING ? 36.0f : 72.0f) / 2;
+			float enemyHalfHeight = ((m_enemy->v.flags & FL_DUCKING) == FL_DUCKING ? 36.0f : 72.0f) / 2.0f;
 
 			// check center/feet
-			if (!IsVisible(GetEntityOrigin(m_enemy), GetEntity()) && !IsVisible(GetEntityOrigin(m_enemy) + Vector(0, 0, -enemyHalfHeight), GetEntity()))
+			if (!IsVisible(GetEntityOrigin(m_enemy), GetEntity()) && !IsVisible(GetEntityOrigin(m_enemy) + Vector(0.0f, 0.0f, -enemyHalfHeight), GetEntity()))
 				shouldDuck = false;
 
 			int nearestToEnemyPoint = GetEntityWaypoint(m_enemy);
@@ -1526,7 +1531,7 @@ void Bot::CombatFight(void)
 		m_strafeSpeed = 0.0f;
 	}
 
-	if (GetGameMod() == 2 || GetGameMod () == 4)
+	if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH)
 		return;
 
 	if (m_moveSpeed != 0.0f)
@@ -1772,7 +1777,7 @@ void Bot::CommandTeam (void)
       return;
 
    // SyPB Pro P.37 - small chanage
-   if (GetGameMod() != 0)
+   if (GetGameMod() != MODE_BASE)
 	   return;
 
    bool memberNear = false;

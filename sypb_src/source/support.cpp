@@ -30,6 +30,7 @@
 // create classes: Tracer, PrintManager, GameManager
 //
 ConVar sypb_apitestmsg("sypb_apitestmsg", "0");
+ConVar sypb_welcomemsg("sypb_welcomemsg", "1");
 
 void TraceLine (const Vector &start, const Vector &end, bool ignoreMonsters, bool ignoreGlass, edict_t *ignoreEntity, TraceResult *ptr)
 {
@@ -697,7 +698,7 @@ void RoundInit (void)
    g_roundEnded = false;
 
    // SyPB Pro P.35 - Game Mode Setting
-   if (GetGameMod() == 0)
+   if (GetGameMod() == MODE_BASE)
    {
 	   // check team economics
 	   g_botManager->CheckTeamEconomics(TEAM_TERRORIST);
@@ -739,83 +740,16 @@ void RoundInit (void)
 // SyPB Pro P.43 - Game Mode Setting
 void AutoLoadGameMode(void)
 {
+	// SyPB Pro P.47 - Game Mode Check
+	if (!g_isMetamod)
+		return;
+
 	// SyPB Pro P.45 - Game Mode Check Num
 	static int checkShowTextTime = 0;
 	checkShowTextTime++;
 
-	// DM:KD
-	char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
-	if (TryFileOpen(Plugin_INI))
-	{
-		if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1)
-		{
-			if (checkShowTextTime < 3 || GetGameMod () != 1)
-				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-DM ***");
-
-			sypb_gamemod.SetInt(1);
-		}
-		else
-		{
-			if (checkShowTextTime < 3 || GetGameMod() != 0)
-				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-TDM ***");
-
-			sypb_gamemod.SetInt(0);
-		}
-
-		goto lastly;
-	}
-
-	// Zombie Hell
-	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
-	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
-	{
-		if (checkShowTextTime < 3 || GetGameMod() != 4)
-			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
-
-		sypb_gamemod.SetInt(4);
-		sypb_walkallow.SetInt(0);
-
-		extern ConVar sypb_quota;
-		sypb_quota.SetInt(static_cast <int> (CVAR_GET_FLOAT("zh_zombie_maxslots")));
-
-		goto lastly;
-	}
-
-	// ZP
-	char *zpGameVersion[] =
-	{
-		"plugins-zplague",  // ZP4.3
-		"plugins-zp50_ammopacks", // ZP5.0
-		"plugins-zp50_money" //ZP5.0
-	};
-
-	for (int i = 0; i < 3; i++)
-	{
-		Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zpGameVersion[i]);
-		if (TryFileOpen(Plugin_INI))
-		{
-			float delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
-			if (i != 0)
-				delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
-
-			if (delayTime > 0)
-			{
-				if (checkShowTextTime < 3 || GetGameMod() != 2)
-					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (ZP) ***");
-
-				sypb_gamemod.SetInt(2);
-				sypb_walkallow.SetInt(0);
-
-				// SyPB Pro P.34 - ZP TIME FIXED
-				g_DelayTimer = engine->GetTime() + delayTime;
-				
-				goto lastly;
-			}
-		}
-	}
-
 	// CS:BTE Support 
-	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
+	char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
 	if (TryFileOpen(Plugin_INI) ||
 		// SyPB Pro P.45 - BTE Facebook Version Support
 		TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_config/bte_blockresource.txt", GetModName())))
@@ -823,8 +757,20 @@ void AutoLoadGameMode(void)
 		const int Const_GameModes = 13;
 		int bteGameModAi[Const_GameModes] =
 		{
-			0, 0, 1, 3, 0, 2, 2, 2, 2, 4, 2, 3, 2
-		};//1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13
+			MODE_BASE,		//1
+			MODE_BASE,		//2
+			MODE_DM,		//3
+			MODE_NOTEAM,	//4
+			MODE_BASE,		//5
+			MODE_ZP,		//6
+			MODE_ZP,		//7
+			MODE_ZP,		//8
+			MODE_ZP,		//9
+			MODE_ZH,		//10
+			MODE_ZP,		//11
+			MODE_NOTEAM,	//12
+			MODE_ZP			//13
+		};
 
 		char *bteGameINI[Const_GameModes] =
 		{
@@ -862,17 +808,13 @@ void AutoLoadGameMode(void)
 					ServerPrint("***** SyPB not support the mode now :( *****");
 					ServerPrint("***** SyPB not support the mode now :( *****");
 
-					sypb_gamemod.SetInt(10);
+					SetGameMod(MODE_BASE);
 				}
 				else
-					sypb_gamemod.SetInt(bteGameModAi[i]);
+					SetGameMod(bteGameModAi[i]);
 
 				// SyPB Pro P.36 - bte support 
 				g_gameVersion = CSVER_CZERO;
-
-				// SyPB Pro P.45 - BTE support improve
-				//if (checkShowTextTime < 3)
-				//	ServerCommand("sv_restart 1");
 
 				// SyPB Pro P.46 - BTE support improve
 				// Only ZM3 need restart the round
@@ -886,16 +828,111 @@ void AutoLoadGameMode(void)
 		goto lastly;
 	}
 
+	// ZP
+	char *zpGameVersion[] =
+	{
+		"plugins-zplague",  // ZP4.3
+		"plugins-zp50_ammopacks", // ZP5.0
+		"plugins-zp50_money" //ZP5.0
+	};
+
+	for (int i = 0; i < 3; i++)
+	{
+		Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zpGameVersion[i]);
+		if (TryFileOpen(Plugin_INI))
+		{
+			float delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
+			if (i != 0)
+				delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
+
+			if (delayTime > 0)
+			{
+				if (checkShowTextTime < 3 || GetGameMod() != MODE_ZP)
+					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (ZP) ***");
+
+				SetGameMod(MODE_ZP);
+
+				// SyPB Pro P.34 - ZP TIME FIXED
+				g_DelayTimer = engine->GetTime() + delayTime;
+
+				goto lastly;
+			}
+		}
+	}
+
+	// DM:KD
+	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
+	if (TryFileOpen(Plugin_INI))
+	{
+		if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1 || 
+			CVAR_GET_FLOAT("DMKD_DMMODE") == 1)
+		{
+			if (checkShowTextTime < 3 || GetGameMod () != MODE_DM)
+				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-DM ***");
+
+			SetGameMod(MODE_DM);
+		}
+		else
+		{
+			if (checkShowTextTime < 3 || GetGameMod() != MODE_BASE)
+				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-TDM ***");
+
+			SetGameMod(MODE_BASE);
+		}
+
+		goto lastly;
+	}
+
+	// Zombie Hell
+	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
+	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
+	{
+		if (checkShowTextTime < 3 || GetGameMod() != MODE_ZH)
+			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
+
+		SetGameMod(MODE_ZH);
+
+		extern ConVar sypb_quota;
+		sypb_quota.SetInt(static_cast <int> (CVAR_GET_FLOAT("zh_zombie_maxslots")));
+
+		goto lastly;
+	}
+
+	// SyPB Pro P.47 - CSDM Mode Check
+	static auto dmActive = g_engfuncs.pfnCVarGetPointer("csdm_active");
+	static auto freeForAll = g_engfuncs.pfnCVarGetPointer("mp_freeforall");
+
+	if (dmActive && freeForAll)
+	{
+		if (dmActive->value > 0.0f)
+		{
+			if (freeForAll->value > 0.0f)
+			{
+				if (checkShowTextTime < 3 || GetGameMod() != MODE_DM)
+					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-DM ***");
+
+				SetGameMod(MODE_DM);
+			}
+			else
+			{
+				if (checkShowTextTime < 3 || GetGameMod() != MODE_BASE)
+					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-TDM ***");
+
+				SetGameMod(MODE_BASE);
+			}
+		}
+	}
+
 	if (checkShowTextTime < 3)
 	{
-		if (GetGameMod() == 0)
+		if (GetGameMod() == MODE_BASE)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Base Mode ***");
 		else
 			ServerPrint("*** SyPB Auto Game Mode Setting: N/A ***");
 	}
 
 lastly:
-	if (GetGameMod() != 0)
+	if (GetGameMod() != MODE_BASE)
 		g_mapType |= MAP_DE;
 	else
 		g_exp.UpdateGlobalKnowledge(); // update experience data on round start
@@ -919,6 +956,14 @@ bool IsWeaponShootingThroughWall (int id)
       i++;
    }
    return false;
+}
+
+void SetGameMod(int gamemode)
+{
+	sypb_gamemod.SetInt(gamemode);
+
+	if (gamemode == MODE_ZP || gamemode == MODE_ZH)
+		sypb_walkallow.SetInt(0);
 }
 
 int GetGameMod (void)
@@ -956,9 +1001,9 @@ int GetTeam (edict_t *ent)
 	}
 
 	// SyPB Pro P.42 - Small Change 
-	if (GetGameMod() == 1)
+	if (GetGameMod() == MODE_DM)
 		player_team = client + 10;
-	else if (GetGameMod() == 2)
+	else if (GetGameMod() == MODE_ZP)
 	{
 		if (g_DelayTimer > engine->GetTime())
 			player_team = 2;
@@ -967,7 +1012,7 @@ int GetTeam (edict_t *ent)
 		else
 			player_team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
 	}
-	else if (GetGameMod() == 3)
+	else if (GetGameMod() == MODE_NOTEAM)
 		player_team = 2;
 	else 
 		player_team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
@@ -1158,7 +1203,7 @@ bool IsZombieEntity(edict_t *ent)
 		return true;
 
 	// SyPB Pro P.12
-	if (GetGameMod() == 2 || GetGameMod() == 4) // Zombie Mod
+	if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH) // Zombie Mod
 		return (GetTeam(ent) == TEAM_TERRORIST);
 
 	return false;
@@ -1462,75 +1507,49 @@ void RegisterCommand (char *command, void funcPtr (void))
    REG_SVR_COMMAND (command, funcPtr); // ask the engine to register this new command
 }
 
-void CheckWelcomeMessage (void)
+// SyPB Pro P.47 - Small Welcome Msg improve
+void CheckWelcomeMessage(void)
 {
-   // the purpose of this function, is  to send quick welcome message, to the listenserver entity.
+	static float receiveTime = -1.0f;
 
-   static bool isReceived = false;
-   static float receiveTime = 0.0f;
+	if (receiveTime == -1.0f && IsAlive(g_hostEntity))
+	{
+		if (sypb_welcomemsg.GetInt() != 0)
+			receiveTime = engine->GetTime() + 10.0f;
 
-   if (isReceived)
-      return;
-
-   Array <String> sentences;
-
-   // add default messages
-   sentences.Push ("hello user,communication is acquired");
-   sentences.Push ("your presence is acknowledged");
-   sentences.Push ("high man, your in command now");
-   sentences.Push ("blast your hostile for good");
-   sentences.Push ("high man, kill some idiot here");
-   sentences.Push ("is there a doctor in the area");
-   sentences.Push ("warning, experimental materials detected");
-   sentences.Push ("high amigo, shoot some but");
-   sentences.Push ("attention, hours of work software, detected");
-   sentences.Push ("time for some bad ass explosion");
-   sentences.Push ("bad ass son of a breach device activated");
-   sentences.Push ("high, do not question this great service");
-   sentences.Push ("engine is operative, hello and goodbye");
-   sentences.Push ("high amigo, your administration has been great last day");
-   sentences.Push ("attention, expect experimental armed hostile presence");
-   sentences.Push ("warning, medical attention required");
-
-   if (IsAlive (g_hostEntity) && !isReceived && receiveTime < 1.0f && (g_numWaypoints > 0 ? g_isCommencing : true))
-      receiveTime = engine->GetTime () + 4.0f; // receive welcome message in four seconds after game has commencing
-
-   if (receiveTime > 0.0f && receiveTime < engine->GetTime() && !isReceived && (g_numWaypoints > 0 ? g_isCommencing : true))
-   {
-#if defined(PRODUCT_DEV_VERSION)
-	   // SyPB Pro P.31 - New Msg		   
-	   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	   uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-	   ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
-	   ChartPrint("***** Dev Version: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
-	   ChartPrint("***** Support API Version:%.2f | SwNPC Version:%.2f *****", 
-		   float (SUPPORT_API_VERSION_F), float (SUPPORT_SWNPC_VERSION_F));
+#if defined(PRODUCT_DEV_VERSION)	
+		receiveTime = engine->GetTime() + 10.0f;
 #endif
+	}
 
-	   if (amxxDLL_Version != -1.0)
-	   {
-#if defined(PRODUCT_DEV_VERSION)
-		   ChartPrint("***** Dev Msg: AMXX API Running, version:%.2f (%u.%u.%u.%u)",
-			   amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
-#endif
-	   }
-	   else
-		   ChartPrint("***** Dev Msg: AMXX API FAIL *****");
+	if (receiveTime > 0.0f && receiveTime < engine->GetTime())
+	{   
+		int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+		uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
-	   if (SwNPC_Version != -1.0)
-	   {
-#if defined(PRODUCT_DEV_VERSION)
-		   ChartPrint("***** Dev Msg: SwNPC Running, Version:%.2f (%u.%u.%u.%u)",
-			   SwNPC_Version, SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
-#endif
-	   }
-	   else
-		   ChartPrint("***** Dev Msg: SwNPC FAIL *****");
+		ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
+		ChartPrint("***** Build: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
+		ChartPrint("***** Support API Version:%.2f | SwNPC Version:%.2f *****",
+			float(SUPPORT_API_VERSION_F), float(SUPPORT_SWNPC_VERSION_F));
 
-	   receiveTime = 0.0f;
-	   isReceived = true;
-   }
+		if (amxxDLL_Version != -1.0)
+		{
+			ChartPrint("***** SyPB API: Running - Version:%.2f (%u.%u.%u.%u)",
+				amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
+		}
+		else
+			ChartPrint("***** SyPB API: FAIL *****");
+
+		if (SwNPC_Version != -1.0)
+		{
+			ChartPrint("***** SwNPC: Running - Version:%.2f (%u.%u.%u.%u)",
+				SwNPC_Version, SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
+		}
+		else
+			ChartPrint("***** SwNPC: FAIL *****");
+
+		receiveTime = 0.0f;
+	}
 }
 
 void DetectCSVersion (void)

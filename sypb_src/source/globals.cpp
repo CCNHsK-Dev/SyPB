@@ -42,7 +42,6 @@ bool g_botsCanPause = false;
 bool g_sendAudioFinished = true;
 bool g_bombPlanted = false;
 bool g_bombSayString = false;
-bool g_isCommencing = false;
 bool g_editNoclip = false;
 bool g_isFakeCommand = false;
 bool g_waypointOn = false;

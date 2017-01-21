@@ -28,6 +28,9 @@ ConVar sypb_quota ("sypb_quota", "9");
 ConVar sypb_forceteam ("sypb_forceteam", "any");
 ConVar sypb_auto_players ("sypb_auto_players", "-1");
 
+// SyPB Pro P.47 - New Cvar 'sypb_quota_save'
+ConVar sypb_quota_save("sypb_quota_save", "-1");
+
 ConVar sypb_minskill ("sypb_minskill", "60");
 ConVar sypb_maxskill ("sypb_maxskill", "100"); 
 
@@ -443,7 +446,118 @@ void BotControl::AddBot (const String &name, const String &skill, const String &
 }
 
 // SyPB Pro P.43 - New Cvar for auto sypb number
-void BotControl::CheckAutoBotNum(void)
+// SyPB Pro P.47 - New Cvar to Save 'sypb_quota'
+void BotControl::CheckBotNum(void)
+{
+	if (sypb_auto_players.GetInt() == -1 && sypb_quota_save.GetInt() == -1)
+		return;
+
+	int needBotNumber = 0;
+	if (sypb_quota_save.GetInt() != -1)
+	{
+		if (sypb_quota_save.GetInt() > 32)
+			sypb_quota_save.SetInt(32);
+
+		needBotNumber = sypb_quota_save.GetInt();
+
+		File fp(FormatBuffer("%s/addons/sypb/SyPB.cfg", GetModName()), "rt+");
+		if (fp.IsValid())
+		{
+			const char quotaCvar[11] = {'s', 'y', 'p', 'b', '_', 'q', 'u', 'o', 't', 'a', ' '};
+
+			char line[256];
+			bool changeed = false;
+			while (fp.GetBuffer(line, 255))
+			{
+				bool trueCvar = true;
+				for (int j = 0; (j < 11 && trueCvar); j++)
+				{
+					if (quotaCvar[j] != line[j])
+						trueCvar = false;
+				}
+
+				if (!trueCvar)
+					continue;
+
+				changeed = true;
+
+				int i = 0;
+				for (i = 0; i <= 255; i++)
+				{
+					if (line[i] == 0)
+						break;
+				}
+				i++;
+				fp.Seek(-i, SEEK_CUR);
+
+				if (line[11] == 0 || line[12] == 0 || line[13] == '"' ||
+					line[11] == '\n' || line[12] == '\n')
+				{
+					changeed = false;
+					fp.Print("//////////");
+					break;
+				}
+
+				if (line[11] == '"')
+				{
+					fp.PutString(FormatBuffer("sypb_quota \"%s%d\"",
+						needBotNumber > 10 ? "" : "0", needBotNumber));
+				}
+				else
+					fp.PutString(FormatBuffer("sypb_quota %s%d",
+						needBotNumber > 10 ? "" : "0", needBotNumber));
+
+				ServerPrint("sypb_quota save to '%d' - C", needBotNumber);
+
+				break;
+			}
+
+			if (!changeed)
+			{
+				fp.Seek(0, SEEK_END);
+				fp.Print(FormatBuffer("\nsypb_quota \"%s%d\"\n",
+					needBotNumber > 10 ? "" : "0", needBotNumber));
+				ServerPrint("sypb_quota save to '%d' - A", needBotNumber);
+			}
+
+			fp.Close();
+		}
+		else
+		{
+			File fp2(FormatBuffer("%s/addons/sypb/SyPB.cfg", GetModName()), "at");
+			if (fp2.IsValid())
+			{
+				fp2.Print(FormatBuffer("\nsypb_quota \"%s%d\"\n",
+					needBotNumber > 10 ? "" : "0", needBotNumber));
+				ServerPrint("sypb_quota save to '%d' - A", needBotNumber);
+				fp2.Close();
+			}
+			else
+				ServerPrint("UnKnow Problem - Cannot Save SyPB Quota");
+		}
+
+		sypb_quota_save.SetInt(-1);
+	}
+
+	if (sypb_auto_players.GetInt() != -1)
+	{
+		if (sypb_auto_players.GetInt() > engine->GetMaxClients())
+		{
+			ServerPrint("Server Max Clients is %d, You cannot set this value", engine->GetMaxClients());
+			sypb_auto_players.SetInt(engine->GetMaxClients());
+		}
+
+		needBotNumber = sypb_auto_players.GetInt() - GetHumansNum();
+		if (needBotNumber <= 0)
+			needBotNumber = 0;
+	}
+	
+	sypb_quota.SetInt(needBotNumber);
+}
+
+/*
+// SyPB Pro P.43 - New Cvar for auto sypb number
+void BotControl::CheckBotNum(void)
 {
 	if (sypb_auto_players.GetInt() == -1)
 		return;
@@ -462,7 +576,7 @@ void BotControl::CheckAutoBotNum(void)
 		sypb_quota.SetInt(0);
 	else
 		sypb_quota.SetInt(needBotNumber);
-}
+} */
 
 // SyPB Pro P.30 - AMXX API
 int BotControl::AddBotAPI(const String &name, int skill, int team)
@@ -522,7 +636,7 @@ void BotControl::MaintainBotQuota (void)
    }
 
    // SyPB Pro P.43 - Base improve and New Cvar Setting
-   g_botManager->CheckAutoBotNum();
+   g_botManager->CheckBotNum();
    if (m_maintainTime < engine->GetTime())
    {
 	   int botNumber = GetBotsNum();
@@ -878,7 +992,7 @@ void BotControl::CheckTeamEconomics (int team)
    } */
 
 	// SyPB Pro P.43 - Game Mode Support improve
-	if (GetGameMod() != 0)
+	if (GetGameMod() != MODE_BASE)
 	{
 		m_economicsGood[team] = true;
 		return;
@@ -1044,153 +1158,6 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 	NewRound();
 }
 
-/*
-Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
-{
-   // this function does core operation of creating bot, it's called by CreateBot (),
-   // when bot setup completed, (this is a bot class constructor)
-
-   char rejectReason[128];
-   int clientIndex = ENTINDEX (bot);
-
-   memset (this, 0, sizeof (Bot));
-
-   pev = VARS (bot);
-
-   if (bot->pvPrivateData != null)
-      FREE_PRIVATE (bot);
-
-   bot->pvPrivateData = null;
-   bot->v.frags = 0;
-
-   // create the player entity by calling MOD's player function
-   BotControl::CallGameEntity (&bot->v);
-
-   // set all info buffer keys for this bot
-   char *buffer = GET_INFOKEYBUFFER (bot);
-
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "model", "");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "rate", "3500.000000");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "cl_updaterate", "20");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "tracker", "0");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "cl_dlmax", "128");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "friends", "0");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "dm", "0");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "_ah", "0");
-
-   if (sypb_tagbots.GetBool ())
-      SET_CLIENT_KEYVALUE (clientIndex, buffer, "*bot", "1");
-
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "_vgui_menus", "0");
-
-   memset (rejectReason, 0, sizeof (rejectReason)); // reset the reject reason template string
-   //MDLL_ClientConnect (bot, "fakeclient", FormatBuffer ("192.168.1.%d", ENTINDEX (bot) + 100), rejectReason);
-   // SyPB Pro P.29 - new calling bot
-   MDLL_ClientConnect(bot, "BOT", FormatBuffer("127.0.0.%d", ENTINDEX(bot) + 100), rejectReason);
-
-   if (!IsNullString (rejectReason))
-   {
-      AddLogEntry (true, LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName (bot), rejectReason);
-      ServerCommand ("kick \"%s\"", GetEntityName (bot)); // kick the bot player if the server refused it
-
-      bot->v.flags |= FL_KILLME;
-   }
-
-   if (IsDedicatedServer () && engine->GetDeveloperLevel () > 0)
-   {
-      if (engine->GetDeveloperLevel () == 2)
-      {
-          ServerPrint ("Server requiring authentication");
-          ServerPrint ("Client '%s' connected", GetEntityName (bot));
-          ServerPrint ("Adr: 127.0.0.%d:27005", ENTINDEX (bot) + 100);
-      }
-
-      ServerPrint ("Verifying and uploading resources...");
-      ServerPrint ("Custom resources total 0 bytes");
-      ServerPrint ("  Decals:  0 bytes");
-      ServerPrint ("----------------------");
-      ServerPrint ("Resources to request: 0 bytes");
-   }
-
-   MDLL_ClientPutInServer (bot);
-
-   bot->v.flags = 0;
-   bot->v.flags |= FL_FAKECLIENT | FL_CLIENT; // set this player as fakeclient
-
-   // initialize all the variables for this bot...
-   m_notStarted = true;  // hasn't joined game yet
-
-   m_startAction = CMENU_IDLE;
-   m_moneyAmount = 0;
-   m_logotypeIndex = engine->RandomInt (0, 5);
-
-
-   // initialize msec value
-   m_msecNum = m_msecDel = 0.0f;
-   m_msecInterval = engine->GetTime ();
-   m_msecVal = static_cast <uint8_t> (g_pGlobals->frametime * 1000.0f);
-   m_msecBuiltin = engine->RandomInt (1, 4);
-
-   // assign how talkative this bot will be
-   m_sayTextBuffer.chatDelay = engine->RandomFloat (3.8f, 10.0f);
-   m_sayTextBuffer.chatProbability = engine->RandomInt (1, 100);
-
-   m_notKilled = false;
-   m_skill = skill;
-   m_weaponBurstMode = BURST_DISABLED;
-
-   m_lastThinkTime = engine->GetTime ();
-   m_frameInterval = engine->GetTime ();
-
-   bot->v.idealpitch = bot->v.v_angle.x;
-   bot->v.ideal_yaw = bot->v.v_angle.y;
-
-   bot->v.yaw_speed = engine->RandomFloat (g_skillTab[m_skill / 20].minTurnSpeed, g_skillTab[m_skill / 20].maxTurnSpeed);
-   bot->v.pitch_speed = engine->RandomFloat (g_skillTab[m_skill / 20].minTurnSpeed, g_skillTab[m_skill / 20].maxTurnSpeed);
-
-   switch (personality)
-   {
-   case 1:
-      m_personality = PERSONALITY_RUSHER;
-      m_baseAgressionLevel = engine->RandomFloat (0.7f, 1.0f);
-      m_baseFearLevel = engine->RandomFloat (0.0f, 0.4f);
-      break;
-
-   case 2:
-      m_personality = PERSONALITY_CAREFUL;
-      m_baseAgressionLevel = engine->RandomFloat (0.0f, 0.4f);
-      m_baseFearLevel = engine->RandomFloat (0.7f, 1.0f);
-      break;
-
-   default:
-      m_personality = PERSONALITY_NORMAL;
-      m_baseAgressionLevel = engine->RandomFloat (0.4f, 0.7f);
-      m_baseFearLevel = engine->RandomFloat (0.4f, 0.7f);
-      break;
-   }
-
-   memset (&m_ammoInClip, 0, sizeof (m_ammoInClip));
-   memset (&m_ammo, 0, sizeof (m_ammo));
-
-   m_currentWeapon = 0; // current weapon is not assigned at start
-   m_voicePitch = engine->RandomInt (166, 250) / 2; // assign voice pitch
-
-   // copy them over to the temp level variables
-   m_agressionLevel = m_baseAgressionLevel;
-   m_fearLevel = m_baseFearLevel;
-   m_nextEmotionUpdate = engine->GetTime () + 0.5f;
-
-   // just to be sure
-   m_actMessageIndex = 0;
-   m_pushMessageIndex = 0;
-
-   // assign team and class
-   m_wantedTeam = team;
-   m_wantedClass = member;
-
-   NewRound ();
-}
-*/
 Bot::~Bot (void)
 {
    // this is bot destructor
@@ -1198,17 +1165,6 @@ Bot::~Bot (void)
    // SwitchChatterIcon (false); // crash on CTRL+C'ing win32 console hlds
    DeleteSearchNodes ();
    ResetTasks ();
-
-   /*
-   // free used botname
-   ITERATE_ARRAY (g_botNames, j)
-   {
-      if (strcmp (g_botNames[j].name, GetEntityName (GetEntity ())) == 0)
-      {
-         g_botNames[j].isUsed = false;
-         break;
-      }
-   }  */
 
    // SyPB Pro P.43 - Bot Name Fixed
    char botName[64];
@@ -1327,7 +1283,7 @@ void Bot::NewRound (void)
    m_checkFallPoint[1] = nullvec;
    m_checkFall = false;
 
-   m_enemy = null;
+   SetEnemy(null);
    m_lastVictim = null;
    SetLastEnemy(null);
    m_trackingEdict = null;
@@ -1341,8 +1297,8 @@ void Bot::NewRound (void)
 
    m_backCheckEnemyTime = 0.0f;
 
-   m_avoidGrenade = null;
-   m_needAvoidGrenade = 0;
+   m_avoidEntity = null;
+   m_needAvoidEntity = 0;
 
    m_lastDamageType = -1;
    m_voteKickIndex = 0;
@@ -1390,6 +1346,11 @@ void Bot::NewRound (void)
    m_sayTextBuffer.sayText[0] = 0x0;
 
    m_buyState = 0;
+
+   // SyPB Pro P.47 - Base improve
+   m_damageTime = 0.0f;
+   m_zhCampPointIndex = -1;
+   m_checkCampPointTime = 0.0f;
 
    if (!m_notKilled) // if bot died, clear all weapon stuff and force buying again
    {
@@ -1446,7 +1407,7 @@ void Bot::NewRound (void)
    m_prevGoalIndex = -1;
    GetCurrentTask()->data = -1;
 
-   SetEntityWaypoint(GetEntity());
+   SetEntityWaypoint(GetEntity(), 2.0f, -2);
    m_currentWaypointIndex = -1;
    GetValidWaypoint();
    // --------------
@@ -1491,6 +1452,19 @@ void Bot::Kill (void)
 
 void Bot::Kick (void)
 {
+	// SyPB Pro P.47 - Small Base improve
+	if (!(pev->flags & FL_FAKECLIENT) || IsNullString(GetEntityName(GetEntity())))
+		return;
+
+	pev->flags &= ~FL_FAKECLIENT;
+
+	ServerCommand("kick \"%s\"", GetEntityName(GetEntity()));
+	CenterPrint("Bot '%s' kicked", GetEntityName(GetEntity()));
+
+	if (g_botManager->GetBotsNum() - 1 < sypb_quota.GetInt())
+		sypb_quota.SetInt(g_botManager->GetBotsNum() - 1);
+
+	/*
    // this function kick off one bot from the server.
 
    ServerCommand ("kick #%d", GETPLAYERUSERID (GetEntity ()));
@@ -1498,7 +1472,7 @@ void Bot::Kick (void)
 
    // balances quota
    if (g_botManager->GetBotsNum () - 1 < sypb_quota.GetInt ())
-      sypb_quota.SetInt (g_botManager->GetBotsNum () - 1);
+      sypb_quota.SetInt (g_botManager->GetBotsNum () - 1); */
 }
 
 void Bot::StartGame (void)
@@ -1527,16 +1501,9 @@ void Bot::StartGame (void)
    {
       m_startAction = CMENU_IDLE;  // switch back to idle
 
-      if (g_gameVersion == CSVER_CZERO) // czero has spetsnaz and militia skins
-      {
-         if (m_wantedClass < 1 || m_wantedClass > 5)
-            m_wantedClass = engine->RandomInt (1, 5); //  use random if invalid
-      }
-      else
-      {
-         if (m_wantedClass < 1 || m_wantedClass > 4)
-            m_wantedClass = engine->RandomInt (1, 4); // use random if invalid
-      }
+	  // SyPB Pro P.47 - Small change
+	  int maxChoice = (g_gameVersion == CSVER_CZERO) ? 5 : 4;
+	  m_wantedClass = engine->RandomInt(1, maxChoice);
 
       // select the class the bot wishes to use...
       FakeClientCommand (GetEntity (), "menuselect %d", m_wantedClass);
