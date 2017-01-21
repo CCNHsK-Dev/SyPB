@@ -36,10 +36,8 @@ uint16 SwNPC_Build[4];
 // ****
 
 bool g_isMetamod = false;
-bool g_radioInsteadVoice = false;
 bool g_roundEnded = true;
 bool g_botsCanPause = false;
-bool g_sendAudioFinished = true;
 bool g_bombPlanted = false;
 bool g_bombSayString = false;
 bool g_editNoclip = false;
@@ -91,7 +89,6 @@ float g_entityGetWpTime[entityNum];
 
 
 Array <Array <String> > g_chatFactory;
-Array <Array <ChatterItem> > g_chatterFactory;
 Array <NameItem> g_botNames;
 Array <KwChat> g_replyFactory;
 

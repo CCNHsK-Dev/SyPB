@@ -39,8 +39,9 @@ char *SyPBVersionMSG(void)
 {
 	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
 	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
 	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
+	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
+
 	if (amxxDLL_Version == -1.0)
 	{
 		amxxbV16[0] = 0;
@@ -48,8 +49,7 @@ char *SyPBVersionMSG(void)
 		amxxbV16[2] = 0;
 		amxxbV16[3] = 0;
 	}
-
-	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
+	
 	if (SwNPC_Version == -1.0)
 	{
 		swnpcbV16[0] = 0;
@@ -84,12 +84,12 @@ char *SyPBVersionMSG(void)
 		float(SUPPORT_API_VERSION_F),
 		float(SUPPORT_SWNPC_VERSION_F),
 		//API_Version, 
-		(amxxDLL_Version == -1.0) ? "FAIL" : "RUNNING",
+		(amxxDLL_Version == -1.0 || amxxDLL_Version != float(SUPPORT_API_VERSION_F)) ? "FAIL" : "RUNNING",
 		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
 		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
 		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
 		// SwNPC
-		(SwNPC_Version == -1.0) ? "FAIL" : "RUNNING",
+		(SwNPC_Version == -1.0 || SwNPC_Version != float(SUPPORT_SWNPC_VERSION_F)) ? "FAIL" : "RUNNING",
 		(SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
 		swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3],
 		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
@@ -598,7 +598,6 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       if (stricmp (arg1, "save") == 0)
       {
          g_exp.Unload ();
-         g_waypoint->SaveVisibilityTab ();
 
          ServerPrint ("Experience tab saved");
       }
@@ -689,28 +688,6 @@ void AddBot_CT(void)
 	g_botManager->AddBotAPI("", -1, 2);
 }
 
-void ParseVoiceEvent (Array <String> base, int type, float timeToRepeat)
-{
-   // this function does common work of parsing single line of voice chatter
-
-   Array <String> temp = String (base[1]).Split (",");
-   ChatterItem chatterItem;
-
-   ITERATE_ARRAY (temp, i)
-   {
-      temp[i].Trim ().TrimQuotes ();
-
-      if (Math::FltZero (GetWaveLength (temp[i])))
-         continue;
-
-      chatterItem.name = temp[i];
-      chatterItem.repeatTime = timeToRepeat;
-
-      g_chatterFactory[type].Push (chatterItem);
-    }
-   temp.RemoveAll ();
-}
-
 void InitConfig (void)
 {
    File fp;
@@ -721,7 +698,6 @@ void InitConfig (void)
 
    // fixes for crashing if configs couldn't be accessed
    g_chatFactory.SetSize (CHAT_NUM);
-   g_chatterFactory.SetSize (Chatter_Total);
 
    #define SKIP_COMMENTS() if ((line[0] == '/') || (line[0] == '\r') || (line[0] == '\n') || (line[0] == 0) || (line[0] == ' ') || (line[0] == '\t')) continue;
 
@@ -886,7 +862,7 @@ void InitConfig (void)
          if (pair[0] == "MapStandard")
          {
             if (splitted.GetElementNumber () != Const_NumWeapons)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             for (int i = 0; i < Const_NumWeapons; i++)
                g_weaponSelect[i].teamStandard = splitted[i];
@@ -894,7 +870,7 @@ void InitConfig (void)
          else if (pair[0] == "MapAS")
          {
             if (splitted.GetElementNumber () != Const_NumWeapons)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             for (int i = 0; i < Const_NumWeapons; i++)
                g_weaponSelect[i].teamAS = splitted[i];
@@ -902,7 +878,7 @@ void InitConfig (void)
          else if (pair[0] == "GrenadePercent")
          {
             if (splitted.GetElementNumber () != 3)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             for (int i = 0; i < 3; i++)
                g_grenadeBuyPrecent[i] = splitted[i];
@@ -910,7 +886,7 @@ void InitConfig (void)
 		 else if (pair[0] == "GrenadeMoney") // SyPB Pro P.24 - New general
 		 {
 			 if (splitted.GetElementNumber () != 3)
-				 AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+				 AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
 			 for (int i = 0; i < 3; i++)
 				 g_grenadeBuyMoney[i] = splitted[i];
@@ -918,7 +894,7 @@ void InitConfig (void)
          else if (pair[0] == "PersonalityNormal")
          {
             if (splitted.GetElementNumber () != Const_NumWeapons)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             for (int i = 0; i < Const_NumWeapons; i++)
                g_normalWeaponPrefs[i] = splitted[i];
@@ -926,7 +902,7 @@ void InitConfig (void)
          else if (pair[0] == "PersonalityRusher")
          {
             if (splitted.GetElementNumber () != Const_NumWeapons)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             for (int i = 0; i < Const_NumWeapons; i++)
                g_rusherWeaponPrefs[i] = splitted[i];
@@ -934,7 +910,7 @@ void InitConfig (void)
          else if (pair[0] == "PersonalityCareful")
          {
             if (splitted.GetElementNumber () != Const_NumWeapons)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             for (int i = 0; i < Const_NumWeapons; i++)
                g_carefulWeaponPrefs[i] = splitted[i];
@@ -942,7 +918,7 @@ void InitConfig (void)
          else if (pair[0].Has ("Skill"))
          {
             if (splitted.GetElementNumber () != 8)
-               AddLogEntry (true, LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
+               AddLogEntry (LOG_FATAL, "%s entry in general config is not valid.", pair[0]);
 
             int parserState = 0;
 
@@ -1053,9 +1029,9 @@ void InitConfig (void)
       fp.Close ();
    }
    else if (g_gameVersion == CSVER_VERYOLD)
-      AddLogEntry (true, LOG_DEFAULT, "Multilingual system disabled, due to your Counter-Strike Version!");
+      AddLogEntry (LOG_DEFAULT, "Multilingual system disabled, due to your Counter-Strike Version!");
    else if (strcmp (sypb_language.GetString (), "en") != 0)
-      AddLogEntry (true, LOG_ERROR, "Couldn't load language configuration");
+      AddLogEntry (LOG_ERROR, "Couldn't load language configuration");
 
    // set personality weapon pointers here
    g_weaponPrefs[PERSONALITY_NORMAL] = reinterpret_cast <int *> (&g_normalWeaponPrefs);
@@ -1123,7 +1099,9 @@ int Spawn (edict_t *ent)
    // Spawn() function is one of the functions any entity is supposed to have in the game DLL,
    // and any MOD is supposed to implement one for each of its entities.
 
-   if (strcmp (STRING (ent->v.classname), "worldspawn") == 0)
+	const char *entityClassname = STRING(ent->v.classname);
+
+   if (strcmp (entityClassname, "worldspawn") == 0)
    {
       PRECACHE_SOUND ("weapons/xbow_hit1.wav");      // waypoint add
       PRECACHE_SOUND ("weapons/mine_activate.wav");  // waypoint delete
@@ -1142,7 +1120,7 @@ int Spawn (edict_t *ent)
       g_worldEdict = ent; // save the world entity for future use
    }
    // SyPB Pro P.34 - Base Change
-   else if (strcmp(STRING(ent->v.classname), "player_weaponstrip") == 0)
+   else if (strcmp(entityClassname, "player_weaponstrip") == 0)
    {
 	   if (g_gameVersion == CSVER_VERYOLD && (STRING(ent->v.target))[0] == '\0')
 	   {
@@ -1159,7 +1137,7 @@ int Spawn (edict_t *ent)
 		   return (*g_functionTable.pfnSpawn) (ent);
 	   }
    }
-   else if (strcmp (STRING (ent->v.classname), "info_player_start") == 0)
+   else if (strcmp (entityClassname, "info_player_start") == 0)
    {
       SET_MODEL (ent, "models/player/urban/urban.mdl");
 
@@ -1167,7 +1145,7 @@ int Spawn (edict_t *ent)
       ent->v.renderamt = 127; // set its transparency amount
       ent->v.effects |= EF_NODRAW;
    }
-   else if (strcmp (STRING (ent->v.classname), "info_player_deathmatch") == 0)
+   else if (strcmp (entityClassname, "info_player_deathmatch") == 0)
    {
       SET_MODEL (ent, "models/player/terror/terror.mdl");
 
@@ -1176,7 +1154,7 @@ int Spawn (edict_t *ent)
       ent->v.effects |= EF_NODRAW;
    }
 
-   else if (strcmp (STRING (ent->v.classname), "info_vip_start") == 0)
+   else if (strcmp (entityClassname, "info_vip_start") == 0)
    {
       SET_MODEL (ent, "models/player/vip/vip.mdl");
 
@@ -1184,16 +1162,18 @@ int Spawn (edict_t *ent)
       ent->v.renderamt = 127; // set its transparency amount
       ent->v.effects |= EF_NODRAW;
    }
-   else if (strcmp (STRING (ent->v.classname), "func_vip_safetyzone") == 0 || strcmp (STRING (ent->v.classname), "info_vip_safetyzone") == 0)
+   else if (strcmp (entityClassname, "func_vip_safetyzone") == 0 || 
+	   strcmp (entityClassname, "info_vip_safetyzone") == 0)
       g_mapType |= MAP_AS; // assassination map
 
-   else if (strcmp (STRING (ent->v.classname), "hostage_entity") == 0)
+   else if (strcmp (entityClassname, "hostage_entity") == 0)
       g_mapType |= MAP_CS; // rescue map
 
-   else if (strcmp (STRING (ent->v.classname), "func_bomb_target") == 0 || strcmp (STRING (ent->v.classname), "info_bomb_target") == 0)
+   else if (strcmp (entityClassname, "func_bomb_target") == 0 || 
+	   strcmp (entityClassname, "info_bomb_target") == 0)
       g_mapType |= MAP_DE; // defusion map
 
-   else if (strcmp (STRING (ent->v.classname), "func_escapezone") == 0)
+   else if (strcmp (entityClassname, "func_escapezone") == 0)
       g_mapType |= MAP_ES;
 
    // next maps doesn't have map-specific entities, so determine it by name
@@ -1242,6 +1222,7 @@ void Touch (edict_t *pentTouched, edict_t *pentOther)
 	(*g_functionTable.pfnTouch) (pentTouched, pentOther);
 }
 
+/*
 void ClientPutInServer (edict_t *ent)
 {
  //  callbacks->OnClientEntersServer (ent);
@@ -1252,7 +1233,7 @@ void ClientPutInServer (edict_t *ent)
       RETURN_META (MRES_IGNORED);
 
    (*g_functionTable.pfnClientPutInServer) (ent);
-}
+} */
 
 int ClientConnect (edict_t *ent, const char *name, const char *addr, char rejectReason[128])
 {
@@ -2519,7 +2500,6 @@ void ServerDeactivate (void)
 
    // save collected experience on shutdown
    g_exp.Unload ();
-   g_waypoint->SaveVisibilityTab ();
 
    if (g_isMetamod)
       RETURN_META (MRES_IGNORED);
@@ -2543,6 +2523,78 @@ void KeyValue (edict_t *ent, KeyValueData *data)
    (*g_functionTable.pfnKeyValue) (ent, data);
 }
 
+// SyPB Pro P.48 - Entity Base improve
+void LoadEntityData(void)
+{
+	edict_t *entity;
+	int i;
+
+	// SyPB Pro P.43 - Entity Action 
+	for (i = 0; i < entityNum; i++)
+	{
+		if (g_entityId[i] == -1)
+			continue;
+
+		entity = INDEXENT(g_entityId[i]);
+		if (FNullEnt(entity) || !IsAlive(entity))
+		{
+			SetEntityActionData(i);
+			continue;
+		}
+
+		if (g_entityGetWpTime[i] < engine->GetTime() || g_entityWpIndex[i] == -1)
+			SetEntityWaypoint(entity);
+	}
+
+	for (i = 0; i < engine->GetMaxClients(); i++)
+	{
+		entity = INDEXENT(i + 1);
+
+		if (FNullEnt(entity) || !(entity->v.flags & FL_CLIENT))
+		{
+			g_clients[i].flags &= ~(CFLAG_USED | CFLAG_ALIVE);
+			g_clients[i].ent = null;
+			g_clients[i].wpIndex = -1;
+			g_clients[i].wpIndex2 = -1;
+			g_clients[i].getWpOrigin = nullvec;
+			g_clients[i].getWPTime = engine->GetTime();
+
+			g_clients[i].isZombiePlayerAPI = -1;
+			continue;
+		}
+
+		g_clients[i].ent = entity;
+		g_clients[i].flags |= CFLAG_USED;
+
+		if (IsAlive(entity))
+			g_clients[i].flags |= CFLAG_ALIVE;
+		else
+			g_clients[i].flags &= ~CFLAG_ALIVE;
+
+		if (g_clients[i].flags & CFLAG_ALIVE)
+		{
+			// keep the clipping mode enabled, or it can be turned off after new round has started
+			if (g_hostEntity == entity && g_editNoclip && g_waypointOn)  // SyPB Pro P.12
+				g_hostEntity->v.movetype = MOVETYPE_NOCLIP;
+
+			g_clients[i].origin = GetEntityOrigin(entity);
+
+			// SyPB Pro P.41 - Get Waypoint improve
+			if (g_clients[i].getWPTime < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+				SetEntityWaypoint(entity);
+
+			SoundSimulateUpdate(i);
+			continue;
+		}
+
+		g_clients[i].wpIndex = -1;
+		g_clients[i].wpIndex2 = -1;
+		g_clients[i].getWpOrigin = nullvec;
+		g_clients[i].getWPTime = engine->GetTime();
+
+		g_clients[i].isZombiePlayerAPI = -1;
+	}
+}
 
 void StartFrame (void)
 {
@@ -2568,163 +2620,95 @@ void StartFrame (void)
 		}
 	}
 
-	edict_t *entity = null;
+	LoadEntityData();
 	int i;
 
-	// SyPB Pro P.43 - Entity Action 
-	for (i = 0; i < entityNum; i++)
+	static float secondTimer = 0.0f;
+
+	// **** AI EXECUTION STARTS ****
+	//g_botManager->Think ();
+	// **** AI EXECUTION FINISH ****
+
+	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
-		if (g_entityId[i] == -1)
-			continue;
-
-		entity = INDEXENT(g_entityId[i]);
-		if (FNullEnt(entity) || !IsAlive(entity))
+		if (g_waypointOn)
 		{
-			SetEntityActionData(i);
-			continue;
-		}
+			// SyPB Pro P.30 - small change
+			bool hasBot = false;
+			for (i = 0; i < engine->GetMaxClients(); i++)
+			{
+				if (g_botManager->GetBot(i))
+				{
+					hasBot = true;
+					g_botManager->RemoveAll();
+					break;
+				}
+			}
 
-		if (g_entityGetWpTime[i] < engine->GetTime() || g_entityWpIndex[i] == -1)
-			SetEntityWaypoint(entity);
+			if (!hasBot)
+				g_waypoint->Think();
+
+			if (sypb_showwp.GetBool() == true)
+				sypb_showwp.SetInt(0);
+		}
+		// SyPB Pro P.38 - Show Waypoint Msg
+		else if (sypb_showwp.GetBool() == true)
+			g_waypoint->ShowWaypointMsg();
+
+		CheckWelcomeMessage();
 	}
 
-	// record some stats of all players on the server
-	for (i = 0; i < engine->GetMaxClients(); i++)
+	if (secondTimer < engine->GetTime())
 	{
-		//edict_t *player = INDEXENT (i + 1);
-		entity = INDEXENT(i + 1);
-
-		if (!FNullEnt(entity) && (entity->v.flags & FL_CLIENT))
+		for (i = 0; i < engine->GetMaxClients(); i++)
 		{
-			g_clients[i].ent = entity;
-			g_clients[i].flags |= CFLAG_USED;
+			edict_t *player = INDEXENT(i + 1);
 
-			if (IsAlive(entity))
-				g_clients[i].flags |= CFLAG_ALIVE;
-			else
-				g_clients[i].flags &= ~CFLAG_ALIVE;
-
-			if (g_clients[i].flags & CFLAG_ALIVE)
+			// code below is executed only on dedicated server
+			if (IsDedicatedServer() && !FNullEnt(player) && (player->v.flags & FL_CLIENT) && !(player->v.flags & FL_FAKECLIENT))
 			{
-				// keep the clipping mode enabled, or it can be turned off after new round has started
-				if (g_hostEntity == entity && g_editNoclip && g_waypointOn)  // SyPB Pro P.12
-					g_hostEntity->v.movetype = MOVETYPE_NOCLIP;
+				const char *password = sypb_password.GetString();
+				const char *key = sypb_password_key.GetString();
 
-				g_clients[i].origin = GetEntityOrigin(entity);
-
-				// SyPB Pro P.41 - Get Waypoint improve
-				if (g_clients[i].getWPTime < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
-					SetEntityWaypoint(entity);
-
-				SoundSimulateUpdate(i);
-			}
-			else
-			{
-				//g_clients[i].headOrigin = nullvec;
-				g_clients[i].m_isZombieBotAPI = -1;
-				g_clients[i].wpIndex = -1;
-				g_clients[i].wpIndex2 = -1;
-				g_clients[i].getWpOrigin = nullvec;
+				if (g_clients[i].flags & CFLAG_OWNER)
+				{
+					if (IsNullString(key) && IsNullString(password))
+						g_clients[i].flags &= ~CFLAG_OWNER;
+					else if (strcmp(password, INFOKEY_VALUE(GET_INFOKEYBUFFER(g_clients[i].ent), (char *)key)) == 0)
+					{
+						g_clients[i].flags &= ~CFLAG_OWNER;
+						ServerPrint("Player %s had lost remote access to SyPB.", GetEntityName(player));
+					}
+				}
+				else if (IsNullString(key) && IsNullString(password))
+				{
+					if (strcmp(password, INFOKEY_VALUE(GET_INFOKEYBUFFER(g_clients[i].ent), (char *)key)) == 0)
+					{
+						g_clients[i].flags |= CFLAG_OWNER;
+						ServerPrint("Player %s had gained full remote access to SyPB.", GetEntityName(player));
+					}
+				}
 			}
 		}
-		else
-		{
-			g_clients[i].flags &= ~(CFLAG_USED | CFLAG_ALIVE);
-			g_clients[i].ent = null;
-			//g_clients[i].headOrigin = nullvec;
-			g_clients[i].m_isZombieBotAPI = -1;
-			g_clients[i].wpIndex = -1;
-			g_clients[i].wpIndex2 = -1;
-			g_clients[i].getWpOrigin = nullvec;
-		}
+
+		extern ConVar sypb_dangerfactor;
+
+		if (sypb_dangerfactor.GetFloat() >= 4096.0f)
+			sypb_dangerfactor.SetFloat(4096.0f);
+
+		secondTimer = engine->GetTime() + 2.0f;
+
+		if (g_bombPlanted)
+			g_waypoint->SetBombPosition();
 	}
 
-   static float secondTimer = 0.0f;
+	// keep bot number up to date
+	g_botManager->MaintainBotQuota();
 
-   // **** AI EXECUTION STARTS ****
-   //g_botManager->Think ();
-   // **** AI EXECUTION FINISH ****
+	if (g_isMetamod)
+		RETURN_META(MRES_IGNORED);
 
-   if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
-   {
-	   if (g_waypointOn)
-	   {
-		   // SyPB Pro P.30 - small change
-		   bool hasBot = false;
-		   for (i = 0; i < engine->GetMaxClients(); i++)
-		   {
-			   if (g_botManager->GetBot(i))
-			   {
-				   hasBot = true;
-				   g_botManager->RemoveAll();
-				   break;
-			   }
-		   }
-
-		   if (!hasBot)
-			   g_waypoint->Think();
-
-		   if (sypb_showwp.GetBool() == true)
-			   sypb_showwp.SetInt(0);
-	   }
-	   // SyPB Pro P.38 - Show Waypoint Msg
-	   else if (sypb_showwp.GetBool() == true)
-		   g_waypoint->ShowWaypointMsg();
-
-	   CheckWelcomeMessage();
-   }
-
-   if (secondTimer < engine->GetTime ())
-   {
-      for (i = 0; i < engine->GetMaxClients (); i++)
-      {
-         edict_t *player = INDEXENT (i + 1);
-
-         // code below is executed only on dedicated server
-         if (IsDedicatedServer () && !FNullEnt (player) && (player->v.flags & FL_CLIENT) && !(player->v.flags & FL_FAKECLIENT))
-         {
-            const char *password = sypb_password.GetString ();
-            const char *key = sypb_password_key.GetString ();
-
-            if (g_clients[i].flags & CFLAG_OWNER)
-            {
-               if (IsNullString (key) && IsNullString (password))
-                  g_clients[i].flags &= ~CFLAG_OWNER;
-               else if (strcmp (password, INFOKEY_VALUE (GET_INFOKEYBUFFER (g_clients[i].ent), (char *)key)) == 0)
-               {
-                  g_clients[i].flags &= ~CFLAG_OWNER;
-                  ServerPrint ("Player %s had lost remote access to SyPB.", GetEntityName (player));
-               }
-            }
-            else if (IsNullString (key) && IsNullString (password))
-            {
-               if (strcmp (password, INFOKEY_VALUE (GET_INFOKEYBUFFER (g_clients[i].ent), (char *) key)) == 0)
-               {
-                  g_clients[i].flags |= CFLAG_OWNER;
-                  ServerPrint ("Player %s had gained full remote access to SyPB.", GetEntityName (player));
-               }
-            }
-         }
-      }
-
-      extern ConVar sypb_dangerfactor;
-
-      if (sypb_dangerfactor.GetFloat () >= 4096.0f)
-         sypb_dangerfactor.SetFloat (4096.0f);
-
-      secondTimer = engine->GetTime () + 1.5f;
-
-      if (g_bombPlanted)
-         g_waypoint->SetBombPosition ();
-   }
-
-   // keep bot number up to date
-   g_botManager->MaintainBotQuota ();
-
-   if (g_isMetamod)
-      RETURN_META (MRES_IGNORED);
-
-   (*g_functionTable.pfnStartFrame) ();
+	(*g_functionTable.pfnStartFrame) ();
 }
 
 // SyPB Pro P.43 - Base improve
@@ -2801,7 +2785,6 @@ void pfnChangeLevel (char *s1, char *s2)
 
    // save collected experience on map change
    g_exp.Unload ();
-   g_waypoint->SaveVisibilityTab ();
 
    if (g_isMetamod)
       RETURN_META (MRES_IGNORED);
@@ -2900,11 +2883,10 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       g_netMsg->SetId (NETMSG_SCREENFADE, GET_USER_MSG_ID (PLID, "ScreenFade", null));
       g_netMsg->SetId (NETMSG_HLTV, GET_USER_MSG_ID (PLID, "HLTV", null));
       g_netMsg->SetId (NETMSG_TEXTMSG, GET_USER_MSG_ID (PLID, "TextMsg", null));
-      //g_netMsg->SetId (NETMSG_SCOREINFO, GET_USER_MSG_ID (PLID, "ScoreInfo", null));
+      g_netMsg->SetId (NETMSG_SCOREINFO, GET_USER_MSG_ID (PLID, "ScoreInfo", null));
       g_netMsg->SetId (NETMSG_BARTIME, GET_USER_MSG_ID (PLID, "BarTime", null));
       g_netMsg->SetId (NETMSG_SENDAUDIO, GET_USER_MSG_ID (PLID, "SendAudio", null));
       g_netMsg->SetId (NETMSG_SAYTEXT, GET_USER_MSG_ID (PLID, "SayText", null));
-      g_netMsg->SetId (NETMSG_RESETHUD, GET_USER_MSG_ID (PLID, "ResetHUD", null));
 
       if (g_gameVersion != CSVER_VERYOLD)
          g_netMsg->SetId (NETMSG_BOTVOICE, GET_USER_MSG_ID (PLID, "BotVoice", null));
@@ -2939,7 +2921,6 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
          g_netMsg->HandleMessageIfRequired (msgType, NETMSG_BARTIME);
          g_netMsg->HandleMessageIfRequired (msgType, NETMSG_TEXTMSG);
          g_netMsg->HandleMessageIfRequired (msgType, NETMSG_SHOWMENU);
-         g_netMsg->HandleMessageIfRequired (msgType, NETMSG_RESETHUD);
       }
    }
    else if (msgDest == MSG_ALL)
@@ -3046,10 +3027,7 @@ void pfnWriteCoord (float value)
 
 void pfnWriteString (const char *sz)
 {
-   Bot *bot = g_botManager->FindOneValidAliveBot ();
-
-   if (bot != null && IsAlive (bot->GetEntity ()))
-      bot->HandleChatterMessage (sz);
+   //Bot *bot = g_botManager->FindOneValidAliveBot ();
 
    // if this message is for a bot, call the client message function...
    g_netMsg->Execute ((void *) sz);
@@ -3344,7 +3322,7 @@ export int GetEntityAPI2 (DLL_FUNCTIONS *functionTable, int * /*interfaceVersion
       // pass other DLLs engine callbacks to function table...
      if ((*g_entityAPI) (&g_functionTable, 140) == 0)
      {
-       AddLogEntry (true, LOG_FATAL, "GetEntityAPI2: ERROR - Not Initialized.");
+       AddLogEntry (LOG_FATAL, "GetEntityAPI2: ERROR - Not Initialized.");
        return false;  // error initializing function table!!!
      }
 
@@ -3358,7 +3336,7 @@ export int GetEntityAPI2 (DLL_FUNCTIONS *functionTable, int * /*interfaceVersion
    functionTable->pfnSpawn = Spawn;
    functionTable->pfnClientConnect = ClientConnect;
    functionTable->pfnClientDisconnect = ClientDisconnect;
-   functionTable->pfnClientPutInServer = ClientPutInServer;
+   //functionTable->pfnClientPutInServer = ClientPutInServer;
    functionTable->pfnClientUserInfoChanged = ClientUserInfoChanged;
    functionTable->pfnClientCommand = ClientCommand;
    functionTable->pfnServerActivate = ServerActivate;
@@ -3405,7 +3383,7 @@ export int GetNewDLLFunctions (NEW_DLL_FUNCTIONS *functionTable, int *interfaceV
 
    if (!(*g_getNewEntityAPI) (functionTable, interfaceVersion))
    {
-      AddLogEntry (true, LOG_FATAL, "GetNewDLLFunctions: ERROR - Not Initialized.");
+      AddLogEntry (LOG_FATAL, "GetNewDLLFunctions: ERROR - Not Initialized.");
       return false;
    }
 
@@ -3610,12 +3588,12 @@ export int Amxx_CheckMoveTarget(int index) // 1.30
 	return (bot->m_moveTargetEntity == null) ? -1 : (ENTINDEX(bot->m_moveTargetEntity));
 }
 
-export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
+export int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	edict_t *targetEnt = INDEXENT(target);
 	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
@@ -3624,81 +3602,79 @@ export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 		bot->m_enemyAPI = null;
 		API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
 			"Not target", blockCheckTime);
-	}
-	else
-	{
-		bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
-		bot->m_enemyAPI = targetEnt;
-		API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
-			GetEntityName (targetEnt), blockCheckTime);
+
+		return -1;
 	}
 
+	bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
+	bot->m_enemyAPI = targetEnt;
+	API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
+		GetEntityName(targetEnt), blockCheckTime);
+
+	return 1;
 }
 
-export void Amxx_SetBotMove(int index, int pluginSet) // 1.30
+export int Amxx_SetBotMove(int index, int pluginSet) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	bot->m_moveAIAPI = pluginSet <= 0 ? false : true;
 	API_TestMSG("Amxx_SetBotMove Checking - %d - Done", bot->m_moveAIAPI);
+	return 1;
 }
 
-export void Amxx_SetBotLookAt(int index, Vector lookAt) // 1.30
+export int Amxx_SetBotLookAt(int index, Vector lookAt) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	bot->m_lookAtAPI = lookAt;
 	API_TestMSG("Amxx_SetBotLookAt Checking - %.2f | %.2f | %.2f - Done", lookAt[0], lookAt[1], lookAt[2]);
+	return 1;
 }
 
-export void Amxx_SetWeaponClip(int index, int weaponClip) // 1.30
+export int Amxx_SetWeaponClip(int index, int weaponClip) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	bot->m_weaponClipAPI = weaponClip;
 	API_TestMSG("Amxx_SetWeaponClip Checking - %d - Done", bot->m_weaponClipAPI);
+	return 1;
 }
 
-export void Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
+export int Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	bot->m_weaponReloadAPI = (blockWeaponReload == 0) ? false : true;
 	API_TestMSG("Amxx_BlockWeaponReload Checking - %s - Done", (bot->m_weaponReloadAPI) ? "True" : "False");
+	return 1;
 }
-/*
-export void Amxx_AddSyPB(const char *name, int skill, int team) // 1.30
-{
-	//g_botManager->AddBot(name, skill, -1, team, -1);
-	g_botManager->AddBotAPI(name, skill, team);
 
-	API_TestMSG("Amxx_AddSyPB Checking - %s | Skill:%d  | Team:%d - Done", name, skill, team);
-}
-*/
 // SyPB Pro P.31 - AMXX API
-export void Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
+export int Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	bot->m_knifeDistance1API = k1d;
 	bot->m_knifeDistance2API = k2d;
 
 	API_TestMSG("Amxx_Set_KA_Distance Checking - %d %d - Done", k1d, k2d);
+	return 1;
 }
 
 
@@ -3718,17 +3694,18 @@ export int Amxx_AddSyPB(const char *name, int skill, int team) // 1.34
 }
 
 // SyPB Pro P.35 - AMXX API
-export void Amxx_SetGunADistance(int index, int minDistance, int maxDistance)  // 1.35
+export int Amxx_SetGunADistance(int index, int minDistance, int maxDistance)  // 1.35
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
 	if (bot == null)
-		return;
+		return -2;
 
 	bot->m_gunMinDistanceAPI = minDistance;
 	bot->m_gunMaxDistanceAPI = maxDistance;
 
 	API_TestMSG("Amxx_Set_GunA_Distance Checkimh - min:%d max:%d - Done", minDistance, maxDistance);
+	return 1;
 }
 
 // SyPB Pro P.38 - AMXX API
@@ -3742,26 +3719,28 @@ export int Amxx_IsZombieBot(int index)
 	API_TestMSG("Amxx_IsZombieBot Checking - Done - %d - %s -", index, GetEntityName (player));
 	if (IsZombieEntity(player))
 		return 1;
-	else
-		return 0;
+
+	return 0;
 }
 
-export void Amxx_SetZombieBot(int index, int zombieBot)
+export int Amxx_SetZombieBot(int index, int zombieBot)
 {
 	index -= 1;
 	if (FNullEnt(g_clients[index].ent))
-		return;
+		return -2;
 
 	if (zombieBot > 0)
-		g_clients[index].m_isZombieBotAPI = 1;
+		g_clients[index].isZombiePlayerAPI = 1;
 	else if (zombieBot == 0)
-		g_clients[index].m_isZombieBotAPI = 0;
+		g_clients[index].isZombiePlayerAPI = 0;
 	else
-		g_clients[index].m_isZombieBotAPI = -1;
+		g_clients[index].isZombiePlayerAPI = -1;
 
 	API_TestMSG("Amxx_SetZombieBot Checking - ZombieBot:%s - Done - %s -",
-		g_clients[index].m_isZombieBotAPI == 1 ? "True" : (g_clients[index].m_isZombieBotAPI == -1 ? "Not Set" : "False"),
+		g_clients[index].isZombiePlayerAPI == 1 ? "True" : (g_clients[index].isZombiePlayerAPI == -1 ? "Not Set" : "False"),
 		GetEntityName(g_clients[index].ent));
+
+	return 1;
 }
 
 export int Amxx_GetOriginPoint(Vector origin) // 1.38
@@ -3845,25 +3824,23 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 		return -1;
 	}
 
+	if (action == -1)
+	{
+		index = -1;
+		team = -1;
+	}
+
 	for (i = 0; i < entityNum; i++)
 	{
 		if (g_entityId[i] == index)
 		{
 			if (action != -1)
-			{
-				if (team != g_entityTeam[i] || action != g_entityAction[i])
-				{
-					SetEntityActionData(i, index, team, action);
-					API_TestMSG("Amxx_SetEntityAction Checking - Change Id:%d Team:%d Action:%d - Done", index, team, action);
-				}
-				else
-					API_TestMSG("Amxx_SetEntityAction Checking - Don't Need Change Id:%d - Not Change - Done", index);
-			}
+				API_TestMSG("Amxx_SetEntityAction Checking - Change Id:%d Team:%d Action:%d - Done", index, team, action);
 			else
-			{
-				SetEntityActionData(i);
 				API_TestMSG("Amxx_SetEntityAction Checking - Del Id:%d - Done", index);
-			}
+
+			SetEntityActionData(i, index, team, action);
+
 			return 1;
 		}
 	}
@@ -3891,7 +3868,7 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 // SyPB Pro P.42 - AMXX API
 export void Amxx_AddLog(char *logText) // 1.42 - Not API
 {
-	AMXX_AddLogEntry(logText);
+	MOD_AddLogEntry(0, logText);
 }
 
 export int Amxx_SetBotGoal(int index, int goal) // 1.42
@@ -3935,19 +3912,16 @@ export void SwNPC_GetHostEntity(edict_t **hostEntity)
 {
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
-		if (FNullEnt(g_hostEntity->v.iuser2) || g_botManager->GetBot(g_hostEntity->v.iuser2) == null)
-		{
-			*hostEntity = g_hostEntity;
-			return;
-		}
+		*hostEntity = g_hostEntity;
+		return;
 	}
 
 	*hostEntity = null;
 }
 
-export float SwNPC_GetSyPBVersion(void)
+export float SwNPC_SyPBSupportVersion(void)
 {
-	return float(PRODUCT_VERSION_F);
+	return float(SUPPORT_SWNPC_VERSION_F);
 }
 
 export void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)
@@ -3961,7 +3935,7 @@ export void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)
 
 export void SwNPC_AddLog(char *logText)
 {
-	SwNPC_AddLogEntry(logText);
+	MOD_AddLogEntry(1, logText);
 }
 
 export int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance)
@@ -4027,26 +4001,6 @@ export int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags,
 	return numWaypoints;
 }
 
-/*
-export int SwNPC_GetWaypointPath(int **path)
-{
-	*path = g_waypoint->GetWaypointPath();
-
-	if (path == null)
-		return -1;
-
-	return 1;
-}
-
-export int SwNPC_GetWaypointDist(int **dist)
-{
-	*dist = g_waypoint->GetWaypointDist();
-	if (dist == null)
-		return -1;
-
-	return 1;
-}
-*/
 export int SwNPC_GetEntityWaypointIndex(edict_t *entity)
 {
 	return GetEntityWaypoint(entity);
@@ -4057,7 +4011,7 @@ export void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEnt
 	if (FNullEnt(targetEntity))
 		SetEntityWaypoint(getEntity);
 	else
-		SetEntityWaypoint(getEntity, 2.0f, GetEntityWaypoint(targetEntity));
+		SetEntityWaypoint(getEntity, 1.5f, GetEntityWaypoint(targetEntity));
 }
 // SwNPC API End
 
@@ -4126,7 +4080,7 @@ DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t 
 	  if ((g_gameLib == null || (g_gameLib && !g_gameLib->IsLoaded())))
       {
          // try to extract the game dll out of the steam cache
-         AddLogEntry (true, LOG_WARNING | LOG_IGNORE, "Trying to extract dll '%s' out of the steam cache", gameDLLName);
+         AddLogEntry (LOG_WARNING | LOG_IGNORE, "Trying to extract dll '%s' out of the steam cache", gameDLLName);
         
          int size;
          uint8_t *buffer = (*g_engfuncs.pfnLoadFileForMe) (gameDLLName, &size);
@@ -4148,7 +4102,7 @@ DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t 
       }
    }
    else
-      AddLogEntry (true, LOG_FATAL | LOG_IGNORE, "Mod that you has started, not supported by this bot (gamedir: %s)", GetModName ());
+      AddLogEntry (LOG_FATAL | LOG_IGNORE, "Mod that you has started, not supported by this bot (gamedir: %s)", GetModName ());
 
    g_funcPointers = (FuncPointers_t) g_gameLib->GetFunctionAddr ("GiveFnptrsToDll");
    g_entityAPI = (EntityAPI_t) g_gameLib->GetFunctionAddr ("GetEntityAPI");

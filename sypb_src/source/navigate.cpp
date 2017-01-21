@@ -264,7 +264,7 @@ int Bot::FindGoal(void)
 
    if (UsesSniper () || ((g_mapType & MAP_DE) && team == TEAM_COUNTER && !g_bombPlanted) && 
 	   (GetGameMod () == MODE_BASE || GetGameMod () == MODE_DM))
-      campDesire = static_cast <int> (engine->RandomFloat (1.5, 2.5) * static_cast <float> (campDesire));
+      campDesire = static_cast <int> (engine->RandomFloat (1.5f, 2.5f) * static_cast <float> (campDesire));
 
    tacticChoice = backoffDesire;
    tactic = 0;
@@ -648,8 +648,7 @@ bool Bot::DoWaypointNav (void)
 
 
    // SyPB Pro P.43 - Waypoint improve
-   if ((m_waypointOrigin - pev->origin).GetLength2D() <= 2.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
-   //if ((m_waypointOrigin - pev->origin).GetLength2D() <= 1.0f && m_waypointOrigin.z <= pev->origin.z + 16.0f)
+   if ((m_waypointOrigin - pev->origin).GetLength2D() <= 4.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
    {
 	   if (m_navNode == null || 
 		   (m_navNode->next != null && g_waypoint->Reachable (GetEntity (), m_navNode->next->index)))
@@ -941,13 +940,13 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
 
    if (srcIndex > g_numWaypoints - 1 || srcIndex < 0)
    {
-      AddLogEntry (true, LOG_ERROR, "Pathfinder source path index not valid (%d)", srcIndex);
+      AddLogEntry (LOG_ERROR, "Pathfinder source path index not valid (%d)", srcIndex);
       return;
    }
 
    if (destIndex > g_numWaypoints - 1 || destIndex < 0)
    {
-      AddLogEntry (true, LOG_ERROR, "Pathfinder destination path index not valid (%d)", destIndex);
+      AddLogEntry (LOG_ERROR, "Pathfinder destination path index not valid (%d)", destIndex);
       return;
    }
    DeleteSearchNodes ();
@@ -1111,7 +1110,7 @@ void Bot::CheckTouchEntity(edict_t *entity)
 		{
 			TraceResult tr;
 			TraceLine(pev->origin, g_waypoint->GetPath (m_currentWaypointIndex)->origin, false, false, GetEntity(), &tr);
-			if (tr.pHit == entity && tr.flFraction < 1.0f)
+			if (tr.pHit == entity)// && tr.flFraction < 1.0f)
 				attackBreakable = true;
 		}
 
@@ -1324,8 +1323,6 @@ void Bot::SetWaypointOrigin(void)
 			int sPoint = -1;
 			for (int i = 0; i < 5; i++)
 			{
-				//float distance = (waypointOrigin[i] - g_waypoint->GetPath(destIndex)->origin).GetLength2D();
-
 				// SyPB Pro P.42 - Small Waypoint OS improve
 				float distance = (pev->origin - waypointOrigin[i]).GetLength2D() +
 					(waypointOrigin[i] - g_waypoint->GetPath(destIndex)->origin).GetLength2D();
@@ -1498,7 +1495,7 @@ int Bot::FindDefendWaypoint (Vector origin)
       int distances = g_waypoint->GetPathDistance (srcIndex, i);
 
       // skip wayponts with distance more than 1024 units
-      if (distances > 1024)
+      if (distances > 512)
          continue;
 
       TraceLine (g_waypoint->GetPath (i)->origin, g_waypoint->GetPath (posIndex)->origin, true, true, GetEntity (), &tr);
@@ -1583,6 +1580,9 @@ int Bot::FindCoverWaypoint (float maxDistance)
 
    int srcIndex = m_currentWaypointIndex;
    int enemyIndex = GetEntityWaypoint(m_lastEnemy);
+   if (enemyIndex == -1)
+	   return -1;
+
    Array <int> enemyIndices;
 
    int waypointIndex[Const_MaxPathIndex];
@@ -1593,9 +1593,6 @@ int Bot::FindCoverWaypoint (float maxDistance)
       waypointIndex[i] = -1;
       minDistance[i] = static_cast <int> (maxDistance);
    }
-
-   if (enemyIndex == -1)
-      return -1;
 
    // now get enemies neigbouring points
    for (int i = 0; i < Const_MaxPathIndex; i++)
@@ -1850,9 +1847,9 @@ bool Bot::HeadTowardWaypoint (void)
 				 }
 			 }
 
-			 // is there a jump waypoint right ahead and do we need to draw out the light weapon ?
-			 if (willJump && (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || pev->maxspeed <= 210) && !(m_states & STATE_SEEINGENEMY) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading)
-				 SelectWeaponByName("weapon_knife"); // draw out the knife if we needed
+			 // SyPB Pro P.48 - Jump improve 
+			 if (willJump && !(m_states & STATE_SEEINGENEMY) && FNullEnt (m_lastEnemy) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading &&
+				 (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || pev->maxspeed <= 210))
 
 			// SyPB Pro P.42 - Ladder improve
 			if (!IsAntiBlock(GetEntity()) && !IsOnLadder () &&
@@ -2165,55 +2162,6 @@ CheckDuckJump:
    return tr.flFraction > 1.0f;
 }
 
-bool Bot::CanDuckUnder (Vector normal)
-{
-   // this function check if bot can duck under obstacle
-
-   TraceResult tr;
-   Vector baseHeight;
-
-   Vector duck = Vector(0.0f, pev->angles.y, 0.0f);
-
-   MakeVectors (duck);
-
-   // use center of the body first...
-   if (pev->flags & FL_DUCKING)
-      baseHeight = pev->origin + Vector (0.0f, 0.0f, -17.0f);
-   else
-      baseHeight = pev->origin;
-
-   Vector src = baseHeight;
-   Vector dest = src + normal * 32.0f;
-
-   // trace a line forward at duck height...
-   TraceLine (src, dest, true, GetEntity (), &tr);
-
-   // if trace hit something, return false
-   if (tr.flFraction < 1.0f)
-      return false;
-
-   // now check same height to one side of the bot...
-   src = baseHeight + g_pGlobals->v_right * 16.0f;
-   dest = src + normal * 32.0f;
-
-   // trace a line forward at duck height...
-   TraceLine (src, dest, true, GetEntity (), &tr);
-
-   // if trace hit something, return false
-   if (tr.flFraction < 1.0f)
-      return false;
-
-   // now check same height on the other side of the bot...
-   src = baseHeight + (-g_pGlobals->v_right * 16.0f);
-   dest = src + normal * 32.0f;
-
-   // trace a line forward at duck height...
-   TraceLine (src, dest, true, GetEntity (), &tr);
-
-   // if trace hit something, return false
-   return tr.flFraction > 1.0f;
-}
-
 bool Bot::CheckWallOnLeft (void)
 {
    TraceResult tr;
@@ -2349,7 +2297,7 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 }
 
 
-int Bot::GetAimingWaypoint (void)
+int Bot::GetCampAimingWaypoint(void)
 {
    // Find a good WP to look at when camping
 
@@ -2358,6 +2306,8 @@ int Bot::GetAimingWaypoint (void)
    uint16 visibility[3];
 
    int currentWaypoint = GetEntityWaypoint(GetEntity());
+   if (currentWaypoint == -1)
+	   return engine->RandomInt(0, g_numWaypoints - 1);
 
    for (int i = 0; i < g_numWaypoints; i++)
    {
@@ -2407,7 +2357,6 @@ void Bot::FacePosition(void)
 		m_lookAt = m_lookAtAPI;
 
 	// adjust all body and view angles to face an absolute vector
-	//Vector direction = (m_lookAt - GetGunPosition()).ToAngles() + pev->punchangle * static_cast <float> (m_skill) / 100.0f;
 	Vector direction = (m_lookAt - EyePosition ()).ToAngles() + pev->punchangle;
 	direction.x *= -1.0f; // invert for engine
 
@@ -2426,7 +2375,9 @@ void Bot::FacePosition(void)
 		{
 			if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || GetGameMod() != MODE_BASE))
 				godAim = true;
-			else if (m_wantsToFire && m_skill >= 70)
+			else if (m_wantsToFire && (m_skill >= 70 || IsZombieEntity(m_enemy)))
+				godAim = true;
+			else if (IsZombieEntity(GetEntity()))
 				godAim = true;
 		}
 	}

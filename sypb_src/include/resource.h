@@ -27,32 +27,32 @@
 #define RESOURCE_INCLUDED
 
 // This is test version?
-//#define PRODUCT_DEV_VERSION
+#define PRODUCT_DEV_VERSION
 
 #if defined(PRODUCT_DEV_VERSION)
 //#define PRODUCT_DEV_VERSION_FORTEST "(PRV)"
 #define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
 //#define PRODUCT_DEV_VERSION_FORTEST "(Preview-2)"
 // Dev Version Date
-#define PV_VERSION_YEAR 2016
-#define PV_VERSION_MON 12
-#define PV_VERSION_DAY 25
+#define PV_VERSION_YEAR 2017
+#define PV_VERSION_MON 1
+#define PV_VERSION_DAY 24
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
 #endif
 
 // AMXX API Version
-#define SUPPORT_API_VERSION "1.42" // SyPB API_P
-#define SUPPORT_API_VERSION_F 1.42 // SyPB API_P
+#define SUPPORT_API_VERSION "1.48" // SyPB API_P
+#define SUPPORT_API_VERSION_F 1.48 // SyPB API_P
 
 // SwNPC Version
-#define SUPPORT_SWNPC_VERSION "1.45"
-#define SUPPORT_SWNPC_VERSION_F 1.45
+#define SUPPORT_SWNPC_VERSION "1.48"
+#define SUPPORT_SWNPC_VERSION_F 1.48
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,47,20161221,671 // yyyy/mm/dd  
-#define PRODUCT_VERSION "Beta 1.47"
-#define PRODUCT_VERSION_F 1.47
+#define PRODUCT_VERSION_DWORD 1,48,20170122,693 // yyyy/mm/dd  
+#define PRODUCT_VERSION "Beta 1.48"
+#define PRODUCT_VERSION_F 1.48
 
 // general product information
 #define PRODUCT_NAME "SyPB"

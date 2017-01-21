@@ -31,12 +31,11 @@ ConVar sypb_auto_players ("sypb_auto_players", "-1");
 // SyPB Pro P.47 - New Cvar 'sypb_quota_save'
 ConVar sypb_quota_save("sypb_quota_save", "-1");
 
+ConVar sypb_difficulty ("sypb_difficulty", "4");
 ConVar sypb_minskill ("sypb_minskill", "60");
 ConVar sypb_maxskill ("sypb_maxskill", "100"); 
 
 ConVar sypb_tagbots ("sypb_tagbots", "0");
-
-ConVar sypb_difficulty("sypb_difficulty", "4");
 
 ConVar sypb_join_after_player ("sypb_join_after_player", "0"); 
 
@@ -331,7 +330,10 @@ void BotControl::Think(void)
 		if (runThink)
 		{
 			// SyPB Pro P.43 - Bot think improve
-			m_bots[i]->m_thinkTimer = engine->GetTime() + (1.0f / 24.9f);
+			//m_bots[i]->m_thinkTimer = engine->GetTime() + (1.0f / 24.9f);
+
+			// SyPB Pro P.48 - Bot think improve
+			m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat (0.90f, 1.05f));
 
 			m_bots[i]->Think();
 
@@ -342,68 +344,13 @@ void BotControl::Think(void)
 		else if (!sypb_stopbots.GetBool())
 			m_bots[i]->FacePosition();
 
-		m_bots[i]->pev->angles.ClampAngles();
-		m_bots[i]->pev->v_angle.ClampAngles();
+		//m_bots[i]->pev->angles.ClampAngles();
+		//m_bots[i]->pev->v_angle.ClampAngles();
 
 		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
 }
 
-
-/*
-// SyPB Pro P.38 - Bot think improve
-void BotControl::Think(void)
-{
-	extern ConVar sypb_stopbots;
-	for (int i = 0; i < engine->GetMaxClients(); i++)
-	{
-		if (m_bots[i] == null)
-			continue;
-
-		// SyPB Pro P.41 - Bot think improve
-		bool runThink = false;
-		if (m_bots[i]->m_thinkTimer <= engine->GetTime())
-		{
-			if (m_bots[i]->m_lastThinkTime <= engine->GetTime())
-				runThink = true;
-		}
-
-		if (!IsAlive(m_bots[i]->GetEntity()))
-		{
-			runThink = true;
-			m_bots[i]->m_wantsToFire = false;
-		}
-
-		if (runThink)
-		{
-			// SyPB Pro P.43 - Bot think improve
-			m_bots[i]->m_thinkTimer = engine->GetTime() + (1.0f / 24.9f);
-
-			m_bots[i]->Think();
-
-			m_bots[i]->m_moveAnglesForRunMove = m_bots[i]->m_moveAngles;
-			m_bots[i]->m_moveSpeedForRunMove = m_bots[i]->m_moveSpeed;
-			m_bots[i]->m_strafeSpeedForRunMove = m_bots[i]->m_strafeSpeed;
-		}
-		// SyPB Pro P.42 - Stop bot cvar fixed
-		else if (!sypb_stopbots.GetBool ())
-		{
-			m_bots[i]->ChooseAimDirection();
-			m_bots[i]->FacePosition();
-			
-			if (m_bots[i]->m_wantsToFire && !m_bots[i]->m_isUsingGrenade && m_bots[i]->m_shootTime <= engine->GetTime())
-				m_bots[i]->FireWeapon();
-
-			m_bots[i]->MoveAction();
-		}
-		
-		m_bots[i]->pev->angles.ClampAngles();
-		m_bots[i]->pev->v_angle.ClampAngles();
-
-		m_bots[i]->RunPlayerMovement(); // run the player movement 
-	}
-}
-*/
 void BotControl::AddBot (const String &name, int skill, int personality, int team, int member)
 {
    // this function putting bot creation process to queue to prevent engine crashes
@@ -554,29 +501,6 @@ void BotControl::CheckBotNum(void)
 	
 	sypb_quota.SetInt(needBotNumber);
 }
-
-/*
-// SyPB Pro P.43 - New Cvar for auto sypb number
-void BotControl::CheckBotNum(void)
-{
-	if (sypb_auto_players.GetInt() == -1)
-		return;
-
-	if (sypb_auto_players.GetInt() == 0)
-	{
-		sypb_quota.SetInt(0);
-		return;
-	}
-
-	if (sypb_auto_players.GetInt() > engine->GetMaxClients())
-		sypb_auto_players.SetInt(engine->GetMaxClients());
-
-	int needBotNumber = sypb_auto_players.GetInt() - GetHumansNum();
-	if (needBotNumber <= 0)
-		sypb_quota.SetInt(0);
-	else
-		sypb_quota.SetInt(needBotNumber);
-} */
 
 // SyPB Pro P.30 - AMXX API
 int BotControl::AddBotAPI(const String &name, int skill, int team)
@@ -931,11 +855,6 @@ int BotControl::GetHumansNum (int mod)
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
-	   /*
-      if ((g_clients[i].flags & CFLAG_USED) && m_bots[i] == null)
-         count++;
-		 */
-
 	   if ((g_clients[i].flags & CFLAG_USED) && m_bots[i] == null)
 	   {
 		   if (mod == 0)
@@ -981,15 +900,6 @@ void BotControl::CheckTeamEconomics (int team)
    // this function decides is players on specified team is able to buy primary weapons by calculating players
    // that have not enough money to buy primary (with economics), and if this result higher 80%, player is can't
    // buy primary weapons.
-
-	/*
-   extern ConVar sypb_ecorounds;
-
-   if (!sypb_ecorounds.GetBool ())
-   {
-      m_economicsGood[team] = true;
-      return; // don't check economics while economics disable
-   } */
 
 	// SyPB Pro P.43 - Game Mode Support improve
 	if (GetGameMod() != MODE_BASE)
@@ -1082,7 +992,7 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 
 	if (!IsNullString(rejectReason))
 	{
-		AddLogEntry(true, LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName(bot), rejectReason);
+		AddLogEntry(LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName(bot), rejectReason);
 		ServerCommand("kick \"%s\"", GetEntityName(bot)); // kick the bot player if the server refused it
 
 		bot->v.flags |= FL_KILLME;
@@ -1190,26 +1100,6 @@ void Bot::NewRound (void)
    // delete all allocated path nodes
    DeleteSearchNodes ();
 
-   // SyPB Pro P.30 - AMXX API
-   m_weaponClipAPI = 0;
-   m_weaponReloadAPI = false;
-   m_lookAtAPI = nullvec;
-   m_moveAIAPI = false;
-   m_enemyAPI = null;
-   m_blockCheckEnemyTime = engine->GetTime();
-
-   // SyPB Pro P.31 - AMXX API
-   m_knifeDistance1API = 0;
-   m_knifeDistance2API = 0;
-
-   // SyPB Pro P.35 - AMXX API
-   m_gunMinDistanceAPI = 0;
-   m_gunMaxDistanceAPI = 0;
-
-   // SyPB Pro P.42 - AMXX API
-   m_waypointGoalAPI = -1;
-   m_blockWeaponPickAPI = false;
-
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
    //m_currentWaypointIndex = -1;
@@ -1277,8 +1167,6 @@ void Bot::NewRound (void)
    ResetCollideState ();
    ResetDoubleJumpState ();
 
-   SetMoveTarget (null);
-
    m_checkFallPoint[0] = nullvec;
    m_checkFallPoint[1] = nullvec;
    m_checkFall = false;
@@ -1286,6 +1174,7 @@ void Bot::NewRound (void)
    SetEnemy(null);
    m_lastVictim = null;
    SetLastEnemy(null);
+   SetMoveTarget(null);
    m_trackingEdict = null;
    m_timeNextTracking = 0.0f;
 
@@ -1301,12 +1190,9 @@ void Bot::NewRound (void)
    m_needAvoidEntity = 0;
 
    m_lastDamageType = -1;
-   m_voteKickIndex = 0;
-   m_lastVoteKick = 0;
    m_voteMap = 0;
    m_doorOpenAttempt = 0;
    m_aimFlags = 0;
-   m_burstShotsFired = 0;
 
    m_position = nullvec;
 
@@ -1318,9 +1204,6 @@ void Bot::NewRound (void)
    
    for (i = 0; i < Const_MaxHostages; i++)
       m_hostages[i] = null;
-
-   for (i = 0; i < Chatter_Total; i++)
-      m_voiceTimers[i] = -1.0f;
 
    m_isReloading = false;
    m_reloadState = RSTATE_NONE;
@@ -1334,7 +1217,6 @@ void Bot::NewRound (void)
    m_grenadeCheckTime = 0.0f;
    m_isUsingGrenade = false;
 
-   m_skillOffset = (100 - m_skill) / 100.0f;
    m_blindButton = 0;
    m_blindTime = 0.0f;
    m_jumpTime = 0.0f;
@@ -1383,7 +1265,7 @@ void Bot::NewRound (void)
    m_radioOrder = 0;
    m_defendedBomb = false;
 
-   m_timeLogoSpray = engine->GetTime () + engine->RandomFloat (0.5, 2.0f);
+   m_timeLogoSpray = engine->GetTime () + engine->RandomFloat (0.5f, 2.0f);
    m_spawnTime = engine->GetTime ();
    m_lastChatTime = engine->GetTime ();
    pev->v_angle.y = pev->ideal_yaw;
@@ -1407,10 +1289,30 @@ void Bot::NewRound (void)
    m_prevGoalIndex = -1;
    GetCurrentTask()->data = -1;
 
-   SetEntityWaypoint(GetEntity(), 2.0f, -2);
+   SetEntityWaypoint(GetEntity(), 1.5f, -2);
    m_currentWaypointIndex = -1;
    GetValidWaypoint();
    // --------------
+
+   // SyPB Pro P.30 - AMXX API
+   m_weaponClipAPI = 0;
+   m_weaponReloadAPI = false;
+   m_lookAtAPI = nullvec;
+   m_moveAIAPI = false;
+   m_enemyAPI = null;
+   m_blockCheckEnemyTime = engine->GetTime();
+
+   // SyPB Pro P.31 - AMXX API
+   m_knifeDistance1API = 0;
+   m_knifeDistance2API = 0;
+
+   // SyPB Pro P.35 - AMXX API
+   m_gunMinDistanceAPI = 0;
+   m_gunMaxDistanceAPI = 0;
+
+   // SyPB Pro P.42 - AMXX API
+   m_waypointGoalAPI = -1;
+   m_blockWeaponPickAPI = false;
 
    // and put buying into its message queue
    PushMessageQueue (CMENU_BUY);
@@ -1463,16 +1365,6 @@ void Bot::Kick (void)
 
 	if (g_botManager->GetBotsNum() - 1 < sypb_quota.GetInt())
 		sypb_quota.SetInt(g_botManager->GetBotsNum() - 1);
-
-	/*
-   // this function kick off one bot from the server.
-
-   ServerCommand ("kick #%d", GETPLAYERUSERID (GetEntity ()));
-   CenterPrint ("Bot '%s' kicked", GetEntityName (GetEntity ()));
-
-   // balances quota
-   if (g_botManager->GetBotsNum () - 1 < sypb_quota.GetInt ())
-      sypb_quota.SetInt (g_botManager->GetBotsNum () - 1); */
 }
 
 void Bot::StartGame (void)

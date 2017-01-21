@@ -30,9 +30,8 @@ NetworkMsg::NetworkMsg (void)
     m_state = 0;
     m_bot = null;
 
-	//for (register int i = 0; i < NETMSG_BOTVOICE; i++)
-	for (register int i = 0; i < NETMSG_RESETHUD; i++)  // SyPB Pro P.29 // SyPB Pro P.38 - Base improve
-		m_registerdMessages[i] = -1;
+	for (register int i = 0; i < NETMSG_NUM; i++)  // SyPB Pro P.48 - Base improve
+		m_registerdMessages[i] = NETMSG_UNDEFINED;
 }
 
 void NetworkMsg::HandleMessageIfRequired (int messageType, int requiredType)
@@ -163,13 +162,8 @@ void NetworkMsg::Execute (void *p)
 
             // ammo amount decreased ? must have fired a bullet...
             if (id == m_bot->m_currentWeapon && m_bot->m_ammoInClip[id] > clip)
-            {
-               // time fired with in burst firing time ?
-               if (m_bot->m_timeLastFired + 1.0f > engine->GetTime ())
-                  m_bot->m_burstShotsFired++;
+				m_bot->m_timeLastFired = engine->GetTime (); // remember the last bullet time
 
-               m_bot->m_timeLastFired = engine->GetTime (); // remember the last bullet time
-            }
             m_bot->m_ammoInClip[id] = clip;
          }
          break;
@@ -223,7 +217,7 @@ void NetworkMsg::Execute (void *p)
       case 2:
          damageBits = PTR_TO_INT (p);
 
-         if (damageArmor > 0 || damageTaken > 0)
+         if (m_bot != null && (damageArmor > 0 || damageTaken > 0))
             m_bot->TakeDamage (m_bot->pev->dmg_inflictor, damageTaken, damageArmor, damageBits);
          break;
       }
@@ -324,14 +318,6 @@ void NetworkMsg::Execute (void *p)
       }
       break;
 
-
-   case NETMSG_RESETHUD:
-#if 0
-      if (m_bot != null)
-         m_bot->NewRound ();
-#endif
-      break;
-
    case NETMSG_TEXTMSG:
       if (m_state == 1)
       {
@@ -350,7 +336,7 @@ void NetworkMsg::Execute (void *p)
             FStrEq (PTR_TO_STR (p), "#Terrorists_Escaped") ||
             FStrEq (PTR_TO_STR (p), "#CTs_PreventEscape") ||
             FStrEq (PTR_TO_STR (p), "#Target_Bombed") ||
-            //FStrEq (PTR_TO_STR (p), "#Game_Commencing") ||
+            FStrEq (PTR_TO_STR (p), "#Game_Commencing") ||
             FStrEq (PTR_TO_STR (p), "#Game_will_restart_in"))
          {
             g_roundEnded = true;
@@ -381,9 +367,6 @@ void NetworkMsg::Execute (void *p)
                {
                   bot->DeleteSearchNodes ();
                   bot->ResetTasks ();
-
-                  if (engine->RandomInt (0, 100) < 85 && GetTeam (bot->GetEntity ()) == TEAM_COUNTER)
-                     bot->ChatterMessage (Chatter_WhereIsTheBomb);
                }
             }
             g_waypoint->SetBombPosition ();
@@ -412,7 +395,7 @@ void NetworkMsg::Execute (void *p)
 	   break;
 
    default:
-      AddLogEntry (true, LOG_FATAL, "Network message handler error. Call to unrecognized message id (%d).\n", m_message);
+      AddLogEntry (LOG_FATAL, "Network message handler error. Call to unrecognized message id (%d).\n", m_message);
    }
    m_state++; // and finally update network message state
 }

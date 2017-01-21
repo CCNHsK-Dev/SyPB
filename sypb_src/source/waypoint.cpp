@@ -53,7 +53,7 @@ void Waypoint::AddPath (int addIndex, int pathIndex, float distance)
    {
       if (path->index[i] == pathIndex)
       {
-         AddLogEntry (true, LOG_WARNING, "Denied path creation from %d to %d (path already exists)", addIndex, pathIndex);
+         AddLogEntry (LOG_WARNING, "Denied path creation from %d to %d (path already exists)", addIndex, pathIndex);
          return;
       }
    }
@@ -66,7 +66,7 @@ void Waypoint::AddPath (int addIndex, int pathIndex, float distance)
          path->index[i] = static_cast <int16> (pathIndex);
          path->distances[i] = abs (static_cast <int> (distance));
 
-         AddLogEntry (true, LOG_DEFAULT, "Path added from %d to %d", addIndex, pathIndex);
+         AddLogEntry (LOG_DEFAULT, "Path added from %d to %d", addIndex, pathIndex);
          return;
       }
    }
@@ -86,7 +86,7 @@ void Waypoint::AddPath (int addIndex, int pathIndex, float distance)
 
    if (slotID != -1)
    {
-      AddLogEntry (true, LOG_DEFAULT, "Path added from %d to %d", addIndex, pathIndex);
+      AddLogEntry (LOG_DEFAULT, "Path added from %d to %d", addIndex, pathIndex);
 
       path->index[slotID] = static_cast <int16> (pathIndex);
       path->distances[slotID] = abs (static_cast <int> (distance));
@@ -190,12 +190,6 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 		float distance = (m_paths[i]->origin - origin).GetLength();
 		if (distance > minDistance)
 			continue;
-		/*
-		// SyPB Pro P.42 - Find Waypoint improve
-		if (((m_paths[i]->origin - origin).GetLength2D() <= 30.0f && origin.z + 10.0f < m_paths[i]->origin.z) ||
-			((m_paths[i]->origin - origin).GetLength2D() <= 100.0f && origin.z + 20.0f < m_paths[i]->origin.z))
-			continue;
-			*/
 
 		// SyPB Pro P.43 - Find Waypoint improve
 		Vector dest = m_paths[i]->origin;
@@ -816,7 +810,7 @@ void Waypoint::ToggleFlags (int toggleFlag)
       {
          if (toggleFlag == WAYPOINT_SNIPER && !(m_paths[index]->flags & WAYPOINT_CAMP))
          {
-            AddLogEntry (true, LOG_ERROR, "Cannot assign sniper flag to waypoint #%d. This is not camp waypoint", index);
+            AddLogEntry (LOG_ERROR, "Cannot assign sniper flag to waypoint #%d. This is not camp waypoint", index);
             return;
          }
          m_paths[index]->flags |= toggleFlag;
@@ -1143,84 +1137,6 @@ void Waypoint::CalculateWayzone (int index)
       path->radius = 0.0f;
 }
 
-void Waypoint::SaveVisibilityTab (void)
-{
-	/*
-   if (g_numWaypoints == 0)
-      return;
-
-   if (m_visLUT == null)
-      AddLogEntry (true, LOG_FATAL, "Can't save visiblity tab. Bad data.");
-
-   ExtensionHeader header;
-
-   // parse header
-   memset (header.header, 0, sizeof (header.header));
-   strcpy (header.header, FH_VISTABLE);
-
-   header.fileVersion = FV_VISTABLE;
-   header.pointNumber = g_numWaypoints;
-
-   File fp (FormatBuffer ("%sdata/%s.vis", GetWaypointDir (), GetMapName ()), "wb");
-
-   if (!fp.IsValid ())
-   {
-      AddLogEntry (true, LOG_ERROR, "Failed to open visiblity table for writing");
-      return;
-   }
-   fp.Close ();
-
-   Compressor::Compress (FormatBuffer ("%sdata/%s.vis", GetWaypointDir (), GetMapName ()), (uint8_t *) &header, sizeof (ExtensionHeader), (uint8_t *) m_visLUT, Const_MaxWaypoints * (Const_MaxWaypoints / 4) * sizeof (uint8_t));
-   */
-}
-
-void Waypoint::InitVisibilityTab (void)
-{
-	/*
-   if (g_numWaypoints == 0)
-      return;
-
-   ExtensionHeader header;
-
-   File fp (FormatBuffer ("%sdata/%s.vis", GetWaypointDir (), GetMapName ()), "rb");
-   m_redoneVisibility = false;
-
-   if (!fp.IsValid ())
-   {
-      m_visibilityIndex = 0;
-      m_redoneVisibility = true;
-
-      //AddLogEntry (true, LOG_DEFAULT, "Vistable, not exists, vistable will be rebuilded");
-      return;
-   }
-
-   // read the header of the file
-   fp.Read (&header, sizeof (ExtensionHeader));
-
-   if (strncmp (header.header, FH_VISTABLE, strlen (FH_VISTABLE)) != 0 || header.fileVersion != FV_VISTABLE || header.pointNumber != g_numWaypoints)
-   {
-      m_visibilityIndex = 0;
-      m_redoneVisibility = true;
-
-      AddLogEntry (true, LOG_WARNING, "Vistable damaged (wrong version, or not for this map), vistable will be rebuilded.");
-      fp.Close ();
-
-      return;
-   }
-   int result = Compressor::Uncompress (FormatBuffer ("%sdata/%s.vis", GetWaypointDir (), GetMapName ()), sizeof (ExtensionHeader), (uint8_t *) m_visLUT, Const_MaxWaypoints * (Const_MaxWaypoints / 4) * sizeof (uint8_t));
-
-   if (result == -1)
-   {
-      m_visibilityIndex = 0;
-      m_redoneVisibility = true;
-
-      // AddLogEntry (true, LOG_ERROR, "Failed to decode vistable, vistable will be rebuilded.");
-      fp.Close ();
-
-      return;
-   }
-   fp.Close (); */
-}
 
 void Waypoint::InitTypes (int mode)
 {
@@ -1235,8 +1151,6 @@ void Waypoint::InitTypes (int mode)
 		m_visitedGoals.RemoveAll();
 		m_zmHmPoints.RemoveAll();
 	}
-	//else if (mode == 1)
-	//	m_zmHmPoints.RemoveAll();
 
 	for (int i = 0; i < g_numWaypoints; i++)
 	{
@@ -1280,7 +1194,7 @@ bool Waypoint::Load (int mode)
          {
 			 m_badMapName = true;
 			 sprintf(m_infoBuffer, "%s.pwf - incorrect waypoint file version (expected '%i' found '%i')", GetMapName(), FV_WAYPOINT, static_cast <int> (header.fileVersion));
-			 AddLogEntry(true, LOG_ERROR, m_infoBuffer);
+			 AddLogEntry(LOG_ERROR, m_infoBuffer);
 
 			 fp.Close();
 			 return false;
@@ -1290,7 +1204,7 @@ bool Waypoint::Load (int mode)
 			 m_badMapName = true;
 
 			 sprintf(m_infoBuffer, "%s.pwf - hacked waypoint file, fileName doesn't match waypoint header information (mapname: '%s', header: '%s')", GetMapName(), GetMapName(), header.mapName);
-			 AddLogEntry(true, LOG_ERROR, m_infoBuffer);
+			 AddLogEntry(LOG_ERROR, m_infoBuffer);
 
 			 fp.Close();
 			 return false;
@@ -1315,7 +1229,7 @@ bool Waypoint::Load (int mode)
       else
       {
          sprintf (m_infoBuffer, "%s.pwf is not a sypb waypoint file (header found '%s' needed '%s'", GetMapName (), header.header, FH_WAYPOINT);
-         AddLogEntry (true, LOG_ERROR, m_infoBuffer);
+         AddLogEntry (LOG_ERROR, m_infoBuffer);
 
          fp.Close ();
          return false;
@@ -1325,7 +1239,7 @@ bool Waypoint::Load (int mode)
    else
    {
       sprintf (m_infoBuffer, "%s.pwf does not exist", GetMapName ());
-      AddLogEntry (true, LOG_ERROR, m_infoBuffer);
+      AddLogEntry (LOG_ERROR, m_infoBuffer);
 
       return false;
    }
@@ -1346,8 +1260,6 @@ bool Waypoint::Load (int mode)
 
    m_pathDisplayTime = 0.0f;
    m_arrowDisplayTime = 0.0f;
-
-   InitVisibilityTab ();
 
    g_exp.Load ();
 
@@ -1400,7 +1312,7 @@ void Waypoint::Save (void)
       SaveXML ();
    }
    else
-      AddLogEntry (true, LOG_ERROR, "Error writing '%s.pwf' waypoint file", GetMapName ());
+      AddLogEntry (LOG_ERROR, "Error writing '%s.pwf' waypoint file", GetMapName ());
 }
 
 String Waypoint::CheckSubfolderFile (void)
@@ -1468,7 +1380,7 @@ void Waypoint::SaveXML (void)
       fp.Close ();
    }
    else
-      AddLogEntry (true, LOG_ERROR, "Error writing '%s.xml' waypoint file", GetMapName ());
+      AddLogEntry (LOG_ERROR, "Error writing '%s.xml' waypoint file", GetMapName ());
 }
 
 float Waypoint::GetTravelTime (float maxSpeed, Vector src, Vector origin)
@@ -2213,7 +2125,7 @@ bool Waypoint::NodesValid (void)
          {
             if (m_paths[i]->index[j] > g_numWaypoints)
             {
-               AddLogEntry (true, LOG_WARNING, "Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
+               AddLogEntry (LOG_WARNING, "Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
 			   haveError = true;
 			   if (g_sgdWaypoint)
 				   ChartPrint("[SgdWP] Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
@@ -2227,7 +2139,7 @@ bool Waypoint::NodesValid (void)
       {
          if (!IsConnected (i))
          {
-            AddLogEntry (true, LOG_WARNING, "Waypoint %d isn't connected with any other Waypoint!", i);
+            AddLogEntry (LOG_WARNING, "Waypoint %d isn't connected with any other Waypoint!", i);
 			haveError = true;
 			if (g_sgdWaypoint)
 				ChartPrint("[SgdWP] Waypoint %d isn't connected with any other Waypoint!", i);
@@ -2236,7 +2148,7 @@ bool Waypoint::NodesValid (void)
 
       if (m_paths[i]->pathNumber != i)
       {
-         AddLogEntry (true, LOG_WARNING, "Waypoint %d pathnumber differs from index!", i);
+         AddLogEntry (LOG_WARNING, "Waypoint %d pathnumber differs from index!", i);
 		 haveError = true;
 		 if (g_sgdWaypoint)
 			 ChartPrint("[SgdWP] Waypoint %d pathnumber differs from index!", i);
@@ -2246,7 +2158,7 @@ bool Waypoint::NodesValid (void)
       {
          if (m_paths[i]->campEndX == 0 && m_paths[i]->campEndY == 0)
          {
-            AddLogEntry (true, LOG_WARNING, "Waypoint %d Camp-Endposition not set!", i);
+            AddLogEntry (LOG_WARNING, "Waypoint %d Camp-Endposition not set!", i);
 			haveError = true;
 			if (g_sgdWaypoint)
 				ChartPrint("[SgdWP] Waypoint %d Camp-Endposition not set!", i);
@@ -2267,7 +2179,7 @@ bool Waypoint::NodesValid (void)
          {
             if (m_paths[i]->index[k] >= g_numWaypoints || m_paths[i]->index[k] < -1)
             {
-               AddLogEntry (true, LOG_WARNING, "Waypoint %d - Pathindex %d out of Range!", i, k);
+               AddLogEntry (LOG_WARNING, "Waypoint %d - Pathindex %d out of Range!", i, k);
                (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
 
                g_waypointOn = true;
@@ -2279,7 +2191,7 @@ bool Waypoint::NodesValid (void)
             }
             else if (m_paths[i]->index[k] == i)
             {
-               AddLogEntry (true, LOG_WARNING, "Waypoint %d - Pathindex %d points to itself!", i, k);
+               AddLogEntry (LOG_WARNING, "Waypoint %d - Pathindex %d points to itself!", i, k);
                (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
 
                g_waypointOn = true;
@@ -2296,7 +2208,7 @@ bool Waypoint::NodesValid (void)
    {
       if (rescuePoints == 0)
       {
-         AddLogEntry (true, LOG_WARNING, "You didn't set a Rescue Point!");
+         AddLogEntry (LOG_WARNING, "You didn't set a Rescue Point!");
 		 haveError = true;
 		 if (g_sgdWaypoint)
 			 ChartPrint("[SgdWP] You didn't set a Rescue Point!");
@@ -2305,21 +2217,21 @@ bool Waypoint::NodesValid (void)
 
    if (terrPoints == 0)
    {
-      AddLogEntry (true, LOG_WARNING, "You didn't set any Terrorist Important Point!");
+      AddLogEntry (LOG_WARNING, "You didn't set any Terrorist Important Point!");
 	  haveError = true;
 	  if (g_sgdWaypoint)
 		  ChartPrint("[SgdWP] You didn't set any Terrorist Important Point!");
    }
    else if (ctPoints == 0)
    {
-      AddLogEntry (true, LOG_WARNING, "You didn't set any CT Important Point!");
+      AddLogEntry (LOG_WARNING, "You didn't set any CT Important Point!");
 	  haveError = true;
 	  if (g_sgdWaypoint)
 		  ChartPrint("[SgdWP] You didn't set any CT Important Point!");
    }
    else if (goalPoints == 0)
    {
-      AddLogEntry (true, LOG_WARNING, "You didn't set any Goal Point!");
+      AddLogEntry (LOG_WARNING, "You didn't set any Goal Point!");
 	  haveError = true;
 	  if (g_sgdWaypoint)
 		  ChartPrint("[SgdWP] You didn't set any Goal Point!");
@@ -2369,7 +2281,7 @@ bool Waypoint::NodesValid (void)
    {
       if (!visited[i])
       {
-         AddLogEntry (true, LOG_WARNING, "Path broken from Waypoint #0 to Waypoint #%d!", i);
+         AddLogEntry (LOG_WARNING, "Path broken from Waypoint #0 to Waypoint #%d!", i);
          (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
 
          g_waypointOn = true;
@@ -2429,7 +2341,7 @@ bool Waypoint::NodesValid (void)
    {
       if (!visited[i])
       {
-         AddLogEntry (true, LOG_WARNING, "Path broken from Waypoint #%d to Waypoint #0!", i);
+         AddLogEntry (LOG_WARNING, "Path broken from Waypoint #%d to Waypoint #0!", i);
          (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
 
          g_waypointOn = true;
@@ -2516,7 +2428,7 @@ void Waypoint::SavePathMatrix (void)
    // unable to open file
    if (!fp.IsValid ())
    {
-      AddLogEntry (false, LOG_FATAL, "Failed to open file for writing");
+      AddLogEntry (LOG_FATAL, "Failed to open file for writing");
       return;
    }
 
@@ -2546,7 +2458,7 @@ bool Waypoint::LoadPathMatrix (void)
 
    if (num != g_numWaypoints)
    {
-      AddLogEntry (true, LOG_DEFAULT, "Wrong number of points (pmt:%d/cur:%d). Matrix will be rebuilded/n",
+      AddLogEntry (LOG_DEFAULT, "Wrong number of points (pmt:%d/cur:%d). Matrix will be rebuilded/n",
 		  "********* If you use new waypoint, you need get the new .pmt file"
 		  , num, g_numWaypoints);
       fp.Close ();
@@ -2588,20 +2500,6 @@ void Waypoint::SetGoalVisited (int index)
    if (!IsGoalVisited (index) && (m_paths[index]->flags & WAYPOINT_GOAL))
    {
       int bombPoint = FindNearest (GetBombPosition ());
-
-#if 0
-      Array <int> markAsVisited;
-      FindInRadius (markAsVisited, 500.0, GetPath (index)->origin);
-
-      IterateArray (m_goalPoints, i)
-      {
-         IterateArray (markAsVisited, j)
-         {
-            if (m_goalPoints[i] != markAsVisited[j] && m_goalPoints[i] != bombPoint)
-               m_visitedGoals.Push (m_goalPoints[i]);
-         }
-      }
-#endif
 
       if (bombPoint != index)
          m_visitedGoals.Push (index);
@@ -2805,10 +2703,10 @@ void Waypoint::EraseFromHardDisk (void)
       if (TryFileOpen (deleteList[i]))
       {
          unlink (deleteList[i]);
-         AddLogEntry (true, LOG_DEFAULT, "File %s, has been deleted from the hard disk", deleteList[i]);
+         AddLogEntry (LOG_DEFAULT, "File %s, has been deleted from the hard disk", deleteList[i]);
       }
       else
-         AddLogEntry (true, LOG_ERROR, "Unable to open %s", deleteList[i]);
+         AddLogEntry (LOG_ERROR, "Unable to open %s", deleteList[i]);
    }
    Initialize (); // reintialize points
 }

@@ -2138,42 +2138,42 @@ typedef int(*AMXX_CHECK_ENEMY) (int index);
 C_DLLEXPORT int Amxx_CheckMoveTarget(int index);
 typedef int(*AMXX_CHECK_MOVETARGET) (int index);
 
-C_DLLEXPORT void Amxx_SetEnemy(int index, int target, float blockCheckTime);
-typedef void(*AMXX_SET_ENEMY)(int index, int target, float blockCheckTime);
+C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime);
+typedef int(*AMXX_SET_ENEMY)(int index, int target, float blockCheckTime);
 
-C_DLLEXPORT void Amxx_SetBotMove(int index, int pluginSet);
-typedef void(*AMXX_SET_BOT_MOVE) (int index, int pluginSet);
+C_DLLEXPORT int Amxx_SetBotMove(int index, int pluginSet);
+typedef int(*AMXX_SET_BOT_MOVE) (int index, int pluginSet);
 
-C_DLLEXPORT void Amxx_SetBotLookAt(int index, Vector lookAt);
-typedef void(*AMXX_SET_BOT_LOOKAT)(int index, Vector lookAt);
+C_DLLEXPORT int Amxx_SetBotLookAt(int index, Vector lookAt);
+typedef int(*AMXX_SET_BOT_LOOKAT)(int index, Vector lookAt);
 
-C_DLLEXPORT void Amxx_SetWeaponClip(int index, int weaponClip);
-typedef void(*AMXX_SET_WEAPON_CLIP)(int index, int weaponClip);
+C_DLLEXPORT int Amxx_SetWeaponClip(int index, int weaponClip);
+typedef int(*AMXX_SET_WEAPON_CLIP)(int index, int weaponClip);
 
-C_DLLEXPORT void Amxx_BlockWeaponReload(int index, int blockWeaponReload);
-typedef void(*AMXX_BLOCK_WEAPON_RELOAD)(int index, int blockWeaponReload);
+C_DLLEXPORT int Amxx_BlockWeaponReload(int index, int blockWeaponReload);
+typedef int(*AMXX_BLOCK_WEAPON_RELOAD)(int index, int blockWeaponReload);
 
 //C_DLLEXPORT void Amxx_AddSyPB(const char *name, int skill, int team);
 //typedef void(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
 
 // SyPB Pro P.31 - AMXX API
-C_DLLEXPORT void Amxx_SetKADistance(int index, int k1d, int k2d);
-typedef void(*AMXX_SET_KA_DISTANCE)(int index, int k1d, int k2d);
+C_DLLEXPORT int Amxx_SetKADistance(int index, int k1d, int k2d);
+typedef int(*AMXX_SET_KA_DISTANCE)(int index, int k1d, int k2d);
 
 // SyPB Pro P.34 - AMXX API
 C_DLLEXPORT int Amxx_AddSyPB(const char *name, int skill, int team);
 typedef int(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
 
 // SyPB Pro P.35 - AMXX API
-C_DLLEXPORT void Amxx_SetGunADistance(int index, int minDistance, int maxDistance);
-typedef void(*AMXX_SET_GUNA_DISTANCE) (int index, int minDistance, int maxDistance);
+C_DLLEXPORT int Amxx_SetGunADistance(int index, int minDistance, int maxDistance);
+typedef int(*AMXX_SET_GUNA_DISTANCE) (int index, int minDistance, int maxDistance);
 
 // SyPB Pro P.38 - AMXX API
 C_DLLEXPORT int Amxx_IsZombieBot(int index);
 typedef int(*AMXX_IS_ZOMBIE_BOT) (int index);
 
-C_DLLEXPORT void Amxx_SetZombieBot(int index, int zombieBot);
-typedef void(*_AMXX_SET_ZOMBIE_BOT) (int index, int zombieBot);
+C_DLLEXPORT int Amxx_SetZombieBot(int index, int zombieBot);
+typedef int(*_AMXX_SET_ZOMBIE_BOT) (int index, int zombieBot);
 
 C_DLLEXPORT int Amxx_GetOriginPoint(Vector origin);
 typedef int(*AMXX_GET_ORIGIN_POINT) (Vector origin);
@@ -2207,8 +2207,8 @@ typedef int(*_AMXX_BLOCK_WEAPON_PICK) (int index, int blockWeaponPick);
 C_DLLEXPORT void SwNPC_GetHostEntity(edict_t **hostEntity);
 typedef void(*SwNPC_GET_HOST_ENTITY) (edict_t **hostEntity);
 
-C_DLLEXPORT float SwNPC_GetSyPBVersion(void);
-typedef float(*SWNPC_GET_SYPB_VERSION) (void);
+C_DLLEXPORT float SwNPC_SyPBSupportVersion(void);
+typedef float(*SWNPC_SYPB_SUPPORT_VERSION) (void);
 
 C_DLLEXPORT void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4);
 typedef void(*SWNPC_CHECK_BUILD)(float version, int bu1, int bu2, int bu3, int bu4);
@@ -2218,13 +2218,7 @@ typedef void (*SWNPC_ADD_LOG)(char *logText);
 
 C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance);
 typedef int(SWNPC_GET_WAYPOINT_DATA)(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance);
-/*
-C_DLLEXPORT int SwNPC_GetWaypointPath(int **path);
-typedef int(*SWNPC_GET_WAYPOINT_PATH) (int **path);
 
-C_DLLEXPORT int SwNPC_GetWaypointDist(int **dist);
-typedef int(*SWNPC_GET_WAYPOINT_DIST) (int *dist);
-*/
 C_DLLEXPORT int SwNPC_GetEntityWaypointIndex(edict_t *entity);
 typedef int(*SWNPC_GET_WAYPOINT_INDEX) (edict_t *entity);
 
@@ -2666,8 +2660,8 @@ inline void STOP_SOUND (edict_t * entity, int channel, const char *sample)
 #endif
 
    // macro to handle memory allocation fails
-#define TerminateOnMalloc() AddLogEntry (true, LOG_FATAL, "Memory Allocation Fail!\nFile: %s (Line: %d)", __FILE__, __LINE__)
-#define InternalAssert(expr) if(!(expr)) { AddLogEntry (true, LOG_ERROR, "Assertion Fail! (Expression: %s, File: %s, Line: %d)", #expr, __FILE__, __LINE__); }
+#define TerminateOnMalloc() AddLogEntry (LOG_FATAL, "Memory Allocation Fail!\nFile: %s (Line: %d)", __FILE__, __LINE__)
+#define InternalAssert(expr) if(!(expr)) { AddLogEntry (LOG_ERROR, "Assertion Fail! (Expression: %s, File: %s, Line: %d)", #expr, __FILE__, __LINE__); }
 
 
 #define GET_INFOKEYBUFFER   (*g_engfuncs.pfnGetInfoKeyBuffer)

@@ -192,12 +192,16 @@ Vector GetBottomOrigin(edict_t *ent)
 Vector GetPlayerHeadOrigin(edict_t *ent)
 {
 	Vector headOrigin = GetTopOrigin(ent);
-	Vector origin = GetEntityOrigin(ent);
 
-	float hbDistance = headOrigin.z - origin.z;
-	hbDistance /= 2.5;
-
-	headOrigin.z -= hbDistance;
+	if (!(ent->v.flags & FL_DUCKING))
+	{
+		Vector origin = GetEntityOrigin(ent);
+		float hbDistance = headOrigin.z - origin.z;
+		hbDistance /= 2.5f;
+		headOrigin.z -= hbDistance;
+	}
+	else
+		headOrigin.z -= 1.0f;
 
 	return headOrigin;
 }
@@ -794,10 +798,7 @@ void AutoLoadGameMode(void)
 			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
 			{
 				if (bteGameModAi[i] == 2 && i != 5)
-				{
-					sypb_walkallow.SetInt(0);
 					g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
-				}
 
 				if (checkShowTextTime < 3 || GetGameMod() != bteGameModAi[i])
 					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
@@ -961,9 +962,6 @@ bool IsWeaponShootingThroughWall (int id)
 void SetGameMod(int gamemode)
 {
 	sypb_gamemod.SetInt(gamemode);
-
-	if (gamemode == MODE_ZP || gamemode == MODE_ZH)
-		sypb_walkallow.SetInt(0);
 }
 
 int GetGameMod (void)
@@ -1028,6 +1026,10 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 	if (FNullEnt(ent))
 		return -1;
 
+	Vector origin = GetEntityOrigin(ent);
+	if (origin == nullvec)
+		return -1;
+
 	bool isPlayer = IsValidPlayer(ent);
 	int i = -1;
 
@@ -1038,10 +1040,7 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		// SyPB Pro P.45 - Small Bug Fixed
 		for (int j = 0; j < entityNum; j++)
 		{
-			if (g_entityId[j] == -1)
-				continue;
-
-			if (ent != INDEXENT(g_entityId[j]))
+			if (g_entityId[j] == -1 || ent != INDEXENT(g_entityId[j]))
 				continue;
 
 			i = j;
@@ -1053,7 +1052,6 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		return -1;
 		
 	bool needCheckNewWaypoint = false;
-	Vector origin = GetEntityOrigin(ent);
 	if (mode != -1)
 		needCheckNewWaypoint = true;
 	else if ((isPlayer && g_clients[i].wpIndex == -1) || (!isPlayer && g_entityWpIndex[i] == -1))
@@ -1078,21 +1076,20 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 			float distance = (getWpOrigin - origin).GetLength();
 			if (distance >= 300.0f)
 				needCheckNewWaypoint = true;
-			else
+			else if (distance >= 25.0f)
 			{
 				Vector wpOrigin = g_waypoint->GetPath(wpIndex)->origin;
 				distance = (wpOrigin - origin).GetLength();
 
-				if (distance > g_waypoint->GetPath(wpIndex)->radius + 32.0f ||
-					((origin - wpOrigin).GetLength2D() <= 100.0f && origin.z + 8.0f < wpOrigin.z))
+				if (distance > g_waypoint->GetPath(wpIndex)->radius + 32.0f)
 					needCheckNewWaypoint = true;
 				else
 				{
 					float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
-					if ((traceCheckTime <= engine->GetTime() && !g_waypoint->Reachable(ent, wpIndex)) ||
-						traceCheckTime + 3.0f <= engine->GetTime())
+					if (traceCheckTime + 5.0f <= engine->GetTime() || 
+						(traceCheckTime <= engine->GetTime() && !g_waypoint->Reachable(ent, wpIndex)))
 						needCheckNewWaypoint = true;
-				}
+				} 
 			}
 		}
 		else
@@ -1177,9 +1174,8 @@ int GetEntityWaypoint(edict_t *ent)
 
 	// SyPB Pro P.42 - Base Waypoint improve
 	int client = ENTINDEX(ent) - 1;
-	
-	if (g_clients[client].wpIndex == -1 || (GetEntityOrigin(ent) - g_clients[client].getWpOrigin).GetLength() > 500.0f)
-		return SetEntityWaypoint(ent, 2.0f, -2);
+	if (g_clients[client].getWPTime < engine->GetTime() || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
+		SetEntityWaypoint(ent);
 
 	return g_clients[client].wpIndex;
 }
@@ -1195,8 +1191,8 @@ bool IsZombieEntity(edict_t *ent)
 
 	// SyPB Pro P.38 - AMXX API
 	int playerId = ENTINDEX(ent) - 1;
-	if (g_clients[playerId].m_isZombieBotAPI != -1)
-		return (g_clients[playerId].m_isZombieBotAPI == 1) ? true : false;
+	if (g_clients[playerId].isZombiePlayerAPI != -1)
+		return (g_clients[playerId].isZombiePlayerAPI == 1) ? true : false;
 
 	// SyPB Pro P.38 - Knife Mode Use Zombie Ai
 	if (sypb_knifemode.GetBool() == true)
@@ -1422,28 +1418,16 @@ void ServerCommand (const char *format, ...)
 
 const char *GetEntityName(edict_t *entity)
 {
-	// SyPB Pro P.43 - Name Fixed 
+	// SyPB Pro P.48 - Name Fixed 
 	static char entityName[256];
 	if (FNullEnt(entity))
-		strcpy(entityName, "null");
+		strcpy(entityName, "NULL");
 	else if (IsValidPlayer(entity))
 		strcpy(entityName, (char *) STRING(entity->v.netname));
 	else
 		strcpy(entityName, (char *) STRING(entity->v.classname));
 
-	return entityName;
-
-	/*
-	// SyPB Pro P.42 - Name Fixed 
-	static char entityName[256];
-	if (FNullEnt(entity))
-		strcpy(entityName, "null");
-	else if (IsValidPlayer(entity))
-		strcpy(entityName, STRING (entity->v.netname));
-	else
-		strcpy(entityName, STRING(entity->v.classname));
-
-	return &entityName[0]; */
+	return &entityName[0];
 }
 
 const char *GetMapName (void)
@@ -1482,7 +1466,7 @@ bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bo
 
    if (!outFile->IsValid ())
    {
-      AddLogEntry (true, LOG_ERROR, errorIfNotExists);
+      AddLogEntry (LOG_ERROR, errorIfNotExists);
       return false;
    }
    return true;
@@ -1532,7 +1516,7 @@ void CheckWelcomeMessage(void)
 		ChartPrint("***** Support API Version:%.2f | SwNPC Version:%.2f *****",
 			float(SUPPORT_API_VERSION_F), float(SUPPORT_SWNPC_VERSION_F));
 
-		if (amxxDLL_Version != -1.0)
+		if (amxxDLL_Version != -1.0 && amxxDLL_Version == float(SUPPORT_API_VERSION_F))
 		{
 			ChartPrint("***** SyPB API: Running - Version:%.2f (%u.%u.%u.%u)",
 				amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
@@ -1540,7 +1524,7 @@ void CheckWelcomeMessage(void)
 		else
 			ChartPrint("***** SyPB API: FAIL *****");
 
-		if (SwNPC_Version != -1.0)
+		if (SwNPC_Version != -1.0 && SwNPC_Version == float(SUPPORT_SWNPC_VERSION_F))
 		{
 			ChartPrint("***** SwNPC: Running - Version:%.2f (%u.%u.%u.%u)",
 				SwNPC_Version, SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
@@ -1601,53 +1585,13 @@ void PlaySound (edict_t *ent, const char *name)
    return;
 }
 
-float GetWaveLength (const char *fileName)
-{
-   WaveHeader waveHdr;
-   memset (&waveHdr, 0, sizeof (waveHdr));
 
-   extern ConVar sypb_chatterpath;
-
-   File fp (FormatBuffer ("%s/%s/%s.wav", GetModName (), sypb_chatterpath.GetString (), fileName), "rb");
-
-   // we're got valid handle?
-   if (!fp.IsValid ())
-      return 0;
-
-   if (fp.Read (&waveHdr, sizeof (WaveHeader)) == 0)
-   {
-      AddLogEntry (true, LOG_ERROR, "Wave File %s - has wrong or unsupported format", fileName);
-      return 0;
-   }
-
-   if (strncmp (waveHdr.chunkID, "WAVE", 4) != 0)
-   {
-      AddLogEntry (true, LOG_ERROR, "Wave File %s - has wrong wave chunk id", fileName);
-      return 0;
-   }
-   fp.Close ();
-
-   if (waveHdr.dataChunkLength == 0)
-   {
-      AddLogEntry (true, LOG_ERROR, "Wave File %s - has zero length!", fileName);
-      return 0;
-   }
-
-   char ch[32];
-   sprintf (ch, "0.%d", static_cast <int> (waveHdr.dataChunkLength));
-
-   float secondLength = float (waveHdr.dataChunkLength / waveHdr.bytesPerSecond);
-   float milliSecondLength = float (atof (ch));
-
-   return (secondLength == 0.0f ? milliSecondLength : secondLength);
-}
-
-void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...)
+void AddLogEntry (int logLevel, const char *format, ...)
 {
    // this function logs a message to the message log file root directory.
 
    va_list ap;
-   char buffer[512] = {0, }, levelString[32] = {0, }, logLine[1024] = {0, }, buildVersionName[64];
+   char buffer[512] = { 0, }, levelString[32] = { 0, }, logLine[1024] = { 0, };
 
    va_start (ap, format);
    vsprintf (buffer, g_localizer->TranslateInput (format), ap);
@@ -1672,70 +1616,52 @@ void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...)
       break;
    }
 
-   if (outputToConsole)
-      ServerPrintNoTag ("%s%s", levelString, buffer);
-
-   // SyPB Pro P.35 - New log file
-   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-   uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-   // SyPB Pro P.40 - Log File Change
-   sprintf(buildVersionName, "build_%u_%u_%u_%u.txt", bV16[0], bV16[1], bV16[2], bV16[3]);
-
-   // SyPB Pro P.37 - new logs file 
-   File checkLogFP (FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "rb");
-   File fp(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "at");
-
-   if (!checkLogFP.IsValid())
-   {
-	   fp.Print("---------- SyPB Log  \n"); 
-	   fp.Print("---------- SyPB Version: %s  \n", PRODUCT_VERSION);
-	   fp.Print("---------- SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
-	   fp.Print("----------------------------- \n\n");
-   }
-   checkLogFP.Close();
-
-   // check if we got a valid handle
-   if (!fp.IsValid ())
-      return;
-
-   time_t tickTime = time (&tickTime);
-   tm *time = localtime (&tickTime);
-
-   sprintf (logLine, "[%02d:%02d:%02d] %s%s", time->tm_hour, time->tm_min, time->tm_sec, levelString, buffer);
-
-   fp.Print ("%s\n", logLine);
-   fp.Print("----------------------------- \n");
-   fp.Close ();
+   sprintf(logLine, "%s%s", levelString, buffer);
+   MOD_AddLogEntry (-1, logLine);
 
    if (logLevel == LOG_FATAL)
-   {
       FreeLibraryMemory ();
-
-#if defined (PLATFORM_WIN32)
-//      MessageBox (null, buffer, "SyPB Critical Error", MB_ICONERROR);
-//      ExitProcess (true);
-#else
-      exit (1);
-#endif
-   }
 }
 
-void AMXX_AddLogEntry(char *format)
+void MOD_AddLogEntry(int mod, char *format)
 {
-	char logLine[1024] = { 0, }, buildVersionName[64];
-	sprintf(buildVersionName, "sypbapi_build_%u_%u_%u_%u.txt", 
-		amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
+	char modName[32], logLine[1024] = { 0, }, buildVersionName[64];
+	uint16 mod_bV16[4];
+	if (mod == -1)
+	{
+		sprintf(modName, "SyPB");
+		int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+		for (int i = 0; i < 4; i++)
+			mod_bV16[i] = (uint16)buildVersion[i];
+	}
+	else if (mod == 0)
+	{
+		sprintf(modName, "SyPB_API");
+		for (int i = 0; i < 4; i++)
+			mod_bV16[i] = amxxDLL_bV16[i];
+	}
+	else if (mod == 1)
+	{
+		sprintf(modName, "SwNPC");
+		for (int i = 0; i < 4; i++)
+			mod_bV16[i] = SwNPC_Build[i];
+	}
+
+	ServerPrintNoTag("[%s Log] %s", modName, format);
+
+	sprintf(buildVersionName, "%s_build_%u_%u_%u_%u.txt", modName, 
+		mod_bV16[0], mod_bV16[1], mod_bV16[2], mod_bV16[3]);
 
 	File checkLogFP(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "rb");
 	File fp(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "at");
 
+
 	if (!checkLogFP.IsValid())
 	{
-		fp.Print("---------- SyPB API Log  \n");
-		fp.Print("---------- SyPB API Version: %u.%u  \n", amxxDLL_bV16[0], amxxDLL_bV16[1]);
-		fp.Print("---------- SyPB API Build: %u.%u.%u.%u  \n", 
-			amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
+		fp.Print("---------- %s Log \n", modName);
+		fp.Print("---------- %s Version: %u.%u  \n", modName, mod_bV16[0], mod_bV16[1]);
+		fp.Print("---------- %s Build: %u.%u.%u.%u  \n", modName, 
+			mod_bV16[0], mod_bV16[1], mod_bV16[2], mod_bV16[3]);
 		fp.Print("----------------------------- \n\n");
 	}
 
@@ -1752,41 +1678,8 @@ void AMXX_AddLogEntry(char *format)
 
 	sprintf(logLine, "[%02d:%02d:%02d] %s", time->tm_hour, time->tm_min, time->tm_sec, format);
 	fp.Print("%s\n", logLine);
-	fp.Print("SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
-	fp.Print("----------------------------- \n");
-	fp.Close();
-}
-
-void SwNPC_AddLogEntry(char *format)
-{
-	char logLine[1024] = { 0, }, buildVersionName[64];
-	sprintf(buildVersionName, "swnpc_build_%u_%u_%u_%u.txt", SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
-
-	File checkLogFP(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "rb");
-	File fp(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "at");
-
-	if (!checkLogFP.IsValid())
-	{
-		fp.Print("---------- SwNPC Log  \n");
-		fp.Print("---------- SwNPC Version: %u.%u  \n", SwNPC_Build[0], SwNPC_Build[1]);
-		fp.Print("---------- SwNPC Build: %u.%u.%u.%u  \n", SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
-		fp.Print("----------------------------- \n\n");
-	}
-
-	checkLogFP.Close();
-
-	if (!fp.IsValid())
-		return;
-
-	time_t tickTime = time(&tickTime);
-	tm *time = localtime(&tickTime);
-
-	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-	sprintf(logLine, "[%02d:%02d:%02d] %s", time->tm_hour, time->tm_min, time->tm_sec, format);
-	fp.Print("%s\n", logLine);
-	fp.Print("SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
+	if (mod != -1)
+		fp.Print("SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
 	fp.Print("----------------------------- \n");
 	fp.Close();
 }
@@ -1882,7 +1775,7 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
          if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
             continue;
 
-         float distance = (GetEntityOrigin (g_clients[i].ent) - origin).GetLengthSquared ();
+         float distance = (GetEntityOrigin (g_clients[i].ent) - origin).GetLength ();
 
          // now find nearest player
          if (distance < nearestDistance)
@@ -1902,7 +1795,6 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // hit/fall sound?
       g_clients[index].hearingDistance = 768.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 0.5f;
-      g_clients[index].maxTimeSoundLasting = 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("items/gunpickup", sample, 15) == 0)
@@ -1910,7 +1802,6 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // weapon pickup?
       g_clients[index].hearingDistance = 768.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 0.5f;
-      g_clients[index].maxTimeSoundLasting = 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("weapons/zoom", sample, 12) == 0)
@@ -1918,7 +1809,6 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // sniper zooming?
       g_clients[index].hearingDistance = 512.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 0.1f;
-      g_clients[index].maxTimeSoundLasting = 0.1f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("items/9mmclip", sample, 13) == 0)
@@ -1926,7 +1816,6 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // ammo pickup?
       g_clients[index].hearingDistance = 512.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 0.1f;
-      g_clients[index].maxTimeSoundLasting = 0.1f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("hostage/hos", sample, 11) == 0)
@@ -1934,7 +1823,6 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // CT used hostage?
       g_clients[index].hearingDistance = 1024.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 5.0f;
-      g_clients[index].maxTimeSoundLasting = 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("debris/bustmetal", sample, 16) == 0 || strncmp ("debris/bustglass", sample, 16) == 0)
@@ -1942,7 +1830,6 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // broke something?
       g_clients[index].hearingDistance = 1024.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 2.0f;
-      g_clients[index].maxTimeSoundLasting = 2.0f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("doors/doormove", sample, 14) == 0)
@@ -1950,19 +1837,8 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
       // someone opened a door
       g_clients[index].hearingDistance = 1024.0f * volume;
       g_clients[index].timeSoundLasting = engine->GetTime () + 3.0f;
-      g_clients[index].maxTimeSoundLasting = 3.0f;
       g_clients[index].soundPosition = origin;
    }
-#if 0
-   else if (strncmp ("weapons/reload",  sample, 14) == 0)
-   {
-      // reloading ?
-      g_clients[index].hearingDistance = 512.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 0.5f;
-      g_clients[index].maxTimeSoundLasting = 0.5f;
-      g_clients[index].soundPosition = origin;
-   }
-#endif
 }
 
 void SoundSimulateUpdate (int playerIndex)
@@ -2027,17 +1903,12 @@ void SoundSimulateUpdate (int playerIndex)
    // some sound already associated
    if (g_clients[playerIndex].timeSoundLasting > engine->GetTime ())
    {
-      // new sound louder (bigger range) than old one ?
-      if (g_clients[playerIndex].maxTimeSoundLasting <= 0.0f)
-         g_clients[playerIndex].maxTimeSoundLasting = 0.5f;
-
-      if (g_clients[playerIndex].hearingDistance * (g_clients[playerIndex].timeSoundLasting - engine->GetTime ()) / g_clients[playerIndex].maxTimeSoundLasting <= hearDistance)
+      if (g_clients[playerIndex].hearingDistance <= hearDistance)
       {
          // override it with new
-         g_clients[playerIndex].hearingDistance = hearDistance;
-         g_clients[playerIndex].timeSoundLasting = timeSound;
-         g_clients[playerIndex].maxTimeSoundLasting = timeMaxSound;
-         g_clients[playerIndex].soundPosition = GetEntityOrigin (player);
+		  g_clients[playerIndex].hearingDistance = hearDistance;
+		  g_clients[playerIndex].timeSoundLasting = timeSound;
+		  g_clients[playerIndex].soundPosition = GetEntityOrigin(player);
       }
    }
    else
@@ -2045,48 +1916,10 @@ void SoundSimulateUpdate (int playerIndex)
       // just remember it
       g_clients[playerIndex].hearingDistance = hearDistance;
       g_clients[playerIndex].timeSoundLasting = timeSound;
-      g_clients[playerIndex].maxTimeSoundLasting = timeMaxSound;
       g_clients[playerIndex].soundPosition = GetEntityOrigin (player);
    }
 }
-/*
-uint16 GenerateBuildNumber (void)
-{
-   // this function generates build number from the compiler date macros
 
-   // get compiling date using compiler macros
-   const char *date = __DATE__;
-
-   // array of the month names
-   const char *months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-   // array of the month days
-   uint8_t monthDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
-   int day = 0; // day of the year
-   int year = 0; // year
-   int i = 0;
-
-   // go through all monthes, and calculate, days since year start
-   for (i = 0; i < 11; i++)
-   {
-      if (strncmp (&date[0], months[i], 3) == 0)
-         break; // found current month break
-
-      day += monthDays[i]; // add month days
-   }
-   day += atoi (&date[4]) - 1; // finally calculate day
-   year = atoi (&date[7]) - 2000; // get years since year 2000
-
-   int buildNumber = day + static_cast <int> ((year - 1) * 365.25);
-
-   // if the year is a leap year?
-   if ((year % 4) == 0 && i > 1)
-      buildNumber += 1; // add one year more
-
-   return (buildNumber - 1114);
-}
-*/
 int GetWeaponReturn (bool needString, const char *weaponAlias, int weaponID)
 {
    // this function returning weapon id from the weapon alias and vice versa.

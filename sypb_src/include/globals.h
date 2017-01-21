@@ -39,7 +39,6 @@ extern uint16 SwNPC_Build[4];
 extern bool g_bombPlanted;
 extern bool g_bombSayString; 
 extern bool g_roundEnded;
-extern bool g_radioInsteadVoice;
 extern bool g_waypointOn;
 extern bool g_waypointsChanged;
 extern bool g_autoWaypoint;
@@ -47,7 +46,6 @@ extern bool g_botsCanPause;
 extern bool g_editNoclip;
 extern bool g_isMetamod;
 extern bool g_isFakeCommand;
-extern bool g_sendAudioFinished;
 extern bool g_leaderChoosen[2];
 
 extern bool g_sgdWaypoint;
@@ -96,7 +94,6 @@ extern Vector g_entityGetWpOrigin[entityNum];
 extern float g_entityGetWpTime[entityNum];
 
 extern Array <Array <String> > g_chatFactory;
-extern Array <Array <ChatterItem> > g_chatterFactory;
 extern Array <NameItem> g_botNames;
 extern Array <KwChat> g_replyFactory;
 

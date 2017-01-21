@@ -182,55 +182,6 @@ enum RadioList
    Radio_EnemyDown = 29
 };
 
-// voice system (extending enum above, messages 30-39 is reserved)
-enum ChatterList
-{
-   Chatter_SpotTheBomber = 40,
-   Chatter_FriendlyFire,
-   Chatter_DiePain,
-   Chatter_GotBlinded,
-   Chatter_GoingToPlantBomb,
-   Chatter_RescuingHostages,
-   Chatter_GoingToCamp,
-   Chatter_HearSomething,
-   Chatter_TeamKill,
-   Chatter_ReportingIn,
-   Chatter_GuardDroppedC4,
-   Chatter_Camp,
-   Chatter_PlantingC4,
-   Chatter_DefusingC4,
-   Chatter_InCombat,
-   Chatter_SeeksEnemy,
-   Chatter_Nothing,
-   Chatter_EnemyDown,
-   Chatter_UseHostage,
-   Chatter_FoundC4,
-   Chatter_WonTheRound,
-   Chatter_ScaredEmotion,
-   Chatter_HeardEnemy,
-   Chatter_SniperWarning,
-   Chatter_SniperKilled,
-   Chatter_VIPSpotted,
-   Chatter_GuardingVipSafety,
-   Chatter_GoingToGuardVIPSafety,
-   Chatter_QuicklyWonTheRound,
-   Chatter_OneEnemyLeft,
-   Chatter_TwoEnemiesLeft,
-   Chatter_ThreeEnemiesLeft,
-   Chatter_NoEnemiesLeft,
-   Chatter_FoundBombPlace,
-   Chatter_WhereIsTheBomb,
-   Chatter_DefendingBombSite,
-   Chatter_BarelyDefused,
-   Chatter_NiceshotCommander,
-   Chatter_NiceshotPall,
-   Chatter_GoingToGuardHostages,
-   Chatter_GoingToGuardDoppedBomb,
-   Chatter_OnMyWay,
-   Chatter_LeadOnSir,
-   Chatter_Total
-};
-
 // counter-strike weapon id's
 enum Weapon
 {
@@ -314,6 +265,7 @@ enum StartMsg
 // netmessage functions
 enum NetMsg
 {
+   NETMSG_UNDEFINED = -1,
    NETMSG_VGUI = 1,
    NETMSG_SHOWMENU = 2,
    NETMSG_WLIST = 3,
@@ -332,8 +284,7 @@ enum NetMsg
    NETMSG_SENDAUDIO = 17,
    NETMSG_SAYTEXT = 18,
    NETMSG_BOTVOICE = 19,
-   NETMSG_RESETHUD = 20,
-   NETMSG_UNDEFINED = 0
+   NETMSG_NUM = 21
 };
 
 // sensing states
@@ -344,8 +295,7 @@ enum SensingState
    STATE_PICKUPITEM = (1 << 2), // pickup item nearby
    STATE_THROWEXPLODE = (1 << 3), // could throw he grenade
    STATE_THROWFLASH = (1 << 4), // could throw flashbang
-   STATE_THROWSMOKE = (1 << 5), // could throw smokegrenade
-   STATE_SUSPECTENEMY = (1 << 6) // suspect enemy behind obstacle
+   STATE_THROWSMOKE = (1 << 5) // could throw smokegrenade
 };
 
 // positions to aim at
@@ -605,11 +555,6 @@ struct Client_old
    int flags; // client flags
    float hearingDistance; // distance this sound is heared
    float timeSoundLasting; // time sound is played/heared
-   float maxTimeSoundLasting; // max time sound is played/heared (to divide the difference between that above one and the current one)
-
-   //Vector headOrigin; // SyPB Pro P.26 - Get Head Origin
-   //float headOriginZP;
-   //float getHeadOriginTime;
 
    // SyPB Pro P.41 - Get Waypoint improve
    int wpIndex;
@@ -619,7 +564,7 @@ struct Client_old
    Vector getWpOrigin;
 
    // SyPB Pro P.38 - AMXX API
-   int m_isZombieBotAPI = -1;
+   int isZombiePlayerAPI = -1;
 };
 
 // bot creation tab
@@ -758,14 +703,11 @@ private:
    uint8_t m_pathType; // which pathfinder to use
    uint8_t m_visibility; // visibility flags
 
-   uint8_t *m_fatPVS; // SyPB Pro P.47 - check enemy improve
-
    int m_currentWaypointIndex; // current waypoint index
    int m_travelStartIndex; // travel start index to double jump action
    int m_prevWptIndex[5]; // previous waypoint indices from waypoint find
    int m_waypointFlags; // current waypoint flags
    int m_loosedBombWptIndex; // nearest to loosed bomb waypoint
-   float m_skillOffset; // offset to bots skill
 
    unsigned short m_currentTravelFlags; // connection flags like jumping
    bool m_jumpFinished; // has bot finished jumping
@@ -835,7 +777,6 @@ private:
 
    float m_duckTime; // time to duck
    float m_jumpTime; // time last jump happened
-   float m_voiceTimers[Chatter_Total]; // voice command timers
    float m_soundUpdateTime; // time to update the sound
    float m_heardSoundTime; // last time noise is heard
    float m_buttonPushTime; // time to push the button
@@ -859,7 +800,6 @@ private:
    float m_moveSpeedForRunMove, m_strafeSpeedForRunMove;
 
    void SwitchChatterIcon (bool show);
-   void InstantChatterMessage (int type);
    void BotAI (void);
    void FunBotAI(void);
    void DebugModeMsg(void);
@@ -868,7 +808,6 @@ private:
    void PerformWeaponPurchase (void);
    int BuyWeaponMode (int weaponId);
 
-   bool CanDuckUnder (Vector normal);
    bool CanJumpUp (Vector normal);
    bool CantMoveForward (Vector normal, TraceResult *tr);
 
@@ -932,7 +871,7 @@ private:
 
    float GetWalkSpeed (void);
 
-   bool ItemIsVisible (Vector dest, char *itemName, bool bomb = false);
+   bool ItemIsVisible(Vector dest, char *itemName);// , bool bomb = false);
    bool LastEnemyShootable (void);
    bool IsBehindSmokeClouds (edict_t *ent);
    void RunTask (void);
@@ -970,7 +909,7 @@ private:
    //void AttachToUser (void);
    void CombatFight (void);
    bool IsWeaponBadInDistance (int weaponIndex, float distance);
-   bool DoFirePause (float distance, FireDelay *fireDelay);
+   bool DoFirePause(float distance);//, FireDelay *fireDelay);
    bool LookupEnemy (void);
    void FireWeapon (void);
    void FocusEnemy (void);
@@ -981,7 +920,7 @@ private:
    void SelectPistol (void);
    bool IsFriendInLineOfFire (float distance);
    bool IsGroupOfEnemies (Vector location, int numEnemies = 2, int radius = 600);
-   bool IsShootableThruObstacle (Vector dest);
+   bool IsShootableThruObstacle (edict_t *entity);
    int GetNearbyEnemiesNearPosition (Vector origin, int radius);
    int GetNearbyFriendsNearPosition (Vector origin, int radius);
    void SelectWeaponByName (const char *name);
@@ -996,7 +935,7 @@ private:
    float GetBombTimeleft (void);
    float GetEstimatedReachTime (void);
 
-   int GetAimingWaypoint (void);
+   int GetCampAimingWaypoint(void);
    int GetAimingWaypoint (Vector targetOriginPos);
    void FindShortestPath (int srcIndex, int destIndex);
    void FindPath (int srcIndex, int destIndex, uint8_t pathType = 0);
@@ -1039,11 +978,8 @@ public:
    bool m_notKilled; // has the player been killed or has he just respawned
    bool m_notStarted; // team/class not chosen yet
 
-   int m_voteKickIndex; // index of player to vote against
-   int m_lastVoteKick; // last index
    int m_voteMap; // number of map to vote for
    int m_logotypeIndex; // index for logotype
-   int m_burstShotsFired; // number of bullets fired
 
    bool m_inBombZone; // bot in the bomb zone or not
    int m_buyState; // current Count in Buying
@@ -1143,7 +1079,6 @@ public:
    inline Vector Center (void) { return (pev->absmax + pev->absmin) * 0.5f; };
    inline Vector EyePosition (void) { return pev->origin + pev->view_ofs; };
    inline Vector EarPosition (void) { return pev->origin + pev->view_ofs; };
-   inline Vector GetGunPosition (void) { return (pev->origin + pev->view_ofs); }
 
    void Think (void);
    void NewRound (void);
@@ -1175,8 +1110,6 @@ public:
 
    void ChatMessage (int type, bool isTeamSay = false);
    void RadioMessage (int message);
-   void ChatterMessage (int message);
-   void HandleChatterMessage (const char *sz);
 
    void Kill (void);
    void Kick (void);
@@ -1284,8 +1217,8 @@ private:
    Bot *m_bot;
    int m_state;
    int m_message;
-   //int m_registerdMessages[NETMSG_BOTVOICE + 1];
-   int m_registerdMessages[NETMSG_RESETHUD + 1];  // SyPB Pro P.29 // SyPB Pro P.38 - Base improve
+   // SyPB Pro P.48 - Base improve
+   int m_registerdMessages[NETMSG_NUM];
 
 public:
    NetworkMsg (void);
@@ -1365,7 +1298,6 @@ public:
   ~Waypoint (void);
 
    void Initialize (void);
-   void InitVisibilityTab (void);
 
    void InitTypes (int mode);
    void AddPath (int addIndex, int pathIndex, float distance);
@@ -1412,7 +1344,6 @@ public:
    void Think (void);
    void ShowWaypointMsg(void); // SyPB Pro P.38 - Show Waypoint Msg
    bool NodesValid (void);
-   void SaveVisibilityTab (void);
    void CreateBasic (void);
    void EraseFromHardDisk (void);
 
@@ -1458,10 +1389,9 @@ extern bool IsZombieEntity (edict_t *ent);
 extern void SetGameMod(int gamemode);
 
 extern int GetEntityWaypoint(edict_t *ent);
-extern int SetEntityWaypoint(edict_t *ent, float waitTime = engine->RandomFloat (1.0f, 2.0f), int mode = -1);
+extern int SetEntityWaypoint(edict_t *ent, float waitTime = 1.0f, int mode = -1);
 
 extern float GetShootingConeDeviation (edict_t *ent, Vector *position);
-extern float GetWaveLength (const char *fileName);
 
 extern bool IsLinux (void);
 extern bool TryFileOpen (char *fileName);
@@ -1512,9 +1442,9 @@ extern void AutoLoadGameMode(void);
 extern void SetEntityActionData(int i, int index = -1, int team = -1, int action = -1);
 extern void API_TestMSG(const char *format, ...);
 
-extern void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...);
-extern void SwNPC_AddLogEntry(char *format);
-extern void AMXX_AddLogEntry(char *format);
+extern void AddLogEntry (int logLevel, const char *format, ...);
+
+extern void MOD_AddLogEntry(int mode, char *format);
 
 extern void DisplayMenuToClient (edict_t *ent, MenuText *menu);
 extern void DecalTrace (entvars_t *pev, TraceResult *trace, int logotypeIndex);
@@ -1535,9 +1465,7 @@ inline bool IsNullString (const char *input)
 
 // very global convars
 extern ConVar sypb_knifemode;
-extern ConVar sypb_commtype;
 extern ConVar sypb_gamemod;
-extern ConVar sypb_walkallow;
 
 #include <callbacks.h>
 #include <globals.h>
