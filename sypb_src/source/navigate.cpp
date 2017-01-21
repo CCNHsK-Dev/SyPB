@@ -501,15 +501,9 @@ bool Bot::DoWaypointNav (void)
 		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0, 0, 16);
 	   else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
 	   {
-		   /*
+		   // SyPB Pro P.45 - Move Speed improve
+		   // SyPB Pro P.46 - Ladder Move Speed improve TESTTEST
 		   m_moveSpeed = waypointDistance;
-
-		   if (m_moveSpeed < 150.0f)
-			   m_moveSpeed = 150.0f;
-		   else if (m_moveSpeed > pev->maxspeed)
-			   m_moveSpeed = pev->maxspeed; */
-
-		   // SyPB Pro P.45 - Move Speed improve TESTTEST
 		   if (m_moveSpeed > pev->maxspeed)
 			   m_moveSpeed = pev->maxspeed;
 		   else

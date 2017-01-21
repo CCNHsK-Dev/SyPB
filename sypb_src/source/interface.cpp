@@ -716,6 +716,30 @@ void SyPB_Version_Command(void)
 		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
 }
 
+// SyPB Pro P.46 - Entity Action Check Cvar
+void CheckEntityAction(void)
+{
+	int i;
+	int workEntityWork = 0;
+	edict_t *entity = null;
+
+	for (i = 0; i < entityNum; i++)
+	{
+		if (g_entityId[i] == -1)
+			continue;
+
+		entity = INDEXENT(g_entityId[i]);
+		if (FNullEnt(entity) || entity->v.effects & EF_NODRAW)
+			continue;
+
+		ServerPrintNoTag("Entity Num: %d | Action: %d | Team: %d", 
+			workEntityWork+1, g_entityAction[i], g_entityTeam[i]);
+		workEntityWork++;
+	}
+
+	ServerPrintNoTag("Total Entity Action Num: %d", workEntityWork);
+}
+
 void AddBot(void)
 {
 	g_botManager->AddBot("", -1, -1, -1, -1);
@@ -1245,6 +1269,9 @@ void GameDLLInit (void)
    RegisterCommand("sypb_add_t", AddBot_TR);
    RegisterCommand("sypb_add_ct", AddBot_CT);
    RegisterCommand("sypb_add", AddBot);
+
+   // SyPB Pro P.46 - Entity Action Check Cvar
+   RegisterCommand("sypb_entity_check", CheckEntityAction);
 
    // register server command(s)
    RegisterCommand ("sypb", CommandHandler);

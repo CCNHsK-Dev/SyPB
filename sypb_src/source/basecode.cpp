@@ -492,7 +492,6 @@ void Bot::AvoidEntity(void)
 		allEntity++;
 	}
 
-
 	for (i = 0; i < allEntity; i++)
 	{
 		if (avoidEntityId[i] == -1)
@@ -2553,8 +2552,8 @@ void Bot::PushTask (Task *task)
       if (newTaskDifferent && m_isLeader && m_tasks->taskID == TASK_SEEKCOVER)
          CommandTeam (); // reorganize team if fleeing
 
-      if (newTaskDifferent && m_tasks->taskID == TASK_CAMP)
-         SelectBestWeapon ();
+	  if (newTaskDifferent && m_tasks->taskID == TASK_CAMP)
+		  SelectBestWeapon();
 
       // this is best place to handle some voice commands report team some info
       if (newTaskDifferent && engine->RandomInt (0, 100) < 95)
@@ -4732,8 +4731,6 @@ void Bot::RunTask (void)
          TaskComplete ();
       }
 
-	  SelectBestWeapon ();
-
 	  m_isReloading = false;
 	  m_reloadState = RSTATE_NONE;
 
@@ -5130,7 +5127,7 @@ void Bot::RunTask (void)
       if (m_targetEntity->v.maxspeed != 0 && m_targetEntity->v.maxspeed < pev->maxspeed)
          m_moveSpeed = m_targetEntity->v.maxspeed; */
 
-	  // SyPB Pro P.45 - Move Speed improve TESTTEST
+	  // SyPB Pro P.45 - Move Speed improve
 	  if (m_targetEntity->v.maxspeed != 0.0f)
 	  {
 		  if (m_targetEntity->v.maxspeed < pev->maxspeed)

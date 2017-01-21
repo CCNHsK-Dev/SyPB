@@ -760,6 +760,7 @@ bool Bot::DoFirePause (float distance, FireDelay *fireDelay)
    return false;
 }
 
+
 void Bot::FireWeapon(void)
 {
 	// this function will return true if weapon was fired, false otherwise
@@ -783,26 +784,6 @@ void Bot::FireWeapon(void)
 
 	int selectId = WEAPON_KNIFE, selectIndex = 0, chosenWeaponIndex = 0;
 	int weapons = pev->weapons;
-
-	/*
-	// if jason mode use knife only
-	if (sypb_knifemode.GetBool())
-		goto WeaponSelectEnd;
-
-	// SyPB Pro P.36 - Attack Ai
-	// SyPB Pro P.40 - NPC Fixed
-	if (!FNullEnt(enemy))// && IsValidPlayer (enemy))
-	{
-		if (GetGameMod() == 0 && m_skill > 80 && distance < 70.0f && enemy->v.health <= 30 && pev->health >= enemy->v.health &&
-			!IsGroupOfEnemies(pev->origin) && !::IsInViewCone(pev->origin, enemy))
-			goto WeaponSelectEnd;
-		else if (GetGameMod() == 1 && m_skill > 90 && distance < 50.0f && enemy->v.health <= 20 && !::IsInViewCone(pev->origin, enemy))
-			goto WeaponSelectEnd;
-		//else if (GetGameMod () == 2 && IsZombieEntity (GetEntity ()))
-		else if (IsZombieEntity (GetEntity ())) // SyPB Pro P.38 - Small Change
-			goto WeaponSelectEnd;
-	}
-	*/
 
 	// SyPB Pro P.43 - Attack Ai improve
 	if (IsZombieEntity(GetEntity()) || sypb_knifemode.GetBool())
@@ -1118,7 +1099,9 @@ bool Bot::KnifeAttack(float attackDistance)
 
 		if (IsZombieEntity(GetEntity()))
 		{
-			if (kaMode == 1)
+			//if (kaMode == 1)
+			// SyPB Pro P.46 - Zombie Attack Fixed
+			if (kaMode != 2)
 				pev->button |= IN_ATTACK;
 			else
 				pev->button |= IN_ATTACK2;
@@ -1267,13 +1250,6 @@ void Bot::CombatFight(void)
 		m_moveToGoal = false;
 		m_navTimeset = engine->GetTime();
 	}
-
-	/*
-	// SyPB Pro P.40 - Knife Attack improve
-	if (m_currentWeapon == WEAPON_KNIFE && m_moveSpeed != 0.0f &&
-		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH && 
-		(pev->velocity.GetLength () < GetWalkSpeed () || m_isStuck))
-		pev->button |= IN_DUCK; */
 
 	// SyPB Pro P.43 - Attack Ai improve 
 	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) && 
@@ -1789,35 +1765,6 @@ void Bot::SelectWeaponbyNumber (int num)
    FakeClientCommand (GetEntity (), g_weaponSelect[num].weaponName);
 }
 
-/*
-void Bot::AttachToUser (void)
-{
-	// SyPB Pro P.29 - small change
-	if (GetGameMod () != 0)
-		return;
-
-   // this function forces bot to join to user
-   Array <edict_t *> foundUsers;
-
-   // search friends near us
-   for (int i = 0; i < engine->GetMaxClients (); i++)
-   {
-      if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || g_clients[i].team != GetTeam (GetEntity ()) || g_clients[i].ent == GetEntity ())
-         continue;
-
-      if (EntityIsVisible (g_clients[i].origin) && !IsValidBot (g_clients[i].ent))
-         foundUsers.Push (g_clients[i].ent);
-   }
-
-   if (foundUsers.IsEmpty ())
-      return;
-
-   m_targetEntity = foundUsers.GetRandomElement ();
-
-   ChatterMessage (Chatter_LeadOnSir);
-   PushTask (TASK_FOLLOWUSER, TASKPRI_FOLLOWUSER, -1, 0.0, true);
-}
-*/
 void Bot::CommandTeam (void)
 {
    // prevent spamming

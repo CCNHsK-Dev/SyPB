@@ -871,7 +871,12 @@ void AutoLoadGameMode(void)
 				g_gameVersion = CSVER_CZERO;
 
 				// SyPB Pro P.45 - BTE support improve
-				if (checkShowTextTime < 3)
+				//if (checkShowTextTime < 3)
+				//	ServerCommand("sv_restart 1");
+
+				// SyPB Pro P.46 - BTE support improve
+				// Only ZM3 need restart the round
+				if (checkShowTextTime < 3 && i == 7)
 					ServerCommand("sv_restart 1");
 
 				break;
