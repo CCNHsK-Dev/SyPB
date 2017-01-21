@@ -56,58 +56,34 @@ int Bot::GetNearbyEnemiesNearPosition (Vector origin, int radius)
    return count;
 }
 
-// SyPB Pro P.30 - Find Enemy Ai
-float Bot::GetEntityDistance(edict_t *entity, bool checkWP)
+// SyPB Pro P.41 - Find Enemy Ai improve
+float Bot::GetEntityDistance(edict_t *entity)
 {
 	if (FNullEnt(entity))
 		return 9999.9f;
 
-	// SyPB Pro P.32 - Human Zombie Mode
-	if (!IsZombieEntity(GetEntity()))
-	{
-		if (GetGameMod () != 2)
-			return ((pev->origin - GetEntityOrigin (entity)).GetLength());
+	float distance = (pev->origin - GetEntityOrigin(entity)).GetLength();
 
-		if (((pev->origin - GetEntityOrigin (entity)).GetLength()) < 300.0f)
-			return ((pev->origin - GetEntityOrigin (entity)).GetLength());
-	}
+	if (!IsZombieEntity(GetEntity()) && !IsZombieEntity(entity))
+		return distance;
 
-	// SyPB Pro P.38 - Zombie Ai
-	if (!FNullEnt (m_enemy))
-	{
-		float trDistance = ((pev->origin - GetEntityOrigin(entity)).GetLength());
-		if (entity == m_enemy)
-		{
-			if (trDistance <= 600.0f)
-				return trDistance;
-		}
-		else
-		{
-			if (trDistance < (pev->origin - GetEntityOrigin (m_enemy)).GetLength ())
-				return trDistance;
-		}
-	}
-	else if (!FNullEnt(m_moveTargetEntity))
-	{
-		float trDistance = ((pev->origin - GetEntityOrigin(entity)).GetLength());
-		if (trDistance <= 50.0f)
-			return trDistance;
-	}
+	int wpIndex = GetEntityWaypoint(GetEntity());
+	int targetWpIndex = GetEntityWaypoint(entity);
 
-	int wpIndex = g_waypoint->FindNearest(pev->origin);
-	int targetWpIndex = g_waypoint->FindNearest(GetEntityOrigin(entity));
-	float trDistance = ((pev->origin - GetEntityOrigin(entity)).GetLength());
-	if (checkWP)
-		trDistance = -1;
+	if (wpIndex < 0 || wpIndex >= g_numWaypoints || targetWpIndex < 0 || targetWpIndex >= g_numWaypoints ||
+		wpIndex == targetWpIndex)
+		return distance;
 
-	if (wpIndex < 0 || wpIndex >= g_numWaypoints || targetWpIndex < 0 || targetWpIndex >= g_numWaypoints)
-		return trDistance;
+	float wpDistance = -1.0f;
+	if (IsZombieEntity(GetEntity()))
+		wpDistance = g_waypoint->GetPathDistanceFloat(wpIndex, targetWpIndex);
+	else
+		wpDistance = g_waypoint->GetPathDistanceFloat(targetWpIndex, wpIndex);
 
-	float distance = g_waypoint->GetPathDistanceFloat(wpIndex, targetWpIndex);
-	if (distance == -1 || distance < trDistance)
-		return trDistance;
+	if (wpDistance == -1.0f)
+		return distance;
 
-	return distance;
+	return wpDistance;
 }
 
 // SyPB Pro P.29 - new Look UP Enemy
@@ -140,52 +116,62 @@ bool Bot::LookupEnemy(void)
 	edict_t *entity = null, *targetEntity = null;
 	float enemy_distance = 9999.0f;
 
+	// SyPB Pro P.41 - AMXX API
+	if (!FNullEnt(m_moveTargetEntityAPI))
+	{
+		if (GetTeam(GetEntity()) != GetTeam(m_moveTargetEntityAPI) && IsAlive(m_moveTargetEntityAPI))
+		{
+			if (m_moveTargetEntity != m_moveTargetEntityAPI)
+				SetMoveTarget(m_moveTargetEntityAPI);
+
+			return false;
+		}
+		else
+		{
+			// SyPB Pro P.32 - API Fixed
+			SetMoveTarget(null);
+
+			m_moveTargetEntityAPI = null;
+		}
+	}
+	else if (!FNullEnt(m_enemyAPI))
+	{
+		if (GetTeam(GetEntity()) != GetTeam(m_enemyAPI) && IsAlive(m_enemyAPI))
+		{
+			m_targetEntity = null;
+			m_enemy = m_enemyAPI;
+			m_lastEnemy = m_enemy;
+			m_lastEnemyOrigin = GetEntityOrigin(m_enemy);
+			m_enemyReachableTimer = 0.0f;
+			m_seeEnemyTime = engine->GetTime();
+
+			if (!IsEnemyViewable(m_enemy, false, true, true))
+				m_enemyOrigin = GetEntityOrigin(m_enemy);
+
+			return true;
+		}
+
+		m_enemyAPI = null;
+	}
+
 	// SyPB Pro P.30 - AMXX API
 	if (m_blockCheckEnemyTime > engine->GetTime())
-	{
-		if (!FNullEnt(m_moveTargetEntityAPI))
-		{
-			if (GetTeam(GetEntity()) != GetTeam(m_moveTargetEntityAPI) && IsAlive(m_moveTargetEntityAPI))
-			{
-				if (m_moveTargetEntity != m_moveTargetEntityAPI)
-					SetMoveTarget(m_moveTargetEntityAPI);
-			}
-			else
-			{
-				// SyPB Pro P.32 - API Fixed
-				SetMoveTarget(null);
-
-				m_moveTargetEntityAPI = null;
-			}
-		}
-		else if (!FNullEnt(m_enemyAPI))
-		{
-			if (GetTeam(GetEntity()) != GetTeam(m_enemyAPI) && IsAlive(m_enemyAPI))
-			{
-				m_targetEntity = null;
-				m_enemy = m_enemyAPI;
-				m_lastEnemy = m_enemy;
-				m_lastEnemyOrigin = GetEntityOrigin(m_enemy);
-				m_enemyReachableTimer = 0.0f;
-				m_seeEnemyTime = engine->GetTime();
-
-				if (!IsEnemyViewable(m_enemy, false, true, true))
-					m_enemyOrigin = GetEntityOrigin(m_enemy);
-
-				return true;
-			}
-			else
-				m_enemyAPI = null;
-		}
 		return false;
-	}
+
 	m_enemyAPI = null;
 	m_moveTargetEntityAPI = null;
 
 	if (!FNullEnt(m_enemy))
 	{
 		if (GetTeam(GetEntity()) == GetTeam(m_enemy) || IsNotAttackLab(m_enemy) || !IsAlive(m_enemy))
-			return false;
+		{
+			// SyPB Pro P.41 - LookUp Enemy fixed
+			m_enemy = null;
+			m_enemyOrigin = nullvec;
+			m_lastEnemy = null;
+			m_lastEnemyOrigin = nullvec;
+			m_enemyUpdateTime = 0.0f;
+		}
 
 		// SyPB Pro P.40 - Trace Line improve
 		if ((m_enemyUpdateTime > engine->GetTime()))
@@ -197,23 +183,16 @@ bool Bot::LookupEnemy(void)
 			}
 		}
 
-		if (IsEnemyViewable(m_enemy, false, true, true))
-		{
-			targetEntity = m_enemy;
-			enemy_distance = GetEntityDistance(m_enemy);
-		} 
+		targetEntity = m_enemy;
+		enemy_distance = GetEntityDistance(m_enemy);
 	}
 	else if (!FNullEnt(m_moveTargetEntity))
 	{
 		if (GetTeam(GetEntity()) == GetTeam(m_moveTargetEntity) || !IsAlive(m_moveTargetEntity) || 
 			GetEntityOrigin(m_moveTargetEntity) == nullvec)
-		{
 			SetMoveTarget(null);
-			return false;
-		}
 
 		targetEntity = m_moveTargetEntity;
-		m_moveTargetOrigin = GetEntityOrigin(m_moveTargetEntity);
 		enemy_distance = GetEntityDistance(m_moveTargetEntity);
 	}
 
@@ -228,7 +207,14 @@ bool Bot::LookupEnemy(void)
 	checkEntityDistance.RemoveAll();
 
 	for (i = 1; i <= engine->GetMaxClients(); i++)
+	{
+		entity = INDEXENT(i);
+
+		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
+			continue;
+
 		entityId.Push(i);
+	}
 
 	// SyPB Pro P.40 - AMXX API
 	ITERATE_ARRAY(g_entityIdAPI, j)
@@ -257,48 +243,53 @@ bool Bot::LookupEnemy(void)
 
 		float distance = GetEntityDistance(entity);
 
-		bool longDistance = true;
-		for (int y = 0; y != checkEntityDistance.GetElementNumber(); y++)
+		// SyPB Pro P.41 - LookUp Enemy fixed
+		int maxCheckIdNum = checkEntityId.GetElementNumber() - 1;
+		bool maxDistance = true;
+		for (int y = 0; y <= maxCheckIdNum; y++)
 		{
 			if (distance >= checkEntityDistance[y])
 				continue;
 
-			for (int z = checkEntityDistance.GetElementNumber(); z != y; z--)
+			for (int z = maxCheckIdNum; z >= y; z--)
 			{
 				float ramDistance = checkEntityDistance[z];
 				int ramEntityId = checkEntityId[z];
 
-				checkEntityDistance.SetAt(z + 1, ramDistance);
-				checkEntityId.SetAt(z + 1, ramEntityId);
+				if (z == maxCheckIdNum)
+				{
+					checkEntityId.Push(ramEntityId);
+					checkEntityDistance.Push(ramDistance);
+				}
+				else
+				{
+					checkEntityDistance.SetAt(z + 1, ramDistance);
+					checkEntityId.SetAt(z + 1, ramEntityId);
+				}
 			}
 
 			checkEntityDistance.SetAt(y, distance);
 			checkEntityId.SetAt(y, entityId[j]);
-			longDistance = false;
+			maxDistance = false;
+			y = maxCheckIdNum + 2;
 			break;
 		}
 
-		if (longDistance)
+		if (maxDistance)
 		{
 			checkEntityId.Push(entityId[j]);
 			checkEntityDistance.Push(distance);
 		}
 	}
 
-	ITERATE_ARRAY(checkEntityDistance, j)
+	ITERATE_ARRAY(checkEntityId, j)
 	{
 		entity = INDEXENT(checkEntityId[j]);
 
 		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
 			continue;
 
-		if (entity == targetEntity)
-			continue;
-
 		if (IsValidPlayer(entity) && IsEnemyProtectedByShield(entity))
-			continue;
-
-		if (checkEntityDistance[j] >= enemy_distance)
 			continue;
 
 		if (IsBehindSmokeClouds(entity) && m_blindRecognizeTime < engine->GetTime())
@@ -315,98 +306,18 @@ bool Bot::LookupEnemy(void)
 			break;
 		}
 	}
-	
-	/*
-	for (i = 1; i <= engine->GetMaxClients(); i++)
+
+	// SyPB Pro P.41 - Move Target 
+	if (!FNullEnt(m_moveTargetEntity) && m_moveTargetEntity != targetEntity)
 	{
-		entity = INDEXENT(i);
-
-		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team || entity == GetEntity())
-			continue;
-
-		if (entity == targetEntity)
-			continue;
-
-		float distance = GetEntityDistance(entity);
-		if (distance >= enemy_distance)
-			continue;
-
-		if (IsBehindSmokeClouds(entity) && m_blindRecognizeTime < engine->GetTime())
-			m_blindRecognizeTime = engine->GetTime() + engine->RandomFloat(2.0, 3.0f);
-
-		if (m_blindRecognizeTime >= engine->GetTime())
-			continue;
-
-		if (IsEnemyProtectedByShield(entity))
-			continue;
-
-		if (IsEnemyViewable(entity, false, false, true))
+		float distance = GetEntityDistance(m_moveTargetEntity);
+		if (distance <= enemy_distance + 400.0f)
 		{
 			enemy_distance = distance;
-			targetEntity = entity;
-
-			if ((g_mapType & MAP_AS) && *(INFOKEY_VALUE(GET_INFOKEYBUFFER(entity), "model")) == 'v')
-				break;
+			targetEntity = null;
 		}
 	}
 	
-	// SyPB Pro P.40 - AMXX API
-	Array <int> entityId;
-	entityId.RemoveAll();
-	ITERATE_ARRAY(g_entityIdAPI, j)
-	{
-		if (g_entityActionAPI[j] != 1 || (GetTeam(GetEntity()) == (g_entityTeamAPI[j] - 1) && g_entityTeamAPI[j] != 0))
-			continue;
-
-		entityId.Push(g_entityIdAPI[j]);
-	} 
-
-	ITERATE_ARRAY(g_entityName, j)
-	{
-		if (g_entityAction[j] != 1 || (GetTeam(GetEntity()) == (g_entityTeam[j] - 1) && g_entityTeam[j] != 0))
-			continue;
-
-		while (!FNullEnt(entity = FIND_ENTITY_BY_CLASSNAME(entity, g_entityName[j])))
-			entityId.Push(ENTINDEX(entity));
-	}
-
-	ITERATE_ARRAY(entityId, j)
-	{
-		entity = INDEXENT(entityId[j]);
-
-		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team || GetEntityOrigin (entity) == nullvec)
-			continue;
-
-		if (entity == targetEntity)
-			continue;
-
-		float distance = GetEntityDistance(entity);
-		if (distance >= enemy_distance)
-			continue;
-
-		if (IsBehindSmokeClouds(entity) && m_blindRecognizeTime < engine->GetTime())
-			m_blindRecognizeTime = engine->GetTime() + engine->RandomFloat(2.0, 3.0f);
-
-		// SyPB Pro P.30 - NPC Fixed
-		if (IsEnemyViewable(entity, false, false, true))
-		{
-			enemy_distance = distance;
-			targetEntity = entity;
-		}
-	}  */
-	
-	// SyPB Pro P.40 - Move Target improve 
-	if (!FNullEnt(m_moveTargetEntity))
-	{
-		if (FNullEnt(targetEntity))
-			targetEntity = m_moveTargetEntity;
-		else if (IsEnemyViewable(m_moveTargetEntity, false, true, true))
-		{
-			if (GetEntityDistance(m_moveTargetEntity) < GetEntityDistance(targetEntity))
-				targetEntity = m_moveTargetEntity;
-		}
-	}
-
 	if (!FNullEnt(targetEntity))  // Last Checking
 	{
 		enemy_distance = GetEntityDistance(targetEntity);
@@ -480,11 +391,12 @@ bool Bot::LookupEnemy(void)
 					}
 				}
 
-				if (movePoint <= 1)
+				if (movePoint == 0)
 				{
 					movePoint = 0;
-					int srcIndex = g_waypoint->FindNearest(pev->origin);
-					int destIndex = g_waypoint->FindNearest(GetEntityOrigin(targetEntity));
+
+					int srcIndex = GetEntityWaypoint(GetEntity());
+					int destIndex = GetEntityWaypoint(targetEntity);
 
 					while (srcIndex != destIndex && movePoint < 99 && srcIndex >= 0 && destIndex >= 0)
 					{
@@ -697,10 +609,19 @@ bool Bot::IsFriendInLineOfFire (float distance)
       float friendDistance = (GetEntityOrigin (ent) - pev->origin).GetLength ();
       float squareDistance = sqrtf (1089.0f + (friendDistance * friendDistance));
 
-      if ((GetShootingConeDeviation (GetEntity (), &GetEntityOrigin (ent))) > 
-		  ((friendDistance * friendDistance) / (squareDistance * squareDistance)) && 
-		  friendDistance <= distance)
-         return true;
+	  /*
+	  if ((GetShootingConeDeviation (GetEntity (), &GetEntityOrigin (ent))) >
+	  ((friendDistance * friendDistance) / (squareDistance * squareDistance)) &&
+	  friendDistance <= distance) */
+
+	  // SyPB Pro P.41 - VS LOG
+	  if (friendDistance <= distance)
+	  {
+		  Vector entOrigin = GetEntityOrigin(ent);
+		  if (GetShootingConeDeviation(GetEntity(), &entOrigin) >
+			  ((friendDistance * friendDistance) / (squareDistance * squareDistance)))
+			  return true;
+	  }
    }
    return false;
 }
@@ -1440,49 +1361,22 @@ void Bot::CombatFight(void)
 					baseDistance += 70.0f;
 			}
 
-			/*
-			if (::IsInViewCone(pev->origin, m_enemy) &&
-			GetNearbyEnemiesNearPosition (GetEntityOrigin (m_enemy), 300) < 3) // SyPB Pro P.37 - Zombie Mode Attack Ai
-			{
-			if (m_currentWeapon == WEAPON_KNIFE)
-			baseDistance = 450.0f;
-			else
-			baseDistance = 400.0f;
-			}
-			else
-			{
-			if (m_currentWeapon == WEAPON_KNIFE)
-			baseDistance = -1.0f;
-			else
-			baseDistance = 300.0f;
-			}
-			*/
 			if (baseDistance != -1.0f)
 			{
-				/*
-				int fdPlayer = GetNearbyFriendsNearPosition(pev->origin, (baseDistance > 0.0f) ? int(baseDistance) / 2 : 300);
-				int enPlayer = GetNearbyEnemiesNearPosition(enemyOrigin, (baseDistance > 0.0f) ? int(baseDistance) : 400);
-
-				baseDistance -= (fdPlayer * 10.0f);
-				baseDistance += (enPlayer * 20.0f);
-
-				if (baseDistance <= 0.0f)
-				baseDistance = 50.0f; */
-
 				// SyPB Pro P.38 - Zomibe Mode Attack Ai small improve
 				if (m_reloadState != RSTATE_NONE)
-					baseDistance *= 1.8;
+					baseDistance *= 1.8f;
 				else if (m_currentWeapon != WEAPON_KNIFE)
 				{
 					int weapons = pev->weapons, weaponIndex = -1;
 					int maxClip = CheckMaxClip(weapons, &weaponIndex);
 
 					if (m_ammoInClip[weaponIndex] < (maxClip * 0.2))
-						baseDistance *= 1.6;
+						baseDistance *= 1.6f;
 					else if (m_ammoInClip[weaponIndex] < (maxClip * 0.4))
-						baseDistance *= 1.4;
+						baseDistance *= 1.4f;
 					else if (m_ammoInClip[weaponIndex] < (maxClip * 0.6))
-						baseDistance *= 1.2;
+						baseDistance *= 1.2f;
 				}
 			}
 
@@ -1658,7 +1552,7 @@ void Bot::CombatFight(void)
 			if (!IsVisible(GetEntityOrigin(m_enemy), GetEntity()) && !IsVisible(GetEntityOrigin(m_enemy) + Vector(0, 0, -enemyHalfHeight), GetEntity()))
 				shouldDuck = false;
 
-			int nearestToEnemyPoint = g_waypoint->FindNearest(GetEntityOrigin(m_enemy));
+			int nearestToEnemyPoint = GetEntityWaypoint(m_enemy);
 
 			if (shouldDuck && GetCurrentTask()->taskID != TASK_SEEKCOVER && GetCurrentTask()->taskID != TASK_HUNTENEMY && (m_visibility & VISIBILITY_BODY) && !(m_visibility & VISIBILITY_OTHER) && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
 				m_duckTime = engine->GetTime() + m_frameInterval * 3.5f;

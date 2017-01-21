@@ -1,27 +1,19 @@
-﻿Build started 2015/9/20 上午 02:01:19.
+﻿Build started 2015/10/20 下午 05:06:51.
      1>Project "C:\Users\mikeg\Desktop\sypb_src\project_v120\sypb.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I.\ /I..\ /I..\include /ZI /nologo /W3 /Od /Oi /Oy- /D NDEBUG /D WIN32 /D _WINDLL /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /GR /Yc"core.h" /Fp".\sypb_release\inf\sypb.pch" /Fo".\sypb_release\obj\\" /Fd".\sypb_release\inf\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\source\precomp.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I.\ /I..\ /I..\include /nologo /W0 /O2 /Oi /Oy- /D NDEBUG /D WIN32 /D _WINDLL /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /GR /Yc"core.h" /Fp".\sypb_release\inf\sypb.pch" /Fo".\sypb_release\obj\\" /Fd".\sypb_release\inf\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\source\precomp.cpp
          precomp.cpp
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I.\ /I..\ /I..\include /ZI /nologo /W3 /Od /Oi /Oy- /D NDEBUG /D WIN32 /D _WINDLL /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /GR /Yu"core.h" /Fp".\sypb_release\inf\sypb.pch" /Fo".\sypb_release\obj\\" /Fd".\sypb_release\inf\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\source\basecode.cpp ..\source\callbacks.cpp ..\source\chatlib.cpp ..\source\combat.cpp ..\source\control.cpp ..\source\engine.cpp ..\source\Experience.cpp ..\source\globals.cpp ..\source\interface.cpp ..\source\navigate.cpp ..\source\netmsg.cpp ..\source\support.cpp ..\source\waypoint.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I.\ /I..\ /I..\include /nologo /W0 /O2 /Oi /Oy- /D NDEBUG /D WIN32 /D _WINDLL /D _MBCS /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /GR /Yu"core.h" /Fp".\sypb_release\inf\sypb.pch" /Fo".\sypb_release\obj\\" /Fd".\sypb_release\inf\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\source\basecode.cpp ..\source\callbacks.cpp ..\source\chatlib.cpp ..\source\combat.cpp ..\source\control.cpp ..\source\engine.cpp ..\source\Experience.cpp ..\source\globals.cpp ..\source\interface.cpp ..\source\navigate.cpp ..\source\netmsg.cpp ..\source\support.cpp ..\source\waypoint.cpp
          basecode.cpp
          callbacks.cpp
          chatlib.cpp
          combat.cpp
-     1>c:\users\mikeg\desktop\sypb_src\source\combat.cpp(1474): warning C4305: '*=' : truncation from 'double' to 'float'
-     1>c:\users\mikeg\desktop\sypb_src\source\combat.cpp(1481): warning C4305: '*=' : truncation from 'double' to 'float'
-     1>c:\users\mikeg\desktop\sypb_src\source\combat.cpp(1483): warning C4305: '*=' : truncation from 'double' to 'float'
-     1>c:\users\mikeg\desktop\sypb_src\source\combat.cpp(1485): warning C4305: '*=' : truncation from 'double' to 'float'
          control.cpp
          engine.cpp
          Experience.cpp
          globals.cpp
          interface.cpp
          navigate.cpp
-     1>c:\users\mikeg\desktop\sypb_src\source\navigate.cpp(77): warning C4244: 'initializing' : conversion from 'float' to 'int', possible loss of data
-     1>c:\users\mikeg\desktop\sypb_src\source\navigate.cpp(79): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-     1>c:\users\mikeg\desktop\sypb_src\source\navigate.cpp(82): warning C4244: 'argument' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\mikeg\desktop\sypb_src\source\navigate.cpp(1207): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
          netmsg.cpp
          support.cpp
          waypoint.cpp
@@ -44,11 +36,10 @@
          .\sypb_release\obj\precomp.obj
          .\sypb_release\obj\support.obj
          .\sypb_release\obj\waypoint.obj
-     1>basecode.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:ICF' specification
             Creating library .\sypb_release\inf\sypb.lib and object .\sypb_release\inf\sypb.exp
          sypb.vcxproj -> C:\Users\mikeg\Desktop\sypb_src\project_v120\.\sypb_release\sypb.dll
      1>Done Building Project "C:\Users\mikeg\Desktop\sypb_src\project_v120\sypb.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:04.23
+Time Elapsed 00:00:07.40

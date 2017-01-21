@@ -192,7 +192,8 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    {
 	   // SyPB Pro P.31 - New Msg
 	   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+	   uint16 bV16[4] = { (uint16) buildVersion[0], (uint16)buildVersion[1], 
+		   (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
 	   uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
 	   if (amxxDLL_Version == -1.0)
@@ -203,14 +204,28 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 		   amxxbV16[3] = 0;
 	   }
 
+	   uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
+	   if (SwNPC_Version == -1.0)
+	   {
+		   swnpcbV16[0] = 0;
+		   swnpcbV16[1] = 0;
+		   swnpcbV16[2] = 0;
+		   swnpcbV16[3] = 0;
+	   }
+
 	   char versionData[] =
 		   "------------------------------------------------\n"
 		   "Name: %s%s\n"
 		   "Version: %s%s (%u.%u.%u.%u)\n"
 		   "Support API Version:%.2f\n"
+		   "Support SwNPC Version:%.2f\n"
 		   "------------------------------------------------\n"
 		   "The AMXX API: %s \n"
 		   "AMXX API Version: %.2f (%u.%u.%u.%u)\n"
+		   "%s"
+		   "------------------------------------------------\n"
+		   "SwNPC: %s \n"
+		   "SwNPC Version: %.2f (%u.%u.%u.%u)\n"
 		   "%s"
 		   "------------------------------------------------\n"
 		   "Builded by: %s\n"
@@ -225,11 +240,17 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 		   PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
 		   PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
 		   float(SUPPORT_API_VERSION_F),
+		   float(SUPPORT_SWNPC_VERSION_F),
 		   //API_Version, 
 		   (amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
 		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
 		   amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
 		   (amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
+		   // SwNPC
+		   (SwNPC_Version == -1.0) ? "FAIL" : "RUN",
+		   (SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
+		   swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3], 
+		   (SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
 		   PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
    }
 
@@ -626,7 +647,7 @@ void CommandHandler (void)
 void SyPB_Version_Command(void)
 {
 	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
 	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
 	if (amxxDLL_Version == -1.0)
@@ -637,14 +658,28 @@ void SyPB_Version_Command(void)
 		amxxbV16[3] = 0;
 	}
 
+	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
+	if (SwNPC_Version == -1.0)
+	{
+		swnpcbV16[0] = 0;
+		swnpcbV16[1] = 0;
+		swnpcbV16[2] = 0;
+		swnpcbV16[3] = 0;
+	}
+
 	char versionData[] =
 		"------------------------------------------------\n"
 		"Name: %s%s\n"
 		"Version: %s%s (%u.%u.%u.%u)\n"
 		"Support API Version:%.2f\n"
+		"Support SwNPC Version:%.2f\n"
 		"------------------------------------------------\n"
 		"The AMXX API: %s \n"
 		"AMXX API Version: %.2f (%u.%u.%u.%u)\n"
+		"%s"
+		"------------------------------------------------\n"
+		"SwNPC: %s \n"
+		"SwNPC Version: %.2f (%u.%u.%u.%u)\n"
 		"%s"
 		"------------------------------------------------\n"
 		"Builded by: %s\n"
@@ -659,11 +694,17 @@ void SyPB_Version_Command(void)
 		PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
 		PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
 		float(SUPPORT_API_VERSION_F),
+		float(SUPPORT_SWNPC_VERSION_F),
 		//API_Version, 
 		(amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
 		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
 		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
 		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
+		// SwNPC
+		(SwNPC_Version == -1.0) ? "FAIL" : "RUN",
+		(SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
+		swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3],
+		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
 		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
 }
 
@@ -2620,10 +2661,10 @@ void ClientCommand(edict_t *ent)
 				}
 			}
 
-			// SyPB Pro P.38 - Change the ZM Camp Point TESTTEST
+			// SyPB Pro P.41 - Change the ZM Camp Point
 			if (radioCommand == Radio_HoldPosition && !IsValidBot(ent) &&
 				GetGameMod() == 2 && !IsZombieEntity(ent))
-				g_waypoint->TestFunction(GetEntityOrigin (ent));
+				g_waypoint->ChangeZBCampPoint(GetEntityOrigin (ent));
 
 			g_lastRadioTime[g_clients[clientIndex].team] = engine->GetTime();
 		}
@@ -2794,8 +2835,16 @@ void StartFrame (void)
 				 hOrigin.z += g_clients[i].headOriginZP;
 			 }
 
-			g_clients[i].headOrigin = hOrigin;
+			 g_clients[i].headOrigin = hOrigin;
 
+			 // SyPB Pro P.41 - Get Waypoint improve
+			 if (g_clients[i].getWPTime < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+			 {
+				 int wpIndex2 = -1;
+				 g_clients[i].wpIndex = g_waypoint->FindNearest(g_clients[i].origin, 9999.0f, -1, player, &wpIndex2);
+				 g_clients[i].wpIndex2 = wpIndex2;
+				 g_clients[i].getWPTime = engine->GetTime() + engine->RandomFloat(3.0f, 5.0f);
+			 }
 
 			SoundSimulateUpdate(i);
          }
@@ -2803,6 +2852,8 @@ void StartFrame (void)
 		 {
 			 g_clients[i].headOrigin = nullvec;
 			 g_clients[i].m_isZombieBotAPI = -1;
+			 g_clients[i].wpIndex = -1;
+			 g_clients[i].wpIndex2 = -1;
 		 }
       }
       else
@@ -2811,8 +2862,30 @@ void StartFrame (void)
          g_clients[i].ent = null;
 		 g_clients[i].headOrigin = nullvec;
 		 g_clients[i].m_isZombieBotAPI = -1;
+		 g_clients[i].wpIndex = -1;
+		 g_clients[i].wpIndex2 = -1;
       }
    }
+
+   // SyPB Pro P.41 - Entity TraceLine improve
+   ITERATE_ARRAY(g_entityIdAPI, j)
+   {
+	   if (g_entityActionAPI[j] != 1)
+	   {
+		   g_entityWpIndex[j] = -1;
+		   continue;
+	   }
+
+	   edict_t *entity = INDEXENT(g_entityIdAPI[j]);
+	   if (FNullEnt(entity) || !IsAlive(entity))
+	   {
+		   g_entityWpIndex[j] = -1;
+		   continue;
+	   }
+
+	   g_entityWpIndex[j] = g_waypoint->FindNearest(GetEntityOrigin(entity), 9999.0f, -1, entity);
+   }
+
    static float secondTimer = 0.0f;
 
    // **** AI EXECUTION STARTS ****
@@ -3737,10 +3810,10 @@ export float Amxx_APIVersion(void)
 export void Amxx_Check_amxxdllversion(float version, int bu1, int bu2, int bu3, int bu4)
 {
 	amxxDLL_Version = version;
-	amxxDLL_bV16[0] = bu1;
-	amxxDLL_bV16[1] = bu2;
-	amxxDLL_bV16[2] = bu3;
-	amxxDLL_bV16[3] = bu4;
+	amxxDLL_bV16[0] = (uint16)bu1;
+	amxxDLL_bV16[1] = (uint16)bu2;
+	amxxDLL_bV16[2] = (uint16)bu3;
+	amxxDLL_bV16[3] = (uint16)bu4;
 }
 
 export int Amxx_IsSypb(int index) // 1.30
@@ -4015,6 +4088,8 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 		g_entityTeamAPI.RemoveAll();
 		g_entityActionAPI.RemoveAll();
 
+		g_entityWpIndex.RemoveAll();
+
 		API_TestMSG("Amxx_SetEntityAction Checking - Del All - Done");
 		return 1;
 	}
@@ -4033,12 +4108,14 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 		g_entityIdAPI.RemoveAt(i);
 		g_entityTeamAPI.RemoveAt(i);
 		g_entityActionAPI.RemoveAt(i);
+		g_entityWpIndex.RemoveAt(i);
 
 		if (action != -1)
 		{
 			g_entityIdAPI.Push(index);
 			g_entityTeamAPI.Push(team);
 			g_entityActionAPI.Push(action);
+			g_entityWpIndex.Push(-1);
 
 			API_TestMSG("Amxx_SetEntityAction Checking - Change Id:%d Team:%d Action:%d - Done", index, team, action);
 			return 1;
@@ -4053,6 +4130,7 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 		g_entityIdAPI.Push(index);
 		g_entityTeamAPI.Push(team);
 		g_entityActionAPI.Push(action);
+		g_entityWpIndex.Push(-1);
 
 		API_TestMSG("Amxx_SetEntityAction Checking - Add Id:%d Team:%d Action:%d - Done", index, team, action);
 		return 1;
@@ -4061,7 +4139,84 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 	API_TestMSG("Amxx_SetEntityAction Checking - Cannot Del Id:%d - Not Find - Done", index);
 	return -1;
 }
+
+// SyPB Pro P.41 - AMXX API
+export int Amxx_SetBotGoal(int index, Vector origin) // 1.41
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+
+	bot->m_waypointGoalAPI = origin;
+	API_TestMSG("Amxx_SetBotGoal Checking - Id:%d - Origin: %.2f %.2f %.2f - Done", 
+		index, bot->m_waypointGoalAPI.x, bot->m_waypointGoalAPI.y, bot->m_waypointGoalAPI.z);
+
+	return 1;
+}
 // AMXX SyPB API End
+
+// SyPB Pro P.41 - SwNPC API
+export float SwNPC_GetSyPBVersion(void)
+{
+	return float(PRODUCT_VERSION_F);
+}
+
+export void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)
+{
+	SwNPC_Version = version;
+	SwNPC_Build[0] = (uint16)bu1;
+	SwNPC_Build[1] = (uint16)bu2;
+	SwNPC_Build[2] = (uint16)bu3;
+	SwNPC_Build[3] = (uint16)bu4;
+}
+
+export int SwNPC_GetWaypointsNum(void)
+{
+	return g_numWaypoints;
+}
+
+/*
+export Vector SwNPC_GetWaypointOrigin(int index)
+{
+Vector origin = nullvec;
+if (index >= 0 && index < g_numWaypoints)
+origin = g_waypoint->GetPath(index)->origin;
+
+return origin;
+} */
+
+export int SwNPC_GetWaypointOrigin(int index, Vector *origin)
+{
+	*origin = nullvec;
+	if (index >= 0 && index < g_numWaypoints)
+	{
+		*origin = g_waypoint->GetPath(index)->origin;
+		return 1;
+	}
+
+	return -1;
+}
+
+export int32 SwNPC_GetWaypointFlags(int index)
+{
+	int32 flags = -1;
+	if (index >= 0 && index < g_numWaypoints)
+		flags = g_waypoint->GetPath(index)->flags;
+
+	return flags;
+}
+
+export int SwNPC_GetWaypointPath(int **path)
+{
+	*path = g_waypoint->GetWaypointPath();
+
+	if (path == null)
+		return -1;
+
+	return 1;
+}
+// SwNPC API End
 
 DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t *pGlobals)
 {

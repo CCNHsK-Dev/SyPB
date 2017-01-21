@@ -181,8 +181,8 @@ void BotExperience::CollectDamage (const Client &victim, const Client &attacker,
 
    int indices[2] =
    {
-      g_waypoint->FindNearest (attacker.GetOrigin ()),
-      g_waypoint->FindNearest (victim.GetOrigin ())
+	   GetEntityWaypoint (attacker), 
+	   GetEntityWaypoint (victim)
    };
 
    // only record data if damage above 20 health

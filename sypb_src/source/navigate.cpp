@@ -74,7 +74,7 @@ int Bot::FindGoal(void)
 			{
 				for (int i = 0; i < g_numWaypoints; i++)
 				{
-					int checkRadius = g_waypoint->GetPath(i)->radius;
+					float checkRadius = g_waypoint->GetPath(i)->radius;
 					if (checkRadius <= 16.0f)
 						checkRadius = 16.0f;
 
@@ -308,11 +308,7 @@ TacticChoosen:
    // SyPB Pro P.30 - Zombie Mode Human Camp
    else if (tactic == 4 && !offensiveWpts.IsEmpty()) // offensive goal
    {   
-	   //int playerWpIndex = g_waypoint->FindNearest(pev->origin);
-
-	   int playerWpIndex = m_currentWaypointIndex;
-	   if (playerWpIndex < 0 || playerWpIndex >= g_numWaypoints)
-		   playerWpIndex = m_currentWaypointIndex;
+	   int playerWpIndex = GetEntityWaypoint(GetEntity());
 
 	   int targetWpIndex = -1;
 	   float distance = 9999.9f;
@@ -604,7 +600,7 @@ bool Bot::DoWaypointNav (void)
 	  return false;
    }
 
-   // SyPB Pro P.40 - Base Change for Waypoint OS TESTTEST 
+   // SyPB Pro P.40 - Base Change for Waypoint OS
    if ((m_waypointOrigin - pev->origin).GetLength() <= 2.0f)
 	   HeadTowardWaypoint();
 
@@ -1129,110 +1125,20 @@ int Bot::GetAimingWaypoint (Vector targetOriginPos)
    return bestIndex;
 }
 
-int Bot::FindWaypoint (bool notSet)
+
+int Bot::FindWaypoint ()
 {
-   // this function find a waypoint in the near of the bot if bot had lost his path of pathfinder needs
-   // to be restarted over again.
+	// SyPB Pro P.41 - Waypoint improve
+	int waypointIndex = GetEntityWaypoint(GetEntity());
 
-   // SyPB Pro P.40 - Base Change for Waypoint OS TESTTEST
-	int checkWaypointI[10], waypointIndeces[3], coveredWaypoint = -1;
-	float checkWaypointD[10], reachDistances[3];
+	int client = ENTINDEX(GetEntity()) - 1;
+	if (g_clients[client].wpIndex2 != -1 && IsWaypointUsed(waypointIndex))
+		waypointIndex = g_clients[client].wpIndex2;
 
-   for (int i = 0; i < 10; i++)
-   {
-	   if (i < 3)
-	   {
-		   waypointIndeces[i] = -1;
-		   reachDistances[i] = 9999.0f;
-	   }
+	m_collideTime = engine->GetTime();
+	ChangeWptIndex(waypointIndex);
 
-	   checkWaypointI[i] = -1;
-	   checkWaypointD[i] = 9999.0f;
-   }
-
-   for (int i = 0; i < g_numWaypoints; i++)
-   {
-	   if (i == m_currentWaypointIndex)
-		   continue;
-
-	   float distance = (g_waypoint->GetPath(i)->origin - pev->origin).GetLengthSquared();
-
-	   if ((g_waypoint->GetPath(i)->origin - pev->origin).GetLength2D() <= 30.0f &&
-		   pev->origin.z + 16.0f < g_waypoint->GetPath(i)->origin.z)
-		   continue;
-
-	   for (int j = 0; j < 10; j++)
-	   {
-		   if (distance < checkWaypointD[j])
-		   {
-			   if (j < 9)
-			   {
-				   int oldPoint = -1;
-				   float oldDistance = 9999.0f;
-				   for (int z = j + 1; z < 10; z++)
-				   {
-					   oldPoint = checkWaypointI[z - 1];
-					   oldDistance = checkWaypointD[z - 1];
-
-					   checkWaypointI[z] = oldPoint;
-					   checkWaypointD[z] = oldDistance;
-				   }
-			   }
-
-			   checkWaypointI[j] = i;
-			   checkWaypointD[j] = distance;
-		   }
-	   }
-   }
-
-   for (int i = 0; i < 10; i++)
-   {
-	   if (checkWaypointI[i] == -1)
-		   continue;
-
-	   if (!g_waypoint->Reachable(this, checkWaypointI[i]))
-		   continue;
-
-	   if (IsWaypointUsed(checkWaypointI[i]))
-	   {
-		   coveredWaypoint = checkWaypointI[i];
-		   continue;
-	   }
-
-	   for (int j = 0; j < 3; j++)
-	   {
-		   if (checkWaypointD[i] < reachDistances[j])
-		   {
-			   waypointIndeces[j] = checkWaypointI[i];
-			   reachDistances[j] = checkWaypointI[i];
-		   }
-	   }
-   }
-
-   int random = -1;
-
-   // now pick random one from choosen
-   if (waypointIndeces[2] != -1)
-	   random = engine->RandomInt(0, 2);
-   else if (waypointIndeces[1] != -1)
-	   random = engine->RandomInt(0, 1);
-   else if (waypointIndeces[0] != -1)
-	   random = 0;
-   else if (coveredWaypoint != -1)
-	   waypointIndeces[random = 0] = coveredWaypoint;
-   else
-   {
-	   // SyPB Pro P.40 - Base Change for Waypoint OS
-	   waypointIndeces[random = 0] = g_waypoint->FindNearest(pev->origin);
-   }
-
-   if (!notSet)
-   {
-	   m_collideTime = engine->GetTime();
-	   ChangeWptIndex(waypointIndeces[random]);
-   }
-
-   return waypointIndeces[random];
+	return waypointIndex;
 }
 
 // SyPB Pro P.40 - Base Change for Waypoint OS
@@ -1400,7 +1306,7 @@ int Bot::FindDefendWaypoint (Vector origin)
    }
 
    int posIndex = g_waypoint->FindNearest (origin);
-   int srcIndex = g_waypoint->FindNearest (pev->origin);
+   int srcIndex = GetEntityWaypoint(GetEntity());
 
    // some of points not found, return random one
    if (srcIndex == -1 || posIndex == -1)
@@ -1500,7 +1406,7 @@ int Bot::FindCoverWaypoint (float maxDistance)
       maxDistance = 300.0f;
 
    int srcIndex = m_currentWaypointIndex;
-   int enemyIndex = g_waypoint->FindNearest (m_lastEnemyOrigin);
+   int enemyIndex = GetEntityWaypoint(m_lastEnemy);
    Array <int> enemyIndices;
 
    int waypointIndex[Const_MaxPathIndex];
@@ -2292,7 +2198,7 @@ int Bot::GetAimingWaypoint (void)
    float distTab[3];
    uint16 visibility[3];
 
-   int currentWaypoint = g_waypoint->FindNearest (pev->origin);
+   int currentWaypoint = GetEntityWaypoint(GetEntity());
 
    for (int i = 0; i < g_numWaypoints; i++)
    {
@@ -2353,19 +2259,6 @@ void Bot::FacePosition(void)
 
 	// SyPB Pro P.37 - Aim OS
 	bool godAim = false;
-	/*
-	if (!FNullEnt(m_enemy))
-	{
-		if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || GetGameMod () != 0))
-			godAim = true;
-		else if (m_wantsToFire)
-		{
-			if (GetGameMod() == 0 && (m_skill >= 90 || (IsInViewCone(m_enemyOrigin) && m_skill >= 60)))
-				godAim = true;
-			else if (m_skill >= 70 || IsInViewCone(m_enemyOrigin))
-				godAim = true;
-		}
-	} */
 
 	// SyPB Pro P.40 - Aim OS improve
 	if (!FNullEnt(m_enemy))
@@ -2395,17 +2288,6 @@ void Bot::FacePosition(void)
 		}
 		else if (!IsInViewCone(m_lookAt))
 			springStiffness = Vector(8.0f, 8.0f, 0);
-
-		/*
-		// SyPB Pro P.35 - Bot Think improve
-		if (!FNullEnt(m_enemy))
-		{
-			float gameFps = CVAR_GET_FLOAT("fps_max");
-			if (gameFps > 60)
-				springStiffness = Vector(14.0f, 14.0f, 0);
-			else
-				springStiffness = Vector(6.0f, 6.0f, 0);
-		} */
 
 		Vector stiffness = nullvec;
 
@@ -2661,7 +2543,7 @@ edict_t *Bot::FindNearestButton (const char *className)
 int Bot::CheckBotPointAPI(int mod)
 {
 	if (mod == 0)
-		return g_waypoint->FindNearest(GetEntityOrigin(GetEntity()));
+		return GetEntityWaypoint(GetEntity());
 	else if (mod == 1)
 		return m_currentWaypointIndex;
 	else if (mod == 2)

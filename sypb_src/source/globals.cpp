@@ -30,6 +30,12 @@ float amxxDLL_Version = -1.0;
 uint16 amxxDLL_bV16[4];
 // ****
 
+// SyPB Pro P.41 - SwNPC
+float SwNPC_Version = -1.0;
+uint16 SwNPC_Build[4];
+
+int g_testingnow = 0;
+
 bool g_isMetamod = false;
 bool g_radioInsteadVoice = false;
 bool g_roundEnded = true;
@@ -88,6 +94,9 @@ Array <int> g_entityAction;
 Array <int> g_entityIdAPI;
 Array <int> g_entityTeamAPI;
 Array <int> g_entityActionAPI;
+
+// SyPB Pro P.41 - Entity TraceLine improve
+Array <int> g_entityWpIndex;
 
 Library *g_gameLib = null;
 

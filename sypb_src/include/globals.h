@@ -31,6 +31,12 @@ extern float amxxDLL_Version;
 extern uint16 amxxDLL_bV16[4];
 // ****
 
+// SyPB Pro P.41 - SwNPC
+extern float SwNPC_Version;
+extern uint16 SwNPC_Build[4];
+
+extern int g_testingnow;
+
 extern bool g_bombPlanted;
 extern bool g_bombSayString; 
 extern bool g_roundEnded;
@@ -95,6 +101,8 @@ extern Array <int> g_entityAction;
 extern Array <int> g_entityIdAPI;
 extern Array <int> g_entityTeamAPI;
 extern Array <int> g_entityActionAPI;
+
+extern Array <int> g_entityWpIndex;
 
 extern FireDelay g_fireDelay[Const_NumWeapons + 1];
 extern WeaponSelect g_weaponSelect[Const_NumWeapons + 1];

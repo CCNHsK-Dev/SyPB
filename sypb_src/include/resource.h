@@ -32,11 +32,11 @@
 #if defined(PRODUCT_DEV_VERSION)
 #define PRODUCT_DEV_VERSION_FORTEST "(PRV)"
 //#define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
-//#define PRODUCT_DEV_VERSION_FORTEST "(Preview-1)"
+//#define PRODUCT_DEV_VERSION_FORTEST "(Preview-2)"
 // Dev Version Date
 #define PV_VERSION_YEAR 2015
-#define PV_VERSION_MON 9
-#define PV_VERSION_DAY 28
+#define PV_VERSION_MON 10
+#define PV_VERSION_DAY 22
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
 #endif
@@ -45,9 +45,13 @@
 #define SUPPORT_API_VERSION "1.40" // SyPB API_P
 #define SUPPORT_API_VERSION_F 1.40 // SyPB API_P
 
+// SwNPC Version
+#define SUPPORT_SWNPC_VERSION_F 1.42
+
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,40,20150920,550 // yyyy/mm/dd  
-#define PRODUCT_VERSION "Beta 1.40"
+#define PRODUCT_VERSION_DWORD 1,41,20151020,581 // yyyy/mm/dd  
+#define PRODUCT_VERSION "Beta 1.41"
+#define PRODUCT_VERSION_F 1.41
 
 // general product information
 #define PRODUCT_NAME "SyPB"

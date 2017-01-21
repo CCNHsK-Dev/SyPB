@@ -112,15 +112,9 @@ int Waypoint::FindFarest (Vector origin, float maxDistance)
    return index;
 }
 
-// SyPB Pro P.38 - Zombie Mode Camp Improve
-void Waypoint::TestFunction(Vector origin)
+// SyPB Pro P.41 - Zombie Mode Camp Improve
+void Waypoint::ChangeZBCampPoint(Vector origin)
 {
-	/*
-	m_zmHmPoints.RemoveAll();
-
-	int newPoint = FindNearest(origin);
-	m_zmHmPoints.Push(newPoint); */
-
 	// SyPB Pro P.39 - Zombie Mode Camp improve
 	int point[2] = { -1, -1 };
 	if (!m_zmHmPoints.IsEmpty())
@@ -170,59 +164,79 @@ bool Waypoint::IsZBCampPoint(int pointID)
 }
 // ---
 
-int Waypoint::FindNearest (Vector origin, float minDistance, int flags)
+int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *entity, int *findWaypointPoint)
 {
-	// SyPB Pro P.40 - Base Change for Waypoint OS TESTTEST
-	int index[3] = { -1, -1, -1 };
+	// SyPB Pro P.41 - Base Change for Waypoint OS
+	float wpDistance[10];
+	int wpIndex[10];
+
+	for (int i = 0; i < 10; i++)
+	{
+		wpIndex[i] = -1;
+		wpDistance[i] = 9999.9f;
+	}
+
 	for (int i = 0; i < g_numWaypoints; i++)
 	{
 		if (flags != -1 && !(m_paths[i]->flags & flags))
 			continue;
 
 		float distance = (m_paths[i]->origin - origin).GetLength();
-		if (distance < minDistance)
-		{
+		if (distance > minDistance)
+			continue;
 
-			if ((m_paths[i]->origin - origin).GetLength2D() <= 30.0f && origin.z + 16.0f < m_paths[i]->origin.z)
+		if ((m_paths[i]->origin - origin).GetLength2D() <= 30.0f && origin.z + 10.0f < m_paths[i]->origin.z)
+			continue;
+
+		for (int y = 0; y < 10; y++)
+		{
+			if (distance >= wpDistance[y])
 				continue;
 
-			if (index[0] != -1)
+			for (int z = 9; z >= y; z--)
 			{
-				if (distance < (m_paths[index[0]]->origin - origin).GetLength())
-				{
-					index[1] = index[0];
-					index[0] = i;
-				}
-				else if (index[1] != -1)
-				{
-					if (distance < (m_paths[index[1]]->origin - origin).GetLength())
-					{
-						index[2] = index[1];
-						index[1] = i;
-					}
-					else if (index[2] != -1)
-					{
-						if (distance < (m_paths[index[2]]->origin - origin).GetLength())
-							index[2] = i;
-					}
-					else
-						index[2] = i;
-				}
-				else
-					index[1] = i;
+				if (z == 9 || wpIndex[z] == -1)
+					continue;
+
+				wpIndex[z + 1] = wpIndex[z];
+				wpDistance[z + 1] = wpDistance[z];
 			}
-			else
-				index[0] = i;
+
+			wpIndex[y] = i;
+			wpDistance[y] = distance;
+			y = 15;
 		}
 	}
 
-	for (int i = 0; i < 3; i++)
+	int firsIndex = -1;
+	if (!FNullEnt(entity))
 	{
-		if (Reachable(null, index[i], origin))
-			return index[i];
+		for (int i = 0; i < 10; i++)
+		{
+			if (wpIndex[i] < 0 || wpIndex[i] >= g_numWaypoints)
+				continue;
+
+			if (!Reachable(entity, wpIndex[i]))
+				continue;
+
+			if (!IsValidPlayer(entity) || *findWaypointPoint == -2)
+				return wpIndex[i];
+
+			if (firsIndex == -1)
+			{
+				firsIndex = wpIndex[i];
+				continue;
+			}
+
+			*findWaypointPoint = wpIndex[i];
+			return firsIndex;
+		}
 	}
 
-	return index[0];
+	if (firsIndex == -1)
+		firsIndex = wpIndex[0];
+
+	return firsIndex;
 }
 
 void Waypoint::FindInRadius (Vector origin, float radius, int *holdTab, int *count)
@@ -313,7 +327,6 @@ void Waypoint::SgdWp_Set (const char *modset)
 			g_editNoclip = false;
 			g_sgdNonCheckSave = engine->GetTime() + 5.0f;
 
-			ChartPrint("[SgdWP] Waypoint Error, pls check control msg");
 			ChartPrint("[SgdWP] Cannot Savev your waypoint, you can save again now to non-check save");
 
 		}
@@ -1346,6 +1359,7 @@ String Waypoint::CheckSubfolderFile (void)
    return FormatBuffer ("%s%s.pwf", GetWaypointDir (), GetMapName ());
 }
 
+
 void Waypoint::SaveXML (void)
 {
    File fp (FormatBuffer ("%sdata/%s.xml", GetWaypointDir (), GetMapName ()), "w");
@@ -1408,49 +1422,21 @@ float Waypoint::GetTravelTime (float maxSpeed, Vector src, Vector origin)
    return (origin - src).GetLength2D () / maxSpeed;
 }
 
-// SyPB Pro P.40 - Base Change for Waypoint OS TESTTEST
-bool Waypoint::Reachable (Bot *bot, int index, Vector origin)
+// SyPB Pro P.41 - Base Change for Waypoint OS
+bool Waypoint::Reachable(edict_t *entity, int index)
 {
-   // this function return wether bot able to reach index waypoint or not, depending on several factors.
+	if (index < 0 || index >= g_numWaypoints)
+		return false;
 
-   if (index < 0 || index >= g_numWaypoints)
-      return false;
+	Vector src = GetEntityOrigin(entity);
+	Vector dest = GetPath(index)->origin;
 
-   Vector src = nullvec;// = bot->pev->origin;
-   Vector dest = GetPath (index)->origin;
+	TraceResult tr;
+	TraceLine(src, dest, ignore_monsters, entity, &tr);
+	if (tr.flFraction >= 1.0f)
+		return true;
 
-   if (bot != null)
-	   src = bot->pev->origin;
-   else if (origin != nullvec)
-	   src = origin;
-   else
-	   return false;
-
-   float distance = (dest - src).GetLength ();
-   float distance2D = (dest - src).GetLength2D ();
-   if (distance >= 150.0f && bot != null)
-	   return false;
-
-   TraceResult tr;
-   if (bot != null)
-	   TraceLine(src, dest, true, bot->GetEntity(), &tr);
-   else if (origin != nullvec)
-	   TraceLine(src, dest, true, null, &tr);
-
-   // if waypoint is visible from current position (even behind head)...
-   if (tr.flFraction > 0.999999f)
-   {
-	   if (bot != null && (bot->pev->waterlevel == 2 || bot->pev->waterlevel == 3))
-		   return true;
-
-	   // is destination waypoint higher that source (62 is max jump height), or destination waypoint higher that source
-	   if (((dest.z > src.z + 62.0f || dest.z < src.z - 100.0f) && (!(GetPath(index)->flags & WAYPOINT_LADDER))) || distance2D >= 120.0f)
-		   return false; // unable to reach this one
-
-	   return true;
-   }
-
-   return false;
+	return false;
 }
 
 bool Waypoint::IsNodeReachable (Vector src, Vector destination)
@@ -1670,34 +1656,7 @@ void Waypoint::Think(void)
 		if (!m_endJumpPoint)
 		{
 			if (g_hostEntity->v.button & IN_JUMP)
-			{ /*
-				// SyPB Pro P.38 - SgdWP Jump Point data improve
-				float maxDistanceForJumpPoint = 50.0f;
-				int useOldPoint = -1;
-				for (int i = 0; i < g_numWaypoints; i++)
-				{
-					float distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLength();
-					if (distance > maxDistanceForJumpPoint)
-						continue;
-
-					ChartPrint("[TEST] distance: %.2f", distance);
-					maxDistanceForJumpPoint = distance;
-					useOldPoint = i;
-				}
-
-				if (useOldPoint == -1)
-				{
-					Add(9);
-					ChartPrint("[SgdWP TEST] This need make new point");
-				}
-				else
-				{
-					m_lastJumpWaypoint = useOldPoint;
-					m_learnPosition = m_paths[useOldPoint]->origin;
-					m_paths[useOldPoint]->radius = 0.0f;
-				}
-				 */
-
+			{ 
 				Add(9);
 				m_timeJumpStarted = engine->GetTime();
 				m_endJumpPoint = true;
@@ -1798,15 +1757,6 @@ void Waypoint::Think(void)
 						// SyPB Pro P.37 - SgdWP
 						m_timeCampWaypoint = 0.0f;
 						DisplayMenuToClient(g_hostEntity, &g_menus[22]);
-
-						/*
-						Add(5);
-						SetRadius(0);
-						m_timeCampWaypoint = 0.0f;
-						Add(6);
-						SetRadius(0);
-						// SyPB Pro P.30 - SgdWP
-						DisplayMenuToClient(g_hostEntity, &g_menus[24]); */
 					}
 				}
 				else
@@ -2093,9 +2043,9 @@ void Waypoint::ShowWaypointMsg(void)
 				length += sprintf(&tempMessage[length], "    You Can true on [Auto put Waypoint] (menu>4) \n");
 			else
 			{
-				length += sprintf(&tempMessage[length], "    System will auto save Waypoint, you can move in the map now \n",
-					"    Complete, you will save Waypoint (menu>9) \n\n",
-					"    Hold 'IN_DUCK' Can make camp Waypoint \n",
+				length += sprintf(&tempMessage[length], "    System will auto save Waypoint, you can move in the map now \n"
+					"    Complete, you will save Waypoint (menu>9) \n\n"
+					"    Hold 'IN_DUCK' Can make camp Waypoint \n"
 					"    System Can auto save 'Fall' and 'Jump' Waypoint \n\n");
 			}
 		}
@@ -2148,7 +2098,8 @@ bool Waypoint::NodesValid (void)
    int connections;
    int i, j;
 
-   bool notError = true;
+   // SyPB Pro P.41 - SgdWP fixed and msg improve
+   bool haveError = false;
 
    for (i = 0; i < g_numWaypoints; i++)
    {
@@ -2161,7 +2112,9 @@ bool Waypoint::NodesValid (void)
             if (m_paths[i]->index[j] > g_numWaypoints)
             {
                AddLogEntry (true, LOG_WARNING, "Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
-			   notError = true;
+			   haveError = true;
+			   if (g_sgdWaypoint)
+				   ChartPrint("[SgdWP] Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
             }
             connections++;
             break;
@@ -2173,14 +2126,18 @@ bool Waypoint::NodesValid (void)
          if (!IsConnected (i))
          {
             AddLogEntry (true, LOG_WARNING, "Waypoint %d isn't connected with any other Waypoint!", i);
-			notError = true;
+			haveError = true;
+			if (g_sgdWaypoint)
+				ChartPrint("[SgdWP] Waypoint %d isn't connected with any other Waypoint!", i);
          }
       }
 
       if (m_paths[i]->pathNumber != i)
       {
          AddLogEntry (true, LOG_WARNING, "Waypoint %d pathnumber differs from index!", i);
-		 notError = true;
+		 haveError = true;
+		 if (g_sgdWaypoint)
+			 ChartPrint("[SgdWP] Waypoint %d pathnumber differs from index!", i);
       }
 
       if (m_paths[i]->flags & WAYPOINT_CAMP)
@@ -2188,7 +2145,9 @@ bool Waypoint::NodesValid (void)
          if (m_paths[i]->campEndX == 0 && m_paths[i]->campEndY == 0)
          {
             AddLogEntry (true, LOG_WARNING, "Waypoint %d Camp-Endposition not set!", i);
-			notError = true;
+			haveError = true;
+			if (g_sgdWaypoint)
+				ChartPrint("[SgdWP] Waypoint %d Camp-Endposition not set!", i);
          }
       }
       else if (m_paths[i]->flags & WAYPOINT_TERRORIST)
@@ -2212,7 +2171,9 @@ bool Waypoint::NodesValid (void)
                g_waypointOn = true;
                g_editNoclip = true;
 
-			   notError = true;
+			   haveError = true;
+			   if (g_sgdWaypoint)
+				   ChartPrint("[SgdWP] Waypoint %d - Pathindex %d out of Range!", i, k);
             }
             else if (m_paths[i]->index[k] == i)
             {
@@ -2222,7 +2183,9 @@ bool Waypoint::NodesValid (void)
                g_waypointOn = true;
                g_editNoclip = true;
 
-			   notError = true;
+			   haveError = true;
+			   if (g_sgdWaypoint)
+				   ChartPrint("[SgdWP] Waypoint %d - Pathindex %d points to itself!", i, k);
             }
          }
       }
@@ -2232,24 +2195,32 @@ bool Waypoint::NodesValid (void)
       if (rescuePoints == 0)
       {
          AddLogEntry (true, LOG_WARNING, "You didn't set a Rescue Point!");
-		 notError = true;
+		 haveError = true;
+		 if (g_sgdWaypoint)
+			 ChartPrint("[SgdWP] You didn't set a Rescue Point!");
       }
    }
 
    if (terrPoints == 0)
    {
       AddLogEntry (true, LOG_WARNING, "You didn't set any Terrorist Important Point!");
-	  notError = true;
+	  haveError = true;
+	  if (g_sgdWaypoint)
+		  ChartPrint("[SgdWP] You didn't set any Terrorist Important Point!");
    }
    else if (ctPoints == 0)
    {
       AddLogEntry (true, LOG_WARNING, "You didn't set any CT Important Point!");
-	  notError = true;
+	  haveError = true;
+	  if (g_sgdWaypoint)
+		  ChartPrint("[SgdWP] You didn't set any CT Important Point!");
    }
    else if (goalPoints == 0)
    {
       AddLogEntry (true, LOG_WARNING, "You didn't set any Goal Point!");
-	  notError = true;
+	  haveError = true;
+	  if (g_sgdWaypoint)
+		  ChartPrint("[SgdWP] You didn't set any Goal Point!");
    }
 
    // perform DFS instead of floyd-warshall, this shit speedup this process in a bit
@@ -2302,7 +2273,9 @@ bool Waypoint::NodesValid (void)
          g_waypointOn = true;
          g_editNoclip = true;
 
-		 notError = true;
+		 haveError = true;
+		 if (g_sgdWaypoint)
+			 ChartPrint("[SgdWP] Path broken from Waypoint #0 to Waypoint #%d!", i);
       }
    }
 
@@ -2360,11 +2333,13 @@ bool Waypoint::NodesValid (void)
          g_waypointOn = true;
          g_editNoclip = true;
 
-		 notError = true;
+		 haveError = true;
+		 if (g_sgdWaypoint)
+			 ChartPrint("[SgdWP] Path broken from Waypoint #%d to Waypoint #0!", i);
       }
    }
 
-   return (!notError) ? true : false;
+   return haveError ? false : true;
 }
 
 void Waypoint::InitPathMatrix (void)

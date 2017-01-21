@@ -596,11 +596,14 @@ struct Client_old
    float timeSoundLasting; // time sound is played/heared
    float maxTimeSoundLasting; // max time sound is played/heared (to divide the difference between that above one and the current one)
 
-   // SyPB Pro P.38 - Improve Get Head Origin Fps 
-   float getHeadOriginTime;
-   float headOriginZP;
-
    Vector headOrigin; // SyPB Pro P.26 - Get Head Origin
+   float headOriginZP;
+   float getHeadOriginTime;
+
+   // SyPB Pro P.41 - Get Waypoint improve
+   int wpIndex;
+   int wpIndex2;
+   float getWPTime;
 
    // SyPB Pro P.38 - AMXX API
    int m_isZombieBotAPI = -1;
@@ -698,8 +701,6 @@ private:
 
    // SyPB Pro P.37 - Fall Ai
    bool m_checkFall; // check bot fall
-   //float m_checkFallDistance; // check bot fall distance
-   //int m_checkFallPoint[2]; // check fall point index
    Vector m_checkFallPoint[2];
    // ---
 
@@ -791,7 +792,7 @@ private:
    int m_msecBuiltin; // random msec method for this bot
    uint8_t m_msecVal; // calculated msec value
    float m_msecDel; // used for msec calculation
-   //float m_msecNum; // also used for mseccalculation
+   float m_msecNum; // also used for mseccalculation
    float m_msecInterval; // used for leon hartwig's method for msec calculation
 
    float m_frameInterval; // bot's frame interval
@@ -885,7 +886,7 @@ private:
 
    bool IsInViewCone (Vector origin);
    void ReactOnSound (void);
-   bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart);
+   bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart, bool checkOnly);
    bool IsEnemyViewable (edict_t *player, bool setEnemy = false, bool allCheck = false, bool checkOnly = false);
 
    edict_t *FindNearestButton (const char *className);
@@ -918,7 +919,6 @@ private:
 
    bool ItemIsVisible (Vector dest, char *itemName, bool bomb = false);
    bool LastEnemyShootable (void);
-   bool IsLastEnemyViewable (void);
    bool IsBehindSmokeClouds (edict_t *ent);
    void RunTask (void);
    void CheckTasksPriorities (void);
@@ -973,7 +973,7 @@ private:
    void SelectWeaponbyNumber (int num);
    int GetHighestWeapon (void);
 
-   float GetEntityDistance(edict_t *entity, bool checkWP = false);
+   float GetEntityDistance(edict_t *entity);
 
    bool IsEnemyProtectedByShield (edict_t *enemy);
    bool ParseChat (char *reply);
@@ -985,7 +985,6 @@ private:
    int GetAimingWaypoint (Vector targetOriginPos);
    void FindShortestPath (int srcIndex, int destIndex);
    void FindPath (int srcIndex, int destIndex, uint8_t pathType = 0);
-   void DebugMsg (const char *format, ...);
    void SecondThink (void);
 
 public:
@@ -1004,6 +1003,9 @@ public:
 
    // SyPB Pro P.35 - AMXX API
    int m_gunMinDistanceAPI, m_gunMaxDistanceAPI;
+
+   // SyPB Pro P.41 - AMXX API
+   Vector m_waypointGoalAPI;
 
    int m_wantedTeam; // player team bot wants select
    int m_wantedClass; // player model bot wants to select
@@ -1126,7 +1128,7 @@ public:
    void EquipInBuyzone (int buyCount);
    void PushMessageQueue (int message);
    void PrepareChatMessage (char *text);
-   int FindWaypoint (bool notSet = false);
+   int FindWaypoint ();
    bool EntityIsVisible (Vector dest, bool fromBody = false);
 
    void SetMoveTarget (edict_t *entity);
@@ -1345,11 +1347,11 @@ public:
 
    int GetFacingIndex (void);
    int FindFarest (Vector origin, float maxDistance = 32.0f);
-   int FindNearest (Vector origin, float minDistance = 9999.0, int flags = -1);
+   int FindNearest(Vector origin, float minDistance = 9999.0, int flags = -1, edict_t *entity = null, int *findWaypointPoint = (int *)-2);
    void FindInRadius (Vector origin, float radius, int *holdTab, int *count);
    void FindInRadius (Array <int> &queueID, float radius, Vector origin);
 
-   void TestFunction(Vector origin);
+   void ChangeZBCampPoint(Vector origin);
    bool IsZBCampPoint(int pointID);
 
    void Add (int flags, Vector waypointOrigin = nullvec);
@@ -1378,7 +1380,8 @@ public:
    void Save (void);
    void SaveXML (void);
 
-   bool Reachable (Bot *bot, int index, Vector origin = nullvec);
+   //bool Reachable (Bot *bot, int index, Vector origin = nullvec);
+   bool Reachable(edict_t *entity, int index);
    bool IsNodeReachable (Vector src, Vector destination);
    void Think (void);
    void ShowWaypointMsg(void); // SyPB Pro P.38 - Show Waypoint Msg
@@ -1409,6 +1412,8 @@ public:
    Vector GetBombPosition (void) { return m_foundBombOrigin; }
    void SetBombPosition (bool shouldReset = false);
    String CheckSubfolderFile (void);
+
+   int *GetWaypointPath() { return m_pathMatrix;  }
 };
 
 
@@ -1422,6 +1427,8 @@ extern int GetWeaponReturn (bool isString, const char *weaponAlias, int weaponID
 extern int GetTeam (edict_t *ent);
 extern int GetGameMod (void);
 extern bool IsZombieEntity (edict_t *ent);
+
+extern int GetEntityWaypoint(edict_t *ent);
 
 extern float GetShootingConeDeviation (edict_t *ent, Vector *position);
 extern float GetWaveLength (const char *fileName);

@@ -2191,7 +2191,36 @@ typedef int(*AMXX_GET_BOT_NAV_POINTID) (int index, int pointNum);
 
 C_DLLEXPORT int Amxx_SetEntityAction(int index, int team, int action);
 typedef int(*AMXX_SET_ENTITY_ACTION) (int index, int team, int action);
+
+// SyPB Pro P.41 - AMXX API
+C_DLLEXPORT int Amxx_SetBotGoal(int index, Vector origin);
+typedef int(*_AMXX_SET_BOT_GOAL) (int index, Vector);
 // AMXX SyPB API End
+
+
+// SyPB Pro P.41 - SwNPC API
+C_DLLEXPORT float SwNPC_GetSyPBVersion(void);
+typedef float(*SWNPC_GET_SYPB_VERSION) (void);
+
+C_DLLEXPORT void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4);
+typedef void(*SWNPC_CHECK_BUILD)(float version, int bu1, int bu2, int bu3, int bu4);
+
+C_DLLEXPORT int SwNPC_GetWaypointsNum(void);
+typedef int(*SWNPC_GET_WAYPOINTS_NUM) (void);
+
+/*
+C_DLLEXPORT Vector SwNPC_GetWaypointOrigin(int index);
+typedef Vector(*SWNPC_GET_WAYPOINT_ORIGIN) (int index); */
+
+C_DLLEXPORT int SwNPC_GetWaypointOrigin(int index, Vector *origin);
+typedef int(*SWNPC_GET_WAYPOINT_ORIGIN) (int index, Vector *origin);
+
+C_DLLEXPORT int32 SwNPC_GetWaypointFlags(int index);
+typedef int32(*SWNPC_GET_WAYPOINT_FLAGS) (int index);
+
+C_DLLEXPORT int SwNPC_GetWaypointPath(int **path);
+typedef int(*SWNPC_GET_WAYPOINT_PATH) (int **path);
+// SwNPC API End
 
 #define MDLL_FUNC   gpGamedllFuncs->dllapi_table
 

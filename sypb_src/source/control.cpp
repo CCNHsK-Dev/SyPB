@@ -124,14 +124,6 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 
 	if (g_numWaypoints < 1) // don't allow creating bots with no waypoints loaded
 	{
-		/*
-		CenterPrint("Map not waypointed. Can't Create Bot");
-
-		// SyPB Pro P.37 - Lock Add Zbot
-		extern ConVar sypb_lockzbot;
-		if (sypb_lockzbot.GetBool())
-		sypb_lockzbot.SetInt(0); */
-
 		// SyPB Pro P.39 - Add Msg
 		ServerPrint("Not Find Waypoint, Cannot Add SyPB");
 		ServerPrint("You can input 'sypb sgdwp on' to make waypoint");
@@ -226,7 +218,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 				{
 					nameUse = false;
 					botName.isUsed = true;
-					sprintf(outputName, "%s", botName.name);
+					sprintf(outputName, "%s", (char *)botName.name);
 				}
 			}
 		}
@@ -234,7 +226,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 			sprintf(outputName, "bot%i", engine->RandomInt(-9999, 9999)); // just pick ugly random name
 	}
 	else
-		sprintf(outputName, "%s", name);
+		sprintf(outputName, "%s", (char *)name);
 
 	// SyPB Pro P.37 - Bot Name / Tag
 	char botName[33];
@@ -321,11 +313,21 @@ Bot *BotControl::FindOneValidAliveBot (void)
 // SyPB Pro P.38 - Bot think improve
 void BotControl::Think(void)
 {
+	g_testingnow = 0;
+	
+	int botNum = 0;
+	for (int i = 0; i < engine->GetMaxClients(); i++)
+	{
+		if (m_bots[i] != null && IsAlive(m_bots[i]->GetEntity()))
+			botNum++;
+	}
+
 	for (int i = 0; i < engine->GetMaxClients(); i++)
 	{
 		if (m_bots[i] == null)
 			continue;
 
+		// SyPB Pro P.41 - Bot think improve
 		bool runThink = false;
 		if (m_bots[i]->m_thinkTimer <= engine->GetTime())
 		{
@@ -333,13 +335,22 @@ void BotControl::Think(void)
 				runThink = true;
 		}
 
+		if (!IsAlive(m_bots[i]->GetEntity()))
+		{
+			runThink = true;
+			m_bots[i]->m_wantsToFire = false;
+		}
+
 		if (runThink)
 		{
-			float gameFps = CVAR_GET_FLOAT("fps_max");
-			if (gameFps < 30.0f)
-				gameFps = 30.0f;
+			float thinkTime = (1.0f / 24.9f) * engine->RandomFloat(0.95f, 1.00f);
 
-			m_bots[i]->m_thinkTimer = engine->GetTime() + 1.0f / gameFps;
+			if (botNum >= 25)
+				thinkTime *= 0.85f;
+			else if (botNum >= 15)
+				thinkTime *= 0.9f;
+
+			m_bots[i]->m_thinkTimer = engine->GetTime() + thinkTime;
 
 			m_bots[i]->Think();
 
@@ -349,33 +360,21 @@ void BotControl::Think(void)
 		}
 		else
 		{
-			if (!FNullEnt(m_bots[i]->m_enemy))
-			{
-				if (!m_bots[i]->IsEnemyViewable(m_bots[i]->m_enemy, true, true))
-				{
-					m_bots[i]->m_states &= ~STATE_SEEINGENEMY;
-					m_bots[i]->m_enemy = null;
-				}
-				else
-				{
-					m_bots[i]->m_states |= STATE_SEEINGENEMY;
-					m_bots[i]->m_aimFlags |= AIM_ENEMY;
-				}
-			}
-
-			// SyPB Pro P.39 - Aim speed improve
 			m_bots[i]->ChooseAimDirection();
 			m_bots[i]->FacePosition();
 
 			if (m_bots[i]->m_wantsToFire && !m_bots[i]->m_isUsingGrenade && m_bots[i]->m_shootTime <= engine->GetTime())
 				m_bots[i]->FireWeapon();
 		}
-
+		
 		m_bots[i]->pev->angles.ClampAngles();
 		m_bots[i]->pev->v_angle.ClampAngles();
 
 		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
+	/*
+	if (g_testingnow > 0)
+		AddLogEntry(true, LOG_WARNING, "%d", g_testingnow); */
 }
 
 void BotControl::AddBot (const String &name, int skill, int personality, int team, int member)
@@ -986,7 +985,7 @@ Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
 
 
    // initialize msec value
-   //m_msecNum = m_msecDel = 0.0f;
+   m_msecNum = m_msecDel = 0.0f;
    m_msecInterval = engine->GetTime ();
    m_msecVal = static_cast <uint8_t> (g_pGlobals->frametime * 1000.0f);
    m_msecBuiltin = engine->RandomInt (1, 4);
@@ -1095,6 +1094,9 @@ void Bot::NewRound (void)
    // SyPB Pro P.35 - AMXX API
    m_gunMinDistanceAPI = 0;
    m_gunMaxDistanceAPI = 0;
+
+   // SyPB Pro P.41 - AMXX API
+   m_waypointGoalAPI = nullvec;
 
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;

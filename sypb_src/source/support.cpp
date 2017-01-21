@@ -592,6 +592,7 @@ void RoundInit (void)
    g_entityIdAPI.RemoveAll();
    g_entityTeamAPI.RemoveAll();
    g_entityActionAPI.RemoveAll();
+   g_entityWpIndex.RemoveAll();
 
    // SyPB Pro P.15
    char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
@@ -806,6 +807,36 @@ int GetTeam (edict_t *ent)
 	return player_team;
 }
 
+// SyPB Pro P.41 - Base Waypoint improve
+int GetEntityWaypoint(edict_t *ent)
+{
+	if (!IsValidPlayer(ent))
+	{
+		// SyPB Pro P.41 - Entity TraceLine improve
+		ITERATE_ARRAY(g_entityIdAPI, j)
+		{
+			if (ent != INDEXENT(g_entityIdAPI[j]))
+				continue;
+
+			if (g_entityWpIndex[j] != -1)
+				return g_entityWpIndex[j];
+
+			g_entityWpIndex[j] = g_waypoint->FindNearest(GetEntityOrigin(ent), 9999.0f, -1, ent);
+			return g_entityWpIndex[j];
+		}
+
+		return g_waypoint->FindNearest(GetEntityOrigin(ent), 9999.0f, -1, ent);
+	}
+
+	int client = ENTINDEX(ent) - 1;
+
+	if (g_clients[client].wpIndex != -1)
+		return g_clients[client].wpIndex;
+
+	g_clients[client].wpIndex = g_waypoint->FindNearest(GetEntityOrigin(ent), 9999.0f, -1, ent);
+
+	return g_clients[client].wpIndex;
+}
 
 bool IsZombieEntity(edict_t *ent)
 {
@@ -1063,7 +1094,8 @@ bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bo
    {
       extern ConVar sypb_language;
 
-      if (strcmp (fileName, "lang.cfg") <= 0 && sypb_language.GetString () == "en")
+      if (strcmp (fileName, "lang.cfg") <= 0 && //sypb_language.GetString () == "en")
+		  sypb_language.GetString()[0] == 'e' && sypb_language.GetString()[1] == 'n')
          return false;
 
       char *languageDependantConfigFile = FormatBuffer ("%s/addons/sypb/language/%s_%s", GetModName (), sypb_language.GetString (), fileName);
@@ -1142,18 +1174,33 @@ void CheckWelcomeMessage (void)
 #if defined(PRODUCT_DEV_VERSION)
 	   // SyPB Pro P.31 - New Msg		   
 	   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-	   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+	   uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
 	   ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
 	   ChartPrint("***** Dev Version: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
+	   ChartPrint("***** Support API Version:%.2f | SwNPC Version:%.2f *****", 
+		   float (SUPPORT_API_VERSION_F), float (SUPPORT_SWNPC_VERSION_F));
+#endif
 
 	   if (amxxDLL_Version != -1.0)
 	   {
-		   ChartPrint("***** Dev Msg: Find API, Support API Version:%.2f", API_Version);
-		   ChartPrint("***** amxx dll version:%.2f (%u.%u.%u.%u)",
+#if defined(PRODUCT_DEV_VERSION)
+		   ChartPrint("***** Dev Msg: AMXX API Running, version:%.2f (%u.%u.%u.%u)",
 			   amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
-	   }
 #endif
+	   }
+	   else
+		   ChartPrint("***** Dev Msg: AMXX API FAIL *****");
+
+	   if (SwNPC_Version != -1.0)
+	   {
+#if defined(PRODUCT_DEV_VERSION)
+		   ChartPrint("***** Dev Msg: SwNPC Running, Version:%.2f (%u.%u.%u.%u)",
+			   SwNPC_Version, SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
+#endif
+	   }
+	   else
+		   ChartPrint("***** Dev Msg: SwNPC FAIL *****");
 
 	   receiveTime = 0.0f;
 	   isReceived = true;
@@ -1285,7 +1332,7 @@ void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...)
 
    // SyPB Pro P.35 - New log file
    int buildVersion[4] = { PRODUCT_VERSION_DWORD };
-   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
+   uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
    // SyPB Pro P.40 - Log File Change
    sprintf(buildVersionName, "build_%u_%u_%u_%u.txt", bV16[0], bV16[1], bV16[2], bV16[3]);

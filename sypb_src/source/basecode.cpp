@@ -109,43 +109,45 @@ bool Bot::IsInViewCone (Vector origin)
    return ::IsInViewCone (origin, GetEntity ());
 }
 
-// SyPB Pro P.29 - new check 
-bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *bodyPart)
+// SyPB Pro P.41 - Look up enemy improve
+bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *bodyPart, bool checkOnly)
 {
 	Vector botHead = EyePosition();
 	TraceResult tr;
 
 	*bodyPart = 0;
 
-	TraceLine(botHead, GetEntityOrigin (ENT(targetEntity)), true, true, GetEntity(), &tr);
-
-	if (tr.pHit == ENT(targetEntity) || tr.flFraction > 0.999999f)
+	TraceLine(botHead, GetEntityOrigin(ENT(targetEntity)), true, true, GetEntity(), &tr);
+	if (tr.pHit == ENT(targetEntity) || tr.flFraction >= 1.0f)
 	{
 		*bodyPart |= VISIBILITY_BODY;
-		*origin = GetEntityOrigin(ENT(targetEntity));;
+		*origin = tr.vecEndPos;
 	}
-	
-	if (IsValidPlayer(ENT(targetEntity)))
-	{
-		int client = ENTINDEX(ENT(targetEntity)) - 1;
 
-		// SyPB Pro P.27 - New Head OS  (P.28 - Debug)
-		Vector headOrigin = g_clients[client].headOrigin;
-		if (headOrigin != nullvec)
-		{
-			TraceLine(botHead, headOrigin, true, true, GetEntity(), &tr);
-			if (tr.pHit == ENT(targetEntity) || tr.flFraction > 0.999999f)
-			{
-				*bodyPart |= VISIBILITY_HEAD;
-				*origin = headOrigin;
-			}
-		}
-	} 
-
-	// SyPB Pro P.30 - Npc Fixed
-	if (!IsValidPlayer(ENT(targetEntity)) || *bodyPart != 0)
+	if (!IsValidPlayer (ENT (targetEntity)))
 		return (*bodyPart != 0);
 
+	int client = ENTINDEX(ENT(targetEntity)) - 1;
+
+	// SyPB Pro P.27 - New Head OS  (P.28 - Debug)
+	Vector headOrigin = g_clients[client].headOrigin;
+	if (headOrigin != nullvec)
+	{
+		TraceLine(botHead, headOrigin, true, true, GetEntity(), &tr);
+		if (tr.pHit == ENT(targetEntity) || tr.flFraction >= 1.0f)
+		{
+			*bodyPart |= VISIBILITY_HEAD;
+			*origin = headOrigin;
+		}
+	}
+
+	if (checkOnly)
+		return (*bodyPart != 0);
+
+	if (*bodyPart != 0)
+		return true;
+
+	/*
 	// SyPB Pro P.40 - Check other body
 	for (int i = 0; i < 3; i++)
 	{
@@ -182,86 +184,76 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 
 			return true;
 		}
-	}
-
+	}*/
 
 	return false;
 }
 
-// SyPB Pro P.30 - new Viewable Entity
+// SyPB Pro P.41 - Look up enemy improve
 bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool checkOnly)
 {
-	if (FNullEnt(entity))
+	if (FNullEnt(entity) || !IsAlive (entity))
 		return false;
-
-	if (allCheck == false)
-	{
-		// SyPB Pro P.37 - Aim OS
-		if (GetGameMod () == 0)
-		{
-			if (m_skill < 60 && !IsInViewCone(GetEntityOrigin(entity)))
-			{
-				if (m_backCheckEnemyTime == 0.0f)
-					m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat (1.0f, 2.0f);
-				else if (m_backCheckEnemyTime < engine->GetTime())
-					return false;
-			}
-			else if (m_skill < 80 && !FNullEnt(m_enemy) && !IsInViewCone(GetEntityOrigin(entity)))
-				return false;
-		}
-		else if (GetGameMod() == 1)
-		{
-			if (m_skill < 70 && !FNullEnt(m_enemy) && !IsInViewCone(GetEntityOrigin(entity)))
-			{
-				if (m_backCheckEnemyTime == 0.0f)
-					m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(1.0f, 1.5f);
-				else if (m_backCheckEnemyTime < engine->GetTime())
-					return false;
-			}
-		}
-		// --- Aim OS 37 end
-		else if (GetGameMod() == 2)
-		{
-			// SyPB Pro P.36 - Zombie Ai
-			if (IsZombieEntity(GetEntity()))
-			{
-				if ((!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity)) && !IsInViewCone(GetEntityOrigin (entity)))
-					return false;
-			}
-			else
-			{
-				if (!FNullEnt(m_enemy) && !IsInViewCone(GetEntityOrigin (entity)))
-				{
-					if (pev->button & IN_ATTACK || pev->oldbuttons & IN_ATTACK)
-						return false;
-				}
-			}
-		}
-	}
 
 	if (IsNotAttackLab(entity))
 		return false;
 
-	// SyPB Pro P.37 - fixed vs log
-	if (IsValidPlayer (entity) && !(ENGINE_CHECK_VISIBILITY(entity, (ENGINE_SET_PVS(((float *)EyePosition()))))))
-		return false;
-
-	m_backCheckEnemyTime = 0.0f;
-
-	// SyPB Pro P.38 - Look At Check
-	if (checkOnly)
+	if (!allCheck)
 	{
-		TraceResult tr;
-		TraceLine(EyePosition (), GetEntityOrigin (entity), true, true, GetEntity(), &tr);
-		if (tr.pHit == entity || tr.flFraction >= 1.0f)
-			return true;
+		if (!IsInViewCone(GetEntityOrigin(entity)))
+		{
+			if (m_backCheckEnemyTime != 0.0f && m_backCheckEnemyTime >= engine->GetTime())
+				return false;
 
+			if (m_backCheckEnemyTime == 0.0f)
+			{
+				if (IsZombieEntity(GetEntity()))
+				{
+					if (!FNullEnt(m_enemy))
+						return false;
+
+					if (!FNullEnt(m_moveTargetEntity))
+						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(1.0f, 1.5f);
+				}
+				else if (GetGameMod() == 1)
+				{
+					if (!FNullEnt(m_enemy))
+						return false;
+
+					if (m_skill >= 90)
+						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.2f, 0.5f);
+					else if (m_skill >= 70)
+						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.5f, 0.7f);
+					else
+						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.7f, 1.3f);
+				}
+				else if (GetGameMod() == 2)
+					m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.1f, 0.3f);
+				else
+				{
+					float addTime = engine->RandomFloat(0.2f, 0.5f);
+					if (m_skill == 100)
+						addTime = 0.0f;
+					else if (!FNullEnt(m_enemy))
+						addTime += 0.2f;
+
+					m_backCheckEnemyTime = addTime;
+				}
+
+				return false;
+			}
+		}
+	}
+
+	if (!(ENGINE_CHECK_VISIBILITY(entity, (ENGINE_SET_PVS(((float *)EyePosition()))))))
 		return false;
-	} 
 
-	Vector entityOrigin = nullvec;
+	Vector entityOrigin;
 	uint8_t visibility;
-	bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
+	bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility, checkOnly);
+
+	if (checkOnly)
+		return seeEntity;
 
 	if (setEnemy)
 	{
@@ -269,8 +261,9 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 		m_visibility = visibility;
 	}
 
-	if (seeEntity || entityOrigin != nullvec)
+	if (seeEntity)
 	{
+		m_backCheckEnemyTime = 0.0f;
 		m_seeEnemyTime = engine->GetTime();
 		m_lastEnemy = entity;
 		m_lastEnemyOrigin = m_enemyOrigin;
@@ -311,8 +304,6 @@ bool Bot::GetEntityItem(int mod)
 	edict_t *entity = null;
 	Vector entityOrigin = nullvec;
 
-	return false;
-
 	// SyPB Pro P.40 - AMXX API
 	Array <int> entityId;
 	entityId.RemoveAll();
@@ -345,8 +336,12 @@ bool Bot::GetEntityItem(int mod)
 		if (FNullEnt(entity) || entity->v.effects & EF_NODRAW)
 			continue;
 
-		// SyPB Pro P.29 - Small Change
 		entityOrigin = GetEntityOrigin(entity);
+
+		// SyPB Pro P.41 - Trace Line improve
+		if ((pev->origin - entityOrigin).GetLength() > 400.0f)
+			continue;
+		
 		if (!(ItemIsVisible(entityOrigin, const_cast <char *> (STRING(entity->v.classname)))))
 			continue;
 
@@ -571,8 +566,6 @@ void Bot::AvoidEntity(void)
 		m_needAvoidGrenade = 0;
 	}
 
-	return;
-
 	// SyPB Pro P.40 - AMXX API
 	edict_t *entity = null;
 	Array <int> entityId;
@@ -604,7 +597,8 @@ void Bot::AvoidEntity(void)
 		if (entity->v.effects & EF_NODRAW)
 			continue;
 
-		if (!EntityIsVisible(GetEntityOrigin(entity)) && InFieldOfView(GetEntityOrigin(entity) - EyePosition()) > pev->fov / 3)
+		if (InFieldOfView(GetEntityOrigin(entity) - EyePosition()) > pev->fov / 3 &&
+			!EntityIsVisible(GetEntityOrigin(entity)))
 			continue;
 
 		// SyPB Pro P.30 - Flash Ai
@@ -671,7 +665,7 @@ bool Bot::IsBehindSmokeClouds (edict_t *ent)
          continue;
 
       // check if visible to the bot
-      if (!EntityIsVisible (GetEntityOrigin (ent)) && InFieldOfView (GetEntityOrigin (ent) - EyePosition ()) > pev->fov / 3)
+      if (InFieldOfView (GetEntityOrigin (ent) - EyePosition ()) > pev->fov / 3 && !EntityIsVisible(GetEntityOrigin(ent)))
          continue;
 
       Vector betweenNade = (GetEntityOrigin (pentGrenade) - pev->origin).Normalize ();
@@ -794,9 +788,8 @@ edict_t *Bot::FindBreakable(void)
 
 	if (tr.flFraction < 0.999999f && !FNullEnt(tr.pHit) && IsShootableBreakable(tr.pHit))
 	{
-		//m_breakable = tr.vecEndPos;
+		m_breakable = tr.vecEndPos;
 		m_breakableEntity = tr.pHit;
-		m_breakable = GetEntityOrigin(m_breakableEntity);
 		m_destOrigin = m_breakable;
 		
 
@@ -2114,22 +2107,18 @@ void Bot::SetConditions (void)
 
 			   if (bot->GetEntity()->v.button & IN_ATTACK || !FNullEnt(bot->m_enemy))
 			   {
-				   //if (ENGINE_CHECK_VISIBILITY(bot->GetEntity(), (ENGINE_SET_PVS(reinterpret_cast <float *> (&EyePosition())))))
-				   // SyPB Pro P.37 - fixed vs log
-				   if ((ENGINE_CHECK_VISIBILITY(bot->GetEntity (), (ENGINE_SET_PVS(((float *)EyePosition()))))))
-				   {
-					   SelectBestWeapon();
-
-					   if (!FNullEnt(bot->m_enemy))
-					   {
-						   m_lastEnemy = bot->m_enemy;
-						   m_lastEnemyOrigin = GetEntityOrigin(bot->m_enemy);
-					   }
-
-					   break;
-				   }
+				   // SyPB Pro P.41 - Small improve
+				   SelectBestWeapon();
+				   break;
 			   }
 		   }
+	   }
+
+	   // SyPB Pro P.41 - NPC Fixed 
+	   if (!FNullEnt(m_lastEnemy) && !IsValidPlayer (m_lastEnemy))
+	   {
+		   m_lastEnemy = null;
+		   m_lastEnemyOrigin = nullvec;
 	   }
    }
 
@@ -2641,7 +2630,8 @@ void Bot::SetConditions (void)
       
       // if half of the round is over, allow hunting
       // FIXME: it probably should be also team/map dependant
-      if (FNullEnt (m_enemy) && (g_timeRoundMid < engine->GetTime ()) && !m_isUsingGrenade && m_currentWaypointIndex != g_waypoint->FindNearest (m_lastEnemyOrigin) && m_personality != PERSONALITY_CAREFUL)
+      if (FNullEnt (m_enemy) && (g_timeRoundMid < engine->GetTime ()) && !m_isUsingGrenade && 
+		  m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != g_waypoint->FindNearest(m_lastEnemyOrigin))
       {
          desireLevel = 4096.0f - ((1.0f - tempAgression) * distance);
          desireLevel = (100 * desireLevel) / 4096.0f;
@@ -3185,8 +3175,8 @@ bool Bot::ReactOnEnemy (void)
 
    if (m_enemyReachableTimer < engine->GetTime ())
    {
-      int i = g_waypoint->FindNearest (pev->origin);
-      int enemyIndex = g_waypoint->FindNearest (GetEntityOrigin (m_enemy));
+	   int i = GetEntityWaypoint(GetEntity());
+	   int enemyIndex = GetEntityWaypoint(m_enemy);
 
       float lineDist = (GetEntityOrigin (m_enemy) - pev->origin).GetLength ();
       float pathDist = g_waypoint->GetPathDistanceFloat (i, enemyIndex);
@@ -3205,26 +3195,6 @@ bool Bot::ReactOnEnemy (void)
       return true;
    }
    return false;
-}
-
-bool Bot::IsLastEnemyViewable (void)
-{
-   // this function checks if line of sight established to last enemy
-
-   if (FNullEnt (m_lastEnemy) || m_lastEnemyOrigin == nullvec)
-   {
-      m_lastEnemy = null;
-      m_lastEnemyOrigin = nullvec;
-
-      return false;
-   }
-
-   // trace a line from bot's eyes to destination...
-   TraceResult tr;
-   TraceLine (EyePosition (), m_lastEnemyOrigin, true, GetEntity (), &tr);
-
-   // check if line of sight to object is not blocked (i.e. visible)
-   return tr.flFraction >= 1.0f;
 }
 
 bool Bot::LastEnemyShootable (void)
@@ -4621,10 +4591,11 @@ void Bot::RunTask (void)
          DeleteSearchNodes ();
 
          // is there a remembered index?
-         if (GetCurrentTask ()->data != -1 && GetCurrentTask ()->data < g_numWaypoints)
-            destIndex = m_tasks->data;
-         else // no. we need to find a new one
-            destIndex = g_waypoint->FindNearest (m_lastEnemyOrigin);
+		 if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
+			 destIndex = m_tasks->data;
+		 else // no. we need to find a new one
+			//destIndex = g_waypoint->FindNearest (m_lastEnemyOrigin);
+			 destIndex = GetEntityWaypoint(m_lastEnemy);
 
          // remember index
          m_prevGoalIndex = destIndex;
@@ -5307,7 +5278,7 @@ void Bot::RunTask (void)
       {
          DeleteSearchNodes ();
 
-         destIndex = g_waypoint->FindNearest (GetEntityOrigin (m_targetEntity));
+		 destIndex = GetEntityWaypoint(m_targetEntity);
 
          Array <int> points;
          g_waypoint->FindInRadius (points, 200, GetEntityOrigin (m_targetEntity));
@@ -5368,7 +5339,7 @@ void Bot::RunTask (void)
 	   if (DoWaypointNav())
 		   DeleteSearchNodes();
 
-	   destIndex = g_waypoint->FindNearest(m_moveTargetOrigin);
+	   destIndex = GetEntityWaypoint(m_moveTargetEntity);
 	   
 	   if (destIndex >= 0 && destIndex < g_numWaypoints)
 	   {
@@ -5759,7 +5730,7 @@ void Bot::RunTask (void)
       m_aimFlags |= AIM_OVERRIDE;
 
 	  // SyPB Pro P.40 - Breakable improve
-	  if ((!FNullEnt(m_breakableEntity) && !IsShootableBreakable(m_breakableEntity) && FNullEnt(FindBreakable())) ||
+	  if ((!FNullEnt(m_breakableEntity) && !IsShootableBreakable(m_breakableEntity) && FNullEnt(m_breakableEntity = FindBreakable())) ||
 		  !FNullEnt(m_enemy) || (pev->origin - m_breakable).GetLength () > 250.0f)
 	  {
 		  TaskComplete();
@@ -6665,10 +6636,17 @@ void Bot::BotAI (void)
 
    if (fixFall)
    {
+	   // SyPB Pro P.41 - Fall Ai improve
+	   int client = ENTINDEX(GetEntity()) - 1;
+	   int wpIndex2 = -1;
+	   g_clients[client].wpIndex = g_waypoint->FindNearest(g_clients[client].origin, 9999.0f, -1, GetEntity(), &wpIndex2);
+	   g_clients[client].wpIndex2 = wpIndex2;
+	   g_clients[client].getWPTime = engine->GetTime() + engine->RandomFloat(2.0f, 4.0f);
+
 	   m_navTimeset = engine->GetTime() - 5.0f;
 
 	   // SyPB Pro P.39 - Fall Ai improve
-	   if (!FNullEnt(m_enemy))// || !FNullEnt (m_moveTargetEntity))
+	   if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
 		   m_enemyUpdateTime = engine->GetTime();
    }
 
@@ -6680,12 +6658,13 @@ void Bot::BotAI (void)
    {
 	   m_isStuck = false;
 
+	   /*
 	   edict_t *ent = FindBreakable();  // Find the breakable entity now
 	   if (!FNullEnt(ent)) // has breakable entity
 		   PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
 
-	   // will check player entity now
-	   ent = null;
+		ent = null;
+	   */
 
 	   // Standing still, no need to check?
 	   // FIXME: doesn't care for ladder movement (handled separately) should be included in some way
@@ -7323,26 +7302,6 @@ void Bot::ResetDoubleJumpState (void)
    m_jumpReady = false;
 }
 
-void Bot::DebugMsg (const char *format, ...)
-{
-#if defined(PRODUCT_DEV_VERSION)
-   if (sypb_debug.GetInt () < 2)
-      return;
-
-   va_list ap;
-   char buffer[1024];
-
-   va_start (ap, format);
-   vsprintf (buffer, format, ap);
-   va_end (ap);
-
-   ServerPrintNoTag ("%s: %s", STRING (pev->netname), buffer);
-
-   if (sypb_debug.GetInt () >= 3)
-      AddLogEntry (false, LOG_DEFAULT, "%s: %s", STRING (pev->netname), buffer);
-#endif
-}
-
 Vector Bot::CheckToss (const Vector &start, Vector end)
 {
    // this function returns the velocity at which an object should looped from start to land near end.
@@ -7493,23 +7452,18 @@ void Bot::RunPlayerMovement(void)
 	// elapses, that bot will behave like a ghost : no movement, but bullets and players can
 	// pass through it. Then, when the next frame will begin, the stucking problem will arise !
 
-	
-	// SyPB Pro P.27 - New Run Player Move
+	// SyPB Pro P.41 - Run Player Move
 	m_msecVal = static_cast <uint8_t> ((engine->GetTime() - m_msecInterval) * 1000.0f);
-	
-	// SyPB Pro P.40 - Run Player Move improve
-	if (m_msecVal > 255)
-		m_msecVal = 255;
-	else if (m_msecVal < 10)
-		m_msecVal = 10;
+
+	if (m_msecVal < 1)
+		m_msecVal = 1;
+	else if (m_msecVal > 100)
+		m_msecVal = 100;
 
 	m_msecInterval = engine->GetTime();
 
-	// SyPB Pro P.35 - New bot action  
-	// SyPB Pro P.36 - Fixed
-	(*g_engfuncs.pfnRunPlayerMove) (GetEntity (), m_moveAnglesForRunMove, m_moveSpeedForRunMove,
-		//m_strafeSpeedForRunMove, 0.0f, static_cast <unsigned short> (pev->button), uint8_t (pev->impulse), m_msecVal);  
-		m_strafeSpeedForRunMove, 0.0f, pev->button, pev->impulse, m_msecVal);
+	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), m_moveAnglesForRunMove, m_moveSpeedForRunMove,
+		m_strafeSpeedForRunMove, 0.0f, static_cast <unsigned short> (pev->button), 0, m_msecVal);
 }
 
 
@@ -7568,8 +7522,6 @@ float Bot::GetBombTimeleft (void)
 
 float Bot::GetEstimatedReachTime (void)
 {
-	return 5.0f;
-
    float estimatedTime = 5.0f; // time to reach next waypoint
 
    // calculate 'real' time that we need to get from one waypoint to another
@@ -7758,7 +7710,6 @@ void Bot::ReactOnSound (void)
       }
 
       // check if heard enemy can be seen
-	  //if (CheckVisibility (VARS (player), &m_lastEnemyOrigin, &m_visibility))
 	  // SyPB Pro P.30 - small change
 	  if (IsEnemyViewable(player, true, true))
       {
