@@ -4,8 +4,8 @@
 typedef void(*_SyPB_GetHostEntity) (edict_t **);
 _SyPB_GetHostEntity SwNPCAPI_GetHostEntity;
 
-typedef float(*_SyPBVersion)(void);
-_SyPBVersion SwNPCAPI_SyPBVersion;
+typedef float(*_SyPBSupportVersion)(void);
+_SyPBSupportVersion SwNPCAPI_SyPBSupportVersion;
 
 typedef void(*_SwNPCBuild)(float, int, int, int, int);
 _SwNPCBuild SwNPCAPI_SwNPCBuild;
@@ -36,8 +36,8 @@ void SyPBDataLoad(void)
 		return;
 	}
 
-	SwNPCAPI_SyPBVersion = (_SyPBVersion)GetProcAddress(dll, "SwNPC_GetSyPBVersion");
-	if (!SwNPCAPI_SyPBVersion)
+	SwNPCAPI_SyPBSupportVersion = (_SyPBSupportVersion)GetProcAddress(dll, "SwNPC_SyPBSupportVersion");
+	if (!SwNPCAPI_SyPBSupportVersion)
 	{
 		ErrorWindows("Loading Fail, Pls Try upgrade your SyPB Version"
 			"\n\nExit the Game?");
@@ -49,14 +49,6 @@ void SyPBDataLoad(void)
 	{
 		ErrorWindows("Loading Fail, Pls Try upgrade your SyPB Version"
 			"\n\nExit the Game?");
-		return;
-	}
-
-	float sypbVersion = SwNPCAPI_SyPBVersion();
-	if (sypbVersion < float(PRODUCT_VERSION_F))
-	{
-		LogToFile("Your SyPB Version is old, cannot support SwNPC");
-		LogToFile("SyPB Version: %.2f | SwNPC Version: %.2f", sypbVersion, float(PRODUCT_VERSION_F));
 		return;
 	}
 
@@ -72,6 +64,19 @@ void SyPBDataLoad(void)
 	if (!SwNPCAPI_SwNPCLogFile)
 	{
 		LogToFile("Loading Fail, Pls Try upgrade your SyPB Version");
+		return;
+	}
+
+	float sypbSupportVersion = SwNPCAPI_SyPBSupportVersion();
+	if (sypbSupportVersion != float(PRODUCT_VERSION_F))
+	{
+		if (sypbSupportVersion < float(PRODUCT_VERSION_F))
+			LogToFile("Pls upgarde you SyPB Version");
+		else
+			LogToFile("Pls upgarde you SwNPC Version");
+
+		LogToFile("SwNPC Version: %.2f | SyPB Support SwNPC Version: %.2f",
+			float(PRODUCT_VERSION_F), sypbSupportVersion);
 		return;
 	}
 
@@ -110,12 +115,6 @@ void SyPB_GetHostEntity(void)
 {
 	if (!g_swnpcRun)
 		return;
-
-	if (CVAR_GET_FLOAT("sypb_debug") < 1)
-	{
-		g_hostEntity = null;
-		return;
-	}
 
 	SwNPCAPI_GetHostEntity(&g_hostEntity);
 }

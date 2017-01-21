@@ -25,6 +25,7 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 	pev->max_health = maxHealth;
 	pev->gravity = 1.0f;
 	pev->maxspeed = maxSpeed;
+	pev->owner = null;
 
 	SET_MODEL(GetEntity(), (char *)STRING(pev->model));
 	pev->framerate = 1.0;
@@ -33,12 +34,16 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 	g_npcSize[1] = Vector(16.0f, 16.0f, 32.0f);
 
 	m_npcTeam = team;
+
+	MF_ExecuteForward(g_callAddNPC, (cell)ENTINDEX(GetEntity()));
 }
 
 NPC::~NPC(void)
 {		
 	DeleteSearchNodes();
 	m_pmodel = null;
+
+	MF_ExecuteForward(g_callRemoveNPC, (cell)ENTINDEX(GetEntity()));
 
 	pev = null;
 	pvData = null;
@@ -96,8 +101,8 @@ void NPC::NewNPCSetting(void)
 		m_actionTime[i] = -1.0f;
 		m_ASName[i] = "null";
 	}
-	m_gaitSequence[AS_IDLE] = -1;
-	m_gaitSequence[AS_MOVE] = -1;
+	//m_gaitSequence[AS_IDLE] = -1;
+	//m_gaitSequence[AS_MOVE] = -1;
 
 	for (i = 0; i < NS_ALL; i++)
 		m_npcSound[i] = "null";
@@ -106,6 +111,9 @@ void NPC::NewNPCSetting(void)
 	m_bloodColor = BLOOD_COLOR_RED;
 	m_damageMultiples = 1.0f;
 	m_missArmor = false;
+
+	m_addFrags = 0;
+	m_deadRemoveTime = 5.0f;
 
 	m_attackDamage = 20.0f;
 	m_attackDistance = 64.0f;
@@ -120,13 +128,14 @@ void NPC::ResetNPC(void)
 	m_enemy = null;
 	m_enemyUpdateTime = -1.0f;
 	m_moveTargetEntity = null;
-	m_lookAt = nullvec;
-	m_moveSpeed = 0.0f;
-	//m_strafeSpeed = 0.0f;
-	m_jumpAction = false;
-	m_destOrigin = nullvec;
-	m_deadActionTime = -1.0f;
+	m_followEntity = null;
 
+	m_lookAt = nullvec;
+	m_destOrigin = nullvec;
+	m_moveSpeed = 0.0f;
+	m_jumpAction = false;
+
+	m_deadActionTime = -1.0f;
 	m_changeActionTime = -1.0f;
 
 	m_currentWaypointIndex = -1;
@@ -150,7 +159,7 @@ void NPC::ResetNPC(void)
 	DeleteSearchNodes();
 }
 
-void NPC::Think(void)
+void NPC::FrameThink(void)
 {
 	if (!m_workNPC)
 		return;
@@ -166,14 +175,57 @@ void NPC::Think(void)
 		DeadThink();
 		return;
 	}
+}
+
+void NPC::Think(void)
+{
+	if (!m_workNPC || !IsAlive(GetEntity()))
+		return;
+
+	if (MF_ExecuteForward(g_callThink_Pre, (cell)ENTINDEX(GetEntity())))
+		return;
+
 	m_deadActionTime = -1.0f;
 
-	if (m_nextThinkTime <= gpGlobals->time)
-	{
-		NPCAi();
+	m_frameInterval = gpGlobals->time - m_lastThinkTime;
+	m_lastThinkTime = gpGlobals->time;
+	m_nextThinkTime = gpGlobals->time + (0.1f * RANDOM_FLOAT (1.0f, 1.1f));
 
-		if (g_npcManager->g_debugNPC == this && !FNullEnt(g_hostEntity))
-			DebugModeMsg();
+	NPCAi();
+	NPCAction();
+
+	if (CVAR_GET_FLOAT("sypb_debug") >= 2 && IsValidPlayer(g_hostEntity) && g_npcManager->g_debugNPC == this)
+		DebugModeMsg();
+
+	pev->nextthink = m_nextThinkTime;
+	MF_ExecuteForward(g_callThink_Post, (cell)ENTINDEX(GetEntity()));
+}
+
+void NPC::DeadThink(void)
+{
+	if (m_deadActionTime == -1.0f)
+	{
+		m_deadActionTime = gpGlobals->time + m_deadRemoveTime;
+		m_changeActionTime = -1.0f;
+
+		pev->velocity = nullvec;
+		pev->takedamage = DAMAGE_NO;
+		pev->deadflag = DEAD_DEAD;
+		pev->solid = SOLID_NOT;
+
+		g_npcAS |= ASC_DEAD;
+		FacePosition();
+		ChangeAnim();
+		PlayNPCSound(NS_DEAD);
+		pev->nextthink = -1;
+	}
+	else if (m_deadActionTime <= gpGlobals->time)
+		m_needRemove = true;
+	else if (m_nextThinkTime <= gpGlobals->time)
+	{
+		MF_ExecuteForward(g_callThink_Pre, (cell)ENTINDEX(GetEntity()));
+		m_nextThinkTime = gpGlobals->time + 0.1f;
+		MF_ExecuteForward(g_callThink_Post, (cell)ENTINDEX(GetEntity()));
 	}
 }
 
@@ -193,7 +245,7 @@ void NPC::Spawn(Vector origin)
 	DROP_TO_FLOOR(GetEntity());
 
 	pev->animtime = gpGlobals->time;
-	pev->nextthink = m_nextThinkTime = gpGlobals->time + 0.2f;
+	pev->nextthink = m_nextThinkTime = gpGlobals->time + 0.05f;
 	m_frameInterval = gpGlobals->time;
 
 	m_iDamage = false;
@@ -202,45 +254,16 @@ void NPC::Spawn(Vector origin)
 	m_workNPC = true;
 }
 
-void NPC::DeadThink(void)
-{
-	if (m_deadActionTime == -1.0f)
-	{
-		m_deadActionTime = gpGlobals->time + 5.0f;
-		m_changeActionTime = -1.0f;
-
-		pev->velocity = nullvec;
-		pev->takedamage = DAMAGE_NO;
-		pev->deadflag = DEAD_DEAD;
-		pev->solid = SOLID_NOT;
-
-		g_npcAS |= ASC_DEAD;
-		FacePosition();
-		ChangeAnim();
-
-		if (strcmp(m_npcSound[NS_DEAD], "null") != 0)
-			EMIT_SOUND(GetEntity (), CHAN_VOICE, m_npcSound[NS_DEAD], VOL_NORM, ATTN_NORM);
-
-		pev->nextthink = -1;
-	}
-	else if (m_deadActionTime <= gpGlobals->time)
-		m_needRemove = true;
-}
-
 void NPC::NPCAi(void)
 {
-	m_frameInterval = gpGlobals->time - m_lastThinkTime;
-	m_lastThinkTime = gpGlobals->time;
-
-	m_nextThinkTime = gpGlobals->time + 0.1f;
-
 	g_npcAS = ASC_IDLE;
 	m_moveSpeed = 0.0f;
+
 	m_destOrigin = nullvec;
-		
 	FindWaypoint();
 
 	FindEnemy();
+
 	if (m_task & TASK_ENEMY)
 		TaskEnemy();
 	else if (m_task & TASK_MOVETOTARGET)
@@ -261,12 +284,14 @@ void NPC::NPCAi(void)
 		g_npcAS |= ASC_DAMAGE;
 		m_iDamage = false;
 	}
+}
 
+void NPC::NPCAction(void)
+{
 	FacePosition();
 	MoveAction();
 
 	ChangeAnim();
-	pev->nextthink = m_nextThinkTime;
 }
 
 void NPC::TaskBase(void)
@@ -278,6 +303,13 @@ void NPC::TaskBase(void)
 			DeleteSearchNodes();
 			m_goalWaypoint = m_goalWaypointAPI;
 		}
+	}
+	else if (m_followEntity != null)
+	{
+		TaskB_FollowEntity();
+
+		if (FNullEnt(m_followEntity))
+			return;
 	}
 
 	if (DoWaypointNav())
@@ -326,19 +358,25 @@ void NPC::TaskMoveTarget(void)
 	int destIndex = g_waypoint->GetEntityWpIndex(m_moveTargetEntity);
 	if (destIndex >= 0 && destIndex < g_numWaypoints)
 	{
-		bool moveToTarget = false;
-		if (&m_navNode[0] != null)
+		bool needMoveToTarget = false;
+		if (m_goalWaypoint == destIndex && !GoalIsValid())
+			needMoveToTarget = true;
+		else
 		{
-			PathNode *node = m_navNode;
+			needMoveToTarget = true;
+			if (&m_navNode[0] != null)
+			{
+				PathNode *node = m_navNode;
 
-			while (node->next != null)
-				node = node->next;
+				while (node->next != null)
+					node = node->next;
 
-			if (node->index == destIndex)
-				moveToTarget = true;
+				if (node->index == destIndex)
+					needMoveToTarget = false;
+			}
 		}
 
-		if (!GoalIsValid() || (m_goalWaypoint != destIndex && !moveToTarget))
+		if (needMoveToTarget)
 		{
 			int srcIndex = m_currentWaypointIndex;
 			if (m_currentWaypointIndex != g_waypoint->GetEntityWpIndex(GetEntity()))
@@ -359,8 +397,60 @@ void NPC::TaskMoveTarget(void)
 			FindShortestPath(m_currentWaypointIndex, m_goalWaypoint);
 		}
 
-		if (m_currentWaypointIndex == m_goalWaypoint)
+		if (m_currentWaypointIndex == m_goalWaypoint || m_currentWaypointIndex == destIndex)
 			SetEnemy(m_moveTargetEntity);
+	}
+}
+
+void NPC::TaskB_FollowEntity(void)
+{
+	if (FNullEnt(m_followEntity) || !IsAlive(m_followEntity))
+	{
+		m_followEntity = null;
+		return;
+	}
+
+	int destIndex = g_waypoint->GetEntityWpIndex(m_followEntity);
+	if (destIndex >= 0 && destIndex < g_numWaypoints)
+	{
+		bool needMoveToTarget = false;
+		if (m_goalWaypoint == destIndex && !GoalIsValid())
+			needMoveToTarget = true;
+		else
+		{
+			needMoveToTarget = true;
+			if (&m_navNode[0] != null)
+			{
+				PathNode *node = m_navNode;
+
+				while (node->next != null)
+					node = node->next;
+
+				if (node->index == destIndex)
+					needMoveToTarget = false;
+			}
+		}
+
+		if (needMoveToTarget)
+		{
+			int srcIndex = m_currentWaypointIndex;
+			if (m_currentWaypointIndex != g_waypoint->GetEntityWpIndex(GetEntity()))
+			{
+				if (*(g_waypoint->m_distMatrix + (m_currentWaypointIndex * g_numWaypoints) + destIndex) <=
+					*(g_waypoint->m_distMatrix + (g_waypoint->GetEntityWpIndex(GetEntity()) * g_numWaypoints) + destIndex))
+					srcIndex = m_currentWaypointIndex;
+				else
+					srcIndex = g_waypoint->GetEntityWpIndex(GetEntity());
+			}
+
+			DeleteSearchNodes();
+			m_currentWaypointIndex = srcIndex;
+			m_navTime = gpGlobals->time + 5.0f;
+			SetWaypointOrigin();
+
+			m_goalWaypoint = destIndex;
+			FindShortestPath(m_currentWaypointIndex, m_goalWaypoint);
+		}
 	}
 }
 
@@ -381,13 +471,7 @@ void NPC::FindEnemy(void)
 	if (!FNullEnt(m_enemy))
 	{
 		if (!IsAlive(m_enemy) || GetTeam(m_enemy) == team)
-		{
 			SetEnemy(null);
-
-			LoadEntityWaypointPoint(GetEntity());
-			m_currentWaypointIndex = -1;
-			FindWaypoint();
-		}
 	}
 
 	if (!FNullEnt(m_moveTargetEntity))
@@ -397,6 +481,7 @@ void NPC::FindEnemy(void)
 	}
 
 	edict_t *targetEntity = null;
+	edict_t *lastCheckEntity = null;
 	float enemy_distance = 9999.9f;
 
 	if (!FNullEnt(m_enemy))
@@ -488,6 +573,7 @@ void NPC::FindEnemy(void)
 			{
 				enemy_distance = m_enemyEntityDistance[i];
 				targetEntity = entity;
+				lastCheckEntity = entity;
 
 				break;
 			}
@@ -514,7 +600,7 @@ void NPC::FindEnemy(void)
 
 	if (!FNullEnt(targetEntity))
 	{
-		if (!IsEnemyViewable(targetEntity))
+		if (lastCheckEntity != targetEntity && !IsEnemyViewable(targetEntity))
 		{
 			if (targetEntity == m_enemyAPI)
 			{
@@ -589,6 +675,12 @@ void NPC::SetEnemy(edict_t *entity)
 {
 	if (FNullEnt(entity) || !IsAlive(entity))
 	{
+		if (!FNullEnt(m_enemy))
+		{
+			m_currentWaypointIndex = -1;
+			FindWaypoint();
+		}
+
 		m_enemy = null;
 		m_task &= ~TASK_ENEMY;
 		m_enemyUpdateTime = -1.0f;
@@ -623,7 +715,6 @@ void NPC::SetMoveTarget(edict_t *entity)
 		LoadEntityWaypointPoint(GetEntity(), entity);
 		m_currentWaypointIndex = -1;
 
-		// Pro P.45 - Move Target improve
 		FindWaypoint();
 	}
 	
@@ -696,9 +787,7 @@ bool NPC::AttackAction(edict_t *entity, bool needSetSpeed)
 		Vector vecDir = gpGlobals->v_forward + x * 0.15 * gpGlobals->v_right + y * 0.15 * gpGlobals->v_up;
 
 		TakeDamage(m_enemy, GetEntity(), m_attackDamage, 0, tr.vecEndPos, vecDir);
-
-		if (strcmp(m_npcSound[NS_ATTACK], "null") != 0)
-			EMIT_SOUND_DYN(GetEntity(), CHAN_WEAPON, m_npcSound[NS_ATTACK], VOL_NORM, ATTN_NORM, 0, 94);
+		PlayNPCSound(NS_ATTACK);
 
 		return true;
 	}
@@ -812,7 +901,7 @@ void NPC::MoveAction(void)
 	if (speed > 10.0f || speed < -10.0f)
 		g_npcAS |= ASC_MOVE;
 
-	MakeVectors(pev->angles);
+	//MakeVectors(pev->angles);
 }
 
 void NPC::CheckStuck(float oldSpeed)
@@ -854,30 +943,7 @@ void NPC::CheckStuck(float oldSpeed)
 			{
 				pev->velocity.z = (270.0f * pev->gravity) + 32.0f;
 				m_jumpAction = false;
-
-				goto end;
 			}
-		}
-
-		for (int i = 0; i <= 18; i++)
-		{
-			UTIL_TraceHull(pev->origin, pev->origin, dont_ignore_monsters, human_hull, GetEntity(), &tr);
-			if (!tr.fStartSolid && !tr.fAllSolid && tr.fInOpen)
-				break;
-
-			if (i == 17)
-			{
-				int block = MF_ExecuteForward(g_callStuck_Pre, (cell)ENTINDEX(GetEntity()));
-				if (!block)
-				{
-					LogToFile("The NPC is stuck, remove now");
-					m_needRemove = true;
-				}
-
-				break;
-			}
-
-			pev->origin.z += 1;
 		}
 		
 		m_goalWaypoint = -1;
@@ -885,7 +951,7 @@ void NPC::CheckStuck(float oldSpeed)
 		DeleteSearchNodes();
 	}
 
-	end: m_prevOrigin = pev->origin;
+	m_prevOrigin = pev->origin;
 }
 
 bool NPC::WalkMove(void)
@@ -902,20 +968,20 @@ bool NPC::WalkMove(void)
 
 	Vector dest = pev->origin;
 	dest.z += stepSize;
-	Vector src = pev->origin + gpGlobals->v_forward * 3;
+	Vector src = pev->origin + gpGlobals->v_forward * 8;
 
 	TraceResult tr;
-	UTIL_TraceHull(dest, src, ignore_monsters, head_hull, GetEntity(), &tr);
-	if (tr.flFraction != 1.0f) //tr.flFraction > 0.0f && 
+	UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
+	if (tr.flFraction != 1.0f)
 	{
-		float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin (GetEntity ()).z) - stepSize;
+		float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin (GetEntity ()).z) - stepSize + 0.5f;
 
 		if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= stepSize)
 		{
-			pev->origin.z = newOriginZ + 0.5f;
+			pev->origin.z = newOriginZ;
 			return true;
-		}
-	} 
+		} 
+	}
 	
 	return false;
 }
@@ -939,8 +1005,8 @@ void NPC::ChangeAnim()
 	}
 
 	if (gaitSequence != -1 && pev->gaitsequence != gaitSequence)
-		pev->gaitsequence = gaitSequence;
-		*/
+		pev->gaitsequence = gaitSequence; */
+
 	if (m_changeActionTime > gpGlobals->time)
 		return;
 
@@ -989,8 +1055,8 @@ void NPC::SetUpPModel(void)
 			m_actionTime[i] = -1.0f;
 		}
 
-		m_gaitSequence[AS_IDLE] = -1;
-		m_gaitSequence[AS_MOVE] = -1;
+		//m_gaitSequence[AS_IDLE] = -1;
+		//m_gaitSequence[AS_MOVE] = -1;
 	}
 	else if (pModel != m_pmodel)
 	{
@@ -1004,11 +1070,20 @@ void NPC::SetUpPModel(void)
 			m_actionTime[i] = LookupActionTime(pModel, m_actionSequence[i]);
 		}
 
-		m_gaitSequence[AS_IDLE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_IDLE]);
-		m_gaitSequence[AS_MOVE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_MOVE]);
+		//m_gaitSequence[AS_IDLE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_IDLE]);
+		//m_gaitSequence[AS_MOVE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_MOVE]);
 	}
 
 	m_pmodel = pModel;
+}
+
+void NPC::PlayNPCSound(int soundClass)
+{
+	if (strcmp(m_npcSound[soundClass], "null") != 0)
+	{
+		int chanChannels = (soundClass == NS_ATTACK) ? CHAN_WEAPON : CHAN_VOICE;
+		EMIT_SOUND(GetEntity(), chanChannels, m_npcSound[soundClass], VOL_NORM, ATTN_NORM);
+	}
 }
 
 void NPC::DeleteSearchNodes(void)
@@ -1252,13 +1327,10 @@ void NPC::SetSound(const char *attackSound, const char *damageSound, const char 
 
 void NPC::DebugModeMsg(void)
 {
-	if (FNullEnt(g_hostEntity))
-		return;
-
 	if (IsValidPlayer(INDEXENT(g_hostEntity->v.iuser2)))
 		return;
 
-	char gamemodName[12];
+	char gamemodName[80];
 	switch (GetGameMode())
 	{
 	case 0:
@@ -1266,23 +1338,26 @@ void NPC::DebugModeMsg(void)
 		break;
 
 	case 1:
-		sprintf(gamemodName, "Dm");
+		sprintf(gamemodName, "DeathMatch");
 		break;
 
 	case 2:
-		sprintf(gamemodName, "ZP");
+		sprintf(gamemodName, "Zombie");
 		break;
 
 	case 3:
-		sprintf(gamemodName, "VS Npc");
+		sprintf(gamemodName, "No Team");
 		break;
 
 	case 4:
-		sprintf(gamemodName, "ZH");
+		sprintf(gamemodName, "Zombie Hell");
 		break;
+
+	default:
+		sprintf(gamemodName, "UNKNOWN MODE");
 	}
 
-	char taskName[33];
+	char taskName[80];
 	if (m_task & TASK_ENEMY)
 		sprintf(taskName, "TASK_ENEMY");
 	else if (m_task & TASK_MOVETOTARGET)
@@ -1290,13 +1365,16 @@ void NPC::DebugModeMsg(void)
 	else
 		sprintf(taskName, "TASK_NORMAL");
 
-	char enemyName[33];
+	char enemyName[80];
+
+	// SyPB Pro P.42 - small improve
 	if (!FNullEnt(m_enemy))
-		strcat(enemyName, GetEntityName(m_enemy));
+		sprintf(enemyName, "[E]: %s", GetEntityName(m_enemy));
 	else if (!FNullEnt(m_moveTargetEntity))
-		strcat(enemyName, GetEntityName(m_moveTargetEntity));
+		sprintf(enemyName, "[MT]: %s", GetEntityName(m_moveTargetEntity));
 	else
-		strcpy(enemyName, " (null)");
+		sprintf(enemyName, ": %s", GetEntityName(null));
+
 
 	// P.45 - Debugs Mode improve
 	char npcTeam[33];
@@ -1304,7 +1382,7 @@ void NPC::DebugModeMsg(void)
 		sprintf(npcTeam, "TR");
 	else if (m_npcTeam == 1)
 		sprintf(npcTeam, "CT");
-	else 
+	else
 		sprintf(npcTeam, "Team-%d", m_npcTeam);
 
 	int navIndex[2] = { -1, -1 };
@@ -1325,7 +1403,8 @@ void NPC::DebugModeMsg(void)
 	char outputBuffer[512];
 	sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
 		"\n [%s] \n Task: %s\n"
-		"Enemy: %s  Team: %s\n"
+		"Enemy%s  Team: %s\n\n"
+
 		"CWI: %d  GI: %d\n"
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
@@ -1333,10 +1412,10 @@ void NPC::DebugModeMsg(void)
 		"",
 		gamemodName,
 		GetEntityName(GetEntity()), taskName,
-		enemyName, npcTeam, 
-		m_currentWaypointIndex, m_goalWaypoint, 
-		navIndex[0], navIndex[1], 
-		m_moveSpeed, GetDistance2D(pev->velocity), 
+		enemyName, npcTeam,
+		m_currentWaypointIndex, m_goalWaypoint,
+		navIndex[0], navIndex[1],
+		m_moveSpeed, GetDistance2D(pev->velocity),
 		m_attackDistance);
 
 	MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
@@ -1358,8 +1437,6 @@ void NPC::DebugModeMsg(void)
 	WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
 	WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
 	MESSAGE_END();
-	
-	
 	if (!FNullEnt (m_enemy))
 		DrawLine(g_hostEntity, pev->origin, GetEntityOrigin (m_enemy), Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
 

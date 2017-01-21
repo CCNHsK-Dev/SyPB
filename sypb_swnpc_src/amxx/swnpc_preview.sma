@@ -1,13 +1,13 @@
 
 /*
 * This is SwNPC for AMXX
-* Version : 1.45
-* Support Build: 1.45.41259.106 or new
+* Version : 1.48
+* Support Build: 1.48.50566.118
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.42.40760.44 or new
+* Support SyPB Build: 1.48.50565.690 or new
 *
-* Date: 11/8/2016
+* Date: 18/1/2017
 */
 
 #include <amxmodx>
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in"
-#define VERSION	"1.45.41259.106"
+#define VERSION	"1.48.50566.118"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -43,10 +43,14 @@ public plugin_precache()
 	precache_sound ("zombie_plague/zombie_die3.wav");
 }
 
-public SwNPC_Stuck_Pre (npcId)
+public SwNPC_Add (npcId)
 {
-	//return PLUGIN_CONTINUE; // not block
-	return PLUGIN_HANDLED; // block
+	client_print(0, print_chat, "new npc %d", npcId);
+}
+
+public SwNPC_Remove (npcId)
+{
+	client_print(0, print_chat, "remove npc %d", npcId);
 }
 
 public SwNPC_TakeDamage_Pre(victim, attack, damage)
@@ -54,21 +58,11 @@ public SwNPC_TakeDamage_Pre(victim, attack, damage)
 	//client_print(0, print_chat, "TakeDamage_Pre | attack:%d | victim:%d | damage:%d", attack, victim, damage);
 	
 	
-	if (victim == 1 || attack == 1)
+	//if (victim == 1 || attack == 1)
 		//return PLUGIN_HANDLED;  // < block attack
-		SetDamageValue (1); // Chanage damage value to 1
+		//SetDamageValue (2/damage); // Chanage damage value
 	
 	return PLUGIN_CONTINUE;
-}
-
-public SwNPC_Kill_Post(victim, killer)
-{
-	//client_print(0, print_chat, "Kill_Post | killer:%d | victim:%d", killer, victim);
-}
-
-public SwNPC_TakeDamage_Post (victim, attack, damage)
-{
-	//client_print(0, print_chat, "TakeDamage_Post | attack:%d | victim:%d | damage:%d", attack, victim, damage);
 }
 
 public event_new_round()
@@ -86,15 +80,16 @@ public add_swnpc_team1 ()
 	new Float:origin[3];
 	origin = g_spawns[random_num(0, g_spawnCount - 1)];
 	
-	new ent = swnpc_add_npc ("npc_team1", team1_model, 30.0, 240.0, 0, origin);
+	new ent = swnpc_add_npc ("npc_team1", team1_model, 200.0, 240.0, 0, origin);
 
 	swnpc_set_sound (ent, "zombie_plague/nemesis_pain3.wav", "zombie_plague/zombie_pain1.wav", "zombie_plague/zombie_die3.wav");
 	swnpc_set_sequence_name (ent, "idle1", "run", "ref_shoot_knife", "gut_flinch", "death1");
 	
-	swnpc_set_enemy (ent, 1);
+	swnpc_set_attack_damage (ent, 10.0);
 	
-	//set_task (5.0, "damage_npc", ent);
-	//set_task (15.0, "damage_npc", ent);
+	swnpc_set_add_frags (ent, 2);
+	swnpc_set_dead_remove_time (ent, 10.0);
+
 	set_task (2.0, "add_swnpc_team1");
 }
 
@@ -103,20 +98,19 @@ public add_swnpc_team2 ()
 	new Float:origin[3];
 	origin = g_spawns[random_num(0, g_spawnCount - 1)];
 	
-	new ent = swnpc_add_npc ("npc_team2", team2_model, 30.0, 240.0, 1, origin);
+	new ent = swnpc_add_npc ("npc_team2", team2_model, 200.0, 240.0, 1, origin);
 
 	swnpc_set_sound (ent, "zombie_plague/nemesis_pain3.wav", "zombie_plague/zombie_pain1.wav", "zombie_plague/zombie_die3.wav");
 	swnpc_set_sequence_name (ent, "idle1", "run", "ref_shoot_knife", "gut_flinch", "death1");
 	
-	//set_task (5.0, "damage_npc", ent);
-	//set_task (15.0, "damage_npc", ent);
+	swnpc_set_attack_damage (ent, 10.0);
+	
+	swnpc_set_add_frags (ent, 2);
+	swnpc_set_dead_remove_time (ent, 10.0);
+	
 	set_task (2.0, "add_swnpc_team2");
 }
 
-public damage_npc (ent)
-{
-	SwNPC_FakeTakeDamage (ent, ent, 20);
-}
 
 // Use DM:KD Spawn Point To try swnpc
 stock load_ranspawn()

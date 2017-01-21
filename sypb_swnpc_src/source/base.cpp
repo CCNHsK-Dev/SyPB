@@ -122,13 +122,15 @@ bool IsFriendlyFireOn(void)
 
 const char *GetEntityName(edict_t *entity)
 {
+	static char entityName[256];
 	if (FNullEnt(entity))
-		return "null";
+		strcpy(entityName, "NULL");
+	else if (IsValidPlayer(entity))
+		strcpy(entityName, (char *)STRING(entity->v.netname));
+	else
+		strcpy(entityName, (char *)STRING(entity->v.classname));
 
-	if (IsValidPlayer(entity))
-		return STRING(entity->v.netname);
-
-	return STRING(entity->v.classname);
+	return &entityName[0];
 }
 
 void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir, TraceResult *ptr, int bitsDamageType)
@@ -234,7 +236,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 			}
 		}
 
-		if (victim->v.movetype == MOVETYPE_WALK)
+		if (victimNPC != null || victim->v.movetype == MOVETYPE_WALK)
 		{
 			float force = damage * ((32 * 32 * 72.0) / (victim->v.size.x * victim->v.size.y * victim->v.size.z)) * 5;
 			if (force > 1000.0f)
@@ -249,9 +251,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 		if (victimNPC != null && damage < victim->v.health)
 		{
 			victimNPC->m_iDamage = true;
-
-			if (strcmp(victimNPC->m_npcSound[NS_DAMAGE], "null") != 0)
-				EMIT_SOUND(victimNPC->GetEntity(), CHAN_VOICE, victimNPC->m_npcSound[NS_DAMAGE], VOL_NORM, ATTN_NORM);
+			victimNPC->PlayNPCSound(NS_DAMAGE);
 		}
 	}
 
@@ -267,7 +267,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 	}
 }
 
-void KillAction(edict_t *victim, edict_t *killer)
+void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 {
 	if (FNullEnt (victim) || !IsAlive(victim))
 		return;
@@ -276,12 +276,18 @@ void KillAction(edict_t *victim, edict_t *killer)
 	if (FNullEnt(killer))
 		killerId = -1;
 
-	MF_ExecuteForward(g_callKill_Post, (cell)ENTINDEX(victim), (cell)killerId);
-
 	if (IsValidPlayer(victim))
 	{
+		int block = MF_ExecuteForward(g_callKill_Pre, (cell)ENTINDEX(victim), (cell)killerId);
+		if (block && canBlock)
+		{
+			victim->v.health = 1;
+			return;
+		}
+
 		victim->v.frags = victim->v.frags + 1;
 		MDLL_ClientKill(victim);
+		MF_ExecuteForward(g_callKill_Post, (cell)ENTINDEX(victim), (cell)killerId);
 
 		return;
 	}
@@ -290,10 +296,31 @@ void KillAction(edict_t *victim, edict_t *killer)
 	if (SwNPC == null)
 		return;
 
+	int block = MF_ExecuteForward(g_callKill_Pre, (cell)ENTINDEX(victim), (cell)killerId);
+	if (block && canBlock)
+	{
+		SwNPC->pev->health = 1;
+		return;
+	}
+
+	if (IsValidPlayer(killer) && SwNPC->m_addFrags >= 1)
+	{
+		killer->v.frags += SwNPC->m_addFrags;
+
+		MESSAGE_BEGIN(MSG_BROADCAST, GET_USER_MSG_ID(PLID, "ScoreInfo", NULL));
+		WRITE_BYTE(killerId);
+		WRITE_SHORT(killer->v.frags);
+		WRITE_SHORT(*((int *)killer->pvPrivateData + 444));
+		WRITE_SHORT(0);
+		WRITE_SHORT(GetTeam (killer));
+		MESSAGE_END();
+	}
+
 	if (!FNullEnt(killer))
 		SwNPC->m_lookAt = GetEntityOrigin(killer);
 
 	SwNPC->pev->deadflag = DEAD_DYING;
+	MF_ExecuteForward(g_callKill_Post, (cell)ENTINDEX(victim), (cell)killerId);
 }
 
 void TraceBleed(edict_t *entity, float damage, Vector vecDir, /* TraceResult *tr*/ Vector endPos, int bits, int color)
@@ -342,7 +369,7 @@ int LookupActivity(void *pmodel, entvars_t *pev, int activity)
 	if (!pstudiohdr)
 		return -1;
 
-	mstudioseqdesc_t *pseqdesc = (mstudioseqdesc_t *)((byte *)pstudiohdr + pstudiohdr->seqindex);
+	mstudioseqdesc_t *pseqdesc = (mstudioseqdesc_t *)((byte *)pstudiohdr + pstudiohdr->seqindex) + activity;
 
 	if (activity < 0 || activity > pstudiohdr->numseq)
 		return -1;

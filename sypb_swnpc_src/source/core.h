@@ -37,7 +37,7 @@ enum NPC_AS_Action
 	ASC_DAMAGE = (1 << 4),
 	ASC_DEAD = (1 << 5),
 };
-
+/*
 enum GaitSequenceInformation
 {
 	GS_IDLE = 1,
@@ -46,7 +46,7 @@ enum GaitSequenceInformation
 	GS_RUN = 4,
 	GS_DUCK_WALK = 5,
 	GS_JUMP = 6,
-};
+}; */
 
 enum NPC_Task
 {
@@ -127,6 +127,8 @@ private:
 	void TaskEnemy(void);
 	void TaskMoveTarget(void);
 
+	void TaskB_FollowEntity(void);
+
 	void FindEnemy(void);
 	float GetEntityDistance(edict_t *entity);
 	bool IsEnemyViewable(edict_t *entity);
@@ -162,7 +164,7 @@ public:
 
 	int m_actionSequence[AS_ALL];
 	float m_actionTime [AS_ALL];
-	int m_gaitSequence[2];
+	//int m_gaitSequence[2];
 
 	int m_findEnemyMode;
 	int m_bloodColor;
@@ -173,21 +175,24 @@ public:
 	edict_t *m_enemy;
 	float m_enemyUpdateTime;
 	edict_t *m_moveTargetEntity;
+	edict_t *m_followEntity;
 
 	Vector m_lookAt;
 	Vector m_destOrigin;
 
 	float m_moveSpeed;
-	//float m_strafeSpeed;
 	bool m_jumpAction;
 
 	float m_damageMultiples;
 	bool m_missArmor;
+	int m_addFrags;
 
 	float m_attackTime;
 	float m_attackDamage;
 	float m_attackDistance;
 	float m_attackDelayTime;
+
+	float m_deadRemoveTime;
 
 	// API
 	int m_goalWaypointAPI;
@@ -213,14 +218,17 @@ public:
 	void DebugModeMsg(void);
 
 	void Think(void);
+	void FrameThink(void);
+	void DeadThink(void);
 	void NPCAi(void);
+	void NPCAction(void);
 
 	void SetEnemy(edict_t *entity);
 	void SetMoveTarget(edict_t *entity);
 
 	void Spawn(Vector origin);
-	void DeadThink(void);
 	void SetUpPModel(void);
+	void PlayNPCSound(int soundClass);
 
 	void DeleteSearchNodes(void);
 
@@ -275,6 +283,8 @@ public:
 	int SetAttackDamage(int npcId, float damage);
 	int SetAttackDistance(int npcId, float distance);
 	int SetAttackDelayTime(int npcId, float delayTime);
+	int SetAddFrags(int npcId, int addFrags);
+	int SetDeadRemoveTime(int npcId, float deadRemoveTime);
 
 	int SetGoalWaypoint(int npcId, int goal);
 	int SetEnemy(int npcId, int enemyId);
@@ -320,12 +330,17 @@ extern edict_t *g_hostEntity;
 
 // About SwNPC API
 extern AMX_NATIVE_INFO swnpc_natives[];
+// For Add new SwNPC / Remove SwNPC
+extern int g_callAddNPC;
+extern int g_callRemoveNPC;
 // Pre
-extern int g_callStuck_Pre;
+extern int g_callThink_Pre;
 extern int g_callTakeDamage_Pre;
+extern int g_callKill_Pre;
 // Post
-extern int g_callKill_Post;
+extern int g_callThink_Post;
 extern int g_callTakeDamage_Post;
+extern int g_callKill_Post;
 
 // For Take Damage Pre only
 extern int g_TDP_damageValue;
@@ -375,7 +390,7 @@ extern void TraceBleed(edict_t *entity, float damage, Vector vecDir, Vector endP
 //extern void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, TraceResult *tr, Vector vecDir = nullvec);
 extern void TraceAttack(edict_t *victim, edict_t *attacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType);
 extern void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vector endPos = nullvec, Vector vecDir = nullvec);
-extern void KillAction(edict_t *victim, edict_t *killer = null);
+extern void KillAction(edict_t *victim, edict_t *killer = null, bool canBlock = true);
 
 // Hook Function
 extern void MakeHookFunction(NPC *npc);

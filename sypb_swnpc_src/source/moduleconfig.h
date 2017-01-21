@@ -97,7 +97,7 @@
 // - GetEntityAPI2 functions
 // #define FN_GameDLLInit				GameDLLInit					/* pfnGameInit() */
 // #define FN_DispatchSpawn				DispatchSpawn				/* pfnSpawn() */
-// #define FN_DispatchThink				DispatchThink				/* pfnThink() */
+#define FN_DispatchThink				DispatchThink				/* pfnThink() */
 // #define FN_DispatchUse				DispatchUse					/* pfnUse() */
 // #define FN_DispatchTouch				DispatchTouch				/* pfnTouch() */
 // #define FN_DispatchBlocked			DispatchBlocked				/* pfnBlocked() */
@@ -112,7 +112,7 @@
 // #define FN_ResetGlobalState			ResetGlobalState			/* pfnResetGlobalState() */
 // #define FN_ClientConnect				ClientConnect				/* pfnClientConnect()			(wd) Client has connected */
 // #define FN_ClientDisconnect			ClientDisconnect			/* pfnClientDisconnect()		(wd) Player has left the game */
-//#define FN_ClientKill				ClientKill					/* pfnClientKill()				(wd) Player has typed "kill" */
+// #define FN_ClientKill				ClientKill					/* pfnClientKill()				(wd) Player has typed "kill" */
 // #define FN_ClientPutInServer			ClientPutInServer			/* pfnClientPutInServer()		(wd) Client is entering the game */
 // #define FN_ClientCommand				ClientCommand				/* pfnClientCommand()			(wd) Player has sent a command (typed or from a bind) */
 // #define FN_ClientUserInfoChanged		ClientUserInfoChanged		/* pfnClientUserInfoChanReturns string describing current .dll.  E.g. "TeamFotrress 2" "Half-Life" */
@@ -154,7 +154,7 @@
 // #define FN_SaveGlobalState_Post				SaveGlobalState_Post
 // #define FN_RestoreGlobalState_Post			RestoreGlobalState_Post
 // #define FN_ResetGlobalState_Post				ResetGlobalState_Post
-// #define FN_ClientConnect_Post				ClientConnect_Post
+#define FN_ClientConnect_Post				    ClientConnect_Post
 // #define FN_ClientDisconnect_Post				ClientDisconnect_Post
 // #define FN_ClientKill_Post					ClientKill_Post
 // #define FN_ClientPutInServer_Post				ClientPutInServer_Post

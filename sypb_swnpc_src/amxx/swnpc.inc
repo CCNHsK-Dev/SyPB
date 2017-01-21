@@ -1,18 +1,19 @@
 
 /*
 * This is SwNPC for AMXX
-* Version : 1.45
-* Support Build: 1.45.41259.106 or new
+* Version : 1.48
+* Support Build: 1.48.50566.118
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.42.40760.44 or new
+* Support SyPB Build: 1.48.50565.690 or new
 *
-* Date: 11/8/2016
+* Date: 18/1/2017
 */
 
 /* -----------------------------------------------------------------------
  SwNPC need SyPB Support 
  If have not run SyPB, SwNPC cannot run
+ And pls sure your SwNPC Version = SyPB Support Version
 ----------------------------------------------------------------------- */
 
 /* -----------------------------------------------------------------------
@@ -79,6 +80,10 @@ native swnpc_set_attack_delay_time (npcId, Float:delayTime);
 
 native swnpc_set_goal_waypoint (npcId, goalWaypointId);
 
+native swnpc_set_add_frags (npcId, addFrags);
+
+native swnpc_set_dead_remove_time (npcId, Float:deadRemoveTime); 
+
 // NPC Data
 native swnpc_get_team (npcId);
 
@@ -96,15 +101,26 @@ native swnpc_get_goal_waypoint (npcId);
 
 native swnpc_set_enemy (npcId, enemyId);
 
+native swnpc_set_follow_entity (npcId, entityId);
+
+native swnpc_get_follow_entity (npcId);
+
+// About Add / Remove NPC
+forward SwNPC_Add (npcId);
+forward SwNPC_Remove (npcId);
+
+// About NPC Think
+forward SwNPC_Think_Pre (npcId); // return PLUGIN_HANDLED; can block
+forward SwNPC_Think_Post (npcId);
+
 // About NPC dead / NPC Kill player
+forward SwNPC_Kill_Pre (victim, killer);  // return PLUGIN_HANDLED; can block
 forward SwNPC_Kill_Post (victim, killer);
 native SwNPC_FakeKill (victim);
 
 // About Attack
-forward SwNPC_TakeDamage_Pre(victim, attack, damage);
+forward SwNPC_TakeDamage_Pre(victim, attack, damage); // return PLUGIN_HANDLED; can block
 forward SwNPC_TakeDamage_Post(victim, attack, damage);
 native SwNPC_FakeTakeDamage (victim, attack, damage);
 native SetDamageValue (damage); // For SwNPC_TakeDamage_Pre Only
 
-// About NPC stuck 
-forward SwNPC_Stuck_Pre (npcId);

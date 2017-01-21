@@ -6,10 +6,16 @@ int g_numWaypoints = -1;
 
 edict_t *g_hostEntity = null;
 
-int g_callStuck_Pre = -1;
+int g_callAddNPC = -1;
+int g_callRemoveNPC = -1;
+
+int g_callThink_Pre = -1;
 int g_callTakeDamage_Pre = -1;
-int g_callKill_Post = -1;
+int g_callKill_Pre = -1;
+
+int g_callThink_Post = -1;
 int g_callTakeDamage_Post = -1;
+int g_callKill_Post = -1;
 
 int g_TDP_damageValue = -1;
 bool g_TDP_cvOn = false;
@@ -50,16 +56,27 @@ void OnPluginsLoaded()
 
 	if (g_swnpcRun)
 	{
-		// (victimId, attackId, damage)
-		g_callTakeDamage_Pre = MF_RegisterForward("SwNPC_TakeDamage_Pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_DONE);
-		// (npcId)
-		g_callStuck_Pre = MF_RegisterForward("SwNPC_Stuck_Pre", ET_CONTINUE, FP_CELL, FP_DONE);
+		// Add new SwNPC / Remove SwNPC
+		g_callAddNPC = MF_RegisterForward("SwNPC_Add", ET_IGNORE, FP_CELL, FP_DONE);
+		g_callRemoveNPC = MF_RegisterForward("SwNPC_Remove", ET_IGNORE, FP_CELL, FP_DONE);
 
-		// (victimId, killerId)
-		g_callKill_Post = MF_RegisterForward("SwNPC_Kill_Post", ET_IGNORE, FP_CELL, FP_CELL, FP_DONE);
-		// (victimId, attackId, damage)
+		// SwNPC_Think_Pre (npcId)
+		g_callThink_Pre = MF_RegisterForward("SwNPC_Think_Pre", ET_CONTINUE, FP_CELL, FP_DONE);
+		// SwNPC_TakeDamage_Pre (victimId, attackId, damage)
+		g_callTakeDamage_Pre = MF_RegisterForward("SwNPC_TakeDamage_Pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_DONE);
+		// SwNPC_Kill_Pre (victimId, killerId)
+		g_callKill_Pre = MF_RegisterForward("SwNPC_Kill_Pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_DONE);
+
+
+		// SwNPC_Think_Post (npcId)
+		g_callThink_Post = MF_RegisterForward("SwNPC_Think_Post", ET_IGNORE, FP_CELL, FP_DONE);
+		// SwNPC_TakeDamage_Post (victimId, attackId, damage)
 		g_callTakeDamage_Post = MF_RegisterForward("SwNPC_TakeDamage_Post", ET_IGNORE, FP_CELL, FP_CELL, FP_CELL, FP_DONE);
+		// SwNPC_Kill_Post (victimId, killerId)
+		g_callKill_Post = MF_RegisterForward("SwNPC_Kill_Post", ET_IGNORE, FP_CELL, FP_CELL, FP_DONE);
 	}
+	else
+		LogToFile("[Error] SwNPC CANNOT RUN");
 }
 
 void OnAmxxAttach()
@@ -69,37 +86,46 @@ void OnAmxxAttach()
 
 void AllReLoad(void)
 {
+	// SwNPC Reset
 	g_swnpcRun = false;
 	g_numWaypoints = -1;
 
-	g_callStuck_Pre = -1;
+	g_callAddNPC = -1;
+	g_callRemoveNPC = -1;
+
+	g_callThink_Pre = -1;
 	g_callTakeDamage_Pre = -1;
+	g_callKill_Pre = -1;
 
-	g_callKill_Post = -1;
+	g_callThink_Post = -1;
 	g_callTakeDamage_Post = -1;
+	g_callKill_Post = -1;
 
+	// Blood Reset
 	g_sModelIndexBloodDrop = -1;
 	g_sModelIndexBloodSpray = -1;
-
 	for (int i = 0; i < 12; i++)
 		g_bloodIndex[i] = -1;
 
 	g_npcManager->RemoveAll();
 }
-/*
-void FN_ClientPutInServer_Post(edict_t *pEntity)
+
+void FN_DispatchThink(edict_t *pent)
 {
-	
-	if (g_swnpcRun && !FNullEnt(pEntity) && g_numWaypoints == -1)
-	{
-		GetWaypointData();
-		if (g_numWaypoints <= 0)
-			g_swnpcRun = false;
-	}
+	if (g_npcManager->IsSwNPC(pent) != null)
+		g_npcManager->IsSwNPC(pent)->Think();
 
 	RETURN_META(MRES_IGNORED);
 }
-*/
+
+BOOL FN_ClientConnect_Post(edict_t *ent, const char *name, const char *addr, char rejectReason[128])
+{
+	if (strcmp(addr, "loopback") == 0)
+		SyPB_GetHostEntity();
+
+	RETURN_META_VALUE(MRES_IGNORED, 0);
+}
+
 void FN_StartFrame(void)
 {
 	// Pro P.45 - HLDS Fixed
@@ -111,7 +137,6 @@ void FN_StartFrame(void)
 	}
 
 	apiBuffer = 0;
-	SyPB_GetHostEntity();
 
 	g_npcManager->Think();
 

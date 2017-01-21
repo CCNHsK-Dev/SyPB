@@ -28,7 +28,7 @@ void NPCControl::Think(void)
 		return;
 
 	g_debugNPC = null;
-	if (!FNullEnt(g_hostEntity))
+	if (CVAR_GET_FLOAT("sypb_debug") >= 2 && IsValidPlayer(g_hostEntity))
 		DebugModeMsg();
 
 	for (int i = 0; i < MAX_NPC; i++)
@@ -42,7 +42,7 @@ void NPCControl::Think(void)
 			continue;
 		}
 
-		m_npcs[i]->Think();
+		m_npcs[i]->FrameThink();
 	}
 }
 
@@ -106,10 +106,7 @@ int NPCControl::AddNPC(const char *className, const char *modelName, float maxHe
 	}
 
 	if (newNPCId == -1)
-	{
-		//LogToFile("Cannot Add Entity - Full");
 		return -1;
-	}
 
 	m_npcs[newNPCId] = new NPC(className, modelName, maxHealth, maxSpeed, team);
 
@@ -188,7 +185,7 @@ int NPCControl::SetTeam(int npcId, int team)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->m_npcTeam = team;
 	return 1;
@@ -198,7 +195,7 @@ int NPCControl::SetSize(int npcId, Vector minSize, Vector maxSize)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->g_npcSize[0] = minSize;
 	npc->g_npcSize[1] = maxSize;
@@ -212,7 +209,7 @@ int NPCControl::SetFEMode(int npcId, int feMode)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->m_findEnemyMode = feMode;
 	return 1;
@@ -223,7 +220,7 @@ int NPCControl::SetSequence(int npcId, const char *idle, const char *move, const
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->SetSequence(idle, move, attack, damage, dead);
 	return 1;
@@ -233,9 +230,34 @@ int NPCControl::SetDamageMissArmor(int npcId, bool missArmor)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->m_missArmor = missArmor;
+	return 1;
+}
+
+int NPCControl::SetAddFrags(int npcId, int addFrags)
+{
+	NPC *npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	npc->m_addFrags = addFrags;
+
+	return 1;
+}
+
+int NPCControl::SetDeadRemoveTime(int npcId, float deadRemoveTime)
+{
+	NPC *npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	if (deadRemoveTime < 0.0f)
+		deadRemoveTime = 999.9f;
+
+	npc->m_deadRemoveTime = deadRemoveTime;
+
 	return 1;
 }
 
@@ -243,7 +265,7 @@ int NPCControl::SetBloodColor(int npcId, int bloodColor)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->m_bloodColor = bloodColor;
 	return 1;
@@ -253,7 +275,7 @@ int NPCControl::SetSound(int npcId, const char *attackSound, const char *damageS
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->SetSound(attackSound, damageSound, deadSound);
 	return 1;
@@ -263,10 +285,10 @@ int NPCControl::SetDamageMultiples(int npcId, float damageMu)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	if (damageMu < 0.0f)
-		return 0;
+		return -1;
 
 	npc->m_damageMultiples = damageMu;
 	return 1;
@@ -276,7 +298,7 @@ int NPCControl::SetAttackDamage(int npcId, float damage)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	npc->m_attackDamage = damage;
 	return 1;
@@ -286,10 +308,10 @@ int NPCControl::SetAttackDistance(int npcId, float distance)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	if (distance <= 0.0f)
-		return 0;
+		return -1;
 
 	npc->m_attackDistance = distance;
 	return 1;
@@ -299,10 +321,10 @@ int NPCControl::SetAttackDelayTime(int npcId, float delayTime)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	if (delayTime < 0.0f)
-		return 0;
+		return -1;
 
 	npc->m_attackDelayTime = delayTime;
 	return 1;
@@ -312,7 +334,7 @@ int NPCControl::SetGoalWaypoint(int npcId, int goal)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	if (goal < 0 || goal >= g_numWaypoints)
 		return -1;
@@ -325,7 +347,7 @@ int NPCControl::SetEnemy(int npcId, int enemyId)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	edict_t *targetEnt = INDEXENT(enemyId);
 	if (enemyId == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
@@ -340,7 +362,7 @@ int NPCControl::GetWpData(int npcId, int mode)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	if (mode == -2)
 		return npc->CheckPointAPI();
@@ -352,7 +374,7 @@ int NPCControl::GetGoalWaypoint(int npcId)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
-		return -1;
+		return -2;
 
 	return npc->CheckGoalWaypoint();
 }
