@@ -39,12 +39,13 @@ ConVar sypb_stopbots ("sypb_stopbots", "0");
 ConVar sypb_spraypaints ("sypb_spraypaints", "1");
 ConVar sypb_botbuy ("sypb_botbuy", "1");
 
-
 ConVar sypb_chatterpath ("sypb_chatterpath", "sound/radio/bot");
 ConVar sypb_restrictweapons ("sypb_restrictweapons", "ump45;p90;elite;tmp;mac10;m3;xm1014");
 
 ConVar sypb_gamemod ("sypb_gamemod", "0");
 ConVar sypb_antiblock ("sypb_antiblock", "0");
+
+ConVar sypb_funmode("sypb_funmode", "0");
 
 int Bot::GetMessageQueue (void)
 {
@@ -142,16 +143,9 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 		}
 	}
 
-	if (IsZombieBot(GetEntity()))
-	{
-		if (*bodyPart != 0)
-		{
-			*bodyPart = 0;
-			*bodyPart |= VISIBILITY_BODY;
-			return true;
-		}
-		return false;
-	}
+	// SyPB Pro P.30 - Npc Fixed
+	if (!IsValidPlayer(ENT(targetEntity)))
+		return (*bodyPart != 0);
 
 	if (*bodyPart != 0)
 		return true;
@@ -181,7 +175,7 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 		{
 			targetOrigin.y += engine->RandomFloat(0.0f, targetEntity->maxs.y);
 			break;
-}
+		}
 		case 4:
 		{
 			targetOrigin.z += engine->RandomFloat(0.0f, targetEntity->mins.z);
@@ -202,42 +196,53 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 	return false;
 }
 
-bool Bot::IsEnemyViewable(edict_t *entity)
+// SyPB Pro P.30 - new Viewable Entity
+bool Bot::IsEnemyViewable(edict_t *entity, int setEnemy)
 {
 	if (FNullEnt(entity))
 		return false;
-	/*
-	bool forceTrueIfVisible = false;
 
-	if (IsValidPlayer (pev->dmg_inflictor) && GetTeam (pev->dmg_inflictor) != GetTeam (GetEntity ()) && ::IsInViewCone (EyePosition (), pev->dmg_inflictor))
-	forceTrueIfVisible = true;
+	if (!(ENGINE_CHECK_VISIBILITY(entity, (ENGINE_SET_PVS(reinterpret_cast <float *> (&EyePosition()))))))
+		return false;
 
-	if (CheckVisibility(VARS(entity), &m_enemyOrigin, &m_visibility) && (IsInViewCone(GetEntityOrigin(entity) + Vector(0, 0, 14)) || forceTrueIfVisible))
+	if (setEnemy != 3)
 	{
-	m_seeEnemyTime = engine->GetTime ();
-	m_lastEnemy = entity;
-	m_lastEnemyOrigin = GetEntityOrigin(entity);
-
-	return true;
+		if (GetGameMod() == 0)
+		{
+			if (m_skill < 80 && !FNullEnt(m_enemy) && !IsInViewCone(entity->v.origin))
+				return false;
+		}
+		else if (GetGameMod() == 2)
+		{
+			if ((!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity)) && !IsInViewCone(entity->v.origin) &&
+				(IsZombieBot(GetEntity()) || entity->v.rendermode == kRenderTransAlpha))
+				return false;
+		}
 	}
-	*/
 
-	// SyPB Pro P.29 - new check viewable
 	if (Attack_Invisible(entity))
 		return false;
 
-	if (CheckVisibility(VARS(entity), &m_enemyOrigin, &m_visibility))
+	Vector entityOrigin;
+	uint8_t visibility;
+	bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
+
+	if (setEnemy)
+	{
+		m_enemyOrigin = entityOrigin;
+		m_visibility = visibility;
+	}
+
+	if (seeEntity)
 	{
 		m_seeEnemyTime = engine->GetTime();
 		m_lastEnemy = entity;
 		m_lastEnemyOrigin = m_enemyOrigin;
-
 		return true;
 	}
 
 	return false;
 }
-
 
 bool Bot::ItemIsVisible (Vector destination, char *itemName, bool bomb)
 {
@@ -320,88 +325,135 @@ bool Bot::EntityIsVisible (Vector dest, bool fromBody)
    return tr.flFraction >= 1.0f;
 }
 
-// SyPB Pro P.29 - new Fun Mod Ai
-void::Bot::FunBotAi(void)
+// SyPB Pro P.30 - new Fun Mod Ai
+void Bot::ZombieModeAi(void)
 {
-
-	if (GetGameMod() == 2)
+	if (IsZombieBot(GetEntity()))
 	{
-		if (!IsZombieBot(GetEntity()))
+		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity))
 		{
-			edict_t *escapeEnt = null;
-			while (!FNullEnt(escapeEnt = FIND_ENTITY_BY_CLASSNAME(escapeEnt, "human_escape")))
-			{
-				if (escapeEnt->v.effects & EF_NODRAW)
-					continue;
+			edict_t *targetEnt = null;
+			float targetDistance = 9999.9f;
 
-				int nearestIndex = g_waypoint->FindNearest(GetEntityOrigin(escapeEnt));
-				if ((nearestIndex >= 0) && (nearestIndex < g_numWaypoints))
-				{
-					if (nearestIndex != -1 && m_currentWaypointIndex != nearestIndex)
-						GetCurrentTask()->data = nearestIndex;
-
-					break;
-				}
-			}
-		}
-	}
-	else if (GetGameMod() == 4)
-	{
-		if (IsZombieBot(GetEntity()) && FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity))
-		{
 			for (int i = 0; i < engine->GetMaxClients(); i++)
 			{
-				if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
+				if (GetGameMod() == 4)
+				{
+					if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
+						continue;
+
+					if (IsZombieBot(g_clients[i].ent))
+						continue;
+
+					float distance = GetEntityDistance(g_clients[i].ent);
+					if (distance < targetDistance)
+					{
+						targetDistance = distance;
+						targetEnt = g_clients[i].ent;
+					}
+
+					continue;
+				}
+
+				Bot *bot = g_botManager->GetBot(i);
+				if (bot == null)
 					continue;
 
-				edict_t *ent = g_clients[i].ent;
-				if (IsZombieBot(ent))
+				if (!IsAlive(bot->GetEntity()) || !IsZombieBot(bot->GetEntity()))
 					continue;
 
-				SetMoveTarget(ent);
-				break;
+				if (bot->m_enemy == null && bot->m_moveTargetEntity == null)
+					continue;
+
+				edict_t *entity = (bot->m_enemy == null) ? bot->m_moveTargetEntity : bot->m_enemy;
+				if (IsZombieBot(entity) || entity == targetEnt)
+					continue;
+
+				float distance = GetEntityDistance(entity);
+				if (distance < targetDistance)
+				{
+					targetDistance = distance;
+					targetEnt = entity;
+				}
 			}
+
+			if (!FNullEnt(targetEnt))
+				SetMoveTarget(targetEnt);
+
+		}
+
+		return;
+	}
+
+	edict_t *escapeEnt = null;
+	while (!FNullEnt(escapeEnt = FIND_ENTITY_BY_CLASSNAME(escapeEnt, "human_escape")))
+	{
+		if (escapeEnt->v.effects & EF_NODRAW)
+			continue;
+
+		int nearestIndex = g_waypoint->FindNearest(GetEntityOrigin(escapeEnt));
+		if ((nearestIndex >= 0) && (nearestIndex < g_numWaypoints))
+		{
+			if (nearestIndex != -1 && m_currentWaypointIndex != nearestIndex)
+				GetCurrentTask()->data = nearestIndex;
+
+			break;
 		}
 	}
 }
 
-/*
-// SyPB Pro P.24 - Fun Mod Ai
-void Bot::FunBotAi(void)
+// SyPB Pro P.30 - Zombie Mode Human Camp Action
+void Bot::ZmCampPointAction(void)
 {
-	// SyPB Pro P.29 - small change
-	if (GetGameMod() == 4)
+	bool campAction = false;
+	int campPointWaypointIndex = m_currentWaypointIndex;
+	if (g_waypoint->GetPath(campPointWaypointIndex)->flags & WAYPOINT_ZMHMCAMP)
+		campAction = true;
+	else if (!(g_waypoint->m_zmHmPoints.IsEmpty()))
 	{
-		if (IsZombieBot(GetEntity()) && FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity))
+		if (&m_navNode[0] != null)
 		{
-			for (int i = 0; i < engine->GetMaxClients(); i++)
-			{
-				if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
-					continue;
-
-				edict_t *ent = g_clients[i].ent;
-				if (IsZombieBot(ent))
-					continue;
-
-				SetMoveTarget(ent);
-				break;
-			}
+			campPointWaypointIndex = m_navNode->index;
+			if ((g_waypoint->GetPath(campPointWaypointIndex)->flags & WAYPOINT_ZMHMCAMP) &&
+				IsWaypointUsed(campPointWaypointIndex))
+				campAction = true;
 		}
 	}
-} */
+
+	if (!campAction)
+		m_checkCampPointTime = 0.0f;
+	else if (m_checkCampPointTime == 0.0f)
+		m_checkCampPointTime = engine->GetTime();
+	else if (m_checkCampPointTime + 2.5f < engine->GetTime())
+	{
+		m_campButtons = 0;
+		SelectBestWeapon();
+		MakeVectors(pev->v_angle);
+
+		m_timeCamping = engine->GetTime() + 30.0f;
+		PushTask(TASK_CAMP, TASKPRI_CAMP, -1, m_timeCamping, true);
+
+		m_camp.x = g_waypoint->GetPath(campPointWaypointIndex)->campStartX;
+		m_camp.y = g_waypoint->GetPath(campPointWaypointIndex)->campStartY;
+		m_camp.z = 0;
+
+		m_aimFlags |= AIM_CAMP;
+		m_campDirection = 0;
+
+		m_moveToGoal = false;
+		m_checkTerrain = false;
+
+		m_moveSpeed = 0;
+		m_strafeSpeed = 0;
+	}
+}
 
 void Bot::AvoidEntity (void)
 {
 	// SyPb Pro P.7
-	edict_t *entity = m_avoidGrenade;
-	if (!FNullEnt (entity))
-		return;
-	else
-	{
-		m_avoidGrenade = null;
-		m_needAvoidGrenade = 0;
-	}
-	entity = null;
+	edict_t *entity = null;
+	m_avoidGrenade = null;
+	m_needAvoidGrenade = 0;
 	
 	ITERATE_ARRAY (g_entityName, j)
 	{
@@ -465,24 +517,28 @@ void Bot::AvoidGrenades (void)
          continue;
 
       // check if visible to the bot
-      if (!EntityIsVisible (GetEntityOrigin (ent)) && InFieldOfView (GetEntityOrigin (ent) - EyePosition ()) > pev->fov / 3)
-         continue;
+	  if (!EntityIsVisible(GetEntityOrigin(ent)) && InFieldOfView(GetEntityOrigin(ent) - EyePosition()) > pev->fov / 3)
+		  continue;
 
-#if 0
-      // TODO: should be done once for grenade, instead of checking several times
-      if (m_skill >= 70 && strcmp (STRING (ent->v.model) + 9, "flashbang.mdl") == 0)
-      {
-         Vector position = (GetEntityOrigin (ent) - EyePosition ()).ToAngles ();
+	  // SyPB Pro P.30 - Flash Ai
+	  if ((GetGameMod () == 0 || GetGameMod () == 1) &&
+		  strcmp (STRING (ent->v.model) + 9, "flashbang.mdl") == 0)
+	  {
+		  Vector position = (GetEntityOrigin(ent) - EyePosition()).ToAngles();
+		  if (m_skill >= 90 && !FNullEnt (m_enemy))
+		  {
+			  m_lastEnemy = m_enemy;
+			  m_lastEnemyOrigin = m_enemyOrigin;
+			  m_enemy = null;
+			  m_enemyOrigin = nullvec;
+		  }
+		  else if (m_skill >= 70)
+		  { 
+			  pev->v_angle.y = AngleNormalize(position.y + 180.0f);
+			  m_canChooseAimDirection = false;
+		  }
+	  }
 
-         // don't look at flashbang
-         if (((ent->v.owner == GetEntity () || engine->RandomInt (0, 100) < 85) && !(m_states & State_SeeingEnemy)))
-         {
-            pev->v_angle.y = AngleNormalize (position.y + 180.0f);
-            m_canChooseAimDirection = false;
-         }
-      }
-      else 
-#endif
       if (strcmp (STRING (ent->v.model) + 9, "hegrenade.mdl") == 0)
       {
          if (!FNullEnt (m_avoidGrenade))
@@ -1950,41 +2006,6 @@ void Bot::SetConditions (void)
    {
       m_states &= ~STATE_SEEINGENEMY;
       m_enemy = null;
-
-	  // SyPB Pro P.29 - Zombie Ai
-	  if (IsZombieBot (GetEntity ()) && FNullEnt(m_moveTargetEntity))
-	  {
-		  edict_t *targetEnt = null;
-		  float targetDistance = 9999.9f;
-
-		  for (int i = 0; i < engine->GetMaxClients(); i++)
-		  {
-			  Bot *bot = g_botManager->GetBot(i);
-			  if (bot == null)
-				  continue;
-
-			  if (!IsAlive(bot->GetEntity()) || !IsZombieBot(bot->GetEntity()))
-				  continue;
-
-			  if (bot->m_enemy == null && bot->m_moveTargetEntity == null)
-				  continue;
-
-			  edict_t *entity = bot->m_enemy;
-			  if (bot->m_moveTargetEntity != null)
-				  entity = bot->m_moveTargetEntity;
-
-			  float distance = (pev->origin - entity->v.origin).GetLength();
-			  if (distance < targetDistance)
-			  {
-				  targetDistance = distance;
-				  targetEnt = entity;
-			  }
-		  }
-
-		  if (!FNullEnt(targetEnt) && IsValidPlayer(targetEnt) &&
-			  IsAlive(targetEnt) && !IsZombieBot(targetEnt))
-			  SetMoveTarget(targetEnt);
-	  }
    }
 
    // did bot just kill an enemy?
@@ -2096,6 +2117,185 @@ void Bot::SetConditions (void)
       }
    }
 
+   // SyPB Pro P.30 - Use Grenades Ai
+   if (!sypb_noshots.GetBool() && !sypb_knifemode.GetBool() && m_grenadeCheckTime < engine->GetTime() && 
+	   !m_isUsingGrenade && GetCurrentTask()->taskID != TASK_PLANTBOMB && 
+	   GetCurrentTask()->taskID != TASK_DEFUSEBOMB && !m_isReloading)
+   {
+	   m_grenadeCheckTime = engine->GetTime() + 0.5f;
+
+	   bool hasHE = ((pev->weapons & (1 << WEAPON_HEGRENADE)) == false) ? false : true;
+	   bool hasFE = ((pev->weapons & (1 << WEAPON_FBGRENADE)) == false) ? false : true;
+	   bool hasSE = ((pev->weapons & (1 << WEAPON_SMGRENADE)) == false) ? false : true;
+
+	   if (!hasHE && !hasFE && !hasSE)
+	   {
+		   m_states &= ~(STATE_THROWEXPLODE | STATE_THROWFLASH | STATE_THROWSMOKE);
+		   m_grenadeCheckTime = engine->GetTime() + 30.0f;
+	   }
+	   else
+	   {
+		   edict_t *targetEnt = null;
+		   Vector targetOrigin = nullvec;
+		   float distance = (targetOrigin- pev->origin).GetLength();
+
+		   if (IsZombieBot(GetEntity()))
+		   {
+			   if (IsAlive(m_moveTargetEntity))
+				   targetEnt = m_moveTargetEntity;
+
+			   if (targetEnt != null)
+			   {
+				   targetOrigin = GetEntityOrigin(targetEnt);
+
+				   if (hasHE && distance >= 600 && (targetOrigin.z >= (pev->origin.z + 300.0f) ||
+					   GetNearbyEnemiesNearPosition(targetOrigin, 512) > 2))
+				   {
+					   int useHePs = 0;
+					   m_grenadeCheckTime = engine->GetTime() + 6.0f;
+
+					   if (!(g_waypoint->m_zmHmPoints.IsEmpty()))
+					   {
+						   ITERATE_ARRAY(g_waypoint->m_zmHmPoints, pointId)
+						   {
+							   float enemyCampDistance = (targetOrigin - g_waypoint->GetPath(g_waypoint->m_zmHmPoints[pointId])->origin).GetLength();
+							   if (enemyCampDistance <= 256)
+							   {
+								   m_grenadeCheckTime += 2.0f;
+								   if (GetNearbyFriendsNearPosition(pev->origin, 256) > 3)
+									   useHePs += 50;
+
+								   if (GetNearbyEnemiesNearPosition(targetOrigin, 256) > 2)
+									   useHePs += 30;
+							   }
+						   }
+					   }
+
+					   if (useHePs < engine->RandomInt(0, 100))
+						   m_states |= STATE_THROWEXPLODE;
+					   else
+						   m_states &= ~STATE_THROWEXPLODE;
+				   }
+			   }
+		   }
+		   else if (GetGameMod() != 2 && GetGameMod() != 4 && IsAlive(m_lastEnemy))
+		   {
+			   int grenadeToThrow = CheckGrenades();
+			   if ((grenadeToThrow == WEAPON_HEGRENADE || grenadeToThrow == WEAPON_SMGRENADE) && engine->RandomInt(0, 100) < 45 && !(m_states & (STATE_SEEINGENEMY | STATE_THROWEXPLODE | STATE_THROWFLASH | STATE_THROWSMOKE)))
+			   {
+				   float distance = (GetEntityOrigin(m_lastEnemy) - pev->origin).GetLength();
+
+				   // is enemy to high to throw
+				   if ((GetEntityOrigin(m_lastEnemy).z > (pev->origin.z + 500.0f)) || !(m_lastEnemy->v.flags & FL_ONGROUND))
+					   distance = FLT_MAX; // just some crazy value
+
+				   // enemy is within a good throwing distance ?
+				   if (distance > (grenadeToThrow == WEAPON_SMGRENADE ? 400 : 600) && distance < 1200)
+				   {
+					   // care about different types of grenades
+					   if (grenadeToThrow == WEAPON_HEGRENADE)
+					   {
+						   bool allowThrowing = true;
+
+						   // check for teammates
+						   if (GetNearbyFriendsNearPosition(GetEntityOrigin(m_lastEnemy), 256) > 0)
+							   allowThrowing = false;
+
+						   if (allowThrowing)
+						   {
+							   Vector enemyPredict = ((m_lastEnemy->v.velocity * 0.5).SkipZ() + GetEntityOrigin(m_lastEnemy));
+							   int searchTab[4], count = 4;
+
+							   float searchRadius = m_lastEnemy->v.velocity.GetLength2D();
+
+							   // check the search radius
+							   if (searchRadius < 128.0f)
+								   searchRadius = 128.0f;
+
+							   // search waypoints
+							   g_waypoint->FindInRadius(enemyPredict, searchRadius, searchTab, &count);
+
+							   while (count > 0)
+							   {
+								   allowThrowing = true;
+
+								   // check the throwing
+								   m_throw = g_waypoint->GetPath(searchTab[count--])->origin;
+								   Vector src = CheckThrow(EyePosition(), m_throw);
+
+								   if (src.GetLengthSquared() < 100.0f)
+									   src = CheckToss(EyePosition(), m_throw);
+
+								   if (src == nullvec)
+									   allowThrowing = false;
+								   else
+									   break;
+							   }
+						   }
+
+						   // start explosive grenade throwing?
+						   if (allowThrowing)
+							   m_states |= STATE_THROWEXPLODE;
+						   else
+							   m_states &= ~STATE_THROWEXPLODE;
+					   }
+					   else if (grenadeToThrow == WEAPON_SMGRENADE)
+					   {
+						   // start smoke grenade throwing?
+						   if ((m_states & STATE_SEEINGENEMY) && GetShootingConeDeviation(m_enemy, &pev->origin) >= 0.90)
+							   m_states &= ~STATE_THROWSMOKE;
+						   else
+							   m_states |= STATE_THROWSMOKE;
+					   }
+				   }
+			   }
+			   else if (IsAlive(m_lastEnemy) && grenadeToThrow == WEAPON_FBGRENADE && (GetEntityOrigin(m_lastEnemy) - pev->origin).GetLength() < 800 && !(m_aimFlags & AIM_ENEMY) && engine->RandomInt(0, 100) < 60)
+			   {
+				   bool allowThrowing = true;
+				   Array <int> inRadius;
+
+				   g_waypoint->FindInRadius(inRadius, 256, GetEntityOrigin(m_lastEnemy) + (m_lastEnemy->v.velocity * 0.5).SkipZ());
+
+				   ITERATE_ARRAY(inRadius, i)
+				   {
+					   if (GetNearbyFriendsNearPosition(g_waypoint->GetPath(i)->origin, 256) != 0)
+						   continue;
+
+					   m_throw = g_waypoint->GetPath(i)->origin;
+					   Vector src = CheckThrow(EyePosition(), m_throw);
+
+					   if (src.GetLengthSquared() < 100)
+						   src = CheckToss(EyePosition(), m_throw);
+
+					   if (src == nullvec)
+						   continue;
+
+					   allowThrowing = true;
+					   break;
+				   }
+
+				   // start concussion grenade throwing?
+				   if (allowThrowing)
+					   m_states |= STATE_THROWFLASH;
+				   else
+					   m_states &= ~STATE_THROWFLASH;
+			   }
+		   }
+
+		   const float randTime = engine->GetTime() + engine->RandomFloat(1.5, 3.0f);
+
+		   if (m_states & STATE_THROWEXPLODE)
+			   PushTask(TASK_THROWHEGRENADE, TASKPRI_THROWGRENADE, -1, randTime, false);
+		   else if (m_states & STATE_THROWFLASH)
+			   PushTask(TASK_THROWFBGRENADE, TASKPRI_THROWGRENADE, -1, randTime, false);
+		   else if (m_states & STATE_THROWSMOKE)
+			   PushTask(TASK_THROWSMGRENADE, TASKPRI_THROWGRENADE, -1, randTime, false);
+	   }
+   }
+   else
+	   m_states &= ~(STATE_THROWEXPLODE | STATE_THROWFLASH | STATE_THROWSMOKE);
+
+   /*
    // check if throwing a grenade is a good thing to do...
    if (!sypb_noshots.GetBool () && !sypb_knifemode.GetBool () && m_grenadeCheckTime < engine->GetTime () && !m_isUsingGrenade && GetCurrentTask ()->taskID != TASK_PLANTBOMB && GetCurrentTask ()->taskID != TASK_DEFUSEBOMB && !m_isReloading && IsAlive (m_lastEnemy))
    {
@@ -2103,7 +2303,7 @@ void Bot::SetConditions (void)
       m_grenadeCheckTime = engine->GetTime () + 0.5f;
 
 	  // check if we have grenades to throw
-	  // SyPB Pro P.27 - Zombie Ai Debug (one)  (vB1.28 will has one Zombie He skills)
+	  // SyPB Pro P.27 - Zombie Ai Debug (one)
 	  int grenadeToThrow = -1;
 
 	  if (!IsZombieBot(GetEntity()))
@@ -2241,6 +2441,7 @@ void Bot::SetConditions (void)
    }
    else
       m_states &= ~(STATE_THROWEXPLODE | STATE_THROWFLASH | STATE_THROWSMOKE);
+	  */
 
    // check if there are items needing to be used/collected
    if (m_itemCheckTime < engine->GetTime () || !FNullEnt (m_pickupItem))
@@ -2945,7 +3146,7 @@ void Bot::CheckRadioCommands (void)
    float distance = (GetEntityOrigin (m_radioEntity) - pev->origin).GetLength ();
    
    // SyPB Pro P.15
-   if (GetGameMod () == 1 || GetGameMod () == 99 || (GetGameMod () == 4 && IsZombieBot (GetEntity ())))
+   if (GetGameMod () == 1 || GetGameMod () == 2 || (GetGameMod () == 4 && IsZombieBot (GetEntity ())))
    {
    	   m_radioOrder = 0;
    	   return;
@@ -3526,12 +3727,9 @@ void Bot::SelectLeaderEachTeam (int team)
 }
 
 // SyPB Pro P.21 - Walk 
-float Bot::GetWalkSpeed (void)
+float Bot::GetWalkSpeed(void)
 {
-	if (GetGameMod () == 0)
-		return static_cast <float> ((static_cast <int> (pev->maxspeed) * 0.5f) + (static_cast <int> (pev->maxspeed) / 50)) - 18;
-	
-	return pev->maxspeed;
+	return static_cast <float> ((static_cast <int> (pev->maxspeed) * 0.5f) + (static_cast <int> (pev->maxspeed) / 50)) - 18;
 }
 
 bool Bot::Attack_Invisible(edict_t *entity) // SyPB Pro P.9
@@ -3569,40 +3767,6 @@ bool Bot::Attack_Invisible(edict_t *entity) // SyPB Pro P.9
 			return (renderamt <= 150);
 	}
 
-	/*
-	// SyPB Pro P.27 - New Invisible get
-	if (entity->v.rendermode == kRenderTransAlpha)
-	{
-	float botAi = float (m_skill);
-	float enemy_distance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-	if (enemy_distance <= botAi)
-	return false;
-
-	float renderamt = entity->v.renderamt;
-	if (renderamt <= 30)
-	return true;
-
-	if (renderamt > 160)
-	return false;
-
-	float seeThis = enemy_distance / 10;
-	if (renderamt <= 40)
-	seeThis *= 15;
-	else if (renderamt <= 60)
-	seeThis *= 13;
-	else if (renderamt <= 80)
-	seeThis *= 11;
-	else if (renderamt <= 100)
-	seeThis *= 9;
-	else if (renderamt <= 120)
-	seeThis *= 7;
-	else
-	seeThis *= 5;
-
-	if (botAi <= seeThis)
-	return true;
-	}
-	*/
 	return false;
 }
 
@@ -3617,7 +3781,6 @@ void Bot::ChooseAimDirection (void)
 
    unsigned int flags = m_aimFlags;
 
-   bool canChooseAimDirection = false;
    bool currentPointValid = (m_currentWaypointIndex >= 0 && m_currentWaypointIndex < g_numWaypoints);
 
    if (!currentPointValid)
@@ -3648,18 +3811,11 @@ void Bot::ChooseAimDirection (void)
       flags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
    }
 
-   // SyPB Pro P.26 - Sniper Skill
-   if (!UsesSniper())
-	   m_sniperReady = false;
-
    // don't allow bot to look at danger positions under certain circumstances
    if (!(flags & (AIM_GRENADE | AIM_ENEMY | AIM_ENTITY)))
    {
       if (IsOnLadder () || IsInWater () || (m_waypointFlags & WAYPOINT_LADDER) || (m_currentTravelFlags & PATHFLAG_JUMP))
-      {
          flags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
-         canChooseAimDirection = false;
-      }
    }
 
    if (flags & AIM_OVERRIDE)
@@ -3752,11 +3908,11 @@ void Bot::ChooseAimDirection (void)
 	   else if (!(m_currentTravelFlags & PATHFLAG_JUMP))
 	   {
 		   // SyPB Pro P.29 - Debugs
-		   //if (IsEnemyViewable (m_moveTargetEntity))
-		   if (!FNullEnt(m_moveTargetEntity) && EntityIsVisible(m_moveTargetOrigin))
+		   if (!FNullEnt(m_moveTargetEntity) && IsEnemyViewable(m_moveTargetEntity, 3))
 			   m_lookAt = m_moveTargetOrigin;
 	   }
    }
+
    if (m_lookAt == nullvec)
       m_lookAt = m_destOrigin;
 }
@@ -3899,8 +4055,43 @@ void Bot::Think(void)
    if (pev->maxspeed < 10 && GetCurrentTask ()->taskID != TASK_PLANTBOMB && GetCurrentTask ()->taskID != TASK_DEFUSEBOMB)
       botMovement = false;
 
-   if (m_notKilled && botMovement && !sypb_stopbots.GetBool ())
-      BotAI (); // execute main code
+   // SyPB Pro P.30 - Start Think 
+   if (!sypb_stopbots.GetBool() && botMovement && m_notKilled)
+   {
+	   bool startFunModeAi = sypb_funmode.GetBool ();
+	   if (startFunModeAi)
+		   FunBotAI();
+	   else
+		   BotAI();
+
+	   if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
+	   {
+		   m_moveSpeed = 0.0f;
+		   m_strafeSpeed = 0.0f;
+	   }
+
+	   if (!(pev->button & (IN_FORWARD | IN_BACK)))
+	   {
+		   if (m_moveSpeed > 0)
+			   pev->button |= IN_FORWARD;
+		   else if (m_moveSpeed < 0)
+			   pev->button |= IN_BACK;
+	   }
+
+	   if (!(pev->button & (IN_MOVELEFT | IN_MOVERIGHT)))
+	   {
+		   if (m_strafeSpeed > 0)
+			   pev->button |= IN_MOVERIGHT;
+		   else if (m_strafeSpeed < 0)
+			   pev->button |= IN_MOVELEFT;
+	   }
+   }
+
+   pev->angles.ClampAngles();
+   pev->v_angle.ClampAngles();
+
+   if (!FNullEnt(g_hostEntity) && sypb_debug.GetInt() >= 1)
+	   DebugModeMsg();
 
    RunPlayerMovement (); // run the player movement
 }
@@ -3925,8 +4116,6 @@ void Bot::RunTask (void)
 
    bool exceptionCaught = false;
    float fullDefuseTime, timeToBlowUp, defuseRemainingTime;
-
-   bool moveTargetWork = false;
 
    switch (GetCurrentTask ()->taskID)
    {
@@ -4038,7 +4227,7 @@ void Bot::RunTask (void)
             PushTask (TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime () + 1.0f, false);
 
          // reached waypoint is a camp waypoint
-         if ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP))
+         if ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP) && GetGameMod () == 0 )
          {
             // check if bot has got a primary weapon and hasn't camped before
             if (HasPrimaryWeapon () && m_timeCamping + 10.0f < engine->GetTime () && !HasHostage ())
@@ -4106,6 +4295,9 @@ void Bot::RunTask (void)
                }
             }
          }
+		 // SyPB Pro P.30 - Zombie Mode Human Camp
+		 else if (GetGameMod() == 2 && !IsZombieBot(GetEntity()))
+			 ZmCampPointAction();
          else
          {
             // some goal waypoints are map dependant so check it out...
@@ -4210,9 +4402,9 @@ void Bot::RunTask (void)
       }
       else
       {
-		  // SyPB Pro P.27 - Zombie Ai
-		  if (IsZombieBot(GetEntity()))
-			  m_moveSpeed = pev->maxspeed;
+		  // SyPB Pro P.30 - Zombie Mode Human Camp
+		  if (GetGameMod() == 2 && !IsZombieBot (GetEntity ()))
+			  ZmCampPointAction();
 		  else if (!(pev->flags & FL_DUCKING) && m_minSpeed != pev->maxspeed)
 			  m_moveSpeed = m_minSpeed;
       }
@@ -5020,15 +5212,12 @@ void Bot::RunTask (void)
 
 	  // SyPB Pro P.24 - Move Target
    case TASK_MOVETOTARGET:
-	   moveTargetWork = true;
-
 	   m_moveTargetOrigin = GetEntityOrigin (m_moveTargetEntity);
 
 	   if (!FNullEnt (m_enemy) || FNullEnt (m_moveTargetEntity) || m_moveTargetOrigin == nullvec)
-		   moveTargetWork = false;
-
-	   if (!moveTargetWork)
 	   {
+		   // SyPB Pro P.30 - Move Target
+		   RemoveCertainTask(TASK_MOVETOTARGET);
 		   SetMoveTarget (null);
 		   TaskComplete ();
 		   break;
@@ -5044,24 +5233,28 @@ void Bot::RunTask (void)
 
 	   m_moveSpeed = pev->maxspeed;
 	   
-	   //SyPB Pro P.26 - Zombie Ai (TESTTEST)
+	   //SyPB Pro P.26 - Zombie Ai
 	   destIndex = g_waypoint->FindNearest(m_moveTargetOrigin);
 	   if (destIndex >= 0 && destIndex < g_numWaypoints)
 	   {
 		   if ((GetCurrentTask()->data != m_currentWaypointIndex || m_navNode == null) &&
 			   (DoWaypointNav() || !GoalIsValid()) && destIndex != m_currentWaypointIndex)
 		   {
+			   // SyPB Pro P.30 - Move Target
+			   MoveTargetSrc();
+
 			   DeleteSearchNodes();
 
 			   m_prevGoalIndex = destIndex;
 			   m_tasks->data = destIndex;
 
 			   FindShortestPath(m_currentWaypointIndex, destIndex);
+			   HeadTowardWaypoint();
 		   }
 	   }
 
 	   break;
-
+	   
    // HE grenade throw behaviour
    case TASK_THROWHEGRENADE:
       m_aimFlags |= AIM_GRENADE;
@@ -5632,6 +5825,319 @@ void Bot::RunTask (void)
    }
 }
 
+// SyPB Pro P.30 - debug
+void Bot::DebugModeMsg(void)
+{
+	static float timeDebugUpdate = 0.0f;
+
+	int specIndex = g_hostEntity->v.iuser2;
+
+	if (specIndex == ENTINDEX(GetEntity()))
+	{
+		static int index, goal, taskID;
+
+		if (m_tasks != null)
+		{
+			if (taskID != m_tasks->taskID || index != m_currentWaypointIndex || goal != m_tasks->data || timeDebugUpdate < engine->GetTime())
+			{
+				taskID = m_tasks->taskID;
+				index = m_currentWaypointIndex;
+				goal = m_tasks->data;
+
+				char taskName[80];
+
+				switch (taskID)
+				{
+				case TASK_NORMAL:
+					sprintf(taskName, "Normal");
+					break;
+
+				case TASK_PAUSE:
+					sprintf(taskName, "Pause");
+					break;
+
+				case TASK_MOVETOPOSITION:
+					sprintf(taskName, "MoveToPosition");
+					break;
+
+				case TASK_FOLLOWUSER:
+					sprintf(taskName, "FollowUser");
+					break;
+
+				case TASK_MOVETOTARGET:
+					sprintf(taskName, "MoveToTarget");
+					break;
+
+				case TASK_PICKUPITEM:
+					sprintf(taskName, "PickupItem");
+					break;
+
+				case TASK_CAMP:
+					sprintf(taskName, "Camp");
+					break;
+
+				case TASK_PLANTBOMB:
+					sprintf(taskName, "PlantBomb");
+					break;
+
+				case TASK_DEFUSEBOMB:
+					sprintf(taskName, "DefuseBomb");
+					break;
+
+				case TASK_FIGHTENEMY:
+					sprintf(taskName, "AttackEnemy");
+					break;
+
+				case TASK_HUNTENEMY:
+					sprintf(taskName, "HuntEnemy");
+					break;
+
+				case TASK_SEEKCOVER:
+					sprintf(taskName, "SeekCover");
+					break;
+
+				case TASK_THROWHEGRENADE:
+					sprintf(taskName, "ThrowExpGrenade");
+					break;
+
+				case TASK_THROWFBGRENADE:
+					sprintf(taskName, "ThrowFlashGrenade");
+					break;
+
+				case TASK_THROWSMGRENADE:
+					sprintf(taskName, "ThrowSmokeGrenade");
+					break;
+
+				case TASK_DOUBLEJUMP:
+					sprintf(taskName, "PerformDoubleJump");
+					break;
+
+				case TASK_ESCAPEFROMBOMB:
+					sprintf(taskName, "EscapeFromBomb");
+					break;
+
+				case TASK_DESTROYBREAKABLE:
+					sprintf(taskName, "ShootBreakable");
+					break;
+
+				case TASK_HIDE:
+					sprintf(taskName, "Hide");
+					break;
+
+				case TASK_BLINDED:
+					sprintf(taskName, "Blinded");
+					break;
+
+				case TASK_SPRAYLOGO:
+					sprintf(taskName, "SprayLogo");
+					break;
+				}
+
+				char enemyName[80], weaponName[80], aimFlags[32], botType[32];
+
+				// SyPB Pro P.11
+				if (!FNullEnt(m_enemy))
+				{
+					if (IsValidPlayer(m_enemy))
+						strcat(enemyName, STRING(m_enemy->v.netname));
+					else
+						strcat(enemyName, STRING(m_enemy->v.classname));
+				}
+				// SyPB Pro P.15
+				else if (!FNullEnt(m_moveTargetEntity))
+				{
+					strcpy(enemyName, "(T)");
+					if (IsValidPlayer(m_moveTargetEntity))
+						strcat(enemyName, STRING(m_moveTargetEntity->v.netname));
+					else
+						strcat(enemyName, STRING(m_moveTargetEntity->v.classname));
+				}
+				else if (!FNullEnt(m_lastEnemy))
+				{
+					strcpy(enemyName, "(L)");
+					if (IsValidPlayer(m_lastEnemy))
+						strcat(enemyName, STRING(m_lastEnemy->v.netname));
+					else
+						strcat(enemyName, STRING(m_lastEnemy->v.classname));
+				}
+				else
+					strcpy(enemyName, " (null)");
+
+				char pickupName[80];
+
+				if (!FNullEnt(m_pickupItem))
+					strcpy(pickupName, STRING(m_pickupItem->v.classname));
+				else
+					strcpy(pickupName, " (null)");
+
+				WeaponSelect *selectTab = &g_weaponSelect[0];
+				char weaponCount = 0;
+
+				while (m_currentWeapon != selectTab->id && weaponCount < Const_NumWeapons)
+				{
+					selectTab++;
+					weaponCount++;
+				}
+
+				// set the aim flags
+				sprintf(aimFlags, "%s%s%s%s%s%s%s%s",
+					m_aimFlags & AIM_NAVPOINT ? " NavPoint" : "",
+					m_aimFlags & AIM_CAMP ? " CampPoint" : "",
+					m_aimFlags & AIM_PREDICTENEMY ? " PredictEnemy" : "",
+					m_aimFlags & AIM_LASTENEMY ? " LastEnemy" : "",
+					m_aimFlags & AIM_ENTITY ? " Entity" : "",
+					m_aimFlags & AIM_ENEMY ? " Enemy" : "",
+					m_aimFlags & AIM_GRENADE ? " Grenade" : "",
+					m_aimFlags & AIM_OVERRIDE ? " Override" : "");
+
+				// set the bot type
+				sprintf(botType, "%s%s%s", m_personality == PERSONALITY_RUSHER ? " Rusher" : "",
+					m_personality == PERSONALITY_CAREFUL ? " Careful" : "",
+					m_personality == PERSONALITY_NORMAL ? " Normal" : "");
+
+				if (weaponCount >= Const_NumWeapons)
+				{
+					// prevent printing unknown message from known weapons
+					switch (m_currentWeapon)
+					{
+					case WEAPON_HEGRENADE:
+						sprintf(weaponName, "weapon_hegrenade");
+						break;
+
+					case WEAPON_FBGRENADE:
+						sprintf(weaponName, "weapon_flashbang");
+						break;
+
+					case WEAPON_SMGRENADE:
+						sprintf(weaponName, "weapon_smokegrenade");
+						break;
+
+					case WEAPON_C4:
+						sprintf(weaponName, "weapon_c4");
+						break;
+
+					default:
+						sprintf(weaponName, "Unknown! (%d)", m_currentWeapon);
+					}
+				}
+				else
+					sprintf(weaponName, selectTab->weaponName);
+
+				char gamemodName[80];
+				switch (GetGameMod())
+				{
+				case 0:
+					sprintf(gamemodName, "Normal");
+					break;
+
+				case 1:
+					sprintf(gamemodName, "Dm");
+					break;
+
+				case 2:
+					sprintf(gamemodName, "ZP");
+					break;
+
+				case 3:
+					sprintf(gamemodName, "VS Npc");
+					break;
+
+				case 4:
+					sprintf(gamemodName, "ZH");
+					break;
+				}
+
+				PathNode *navid = &m_navNode[0];
+				int navIndex[2] = { 0, 0 };
+
+				while (navid != null)
+				{
+					if (navIndex[0] == 0)
+						navIndex[0] = navid->index;
+					else
+					{
+						navIndex[1] = navid->index;
+						break;
+					}
+
+					navid = navid->next;
+				}
+
+				char zeTarget[20];
+				sprintf(zeTarget, " ");
+
+				char outputBuffer[512];
+				sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
+					"\n [%s] \n Task: %s  AimFlags: %s \n"
+					"Weapon: %s  Clip: %d   Ammo: %d \n"
+					"Money: %d  Bot Ai: %s %s \n"
+					"Enemy: %s  Pickup: %s  Type: %s  \n"
+					"CWI: %d  GI: %d  TD: %d \n"
+					"Nav: %d  Next Nav: %d \n"
+					"Move Speed: %2.f  Strafe Speed: %2.f \n "
+					"check Terran: %d  Stuck: %d \n"
+					"Speed: %2.f \n",
+					gamemodName,
+					STRING(pev->netname), taskName, aimFlags,
+					&weaponName[7], GetAmmoInClip(), GetAmmo(),
+					m_moneyAmount, IsZombieBot(GetEntity()) ? "Zombie" : "Normal", zeTarget,
+					enemyName, pickupName, botType,
+					m_currentWaypointIndex, m_prevGoalIndex, m_tasks->data,
+					navIndex[0], navIndex[1],
+					m_moveSpeed, m_strafeSpeed,
+					m_checkTerrain, m_isStuck,
+					pev->velocity.GetLength());
+
+				MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
+				WRITE_BYTE(TE_TEXTMESSAGE);
+				WRITE_BYTE(1);
+				WRITE_SHORT(FixedSigned16(-1, 1 << 13));
+				WRITE_SHORT(FixedSigned16(0, 1 << 13));
+				WRITE_BYTE(0);
+				WRITE_BYTE(GetTeam(GetEntity()) == TEAM_COUNTER ? 0 : 255);
+				WRITE_BYTE(100);
+				WRITE_BYTE(GetTeam(GetEntity()) != TEAM_COUNTER ? 0 : 255);
+				WRITE_BYTE(0);
+				WRITE_BYTE(255);
+				WRITE_BYTE(255);
+				WRITE_BYTE(255);
+				WRITE_BYTE(0);
+				WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+				WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+				WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
+				WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
+				MESSAGE_END();
+
+				timeDebugUpdate = engine->GetTime() + 2.0f;
+			}
+
+			if (m_moveTargetOrigin != nullvec)
+				engine->DrawLine(g_hostEntity, EyePosition(), m_moveTargetOrigin, Color(0, 255, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+
+			if (m_enemyOrigin != nullvec && !FNullEnt(m_enemy))
+				engine->DrawLine(g_hostEntity, EyePosition(), m_enemyOrigin, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+
+			// now draw line from source to destination
+			PathNode *node = &m_navNode[0];
+
+			while (node != null)
+			{
+				Vector src = g_waypoint->GetPath(node->index)->origin;
+				node = node->next;
+
+				if (node != null)
+					engine->DrawLine(g_hostEntity, EyePosition(), g_waypoint->GetPath(node->index)->origin, Color(255, 100, 55, 20), 15, 0, 8, 1, LINE_ARROW);
+			}
+		}
+	}
+}
+
+// SyPB Pro P.30 - Fun Mode AI
+void Bot::FunBotAI(void)
+{
+	// Football/ or more fun mode ai in here
+}
+
 void Bot::BotAI (void)
 {
    // this function gets called each frame and is the core of all bot ai. from here all other subroutines are called
@@ -5647,10 +6153,6 @@ void Bot::BotAI (void)
       if (engine->RandomInt (1, 100) < 2 && sypb_spraypaints.GetBool ())
          PushTask (TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime () + 1.0f, false);
 
-	  /*
-      if (m_skill > 75 && engine->RandomInt (0, 100) < (m_personality == PERSONALITY_RUSHER ? 99 : 80) && !m_isReloading && (g_mapType & (MAP_CS | MAP_DE | MAP_ES | MAP_AS)))
-        SelectWeaponByName ("weapon_knife");*/
-
       m_checkKnifeSwitch = false;
 
 	  // SyPB Pro P.29 - small change
@@ -5663,6 +6165,10 @@ void Bot::BotAI (void)
       if (engine->RandomInt (0, 100) < sypb_followpercent.GetInt () && FNullEnt (m_targetEntity) && !m_isLeader && !(pev->weapons & (1 << WEAPON_C4)))
          AttachToUser ();
    }
+
+   // SyPB Pro P.30 - Zombie Ai
+   if (IsZombieBot(GetEntity()) && m_currentWeapon != WEAPON_KNIFE)
+	   SelectWeaponByName("weapon_knife");
 
    // check if we already switched weapon mode
    if (m_checkWeaponSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat (2.0, 3.5) < engine->GetTime ())
@@ -5687,7 +6193,9 @@ void Bot::BotAI (void)
       }
 
       // select a leader bot for this team
-      SelectLeaderEachTeam (team);
+	  if (GetGameMod() == 0)
+		  SelectLeaderEachTeam (team);
+
       m_checkWeaponSwitch = false;
    }
 
@@ -5722,12 +6230,17 @@ void Bot::BotAI (void)
    else
       movedDistance = 2.0f;
 
+   // SyPB Pro P.30 - Block Radio
    // if there's some radio message to respond, check it
-   if (m_radioOrder != 0)
+   if (m_radioOrder != 0 && GetGameMod () == 0)
       CheckRadioCommands ();
 
    // do all sensing, calculate/filter all actions here
    SetConditions ();
+
+   // SyPB Pro P.30 - Zombie Mode Ai
+   if (GetGameMod() == 2 || GetGameMod() == 4)
+	   ZombieModeAi();
 
    // some stuff required by by chatter engine
    if ((m_states & STATE_SEEINGENEMY) && !FNullEnt (m_enemy))
@@ -5750,8 +6263,6 @@ void Bot::BotAI (void)
    m_checkTerrain = true;
    m_moveToGoal = true;
    m_wantsToFire = false;
-
-   FunBotAi ();
 
    AvoidGrenades (); // avoid flyings grenades
    m_isUsingGrenade = false;
@@ -5776,6 +6287,14 @@ void Bot::BotAI (void)
 
    // calculate 2 direction vectors, 1 without the up/down component
    Vector directionOld = m_destOrigin - (pev->origin + pev->velocity * m_frameInterval);
+
+   // SyPB Pro P.30 - Zombie Mode Ai TESTTEST
+   if (GetGameMod() == 2 || GetGameMod() == 4)
+   {
+	   if (!FNullEnt (m_enemy))
+		   directionOld = GetEntityOrigin (m_enemy) - (pev->origin + pev->velocity * m_frameInterval);
+   }
+
    Vector directionNormal = directionOld.Normalize ();
 
    Vector direction = directionNormal;
@@ -5786,19 +6305,26 @@ void Bot::BotAI (void)
    m_moveAngles.ClampAngles ();
    m_moveAngles.x *= -1.0f; // invert for engine
 
-#if 0
-   if (m_skill >= 80 && GetCurrentTask ()->taskID == Task_Normal && ((m_aimFlags & AimPos_Enemy) || (m_states & State_SeeingEnemy)) && !IsOnLadder ())
-      CombatFight ();
-#else
-   if (m_skill >= 80 && ((m_aimFlags & AIM_ENEMY) || (m_states & (STATE_SEEINGENEMY | STATE_SUSPECTENEMY)) || (GetCurrentTask()->taskID == TASK_SEEKCOVER && (m_isReloading || m_isVIP))) && !sypb_knifemode.GetBool() && GetCurrentTask()->taskID != TASK_CAMP && !IsOnLadder())
+   // SyPB Pro P.30 - Attack Ai
+   if (!IsOnLadder() && GetCurrentTask()->taskID != TASK_CAMP &&
+	   (((m_aimFlags & AIM_ENEMY) || (m_states & (STATE_SEEINGENEMY | STATE_SUSPECTENEMY)) || !FNullEnt(m_enemy)) ||
+	   ((GetCurrentTask()->taskID == TASK_SEEKCOVER || GetGameMod () != 0) && (m_isReloading || m_isVIP))) && 
+	   FNullEnt(m_moveTargetEntity))
    {
-      m_moveToGoal = false; // don't move to goal
-      m_navTimeset = engine->GetTime ();
+	   m_moveSpeed = 0.0f;
+	   m_strafeSpeed = 0.0f;
+	   
+	   if ((GetGameMod() == 0 && m_skill >= 75) || (GetGameMod() == 1 && m_skill >= 60) ||
+		   (GetGameMod() != 0 && GetGameMod() != 1))
+	   {
+		   m_moveToGoal = false; // don't move to goal
+		   m_navTimeset = engine->GetTime();
 
-      if (IsValidPlayer (m_enemy))
-         CombatFight ();
+		   if (!FNullEnt(m_enemy))
+			   CombatFight();
+	   }
    }
-#endif
+
    // check if we need to escape from bomb
    if ((g_mapType & MAP_DE) && g_bombPlanted && m_notKilled && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask ()->taskID != TASK_CAMP && OutOfBombTimer ()) 
    {
@@ -5809,7 +6335,7 @@ void Bot::BotAI (void)
    }
 
    // allowed to move to a destination position?
-   if (m_moveToGoal)
+   if (m_moveToGoal && !m_moveAIAPI) // SyPB Pro P.30 - AMXX API
    {
       GetValidWaypoint ();
 
@@ -5824,7 +6350,7 @@ void Bot::BotAI (void)
          // check if we need to go forward or back press the correct buttons
          if (InFieldOfView (m_destOrigin - EyePosition ()) > 90)
             pev->button |= IN_BACK;
-         else
+		 else
             pev->button |= IN_FORWARD;
 
          if (m_moveAngles.x > 60.0f)
@@ -5833,6 +6359,9 @@ void Bot::BotAI (void)
             pev->button |= IN_JUMP;
       }
    }
+
+   if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
+	   m_checkTerrain = false;
 
    // SyPB Pro P.27 - new check terrain
    if (m_checkTerrain)
@@ -6247,7 +6776,7 @@ void Bot::BotAI (void)
    }
 
    // must avoid a grenade?
-   if (m_needAvoidGrenade != 0 && !IsZombieBot (GetEntity ())) // SyPB Pro P.27 - Zombie Ai
+   if (m_needAvoidGrenade != 0)
    {
       // Don't duck to get away faster
       pev->button &= ~IN_DUCK;
@@ -6302,340 +6831,9 @@ void Bot::BotAI (void)
          pev->button |= IN_DUCK;
    }
 
-   // SyPB Pro P.26 - Sniper Skills
-   if (!(pev->button & (IN_FORWARD | IN_BACK)) && !m_sniperReady)
-   {
-      if (m_moveSpeed > 0)
-         pev->button |= IN_FORWARD;
-      else if (m_moveSpeed < 0)
-         pev->button |= IN_BACK;
-   }
-
-   if (!(pev->button & (IN_MOVELEFT | IN_MOVERIGHT)))
-   {
-      if (m_strafeSpeed > 0)
-         pev->button |= IN_MOVERIGHT;
-      else if (m_strafeSpeed < 0)
-         pev->button |= IN_MOVELEFT;
-   }
-
-   static float timeDebugUpdate = 0.0f;
-
-   // SyPB Pro P.20 - debug
-   // This is new debg mode...
-   if (!FNullEnt(g_hostEntity) && sypb_debug.GetInt() >= 1)
-   {
-	   int specIndex = g_hostEntity->v.iuser2;
-
-	   if (specIndex == ENTINDEX(GetEntity()))
-	   {
-		   static int index, goal, taskID;
-
-		   if (m_tasks != null)
-		   {
-			   if (taskID != m_tasks->taskID || index != m_currentWaypointIndex || goal != m_tasks->data || timeDebugUpdate < engine->GetTime())
-			   {
-				   taskID = m_tasks->taskID;
-				   index = m_currentWaypointIndex;
-				   goal = m_tasks->data;
-
-				   char taskName[80];
-
-				   switch (taskID)
-				   {
-				   case TASK_NORMAL:
-					   sprintf(taskName, "Normal");
-					   break;
-
-				   case TASK_PAUSE:
-					   sprintf(taskName, "Pause");
-					   break;
-
-				   case TASK_MOVETOPOSITION:
-					   sprintf(taskName, "MoveToPosition");
-					   break;
-
-				   case TASK_FOLLOWUSER:
-					   sprintf(taskName, "FollowUser");
-					   break;
-
-				   case TASK_MOVETOTARGET:
-					   sprintf(taskName, "MoveToTarget");
-					   break;
-
-				   case TASK_PICKUPITEM:
-					   sprintf(taskName, "PickupItem");
-					   break;
-
-				   case TASK_CAMP:
-					   sprintf(taskName, "Camp");
-					   break;
-
-				   case TASK_PLANTBOMB:
-					   sprintf(taskName, "PlantBomb");
-					   break;
-
-				   case TASK_DEFUSEBOMB:
-					   sprintf(taskName, "DefuseBomb");
-					   break;
-
-				   case TASK_FIGHTENEMY:
-					   sprintf(taskName, "AttackEnemy");
-					   break;
-
-				   case TASK_HUNTENEMY:
-					   sprintf(taskName, "HuntEnemy");
-					   break;
-
-				   case TASK_SEEKCOVER:
-					   sprintf(taskName, "SeekCover");
-					   break;
-
-				   case TASK_THROWHEGRENADE:
-					   sprintf(taskName, "ThrowExpGrenade");
-					   break;
-
-				   case TASK_THROWFBGRENADE:
-					   sprintf(taskName, "ThrowFlashGrenade");
-					   break;
-
-				   case TASK_THROWSMGRENADE:
-					   sprintf(taskName, "ThrowSmokeGrenade");
-					   break;
-
-				   case TASK_DOUBLEJUMP:
-					   sprintf(taskName, "PerformDoubleJump");
-					   break;
-
-				   case TASK_ESCAPEFROMBOMB:
-					   sprintf(taskName, "EscapeFromBomb");
-					   break;
-
-				   case TASK_DESTROYBREAKABLE:
-					   sprintf(taskName, "ShootBreakable");
-					   break;
-
-				   case TASK_HIDE:
-					   sprintf(taskName, "Hide");
-					   break;
-
-				   case TASK_BLINDED:
-					   sprintf(taskName, "Blinded");
-					   break;
-
-				   case TASK_SPRAYLOGO:
-					   sprintf(taskName, "SprayLogo");
-					   break;
-				   }
-
-				   char enemyName[80], weaponName[80], aimFlags[32], botType[32];
-
-				   // SyPB Pro P.11
-				   if (!FNullEnt(m_enemy))
-				   {
-					   if (IsValidPlayer (m_enemy))
-						   strcat(enemyName, STRING(m_enemy->v.netname));
-					   else
-						   strcat(enemyName, STRING(m_enemy->v.classname));
-				   }
-				   // SyPB Pro P.15
-				   else if (!FNullEnt(m_moveTargetEntity))
-				   {
-					   strcpy(enemyName, "(T)");
-					   if (IsValidPlayer (m_moveTargetEntity))
-						   strcat(enemyName, STRING(m_moveTargetEntity->v.netname));
-					   else
-						   strcat(enemyName, STRING(m_moveTargetEntity->v.classname));
-				   }
-				   else if (!FNullEnt(m_lastEnemy))
-				   {
-					   strcpy(enemyName, "(L)");
-					   if (IsValidPlayer (m_lastEnemy))
-						   strcat(enemyName, STRING(m_lastEnemy->v.netname));
-					   else
-						   strcat(enemyName, STRING(m_lastEnemy->v.classname));
-				   }
-				   else
-					   strcpy(enemyName, " (null)");
-
-				   char pickupName[80];
-
-				   if (!FNullEnt(m_pickupItem))
-					   strcpy(pickupName, STRING(m_pickupItem->v.classname));
-				   else
-					   strcpy(pickupName, " (null)");
-
-				   WeaponSelect *selectTab = &g_weaponSelect[0];
-				   char weaponCount = 0;
-
-				   while (m_currentWeapon != selectTab->id && weaponCount < Const_NumWeapons)
-				   {
-					   selectTab++;
-					   weaponCount++;
-				   }
-
-				   // set the aim flags
-				   sprintf(aimFlags, "%s%s%s%s%s%s%s%s",
-					   m_aimFlags & AIM_NAVPOINT ? " NavPoint" : "",
-					   m_aimFlags & AIM_CAMP ? " CampPoint" : "",
-					   m_aimFlags & AIM_PREDICTENEMY ? " PredictEnemy" : "",
-					   m_aimFlags & AIM_LASTENEMY ? " LastEnemy" : "",
-					   m_aimFlags & AIM_ENTITY ? " Entity" : "",
-					   m_aimFlags & AIM_ENEMY ? " Enemy" : "",
-					   m_aimFlags & AIM_GRENADE ? " Grenade" : "",
-					   m_aimFlags & AIM_OVERRIDE ? " Override" : "");
-
-				   // set the bot type
-				   sprintf(botType, "%s%s%s", m_personality == PERSONALITY_RUSHER ? " Rusher" : "",
-					   m_personality == PERSONALITY_CAREFUL ? " Careful" : "",
-					   m_personality == PERSONALITY_NORMAL ? " Normal" : "");
-
-				   if (weaponCount >= Const_NumWeapons)
-				   {
-					   // prevent printing unknown message from known weapons
-					   switch (m_currentWeapon)
-					   {
-					   case WEAPON_HEGRENADE:
-						   sprintf(weaponName, "weapon_hegrenade");
-						   break;
-
-					   case WEAPON_FBGRENADE:
-						   sprintf(weaponName, "weapon_flashbang");
-						   break;
-
-					   case WEAPON_SMGRENADE:
-						   sprintf(weaponName, "weapon_smokegrenade");
-						   break;
-
-					   case WEAPON_C4:
-						   sprintf(weaponName, "weapon_c4");
-						   break;
-
-					   default:
-						   sprintf(weaponName, "Unknown! (%d)", m_currentWeapon);
-					   }
-				   }
-				   else
-					   sprintf(weaponName, selectTab->weaponName);
-
-				   char gamemodName[80];
-				   switch (GetGameMod())
-				   {
-				   case 0:
-					   sprintf(gamemodName, "Normal");
-					   break;
-
-				   case 1:
-					   sprintf(gamemodName, "Dm");
-					   break;
-
-				   case 2:
-					   sprintf(gamemodName, "ZP");
-					   break;
-
-				   case 3:
-					   sprintf(gamemodName, "VS Npc");
-					   break;
-
-				   case 4:
-					   sprintf(gamemodName, "ZH");
-					   break;
-				   }
-
-				   PathNode *navid = &m_navNode[0];
-				   int navIndex[2] = { 0, 0 };
-
-				   while (navid != null)
-				   {
-					   if (navIndex[0] == 0)
-						   navIndex[0] = navid->index;
-					   else
-					   {
-						   navIndex[1] = navid->index;
-						   break;
-					   }
-
-					   navid = navid->next;
-				   }
-
-				   char zeTarget[20];
-				   if (GetGameMod() == 99 && !IsZombieBot(GetEntity()))
-					   sprintf(zeTarget, "(Target : %d)", m_zeTargetEntity);
-				   else
-					   sprintf(zeTarget, " ");
-
-				   char outputBuffer[512];
-				   sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
-					   "\n [%s] \n Task: %s  AimFlags: %s \n"
-					   "Weapon: %s  Clip: %d   Ammo: %d \n"
-					   "Money: %d  Bot Ai: %s %s \n"
-					   "Enemy: %s  Pickup: %s  Type: %s  \n"
-					   "CWI: %d  GI: %d  TD: %d \n"
-					   "Nav: %d  Next Nav: %d \n"
-					   "Move Speed: %2.f  Strafe Speed: %2.f \n "
-					   "check Terran: %d  Stuck: %d \n"
-					   "Speed: %2.f \n", 
-					   gamemodName,
-					   STRING(pev->netname), taskName, aimFlags,
-					   &weaponName[7], GetAmmoInClip(), GetAmmo(),
-					   m_moneyAmount, IsZombieBot(GetEntity()) ? "Zombie" : "Normal", zeTarget,
-					   enemyName, pickupName, botType,
-					   m_currentWaypointIndex, m_prevGoalIndex, m_tasks->data,
-					   navIndex[0], navIndex[1],
-					   m_moveSpeed, m_strafeSpeed,
-					   m_checkTerrain, m_isStuck,
-					   pev->velocity.GetLength());
-
-				   MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
-				   WRITE_BYTE(TE_TEXTMESSAGE);
-				   WRITE_BYTE(1);
-				   WRITE_SHORT(FixedSigned16(-1, 1 << 13));
-				   WRITE_SHORT(FixedSigned16(0, 1 << 13));
-				   WRITE_BYTE(0);
-				   WRITE_BYTE(GetTeam(GetEntity()) == TEAM_COUNTER ? 0 : 255);
-				   WRITE_BYTE(100);
-				   WRITE_BYTE(GetTeam(GetEntity()) != TEAM_COUNTER ? 0 : 255);
-				   WRITE_BYTE(0);
-				   WRITE_BYTE(255);
-				   WRITE_BYTE(255);
-				   WRITE_BYTE(255);
-				   WRITE_BYTE(0);
-				   WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-				   WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-				   WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
-				   WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
-				   MESSAGE_END();
-
-				   timeDebugUpdate = engine->GetTime() + 1.0f;
-			   }
-
-			   if (m_moveTargetOrigin != nullvec)
-				   engine->DrawLine(g_hostEntity, EyePosition(), m_moveTargetOrigin, Color(0, 255, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
-
-			   if (m_enemyOrigin != nullvec && !FNullEnt(m_enemy))
-				   engine->DrawLine(g_hostEntity, EyePosition(), m_enemyOrigin, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
-
-			   // now draw line from source to destination
-			   PathNode *node = &m_navNode[0];
-
-			   while (node != null)
-			   {
-				   src = g_waypoint->GetPath(node->index)->origin;
-				   node = node->next;
-
-				   if (node != null)
-					   engine->DrawLine(g_hostEntity, EyePosition(), g_waypoint->GetPath(node->index)->origin, Color(255, 100, 55, 20), 15, 0, 8, 1, LINE_ARROW);
-			   }
-		   }
-	   }
-   }
-
    // save the previous speed (for checking if stuck)
    m_prevSpeed = fabsf (m_moveSpeed);
    m_lastDamageType = -1; // reset damage
-
-   pev->angles.ClampAngles ();
-   pev->v_angle.ClampAngles ();
 }
 
 bool Bot::HasHostage (void)
@@ -6683,8 +6881,11 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 	if (FNullEnt(inflictor) || inflictor == GetEntity())
 		return;
 
-	// SyPB Pro P.28 - Msg Debug (TEST)
+	// SyPB Pro P.28 - Msg Debug
 	if (!IsValidPlayer(inflictor))
+		return;
+
+	if (m_blockCheckEnemyTime > engine->GetTime())  // SyPB Pro P.30 - AMXX API
 		return;
 
 	// SyPB Pro P.23 - Bot Ai
@@ -6703,120 +6904,6 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 
 		m_seeEnemyTime = engine->GetTime();
 	}
-	/*
-	if (GetGameMod() == 0)
-	{
-		for (int i = 0; i < engine->GetMaxClients(); i++)
-		{
-			Bot *theBot = g_botManager->GetBot(i);
-			if (theBot == null || theBot->pev == pev || !IsAlive(theBot->GetEntity()))
-				continue;
-
-			if (!FNullEnt(theBot->m_enemy))
-				continue;
-
-			if (GetTeam(GetEntity()) != GetTeam(theBot->GetEntity()))
-				continue;
-
-			if (theBot->EntityIsVisible(GetEntityOrigin(GetEntity())))
-			{
-				theBot->m_lastEnemy = inflictor;
-				theBot->m_lastEnemyOrigin = GetEntityOrigin(inflictor);
-
-				theBot->m_seeEnemyTime = engine->GetTime();
-
-				if ((theBot->m_isReloading || theBot->m_currentWeapon == WEAPON_KNIFE) &&
-					theBot->m_checkDTime > engine->GetTime())
-				{
-					theBot->SelectBestWeapon();
-					theBot->m_checkDTime = engine->GetTime() + 1.0f;
-				}
-			}
-
-		}
-	}
-	*/
-	/*
-	if (GetGameMod() == 0)
-	{
-		int Crisis = 0;
-		for (int i = 0; i < engine->GetMaxClients(); i++)
-		{
-			Bot *theBot = g_botManager->GetBot(i);
-			if (theBot == null || theBot->pev == pev || !IsAlive(theBot->GetEntity()))
-				continue;
-
-			Vector origin = pev->origin;
-			if (GetTeam(GetEntity()) != GetTeam(theBot->GetEntity()))
-				origin = theBot->pev->origin;
-
-			int action = 0;
-
-			if ((theBot->pev->origin - origin).GetLengthSquared() <
-				static_cast <float> (256 * 256))
-			{
-				edict_t *theEnemy;
-				if (GetTeam(GetEntity()) == GetTeam(theBot->GetEntity()))
-				{
-					Crisis += 3;
-					theEnemy = inflictor;
-				}
-				else
-				{
-					Crisis -= 2;
-					theEnemy = GetEntity ();
-				}
-
-				if (FNullEnt(theBot->m_enemy))
-				{
-					if (m_isReloading || m_currentWeapon == WEAPON_KNIFE)
-						SelectBestWeapon();
-
-					m_lastEnemy = theEnemy;
-					m_lastEnemyOrigin = GetEntityOrigin(theEnemy);
-
-					m_seeEnemyTime = engine->GetTime();
-				}
-			}
-		}
-
-		if (Crisis < 0)
-		{
-			if (EntityIsVisible(GetEntityOrigin(inflictor)))
-			{
-				m_fearLevel /= 2;
-				m_actualReactionTime = 0.0f;
-				m_seeEnemyTime = engine->GetTime();
-
-				m_enemy = inflictor;
-				m_enemyOrigin = GetEntityOrigin(inflictor);
-			}
-		}
-		else
-		{
-			if (Crisis > 3)
-				m_fearLevel *= 5;
-
-			if (m_isReloading)
-			{
-				m_fearLevel *= 5;
-				DeleteSearchNodes();
-				FindWaypoint();
-
-				SelectBestWeapon();
-			}
-			else if (EntityIsVisible(GetEntityOrigin(inflictor)))
-			{
-				m_actualReactionTime = 0.0f;
-				m_seeEnemyTime = engine->GetTime();
-
-				m_enemy = inflictor;
-				m_enemyOrigin = GetEntityOrigin(inflictor);
-			}
-		}
-
-	}
-	*/
 }
 
 void Bot::TakeBlinded (Vector fade, int alpha)
@@ -7292,6 +7379,10 @@ void Bot::ReactOnSound (void)
 	// SyPB Pro P.26 - Game Mod setting
 	if (GetGameMod() != 0)
 		return;
+
+	// SyPB Pro P.30 - AMXX API
+	if (m_blockCheckEnemyTime > engine->GetTime())
+		return;
 	
    int ownIndex = GetIndex ();
    float ownSoundLast = 0.0f;
@@ -7397,7 +7488,9 @@ void Bot::ReactOnSound (void)
       }
 
       // check if heard enemy can be seen
-      if (CheckVisibility (VARS (player), &m_lastEnemyOrigin, &m_visibility))
+	  //if (CheckVisibility (VARS (player), &m_lastEnemyOrigin, &m_visibility))
+	  // SyPB Pro P.30 - small change
+	  if (IsEnemyViewable(player, 1))
       {
          m_enemy = player;
          m_lastEnemy = player;

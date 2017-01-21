@@ -30,6 +30,7 @@
 // create classes: Tracer, PrintManager, GameManager
 //
 ConVar sypb_loglevel ("sypb_loglevel", "2");
+ConVar sypb_apitestmsg("sypb_apitestmsg", "0");
 
 void TraceLine (const Vector &start, const Vector &end, bool ignoreMonsters, bool ignoreGlass, edict_t *ignoreEntity, TraceResult *ptr)
 {
@@ -596,13 +597,13 @@ void RoundInit (void)
    Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-zplague.ini", GetModName());
    if (TryFileOpen(Plugin_INI)) // Getting GameMod
    {
-	   float delayTime = (CVAR_GET_FLOAT("zp_delay") >0) ? CVAR_GET_FLOAT("zp_delay") : CVAR_GET_FLOAT("zp_gamemode_delay");
+	   float delayTime = (CVAR_GET_FLOAT("zp_delay") > 0) ? CVAR_GET_FLOAT("zp_delay") : CVAR_GET_FLOAT("zp_gamemode_delay");
 
 	   if (delayTime > 0)
 	   {
 		   sypb_gamemod.SetInt(2);
 		   sypb_walkallow.SetInt(0);
-		   g_DelayTimer = engine->GetTime() + delayTime + (CVAR_GET_FLOAT("mp_freezetime") / 2);
+		   g_DelayTimer = engine->GetTime() + delayTime + 6.0f;
 	   }
    }
 
@@ -652,7 +653,7 @@ void RoundInit (void)
 			   if (bteGameModAi[i] == 2 && i != 5)
 			   {
 				   sypb_walkallow.SetInt(0);
-				   g_DelayTimer = engine->GetTime() + 20.0f;
+				   g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
 			   }
 
 			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
@@ -757,12 +758,12 @@ int GetTeam (edict_t *ent)
 
 bool IsZombieBot (edict_t *ent)
 {
+	if (FNullEnt(ent))
+		return false;
+
 	// SyPB Pro P.12
-	if (GetGameMod () == 2 || GetGameMod () == 4 || GetGameMod () == 99) // Zombie Mod
-	{
-		if (GetTeam (ent) == TEAM_TERRORIST)
-			return true;
-	}
+	if (GetGameMod() == 2 || GetGameMod() == 4) // Zombie Mod
+		return (GetTeam(ent) == TEAM_TERRORIST);
 	
 	return false;
 }
@@ -865,6 +866,22 @@ void ServerPrintNoTag (const char *format, ...)
    va_end (ap);
 
    SERVER_PRINT (FormatBuffer ("%s\n", string));
+}
+
+// SyPB Pro P.30 - AMXX API
+void API_TestMSG(const char *format, ...)
+{
+	if (sypb_apitestmsg.GetBool() == false)
+		return;
+
+	va_list ap;
+	char string[3072];
+
+	va_start(ap, format);
+	vsprintf(string, g_localizer->TranslateInput(format), ap);
+	va_end(ap);
+
+	SERVER_PRINT(FormatBuffer("[%s-API Test] %s\n", PRODUCT_LOGTAG, string));
 }
 
 void CenterPrint (const char *format, ...)

@@ -308,9 +308,12 @@ void NetworkMsg::Execute (void *p)
 	            for (int i = 0; i < engine->GetMaxClients (); i++)
 	            {
 	               Bot *bot = g_botManager->GetBot (i);
-
 	               if (bot != null && IsAlive (bot->GetEntity ()) && GetTeam (bot->GetEntity ()) == GetTeam (victim) && IsVisible (GetEntityOrigin (killer), bot->GetEntity ()) && FNullEnt (bot->m_enemy) && GetTeam (killer) != GetTeam (victim))
 	               {
+					   // SyPB Pro P.30 - AMXX API
+					   if (bot->m_blockCheckEnemyTime > engine->GetTime())
+						   continue;
+
 	                  bot->m_actualReactionTime = 0.0f;
 	                  bot->m_seeEnemyTime = engine->GetTime ();
 	                  bot->m_enemy = killer;

@@ -712,6 +712,10 @@ private:
    float m_knifeAttackTime; // time to rush with knife (at the beginning of the round)
    bool m_defendedBomb; // defend action issued
 
+   // SyPB Pro P.24 - Move Target
+   float m_damageTime;
+   float m_checkDTime;
+
    float m_askCheckTime; // time to ask team
    float m_collideTime; // time last collision
    float m_firstCollideTime; // time of first collision
@@ -721,12 +725,6 @@ private:
    int m_collideMoves[4]; // sorted array of movements
    int m_collStateIndex; // index into collide moves
    CollisionState m_collisionState; // collision State
-
-   // SyPB Pro P.24 - Move Target
-   float m_damageTime;
-
-
-   float m_checkDTime;
 
    PathNode *m_navNode; // pointer to current node from path
    PathNode *m_navNodeStart; // pointer to start of path finding nodes
@@ -764,10 +762,7 @@ private:
    edict_t *m_targetEntity; // the entity that the bot is trying to reach
    edict_t *m_hostages[Const_MaxHostages]; // pointer to used hostage entities
    
-   edict_t *m_moveTargetEntity;
    Vector m_moveTargetOrigin;
-
-   int m_zeTargetEntity;
 
    bool m_isStuck; // bot is stuck
    bool m_isReloading; // bot is reloading a gun
@@ -792,8 +787,6 @@ private:
    float m_zoomCheckTime; // time to check zoom again
    float m_shieldCheckTime; // time to check shiled drawing again
    float m_grenadeCheckTime; // time to check grenade usage
-
-   bool m_sniperReady; // SyPB Pro P.26 - Sniper Skill
 
    bool m_checkKnifeSwitch; // is time to check switch to knife action
    bool m_checkWeaponSwitch; // is time to check weapon switch
@@ -829,9 +822,13 @@ private:
    float m_randomizeAnglesTime; // time last randomized location
    float m_playerTargetTime; // time last targeting
 
+   float m_checkCampPointTime; // SyPB Pro P.30 - Zombie Mode Human Camp
+
    void SwitchChatterIcon (bool show);
    void InstantChatterMessage (int type);
    void BotAI (void);
+   void FunBotAI(void);
+   void DebugModeMsg(void);
    bool IsMorePowerfulWeaponCanBeBought (void);
    void PerformWeaponPurchase (void);
    int BuyWeaponMode (int weaponId);
@@ -851,7 +848,8 @@ private:
    void AvoidEntity (void);
    bool GetEntityItem (int mod);
 
-   void FunBotAi (void);
+   void ZombieModeAi (void);
+   void ZmCampPointAction(void);
 
    void CheckSilencer (void);
    bool CheckWallOnLeft (void);
@@ -868,7 +866,7 @@ private:
    bool IsInViewCone (Vector origin);
    void ReactOnSound (void);
    bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart);
-   bool IsEnemyViewable (edict_t *player);
+   bool IsEnemyViewable (edict_t *player, int setEnemy = 0);
 
    edict_t *FindNearestButton (const char *className);
    edict_t *FindBreakable (void);
@@ -919,7 +917,7 @@ private:
 
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
-   void ChangeWptIndex (int waypointIndex);
+   void ChangeWptIndex (int waypointIndex, int nonSet = 1);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);
@@ -950,6 +948,8 @@ private:
    void SelectWeaponbyNumber (int num);
    int GetHighestWeapon (void);
 
+   float GetEntityDistance(edict_t *entity, bool checkWP = false);
+
    bool IsEnemyProtectedByShield (edict_t *enemy);
    bool ParseChat (char *reply);
    bool RepliesToPlayer (void);
@@ -965,6 +965,14 @@ private:
 
 public:
    entvars_t *pev;
+
+   // SyPB Pro P.30 - AMXX API
+   edict_t *m_enemyAPI;
+   edict_t *m_moveTargetEntityAPI;
+   bool m_moveAIAPI = false;
+   Vector m_lookAtAPI;
+   int m_weaponClipAPI;
+   bool m_weaponReloadAPI;
 
    int m_wantedTeam; // player team bot wants select
    int m_wantedClass; // player model bot wants to select
@@ -1042,6 +1050,9 @@ public:
    float m_enemyReachableTimer; // time to recheck if Enemy reachable
    bool m_isEnemyReachable; // direct line to enemy
 
+   edict_t *m_moveTargetEntity;
+   float m_blockCheckEnemyTime;
+
    float m_seeEnemyTime; // time bot sees enemy
    float m_enemySurpriseTime; // time of surprise
    float m_idealReactionTime; // time of base reaction
@@ -1089,6 +1100,8 @@ public:
 
    void DeleteSearchNodes (void);
    Task *GetCurrentTask (void);
+
+   void MoveTargetSrc(void);
 
    void RemoveCertainTask (BotTask taskID);
    void ResetTasks (void);
@@ -1178,6 +1191,8 @@ public:
    void ListBots (void);
    void SetWeaponMode (int selection);
    void CheckTeamEconomics (int team);
+
+   void AddBotAPI(const String &name, int skill, int team);
 
    static void CallGameEntity (entvars_t *vars);
 };
@@ -1271,6 +1286,7 @@ private:
    Array <int> m_sniperPoints;
    Array <int> m_rescuePoints;
    Array <int> m_visitedGoals;
+   Array <int> m_zmHmPoints;  // SyPB Pro P.30 - Zombie Mode Human Camp
 
 public:
    bool m_redoneVisibility;
@@ -1300,6 +1316,8 @@ public:
    void CreatePath (char dir);
    void DeletePath (void);
    void CacheWaypoint (void);
+
+   void DeleteFlags(void);
 
    void TeleportWaypoint (void);
    void SgdWp_Set (const char *modset);
@@ -1335,7 +1353,7 @@ public:
 
    int AddGoalScore (int index, int other[4]);
    void SetFindIndex (int index);
-   void SetLearnJumpWaypoint (int mod = 0);
+   void SetLearnJumpWaypoint (bool mod = 0);
    void ClearGoalScore (void);
 
    bool IsGoalVisited (int index);
@@ -1398,6 +1416,8 @@ extern void ServerPrintNoTag (const char *format, ...);
 extern void CenterPrint (const char *format, ...);
 extern void ClientPrint (edict_t *ent, int dest, const char *format, ...);
 extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
+
+extern void API_TestMSG(const char *format, ...);
 
 extern void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...);
 extern void DisplayMenuToClient (edict_t *ent, MenuText *menu);

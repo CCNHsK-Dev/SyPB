@@ -1376,1038 +1376,1134 @@ void ClientUserInfoChanged (edict_t *ent, char *infobuffer)
    (*g_functionTable.pfnClientUserInfoChanged) (ent, infobuffer);
 }
 
-void ClientCommand (edict_t *ent)
+void ClientCommand(edict_t *ent)
 {
-   // this function is called whenever the client whose player entity is ent issues a client
-   // command. How it works is that clients all have a global string in their client DLL that
-   // stores the command string; if ever that string is filled with characters, the client DLL
-   // sends it to the engine as a command to be executed. When the engine has executed that
-   // command, that string is reset to zero. By the server side, we can access this string
-   // by asking the engine with the CmdArgv(), CmdArgs() and CmdArgc() functions that work just
-   // like executable files argument processing work in C (argc gets the number of arguments,
-   // command included, args returns the whole string, and argv returns the wanted argument
-   // only). Here is a good place to set up either bot debug commands the listen server client
-   // could type in his game console, or real new client commands, but we wouldn't want to do
-   // so as this is just a bot DLL, not a MOD. The purpose is not to add functionality to
-   // clients. Hence it can lack of commenting a bit, since this code is very subject to change.
-
-   const char *command = CMD_ARGV (0);
-   const char *arg1 = CMD_ARGV (1);
-
-   static int fillServerTeam = 5;
-   static bool fillCommand = false;
-
-   if (!g_isFakeCommand && (ent == g_hostEntity || (g_clients[ENTINDEX (ent) - 1].flags & CFLAG_OWNER)))
-   {
-      if (stricmp (command, "sypb") == 0)
-      {
-         int state = BotCommandHandler (ent, IsNullString (CMD_ARGV (1)) ? "help" : CMD_ARGV (1), CMD_ARGV (2), CMD_ARGV (3), CMD_ARGV (4), CMD_ARGV (5), CMD_ARGV (6));
-
-         switch (state)
-         {
-         case 0:
-            ClientPrint (ent, print_withtag, "Unknown command: %s", arg1);
-            break;
-
-         case 3:
-            ClientPrint (ent, print_withtag, "CVar sypb_%s, can be only set via RCON access.", CMD_ARGV (2));
-            break;
-
-         case 2:
-            ClientPrint (ent, print_withtag, "Command %s, can only be executed from server console.", arg1);
-            break;
-         }
-         if (g_isMetamod)
-            RETURN_META (MRES_SUPERCEDE);
-
-         return;
-      }
-      else if (stricmp (command, "menuselect") == 0 && !IsNullString (arg1) && g_clients[ENTINDEX (ent) - 1].menu != null)
-      {
-         Client_old *client = &g_clients[ENTINDEX (ent) - 1];
-         int selection = atoi (arg1);
-
-         if (client->menu == &g_menus[12])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-               g_waypoint->Add (selection - 1);
-               break;
-
-            case 8:
-               g_waypoint->Add (100);
-               break;
-
-            case 9:
-               g_waypoint->SetLearnJumpWaypoint ();
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[13])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-               g_waypoint->ToggleFlags (WAYPOINT_NOHOSTAGE);
-               break;
-
-            case 2:
-               g_waypoint->ToggleFlags (WAYPOINT_TERRORIST);
-               break;
-
-            case 3:
-               g_waypoint->ToggleFlags (WAYPOINT_COUNTER);
-               break;
-
-            case 4:
-               g_waypoint->ToggleFlags (WAYPOINT_LIFT);
-               break;
-
-            case 5:
-               g_waypoint->ToggleFlags (WAYPOINT_SNIPER);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[9])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-               if (g_waypointOn)
-                  ServerCommand ("sypb waypoint off");
-               else
-                  ServerCommand ("sypb waypoint on");
-               break;
-
-            case 2:
-               g_waypointOn = true;
-               g_waypoint->CacheWaypoint ();
-               break;
-
-            case 3:
-               g_waypointOn = true;
-               DisplayMenuToClient (ent, &g_menus[20]);
-               break;
-
-            case 4:
-               g_waypointOn = true;
-               g_waypoint->DeletePath ();
-               break;
-
-            case 5:
-               g_waypointOn = true;
-               DisplayMenuToClient (ent, &g_menus[12]);
-               break;
-
-            case 6:
-               g_waypointOn = true;
-               g_waypoint->Delete ();
-               break;
-
-            case 7:
-               g_waypointOn = true;
-               DisplayMenuToClient (ent, &g_menus[19]);
-               break;
-
-            case 8:
-               g_waypointOn = true;
-               DisplayMenuToClient (ent, &g_menus[11]);
-               break;
-
-            case 9:
-               DisplayMenuToClient (ent, &g_menus[10]);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[10])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-               {
-                  int terrPoints = 0;
-                  int ctPoints = 0;
-                  int goalPoints = 0;
-                  int rescuePoints = 0;
-                  int campPoints = 0;
-                  int sniperPoints = 0;
-                  int noHostagePoints = 0;
-
-                  for (int i = 0; i < g_numWaypoints; i++)
-                  {
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_TERRORIST)
-                        terrPoints++;
-
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_COUNTER)
-                        ctPoints++;
-
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_GOAL)
-                        goalPoints++;
-
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_RESCUE)
-                        rescuePoints++;
-
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_CAMP)
-                        campPoints++;
-
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_SNIPER)
-                        sniperPoints++;
-
-                     if (g_waypoint->GetPath (i)->flags & WAYPOINT_NOHOSTAGE)
-                        noHostagePoints++;
-                  }
-                  ServerPrintNoTag ("Waypoints: %d - T Points: %d\n"
-                                    "CT Points: %d - Goal Points: %d\n"
-                                    "Rescue Points: %d - Camp Points: %d\n"
-                                    "Block Hostage Points: %d - Sniper Points: %d\n", g_numWaypoints, terrPoints, ctPoints, goalPoints, rescuePoints, campPoints, noHostagePoints, sniperPoints);
-               }
-               break;
-
-            case 2:
-               g_waypointOn = true;
-               g_autoWaypoint &= 1;
-               g_autoWaypoint ^= 1;
-
-               CenterPrint ("Auto-Waypoint %s", g_autoWaypoint ? "Enabled" : "Disabled");
-               break;
-
-            case 3:
-               g_waypointOn = true;
-               DisplayMenuToClient (ent, &g_menus[13]);
-               break;
-
-            case 4:
-               if (g_waypoint->NodesValid ())
-                  g_waypoint->Save ();
-               else
-                  CenterPrint ("Waypoint not saved\nThere are errors, see console");
-               break;
-
-            case 5:
-               g_waypoint->Save ();
-               break;
-
-            case 6:
-               g_waypoint->Load ();
-               break;
-
-            case 7:
-               if (g_waypoint->NodesValid ())
-                  CenterPrint ("Nodes work Find");
-               else
-                  CenterPrint ("There are errors, see console");
-               break;
-
-            case 8:
-               ServerCommand ("sypb wp on noclip");
-               break;
-
-            case 9:
-               DisplayMenuToClient (ent, &g_menus[9]);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[11])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            g_waypointOn = true;  // turn waypoints on in case
-
-            const int radiusValue[] = {0, 8, 16, 32, 48, 64, 80, 96, 128};
-
-            if ((selection >= 1) && (selection <= 9))
-               g_waypoint->SetRadius (radiusValue[selection - 1]);
-
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[0])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-               fillCommand = false;
-               DisplayMenuToClient (ent, &g_menus[2]);
-               break;
-
-            case 2:
-               DisplayMenuToClient (ent, &g_menus[1]);
-               break;
-
-            case 3:
-               fillCommand = true;
-               DisplayMenuToClient (ent, &g_menus[6]);
-               break;
-
-            case 4:
-               g_botManager->KillAll ();
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[2])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-               g_botManager->AddRandom ();
-               break;
-
-            case 2:
-               DisplayMenuToClient (ent, &g_menus[5]);
-               break;
-
-            case 3:
-               g_botManager->RemoveRandom ();
-               break;
-
-            case 4:
-               g_botManager->RemoveAll ();
-               break;
-
-            case 5:
-               g_botManager->RemoveMenu (ent, 1);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[1])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-            
-            extern ConVar sypb_debug;
-
-            switch (selection)
-            {
-            case 1:
-               DisplayMenuToClient (ent, &g_menus[3]);
-               break;
-
-            case 2:
-               DisplayMenuToClient (ent, &g_menus[9]);
-               break;
-
-            case 3:
-               DisplayMenuToClient (ent, &g_menus[4]);
-               break;
-
-            case 4:
-               sypb_debug.SetInt (sypb_debug.GetInt() ^ 1);
-               break;
-
-            case 5:
-               if (IsAlive (ent))
-                  DisplayMenuToClient (ent, &g_menus[18]);
-               else
-               {
-                  DisplayMenuToClient (ent, null); // reset menu display
-                  CenterPrint ("You're dead, and have no access to this menu");
-               }
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[18])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-            Bot *bot = null;
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-               if (FindNearestPlayer (reinterpret_cast <void **> (&bot), client->ent, 4096.0, true, true, true))
-               {
-                  if (!(bot->pev->weapons & (1 << WEAPON_C4)) && !bot->HasHostage () && (bot->GetCurrentTask ()->taskID != TASK_PLANTBOMB) && (bot->GetCurrentTask ()->taskID != TASK_DEFUSEBOMB))
-                  {
-                     if (selection == 1)
-                     {
-                        bot->ResetDoubleJumpState ();
-
-                        bot->m_doubleJumpOrigin = GetEntityOrigin (client->ent);
-                        bot->m_doubleJumpEntity = client->ent;
-
-                        bot->PushTask (TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, engine->GetTime (), true);
-                        bot->TeamSayText (FormatBuffer ("Ok %s, i will help you!", STRING (ent->v.netname)));
-                     }
-                     else if (selection == 2)
-                        bot->ResetDoubleJumpState ();
-                     break;
-                  }
-               }
-               break;
-
-            case 3:
-            case 4:
-               if (FindNearestPlayer (reinterpret_cast <void **> (&bot), ent, 300.0, true, true, true))
-                  bot->DiscardWeaponForUser (ent, selection == 4 ? false : true);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[19])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            const float autoDistanceValue[] = {0.0f, 100.0f, 130.0f, 160.0f, 190.0f, 220.0f, 250.0f};
-
-            if (selection >= 1 && selection <= 7)
-               g_autoPathDistance = autoDistanceValue[selection - 1];
-
-            if (g_autoPathDistance == 0)
-               CenterPrint ("AutoPath disabled");
-            else
-               CenterPrint ("AutoPath maximum distance set to %f", g_autoPathDistance);
-
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[20])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-               g_waypoint->CreatePath (PATHCON_OUTGOING);
-               break;
-
-            case 2:
-               g_waypoint->CreatePath (PATHCON_INCOMING);
-               break;
-
-            case 3:
-               g_waypoint->CreatePath (PATHCON_BOTHWAYS);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         // SyPB Pro P.20 - SgdWP
-         else if (client->menu == &g_menus[21])
-         {
-         	 DisplayMenuToClient (ent, null);
-         	 
-         	 switch (selection)
-			 {
-			 case 1:
-				 DisplayMenuToClient (ent, &g_menus[22]);
-				 break;
-
-			 case 2:
-				 DisplayMenuToClient (ent, &g_menus[21]);
-				 g_waypoint->Delete ();
-				 break;
-
-			 case 3:
-				 DisplayMenuToClient (ent, &g_menus[21]);
-				 g_waypoint->TeleportWaypoint ();
-				 break;
-
-			 case 4:
-				 DisplayMenuToClient (ent, &g_menus[21]);
-				 g_sautoWaypoint = g_sautoWaypoint ? false : true;
-				 g_waypoint->SetLearnJumpWaypoint (g_sautoWaypoint);
-				 break;
-
-			 case 8:
-				 g_waypoint->SgdWp_Set ("off");
-				 break;
-
-			 case 9:
-				 g_waypoint->SgdWp_Set ("save");
-				 break;
-
-			 case 10:
-				 DisplayMenuToClient (ent, null);
-				 break;
-			 }
-
-			 if (g_isMetamod)
-				 RETURN_META (MRES_SUPERCEDE);
-
-			 return;
-		 }
-		 else if (client->menu == &g_menus[22])
-		 {
-		 	 DisplayMenuToClient (ent, &g_menus[22]);
-		 	 
-		 	 switch (selection)
-			 {
-			 case 1:
-				 g_waypoint->Add (0);
-				 break;
-
-			 case 2:
-			 case 3:
-			 case 4:
-			 case 5:
-				 g_waypoint->Add (selection-1);
-				 break;
-
-			 case 6:
-				 g_waypoint->Add (100);
-				 break;
-
-			 case 7:
-				 g_waypoint->Add (5);
-				 g_waypoint->Add (6);
-				 DisplayMenuToClient (ent, &g_menus[24]);
-				 break;
-
-			 case 8:
-				 g_waypoint->SetLearnJumpWaypoint ();
-				 break;
-
-			 case 9:
-				 DisplayMenuToClient (ent, &g_menus[23]);
-				 break;
-
-			 case 10:
-				 DisplayMenuToClient (ent, &g_menus[21]);
-				 break;
-			 }
-
-			 if (g_isMetamod)
-				 RETURN_META (MRES_SUPERCEDE);
-
-			 return;
-		 }
-		 else if (client->menu == &g_menus[23])
-		 {
-			 DisplayMenuToClient (ent, &g_menus[23]);
-
-			 switch (selection)
-			 {
-			 case 1:
-				 g_waypoint->Add (0);
-				 g_waypoint->ToggleFlags (WAYPOINT_LIFT);
-				 break;
-
-			 case 2:
-				 g_waypoint->Add (5);
-				 g_waypoint->Add (6);
-				 g_waypoint->ToggleFlags (WAYPOINT_SNIPER);
-				 DisplayMenuToClient (ent, &g_menus[24]);
-				 break;
-
-			 case 3:
-				 // SyPB Pro P.29 - Zombie Mode Hm Camp Waypoints
-				 g_waypoint->Add(0);
-				 //g_waypoint->Add(104);
-				 g_waypoint->ToggleFlags(WAYPOINT_ZMHMCAMP);
-				 break;
-
-			 case 9:
-				 DisplayMenuToClient (ent, &g_menus[22]);
-				 break;
-
-			 case 10:
-				 DisplayMenuToClient (ent, &g_menus[21]);
-				 break;
-			 }
-
-			 if (g_isMetamod)
-				 RETURN_META (MRES_SUPERCEDE);
-
-			 return;
-		 }
-		 else if (client->menu == &g_menus[24])
-		 {
-			 DisplayMenuToClient (ent, &g_menus[22]);
-
-			 switch (selection)
-			 {
-			 case 1:
-				 g_waypoint->ToggleFlags (WAYPOINT_TERRORIST);
-				 break;
-
-			 case 2:
-				 g_waypoint->ToggleFlags (WAYPOINT_COUNTER);
-				 break;
-
-				 break;
-			 }
-
-			 if (g_isMetamod)
-				 RETURN_META (MRES_SUPERCEDE);
-
-			 return;
-		 }
-         else if (client->menu == &g_menus[5])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            client->menu = &g_menus[4];
-
-            switch (selection)
-            {
-            case 1:
-               g_storeAddbotVars[0] = engine->RandomInt (0, 20);
-               break;
-
-            case 2:
-               g_storeAddbotVars[0] = engine->RandomInt (20, 40);
-               break;
-
-            case 3:
-               g_storeAddbotVars[0] = engine->RandomInt (40, 60);
-               break;
-
-            case 4:
-               g_storeAddbotVars[0] = engine->RandomInt (60, 80);
-               break;
-
-            case 5:
-               g_storeAddbotVars[0] = engine->RandomInt (80, 99);
-               break;
-
-            case 6:
-               g_storeAddbotVars[0] = 100;
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-
-            if (client->menu == &g_menus[4])
-               DisplayMenuToClient (ent, &g_menus[4]);
-
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[6] && fillCommand)
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-               // turn off cvars if specified team
-               CVAR_SET_STRING ("mp_limitteams", "0");
-               CVAR_SET_STRING ("mp_autoteambalance", "0");
-
-            case 5:
-               fillServerTeam = selection;
-               DisplayMenuToClient (ent, &g_menus[5]);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[4] && fillCommand)
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-               g_botManager->FillServer (fillServerTeam, selection - 2, g_storeAddbotVars[0]);
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[6])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 5:
-               g_storeAddbotVars[1] = selection;
-               if (selection == 5)
-               {
-                  g_storeAddbotVars[2] = 5;
-                  g_botManager->AddBot ("", g_storeAddbotVars[0], g_storeAddbotVars[3], g_storeAddbotVars[1], g_storeAddbotVars[2]);
-               }
-               else
-               {
-                  if (selection == 1)
-                     DisplayMenuToClient (ent, &g_menus[7]);
-                  else
-                     DisplayMenuToClient (ent, &g_menus[8]);
-               }
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[4])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-               g_storeAddbotVars[3] = selection - 2;
-               DisplayMenuToClient (ent, &g_menus[6]);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[7] || client->menu == &g_menus[8])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-               g_storeAddbotVars[2] = selection;
-               g_botManager->AddBot ("", g_storeAddbotVars[0], g_storeAddbotVars[3], g_storeAddbotVars[1], g_storeAddbotVars[2]);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[3])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-               g_botManager->SetWeaponMode (selection);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, null);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[14])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-               g_botManager->GetBot (selection - 1)->Kick ();
-               break;
-
-            case 9:
-               g_botManager->RemoveMenu (ent, 2);
-               break;
-
-            case 10:
-               DisplayMenuToClient (ent, &g_menus[2]);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[15])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-               g_botManager->GetBot (selection + 8 - 1)->Kick ();
-               break;
-
-            case 9:
-               g_botManager->RemoveMenu (ent, 3);
-               break;
-
-            case 10:
-               g_botManager->RemoveMenu (ent, 1);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[16])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-               g_botManager->GetBot (selection + 16 - 1)->Kick ();
-               break;
-
-            case 9:
-               g_botManager->RemoveMenu (ent, 4);
-               break;
-
-            case 10:
-               g_botManager->RemoveMenu (ent, 2);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-         else if (client->menu == &g_menus[17])
-         {
-            DisplayMenuToClient (ent, null); // reset menu display
-
-            switch (selection)
-            {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-               g_botManager->GetBot (selection + 24 - 1)->Kick ();
-               break;
-
-            case 10:
-               g_botManager->RemoveMenu (ent, 3);
-               break;
-            }
-            if (g_isMetamod)
-               RETURN_META (MRES_SUPERCEDE);
-
-            return;
-         }
-      }
-   }
-
-   if (!g_isFakeCommand && (stricmp (command, "say") == 0 || stricmp (command, "say_team") == 0))
-   {
-      Bot *bot = null;
-
-      if (FStrEq (arg1, "dropme") || FStrEq (arg1, "dropc4"))
-      {
-         if (FindNearestPlayer (reinterpret_cast <void **> (&bot), ent, 300.0, true, true, true))
-            bot->DiscardWeaponForUser (ent, IsNullString (strstr (arg1, "c4")) ? false : true);
-
-         return;
-      }
-
-      bool isAlive = IsAlive (ent);
-      int team = -1;
-
-      if (FStrEq (command, "say_team"))
-         team = GetTeam (ent);
-
-      for (int i = 0; i < engine->GetMaxClients (); i++)
-      {
-         if (!(g_clients[i].flags & CFLAG_USED) || (team != -1 && team != g_clients[i].team) || isAlive != IsAlive (g_clients[i].ent))
-            continue;
-
-         Bot *iter = g_botManager->GetBot (i);
-
-         if (iter != null)
-         {
-            iter->m_sayTextBuffer.entityIndex = ENTINDEX (ent);
-
-            if (IsNullString (CMD_ARGS ()))
-               continue;
-
-            strcpy (iter->m_sayTextBuffer.sayText, CMD_ARGS ());
-            iter->m_sayTextBuffer.timeNextChat = engine->GetTime () + iter->m_sayTextBuffer.chatDelay;
-         }
-      }
-   }
-   int clientIndex = ENTINDEX (ent) - 1;
-
-   // check if this player alive, and issue something
-   if ((g_clients[clientIndex].flags & CFLAG_ALIVE) && g_radioSelect[clientIndex] != 0 && strncmp (command, "menuselect", 10) == 0)
-   {
-      int radioCommand = atoi (arg1);
-
-      if (radioCommand != 0)
-      {
-         radioCommand += 10 * (g_radioSelect[clientIndex] - 1);
-
-         if (radioCommand != Radio_Affirmative && radioCommand != Radio_Negative && radioCommand != Radio_ReportingIn)
-         {
-            for (int i = 0; i < engine->GetMaxClients (); i++)
-            {
-               Bot *bot = g_botManager->GetBot (i);
-
-               // validate bot
-               if (bot != null && GetTeam (bot->GetEntity ()) == g_clients[clientIndex].team && VARS (ent) != bot->pev && bot->m_radioOrder == 0)
-               {
-                  bot->m_radioOrder = radioCommand;
-                  bot->m_radioEntity = ent;
-               }
-            }
-         }
-         g_lastRadioTime[g_clients[clientIndex].team] = engine->GetTime ();
-      }
-      g_radioSelect[clientIndex] = 0;
-   }
-   else if (strncmp (command, "radio", 5) == 0)
-      g_radioSelect[clientIndex] = atoi (&command[5]);
-
-   if (g_isMetamod)
-      RETURN_META (MRES_IGNORED);
-
-   (*g_functionTable.pfnClientCommand) (ent);
+	// this function is called whenever the client whose player entity is ent issues a client
+	// command. How it works is that clients all have a global string in their client DLL that
+	// stores the command string; if ever that string is filled with characters, the client DLL
+	// sends it to the engine as a command to be executed. When the engine has executed that
+	// command, that string is reset to zero. By the server side, we can access this string
+	// by asking the engine with the CmdArgv(), CmdArgs() and CmdArgc() functions that work just
+	// like executable files argument processing work in C (argc gets the number of arguments,
+	// command included, args returns the whole string, and argv returns the wanted argument
+	// only). Here is a good place to set up either bot debug commands the listen server client
+	// could type in his game console, or real new client commands, but we wouldn't want to do
+	// so as this is just a bot DLL, not a MOD. The purpose is not to add functionality to
+	// clients. Hence it can lack of commenting a bit, since this code is very subject to change.
+
+	const char *command = CMD_ARGV(0);
+	const char *arg1 = CMD_ARGV(1);
+
+	static int fillServerTeam = 5;
+	static bool fillCommand = false;
+
+	if (!g_isFakeCommand && (ent == g_hostEntity || (g_clients[ENTINDEX(ent) - 1].flags & CFLAG_OWNER)))
+	{
+		if (stricmp(command, "sypb") == 0)
+		{
+			int state = BotCommandHandler(ent, IsNullString(CMD_ARGV(1)) ? "help" : CMD_ARGV(1), CMD_ARGV(2), CMD_ARGV(3), CMD_ARGV(4), CMD_ARGV(5), CMD_ARGV(6));
+
+			switch (state)
+			{
+			case 0:
+				ClientPrint(ent, print_withtag, "Unknown command: %s", arg1);
+				break;
+
+			case 3:
+				ClientPrint(ent, print_withtag, "CVar sypb_%s, can be only set via RCON access.", CMD_ARGV(2));
+				break;
+
+			case 2:
+				ClientPrint(ent, print_withtag, "Command %s, can only be executed from server console.", arg1);
+				break;
+			}
+			if (g_isMetamod)
+				RETURN_META(MRES_SUPERCEDE);
+
+			return;
+		}
+		else if (stricmp(command, "menuselect") == 0 && !IsNullString(arg1) && g_clients[ENTINDEX(ent) - 1].menu != null)
+		{
+			Client_old *client = &g_clients[ENTINDEX(ent) - 1];
+			int selection = atoi(arg1);
+
+			if (client->menu == &g_menus[12])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+					g_waypoint->Add(selection - 1);
+					break;
+
+				case 8:
+					g_waypoint->Add(100);
+					break;
+
+				case 9:
+					g_waypoint->SetLearnJumpWaypoint();
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[13])
+			{
+				if (g_sgdWaypoint)
+					DisplayMenuToClient(ent, &g_menus[13]);
+				else
+					DisplayMenuToClient(ent, null);
+
+				switch (selection)
+				{
+				case 1:
+					g_waypoint->ToggleFlags(WAYPOINT_NOHOSTAGE);
+					break;
+
+				case 2:
+					g_waypoint->ToggleFlags(WAYPOINT_TERRORIST);
+					break;
+
+				case 3:
+					g_waypoint->ToggleFlags(WAYPOINT_COUNTER);
+					break;
+
+				case 4:
+					g_waypoint->ToggleFlags(WAYPOINT_LIFT);
+					break;
+
+				case 5:
+					g_waypoint->ToggleFlags(WAYPOINT_SNIPER);
+					break;
+
+				case 6:
+					g_waypoint->ToggleFlags(WAYPOINT_ZMHMCAMP);
+					break;
+
+				case 7:  // SyPB Pro P.30 - SgdWP
+					g_waypoint->ToggleFlags(WAYPOINT_CROUCH);
+					break;
+
+				case 9:
+					g_waypoint->DeleteFlags();
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[9])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+					if (g_waypointOn)
+						ServerCommand("sypb waypoint off");
+					else
+						ServerCommand("sypb waypoint on");
+					break;
+
+				case 2:
+					g_waypointOn = true;
+					g_waypoint->CacheWaypoint();
+					break;
+
+				case 3:
+					g_waypointOn = true;
+					DisplayMenuToClient(ent, &g_menus[20]);
+					break;
+
+				case 4:
+					g_waypointOn = true;
+					g_waypoint->DeletePath();
+					break;
+
+				case 5:
+					g_waypointOn = true;
+					DisplayMenuToClient(ent, &g_menus[12]);
+					break;
+
+				case 6:
+					g_waypointOn = true;
+					g_waypoint->Delete();
+					break;
+
+				case 7:
+					g_waypointOn = true;
+					DisplayMenuToClient(ent, &g_menus[19]);
+					break;
+
+				case 8:
+					g_waypointOn = true;
+					DisplayMenuToClient(ent, &g_menus[11]);
+					break;
+
+				case 9:
+					DisplayMenuToClient(ent, &g_menus[10]);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[10])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				{
+					int terrPoints = 0;
+					int ctPoints = 0;
+					int goalPoints = 0;
+					int rescuePoints = 0;
+					int campPoints = 0;
+					int sniperPoints = 0;
+					int noHostagePoints = 0;
+
+					for (int i = 0; i < g_numWaypoints; i++)
+					{
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_TERRORIST)
+							terrPoints++;
+
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_COUNTER)
+							ctPoints++;
+
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_GOAL)
+							goalPoints++;
+
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_RESCUE)
+							rescuePoints++;
+
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_CAMP)
+							campPoints++;
+
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_SNIPER)
+							sniperPoints++;
+
+						if (g_waypoint->GetPath(i)->flags & WAYPOINT_NOHOSTAGE)
+							noHostagePoints++;
+					}
+					ServerPrintNoTag("Waypoints: %d - T Points: %d\n"
+						"CT Points: %d - Goal Points: %d\n"
+						"Rescue Points: %d - Camp Points: %d\n"
+						"Block Hostage Points: %d - Sniper Points: %d\n", g_numWaypoints, terrPoints, ctPoints, goalPoints, rescuePoints, campPoints, noHostagePoints, sniperPoints);
+				}
+					break;
+
+				case 2:
+					g_waypointOn = true;
+					g_autoWaypoint &= 1;
+					g_autoWaypoint ^= 1;
+
+					CenterPrint("Auto-Waypoint %s", g_autoWaypoint ? "Enabled" : "Disabled");
+					break;
+
+				case 3:
+					g_waypointOn = true;
+					DisplayMenuToClient(ent, &g_menus[13]);
+					break;
+
+				case 4:
+					if (g_waypoint->NodesValid())
+						g_waypoint->Save();
+					else
+						CenterPrint("Waypoint not saved\nThere are errors, see console");
+					break;
+
+				case 5:
+					g_waypoint->Save();
+					break;
+
+				case 6:
+					g_waypoint->Load();
+					break;
+
+				case 7:
+					if (g_waypoint->NodesValid())
+						CenterPrint("Nodes work Find");
+					else
+						CenterPrint("There are errors, see console");
+					break;
+
+				case 8:
+					ServerCommand("sypb wp on noclip");
+					break;
+
+				case 9:
+					DisplayMenuToClient(ent, &g_menus[9]);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[11])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				// SyPB Pro P.30 - SgdWP
+				if (g_sgdWaypoint)
+					DisplayMenuToClient(ent, &g_menus[21]);
+				else
+					DisplayMenuToClient(ent, null);
+
+				g_waypointOn = true;  // turn waypoints on in case
+
+				const int radiusValue[] = { 0, 8, 16, 32, 48, 64, 80, 96, 128 };
+
+				if ((selection >= 1) && (selection <= 9))
+					g_waypoint->SetRadius(radiusValue[selection - 1]);
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[0])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+					fillCommand = false;
+					DisplayMenuToClient(ent, &g_menus[2]);
+					break;
+
+				case 2:
+					DisplayMenuToClient(ent, &g_menus[1]);
+					break;
+
+				case 3:
+					fillCommand = true;
+					DisplayMenuToClient(ent, &g_menus[6]);
+					break;
+
+				case 4:
+					g_botManager->KillAll();
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[2])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+					g_botManager->AddRandom();
+					break;
+
+				case 2:
+					DisplayMenuToClient(ent, &g_menus[5]);
+					break;
+
+				case 3:
+					g_botManager->RemoveRandom();
+					break;
+
+				case 4:
+					g_botManager->RemoveAll();
+					break;
+
+				case 5:
+					g_botManager->RemoveMenu(ent, 1);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[1])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				extern ConVar sypb_debug;
+
+				switch (selection)
+				{
+				case 1:
+					DisplayMenuToClient(ent, &g_menus[3]);
+					break;
+
+				case 2:
+					DisplayMenuToClient(ent, &g_menus[9]);
+					break;
+
+				case 3:
+					DisplayMenuToClient(ent, &g_menus[4]);
+					break;
+
+				case 4:
+					sypb_debug.SetInt(sypb_debug.GetInt() ^ 1);
+					break;
+
+				case 5:
+					if (IsAlive(ent))
+						DisplayMenuToClient(ent, &g_menus[18]);
+					else
+					{
+						DisplayMenuToClient(ent, null); // reset menu display
+						CenterPrint("You're dead, and have no access to this menu");
+					}
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[18])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+				Bot *bot = null;
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+					if (FindNearestPlayer(reinterpret_cast <void **> (&bot), client->ent, 4096.0, true, true, true))
+					{
+						if (!(bot->pev->weapons & (1 << WEAPON_C4)) && !bot->HasHostage() && (bot->GetCurrentTask()->taskID != TASK_PLANTBOMB) && (bot->GetCurrentTask()->taskID != TASK_DEFUSEBOMB))
+						{
+							if (selection == 1)
+							{
+								bot->ResetDoubleJumpState();
+
+								bot->m_doubleJumpOrigin = GetEntityOrigin(client->ent);
+								bot->m_doubleJumpEntity = client->ent;
+
+								bot->PushTask(TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, engine->GetTime(), true);
+								bot->TeamSayText(FormatBuffer("Ok %s, i will help you!", STRING(ent->v.netname)));
+							}
+							else if (selection == 2)
+								bot->ResetDoubleJumpState();
+							break;
+						}
+					}
+					break;
+
+				case 3:
+				case 4:
+					if (FindNearestPlayer(reinterpret_cast <void **> (&bot), ent, 300.0, true, true, true))
+						bot->DiscardWeaponForUser(ent, selection == 4 ? false : true);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[19])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				const float autoDistanceValue[] = { 0.0f, 100.0f, 130.0f, 160.0f, 190.0f, 220.0f, 250.0f };
+
+				if (selection >= 1 && selection <= 7)
+					g_autoPathDistance = autoDistanceValue[selection - 1];
+
+				if (g_autoPathDistance == 0)
+					CenterPrint("AutoPath disabled");
+				else
+					CenterPrint("AutoPath maximum distance set to %f", g_autoPathDistance);
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[20])
+			{
+				//DisplayMenuToClient (ent, null); // reset menu display
+
+				if (g_sgdWaypoint)
+					DisplayMenuToClient(ent, &g_menus[21]);
+				else
+					DisplayMenuToClient(ent, null);
+
+				switch (selection)
+				{
+				case 1:
+					g_waypoint->CreatePath(PATHCON_OUTGOING);
+					break;
+
+				case 2:
+					g_waypoint->CreatePath(PATHCON_INCOMING);
+					break;
+
+				case 3:
+					g_waypoint->CreatePath(PATHCON_BOTHWAYS);
+					break;
+
+				case 4:
+					g_waypoint->DeletePath();
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			// SyPB Pro P.20 - SgdWP
+			else if (client->menu == &g_menus[21])
+			{
+				DisplayMenuToClient(ent, null);
+
+				// SyPB Pro P.30 - SgdWP
+				switch (selection)
+				{
+				case 1:
+					DisplayMenuToClient(ent, &g_menus[22]);  // Add Waypoint
+					break;
+
+				case 2:
+					DisplayMenuToClient(ent, &g_menus[13]); //Set Waypoint Flag
+					break;
+
+				case 3:
+					DisplayMenuToClient(ent, &g_menus[20]); // Create Path
+					break;
+
+				case 4:
+					DisplayMenuToClient(ent, &g_menus[11]); // Set Waypoint Radius
+					break;
+
+				case 5:
+					DisplayMenuToClient(ent, &g_menus[21]);
+					g_waypoint->TeleportWaypoint(); // Teleport to Waypoint
+					break;
+
+				case 6:
+					DisplayMenuToClient(ent, &g_menus[21]);
+					g_waypoint->Delete(); // Delete Waypoint 
+					break;
+
+				case 7:
+					DisplayMenuToClient(ent, &g_menus[21]);
+					g_sautoWaypoint = g_sautoWaypoint ? false : true; // Auto Put Waypoint Mode
+					g_waypoint->SetLearnJumpWaypoint(g_sautoWaypoint);
+					break;
+
+				case 9:
+					g_waypoint->SgdWp_Set("save");
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+
+				/*
+				DisplayMenuToClient (ent, null);
+
+				switch (selection)
+				{
+				case 1:
+				DisplayMenuToClient (ent, &g_menus[22]);
+				break;
+
+				case 2:
+				DisplayMenuToClient (ent, &g_menus[21]);
+				g_waypoint->Delete ();
+				break;
+
+				case 3:
+				DisplayMenuToClient (ent, &g_menus[21]);
+				g_waypoint->TeleportWaypoint ();
+				break;
+
+				case 4:  // SyPB Pro P.30 - SgdWP
+				DisplayMenuToClient(ent, &g_menus[20]);
+				break;
+
+				case 7:
+				DisplayMenuToClient(ent, &g_menus[21]);
+				g_sautoWaypoint = g_sautoWaypoint ? false : true;
+				g_waypoint->SetLearnJumpWaypoint(g_sautoWaypoint);
+				break;
+
+				case 8:
+				g_waypoint->SgdWp_Set ("off");
+				break;
+
+				case 9:
+				g_waypoint->SgdWp_Set ("save");
+				break;
+
+				case 10:
+				DisplayMenuToClient (ent, null);
+				break;
+				}
+				*/
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[22])
+			{
+				DisplayMenuToClient(ent, &g_menus[22]);
+
+				switch (selection)
+				{
+				case 1:
+					g_waypoint->Add(0);
+					g_waypoint->SetRadius(64);
+					break;
+
+				case 2:
+				case 3:
+				case 5:
+					g_waypoint->Add(selection - 1);
+					g_waypoint->SetRadius(64);
+					break;
+
+				case 4:
+					g_waypoint->Add(selection - 1);
+					g_waypoint->SetRadius(0);
+					break;
+
+				case 6:
+					g_waypoint->Add(100);
+					g_waypoint->SetRadius(32);
+					break;
+
+				case 7:
+					g_waypoint->Add(5);
+					g_waypoint->Add(6);
+					g_waypoint->SetRadius(0);
+					DisplayMenuToClient(ent, &g_menus[24]);
+					break;
+
+				case 8:
+					g_waypoint->SetLearnJumpWaypoint();
+					break;
+
+				case 9:
+					DisplayMenuToClient(ent, &g_menus[23]);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, &g_menus[21]);
+					break;
+				}
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[23])
+			{
+				DisplayMenuToClient(ent, &g_menus[23]);
+
+				switch (selection)
+				{
+				case 1:
+					g_waypoint->Add(0);
+					g_waypoint->ToggleFlags(WAYPOINT_LIFT);
+					g_waypoint->SetRadius(0);
+					break;
+
+				case 2:
+					g_waypoint->Add(5);
+					g_waypoint->Add(6);
+					g_waypoint->ToggleFlags(WAYPOINT_SNIPER);
+					g_waypoint->SetRadius(0);
+					DisplayMenuToClient(ent, &g_menus[24]);
+					break;
+
+				case 3:
+					// SyPB Pro P.29 - Zombie Mode Hm Camp Waypoints
+					g_waypoint->Add(0);
+					g_waypoint->ToggleFlags(WAYPOINT_ZMHMCAMP);
+					g_waypoint->SetRadius(64);
+					break;
+
+				case 9:
+					DisplayMenuToClient(ent, &g_menus[22]);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, &g_menus[21]);
+					break;
+				}
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[24])
+			{
+				DisplayMenuToClient(ent, &g_menus[22]);
+
+				switch (selection)
+				{
+				case 1:
+					g_waypoint->ToggleFlags(WAYPOINT_TERRORIST);
+					break;
+
+				case 2:
+					g_waypoint->ToggleFlags(WAYPOINT_COUNTER);
+					break;
+
+					break;
+				}
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[5])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				client->menu = &g_menus[4];
+
+				switch (selection)
+				{
+				case 1:
+					g_storeAddbotVars[0] = engine->RandomInt(0, 20);
+					break;
+
+				case 2:
+					g_storeAddbotVars[0] = engine->RandomInt(20, 40);
+					break;
+
+				case 3:
+					g_storeAddbotVars[0] = engine->RandomInt(40, 60);
+					break;
+
+				case 4:
+					g_storeAddbotVars[0] = engine->RandomInt(60, 80);
+					break;
+
+				case 5:
+					g_storeAddbotVars[0] = engine->RandomInt(80, 99);
+					break;
+
+				case 6:
+					g_storeAddbotVars[0] = 100;
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+
+				if (client->menu == &g_menus[4])
+					DisplayMenuToClient(ent, &g_menus[4]);
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[6] && fillCommand)
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+					// turn off cvars if specified team
+					CVAR_SET_STRING("mp_limitteams", "0");
+					CVAR_SET_STRING("mp_autoteambalance", "0");
+
+				case 5:
+					fillServerTeam = selection;
+					DisplayMenuToClient(ent, &g_menus[5]);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[4] && fillCommand)
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+					g_botManager->FillServer(fillServerTeam, selection - 2, g_storeAddbotVars[0]);
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[6])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 5:
+					g_storeAddbotVars[1] = selection;
+					if (selection == 5)
+					{
+						g_storeAddbotVars[2] = 5;
+						g_botManager->AddBot("", g_storeAddbotVars[0], g_storeAddbotVars[3], g_storeAddbotVars[1], g_storeAddbotVars[2]);
+					}
+					else
+					{
+						if (selection == 1)
+							DisplayMenuToClient(ent, &g_menus[7]);
+						else
+							DisplayMenuToClient(ent, &g_menus[8]);
+					}
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[4])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+					g_storeAddbotVars[3] = selection - 2;
+					DisplayMenuToClient(ent, &g_menus[6]);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[7] || client->menu == &g_menus[8])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+					g_storeAddbotVars[2] = selection;
+					g_botManager->AddBot("", g_storeAddbotVars[0], g_storeAddbotVars[3], g_storeAddbotVars[1], g_storeAddbotVars[2]);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[3])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+					g_botManager->SetWeaponMode(selection);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, null);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[14])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+					g_botManager->GetBot(selection - 1)->Kick();
+					break;
+
+				case 9:
+					g_botManager->RemoveMenu(ent, 2);
+					break;
+
+				case 10:
+					DisplayMenuToClient(ent, &g_menus[2]);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[15])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+					g_botManager->GetBot(selection + 8 - 1)->Kick();
+					break;
+
+				case 9:
+					g_botManager->RemoveMenu(ent, 3);
+					break;
+
+				case 10:
+					g_botManager->RemoveMenu(ent, 1);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[16])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+					g_botManager->GetBot(selection + 16 - 1)->Kick();
+					break;
+
+				case 9:
+					g_botManager->RemoveMenu(ent, 4);
+					break;
+
+				case 10:
+					g_botManager->RemoveMenu(ent, 2);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			else if (client->menu == &g_menus[17])
+			{
+				DisplayMenuToClient(ent, null); // reset menu display
+
+				switch (selection)
+				{
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+				case 8:
+					g_botManager->GetBot(selection + 24 - 1)->Kick();
+					break;
+
+				case 10:
+					g_botManager->RemoveMenu(ent, 3);
+					break;
+				}
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+		}
+	}
+
+	if (!g_isFakeCommand && (stricmp(command, "say") == 0 || stricmp(command, "say_team") == 0))
+	{
+		Bot *bot = null;
+
+		if (FStrEq(arg1, "dropme") || FStrEq(arg1, "dropc4"))
+		{
+			if (FindNearestPlayer(reinterpret_cast <void **> (&bot), ent, 300.0, true, true, true))
+				bot->DiscardWeaponForUser(ent, IsNullString(strstr(arg1, "c4")) ? false : true);
+
+			return;
+		}
+
+		bool isAlive = IsAlive(ent);
+		int team = -1;
+
+		if (FStrEq(command, "say_team"))
+			team = GetTeam(ent);
+
+		for (int i = 0; i < engine->GetMaxClients(); i++)
+		{
+			if (!(g_clients[i].flags & CFLAG_USED) || (team != -1 && team != g_clients[i].team) || isAlive != IsAlive(g_clients[i].ent))
+				continue;
+
+			Bot *iter = g_botManager->GetBot(i);
+
+			if (iter != null)
+			{
+				iter->m_sayTextBuffer.entityIndex = ENTINDEX(ent);
+
+				if (IsNullString(CMD_ARGS()))
+					continue;
+
+				strcpy(iter->m_sayTextBuffer.sayText, CMD_ARGS());
+				iter->m_sayTextBuffer.timeNextChat = engine->GetTime() + iter->m_sayTextBuffer.chatDelay;
+			}
+		}
+	}
+	int clientIndex = ENTINDEX(ent) - 1;
+
+	// check if this player alive, and issue something
+	if ((g_clients[clientIndex].flags & CFLAG_ALIVE) && g_radioSelect[clientIndex] != 0 && strncmp(command, "menuselect", 10) == 0)
+	{
+		int radioCommand = atoi(arg1);
+
+		if (radioCommand != 0)
+		{
+			radioCommand += 10 * (g_radioSelect[clientIndex] - 1);
+
+			if (radioCommand != Radio_Affirmative && radioCommand != Radio_Negative && radioCommand != Radio_ReportingIn)
+			{
+				for (int i = 0; i < engine->GetMaxClients(); i++)
+				{
+					Bot *bot = g_botManager->GetBot(i);
+
+					// validate bot
+					if (bot != null && GetTeam(bot->GetEntity()) == g_clients[clientIndex].team && VARS(ent) != bot->pev && bot->m_radioOrder == 0)
+					{
+						bot->m_radioOrder = radioCommand;
+						bot->m_radioEntity = ent;
+					}
+				}
+			}
+			g_lastRadioTime[g_clients[clientIndex].team] = engine->GetTime();
+		}
+		g_radioSelect[clientIndex] = 0;
+	}
+	else if (strncmp(command, "radio", 5) == 0)
+		g_radioSelect[clientIndex] = atoi(&command[5]);
+
+	if (g_isMetamod)
+		RETURN_META(MRES_IGNORED);
+
+	(*g_functionTable.pfnClientCommand) (ent);
 }
+
 
 void ServerActivate (edict_t *pentEdictList, int edictCount, int clientMax)
 {
@@ -2518,16 +2614,17 @@ void StartFrame (void)
 
             g_clients[i].origin = GetEntityOrigin (player);
 
-			// SyPB Pro P.26 - Get Head Origin
-			Vector hAngles;
-			(*g_engfuncs.pfnGetBonePosition) (player, 8, g_clients[i].headOrigin, hAngles);
+			// SyPB Pro P.30 - new get head origin (test)
+			Vector hAngles, hOrigin;
+			(*g_engfuncs.pfnGetBonePosition) (player, 8, hOrigin, hAngles);
+			if (hOrigin.z <= g_clients[i].origin.z)
+			{
+				hOrigin = g_clients[i].origin;
+				hOrigin.z += RANDOM_FLOAT((player->v.mins.z) / 2, (player->v.maxs.z - 3.0f));
+			}
+			g_clients[i].headOrigin = hOrigin;
 
-			if (g_clients[i].headOrigin.z <= g_clients[i].origin.z)
-				g_clients[i].headOrigin = nullvec;
-			else
-				g_clients[i].headOrigin.z += 1;
-
-            SoundSimulateUpdate (i);
+			SoundSimulateUpdate(i);
          }
 		 else
 			 g_clients[i].headOrigin = nullvec;
@@ -2545,12 +2642,27 @@ void StartFrame (void)
    g_botManager->Think ();
    // **** AI EXECUTION FINISH ****
 
-   if (!IsDedicatedServer () && !FNullEnt (g_hostEntity))
+   if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
    {
-      if (g_waypointOn)
-         g_waypoint->Think ();
+	   if (g_waypointOn)
+	   {
+		   // SyPB Pro P.30 - small change
+		   bool hasBot = false;
+		   for (int i = 0; i < engine->GetMaxClients(); i++)
+		   {
+			   if (g_botManager->GetBot(i))
+			   {
+				   hasBot = true;
+				   g_botManager->RemoveAll();
+				   break;
+			   }
+		   }
 
-      CheckWelcomeMessage ();
+		   if (!hasBot)
+			   g_waypoint->Think();
+	   }
+
+	   CheckWelcomeMessage();
    }
 
    if (secondTimer < engine->GetTime ())
@@ -3424,6 +3536,143 @@ export void Meta_Init (void)
 
    g_isMetamod = true;
 }
+
+// SyPB Pro P.30 - AMXX API
+float API_Version = 1.00;
+
+export bool Amxx_RunSypb(void) // 1.00
+{
+	API_TestMSG("Amxx_RunSypb Checking - Done");
+	return true;
+}
+
+export float Amxx_APIVersion(void) // 1.00
+{
+	API_TestMSG("Amxx_APIVersion Checking - API Version:%d - Done", API_Version);
+	return API_Version;
+}
+
+export int Amxx_IsSypb(int index) // 1.00
+{
+	index -= 1;
+	API_TestMSG("Amxx_IsSypb Checking - Done");
+	return (g_botManager->GetBot(index) != null);
+}
+
+export int Amxx_CheckEnemy(int index) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+
+	API_TestMSG("Amxx_CheckEnemy Checking - Done");
+	return (bot->m_enemy == null) ? -1 : (ENTINDEX(bot->m_enemy));
+}
+
+export int Amxx_CheckMoveTarget(int index) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+
+	API_TestMSG("Amxx_CheckMoveTarget Checking - Done");
+	return (bot->m_moveTargetEntity == null) ? -1 : (ENTINDEX(bot->m_moveTargetEntity));
+}
+
+export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
+	API_TestMSG("Amxx_SetEnemy Checking - id:%d | blockCheckTime:%.2f - Done", target, blockCheckTime);
+
+	edict_t *targetEnt = INDEXENT(target + 1);
+	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
+	{
+		bot->m_enemyAPI = null;
+		return;
+	}
+
+	bot->m_enemyAPI = targetEnt;
+}
+
+export void Amxx_SetMoveTarget(int index, int target, float blockCheckTime) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
+	API_TestMSG("Amxx_SetMoveTarget Checking - id:%d | blockCheckTime:%.2f - Done", target, blockCheckTime);
+
+	edict_t *targetEnt = INDEXENT(target + 1);
+	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
+	{
+		bot->m_moveTargetEntityAPI = null;
+		return;
+	}
+	
+	bot->m_moveTargetEntityAPI = targetEnt;
+}
+
+export void Amxx_SetBotMove(int index, int pluginSet) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_moveAIAPI = pluginSet <= 0 ? false : true;
+	API_TestMSG("Amxx_SetBotMove Checking - %d - Done", bot->m_moveAIAPI);
+}
+
+export void Amxx_SetBotLookAt(int index, Vector lookAt) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_lookAtAPI = lookAt;
+	API_TestMSG("Amxx_SetBotLookAt Checking - %.2f | %.2f | %.2f - Done", lookAt[0], lookAt[1], lookAt[2]);
+}
+
+export void Amxx_SetWeaponClip(int index, int weaponClip) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_weaponClipAPI = weaponClip;
+	API_TestMSG("Amxx_SetWeaponClip Checking - %d - Done", bot->m_weaponClipAPI);
+}
+
+export void Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.00
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_weaponReloadAPI = (blockWeaponReload == 0) ? false : true;
+	API_TestMSG("Amxx_BlockWeaponReload Checking - %s - Done", (bot->m_weaponReloadAPI) ? "True" : "False");
+}
+
+export void Amxx_AddSyPB(const char *name, int skill, int team) // 1.00
+{
+	//g_botManager->AddBot(name, skill, -1, team, -1);
+	g_botManager->AddBotAPI(name, skill, team);
+
+	API_TestMSG("Amxx_AddSyPB Checking - %s | Skill:%d  | Team:%d - Done", name, skill, team);
+}
+// AMXX SyPB API End
 
 DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t *pGlobals)
 {

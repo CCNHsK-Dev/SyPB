@@ -22,26 +22,30 @@
 // $Id:$
 //
 
+
 #ifndef RESOURCE_INCLUDED
 #define RESOURCE_INCLUDED
 
+#define SUPPORT_API_VERSION "1.00"
+
 // general product information
 #define PRODUCT_NAME "SyPB"
-#define PRODUCT_VERSION "Beta1.2.9"
+#define PRODUCT_VERSION_DWORD 1,30,220115,346
+#define PRODUCT_VERSION "Beta1.3.0"
+//#define PRODUCT_DEV_VERSION " (Dev Version 20/1)"
 //#define PRODUCT_DEV_VERSION " (Final Preview)"
 #define PRODUCT_DEV_VERSION ""
 #define PRODUCT_AUTHOR "HsK Dev-Blog @ CCN"
 #define PRODUCT_URL "http://ccnhsk-dev.blogspot.com/"
 #define PRODUCT_EMAIL "mikeg2342001@outlook.com"
 #define PRODUCT_LOGTAG "SyPB"
-#define PRODUCT_DESCRIPTION PRODUCT_NAME " v" PRODUCT_VERSION PRODUCT_DEV_VERSION
-#define PRODUCT_COPYRIGHT_YEAR "2003-2014"
-#define PRODUCT_COPYRIGHT "Copyright ?" PRODUCT_COPYRIGHT_YEAR ", by " PRODUCT_AUTHOR
-#define PRODUCT_LEGAL "Half-Life, Counter-Strike, Counter-Strike: Condition Zero, Steam, Valve is a trademark of Valve Corporation"
+#define PRODUCT_DESCRIPTION PRODUCT_NAME " v" PRODUCT_VERSION PRODUCT_DEV_VERSION " - API Version:" SUPPORT_API_VERSION
+#define PRODUCT_COPYRIGHT_YEAR "2003-2015"
+#define PRODUCT_COPYRIGHT "Copyright ?" PRODUCT_COPYRIGHT_YEAR ", by " PRODUCT_AUTHOR " & YaPB Team"
+#define PRODUCT_LEGAL "Half-Life, Counter-Strike, Steam, Valve is a trademark of Valve Corporation"
 #define PRODUCT_ORIGINAL_NAME "sypb.dll"
 #define PRODUCT_INTERNAL_NAME "sypb"
-#define PRODUCT_VERSION_DWORD 0,0,0 // major version, minor version, WIP (or Update) version, BUILD number (generated with RES file)
-#define PRODUCT_SUPPORT_VERSION "1.6 - CZ"
+#define PRODUCT_SUPPORT_VERSION "1.6"
 #define PRODUCT_DATE __DATE__
 
 // product optimization type (we're not using crt builds anymore)

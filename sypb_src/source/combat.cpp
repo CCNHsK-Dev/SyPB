@@ -56,6 +56,34 @@ int Bot::GetNearbyEnemiesNearPosition (Vector origin, int radius)
    return count;
 }
 
+// SyPB Pro P.30 - Find Enemy Ai
+float Bot::GetEntityDistance(edict_t *entity, bool checkWP)
+{
+	if (FNullEnt(entity))
+		return 9999.9f;
+
+	if (!IsZombieBot (GetEntity ()))
+		return ((pev->origin - entity->v.origin).GetLength());
+
+	if (!FNullEnt (m_enemy) && entity == m_enemy)
+		return ((pev->origin - entity->v.origin).GetLength());
+
+	int wpIndex = g_waypoint->FindNearest(pev->origin);
+	int targetWpIndex = g_waypoint->FindNearest(entity->v.origin);
+	float trDistance = ((pev->origin - entity->v.origin).GetLength());
+	if (checkWP)
+		trDistance = -1;
+
+	if (wpIndex < 0 || wpIndex >= g_numWaypoints || targetWpIndex < 0 || targetWpIndex >= g_numWaypoints)
+		return trDistance;
+
+	float distance = g_waypoint->GetPathDistanceFloat(wpIndex, targetWpIndex);
+	if (distance == 1 || distance < trDistance)
+		return trDistance;
+
+	return distance;
+}
+
 // SyPB Pro P.29 - new Look UP Enemy
 bool Bot::LookupEnemy(void)
 {
@@ -86,7 +114,39 @@ bool Bot::LookupEnemy(void)
 	edict_t *entity = null, *targetEntity = null;
 	float enemy_distance = 9999.0f;
 
-	Vector vOrg = pev->origin;
+	// SyPB Pro P.30 - AMXX API
+	if (m_blockCheckEnemyTime > engine->GetTime())
+	{
+		if (!FNullEnt(m_moveTargetEntityAPI))
+		{
+			if (GetTeam(GetEntity()) != GetTeam(m_moveTargetEntityAPI) && IsAlive(m_moveTargetEntityAPI))
+				SetMoveTarget(m_moveTargetEntityAPI);
+			else
+				m_moveTargetEntityAPI = null;
+		}
+		else if (!FNullEnt(m_enemyAPI))
+		{
+			if (GetTeam(GetEntity()) != GetTeam(m_enemyAPI) && IsAlive(m_enemyAPI))
+			{
+				m_targetEntity = null;
+				m_enemy = m_enemyAPI;
+				m_lastEnemy = m_enemy;
+				m_lastEnemyOrigin = GetEntityOrigin(m_enemy);
+				m_enemyReachableTimer = 0.0f;
+				m_seeEnemyTime = engine->GetTime();
+
+				if (!IsEnemyViewable(m_enemy, 1))
+					m_enemyOrigin = GetEntityOrigin(m_enemy);
+
+				return true;
+			}
+			else
+				m_enemyAPI = null;
+		}
+		return false;
+	}
+	m_enemyAPI = null;
+	m_moveTargetEntityAPI = null;
 
 	if (!FNullEnt(m_enemy))
 	{
@@ -99,10 +159,10 @@ bool Bot::LookupEnemy(void)
 			return true;
 		}
 
-		if (IsEnemyViewable (m_enemy))
+		if (IsEnemyViewable (m_enemy, 1))
 		{
 			targetEntity = m_enemy;
-			enemy_distance = (m_enemy->v.origin - pev->origin).GetLength();
+			enemy_distance = GetEntityDistance(m_enemy);
 		}
 	}
 	else if (!FNullEnt(m_moveTargetEntity))
@@ -115,7 +175,7 @@ bool Bot::LookupEnemy(void)
 
 		targetEntity = m_moveTargetEntity;
 		m_moveTargetOrigin = m_moveTargetEntity->v.origin;
-		enemy_distance = (m_moveTargetOrigin - pev->origin).GetLength();
+		enemy_distance = GetEntityDistance(m_moveTargetEntity);
 	}
 
 	for (i = 1; i <= engine->GetMaxClients(); i++)
@@ -131,14 +191,11 @@ bool Bot::LookupEnemy(void)
 		if (m_blindRecognizeTime >= engine->GetTime())
 			continue;
 
-		float distance = (GetEntityOrigin(entity) - pev->origin).GetLength();
+		float distance = GetEntityDistance(entity);
 		if (distance >= enemy_distance)
 			continue;
 
 		if (IsEnemyProtectedByShield(entity))
-			continue;
-
-		if (!(ENGINE_CHECK_VISIBILITY(entity, (ENGINE_SET_PVS(reinterpret_cast <float *> (&vOrg))))))
 			continue;
 
 		if (IsEnemyViewable(entity))
@@ -161,22 +218,27 @@ bool Bot::LookupEnemy(void)
 			if (FNullEnt(entity) || entity == m_enemy)
 				continue;
 
-			float distance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-			if (distance >= enemy_distance || !(ItemIsVisible(GetEntityOrigin(entity), const_cast <char *> (STRING(entity->v.classname)))))
+			float distance = GetEntityDistance(entity);
+			if (distance >= enemy_distance)
 				continue;
 
 			if (IsBehindSmokeClouds(entity) && m_blindRecognizeTime < engine->GetTime())
 				m_blindRecognizeTime = engine->GetTime() + engine->RandomFloat(2.0, 3.0f);
 
-			enemy_distance = distance;
-			targetEntity = entity;
+			// SyPB Pro P.30 - NPC Fixed
+			if (IsEnemyViewable(entity))
+			{
+				enemy_distance = distance;
+				targetEntity = entity;
+			}
 		}
 	}
 
 
 	if (!FNullEnt(targetEntity))  // Last Checking
 	{
-		if (GetTeam(targetEntity) == team || !IsEnemyViewable(targetEntity))
+		enemy_distance = GetEntityDistance(targetEntity);
+		if (GetTeam(targetEntity) == team || !IsEnemyViewable(targetEntity, 1))
 			targetEntity = null;
 	}
 
@@ -185,18 +247,18 @@ bool Bot::LookupEnemy(void)
 		if (FNullEnt(targetEntity))  // Has not new enemy, and cannot see old enemy
 		{
 			g_botsCanPause = false;
+			RemoveCertainTask(TASK_MOVETOTARGET);
 			SetMoveTarget(m_enemy);
 			return false;
 		}
-
-		if (targetEntity != m_enemy)
+		// SyPB Pro P.30 - Zombie Ai
+		else if (targetEntity != m_enemy)
 		{
-			float distance = (m_enemy->v.origin - pev->origin).GetLength();
-			if (distance < enemy_distance && enemy_distance >= 150)
+			float distance = GetEntityDistance(m_enemy);
+			if (enemy_distance + 50.0f >= distance)
 			{
-				g_botsCanPause = false;
-				SetMoveTarget(m_enemy);
-				return false;
+				targetEntity = m_enemy;
+				enemy_distance = distance;
 			}
 		}
 	}
@@ -205,7 +267,25 @@ bool Bot::LookupEnemy(void)
 	{
 		if (IsZombieBot(GetEntity()))
 		{
-			if (enemy_distance >= 150)
+			// SyPB Pro P.30 - Zombie Ai
+			enemy_distance = GetEntityDistance(targetEntity, 1);
+
+			if (targetEntity == m_moveTargetEntity && (m_navNode == null || m_navNode->next == null))
+				enemy_distance = -1;
+
+			float forCheckR = 0;
+			int targetWpIndex = g_waypoint->FindNearest(targetEntity->v.origin);
+			float distance = (g_waypoint->m_paths[targetWpIndex]->origin - pev->origin).GetLength();
+			if (targetWpIndex >= 0 && targetWpIndex < g_numWaypoints)
+				forCheckR = (g_waypoint->m_paths[targetWpIndex]->radius);
+			
+			if (forCheckR <= 10.0)
+				forCheckR += 5.0f;
+			else if (targetEntity == m_enemy)
+				forCheckR *= 1.5;
+
+			if (enemy_distance != -1 && distance >= forCheckR &&
+				((pev->origin - targetEntity->v.origin).GetLength ()) > 150)
 			{
 				g_botsCanPause = false;
 				SetMoveTarget(targetEntity);
@@ -219,6 +299,9 @@ bool Bot::LookupEnemy(void)
 		if (targetEntity == m_enemy)
 		{
 			m_seeEnemyTime = engine->GetTime();
+
+			if (IsZombieBot(GetEntity()))
+				m_enemyUpdateTime = engine->GetTime() + 1.0f;
 
 			m_actualReactionTime = 0.0f;
 			m_lastEnemy = targetEntity;
@@ -244,7 +327,7 @@ bool Bot::LookupEnemy(void)
 		m_lastEnemyOrigin = GetEntityOrigin(m_enemy);
 		m_enemyReachableTimer = 0.0f;
 		m_seeEnemyTime = engine->GetTime();
-		m_enemyUpdateTime = engine->GetTime() + 0.25f;
+		m_enemyUpdateTime = (IsZombieBot(GetEntity()) ? engine->GetTime() + 2.5f : engine->GetTime() + 0.25f);
 
 		return true;
 	}
@@ -270,17 +353,24 @@ bool Bot::LookupEnemy(void)
 Vector Bot::GetAimPosition(void)
 {
 	if (IsZombieBot(GetEntity()))
-		return m_enemyOrigin = m_lastEnemyOrigin = m_enemy->v.origin;
+		return m_enemyOrigin = m_lastEnemyOrigin = GetEntityOrigin (m_enemy);
 
-	Vector enemyOrigin = m_enemy->v.origin;
+	//Vector enemyOrigin = m_enemy->v.origin;
+
+	// SyPB Pro P.30 - Fix Bugs
+	Vector enemyOrigin = GetEntityOrigin(m_enemy);
+	if (enemyOrigin == nullvec)
+		return m_enemyOrigin = m_lastEnemyOrigin;
+
 	Vector headOrigin = enemyOrigin;
 
-	if (IsValidPlayer(m_enemy))
-	{
-		int client = ENTINDEX(m_enemy) - 1;
-		if (g_clients[client].headOrigin != nullvec)
-			headOrigin = g_clients[client].headOrigin;
-	}
+	// SyPB Pro P.30 - NPC Fixed
+	if (!IsValidPlayer(m_enemy))
+		return m_enemyOrigin = m_lastEnemyOrigin = m_enemy->v.origin;
+
+	int client = ENTINDEX(m_enemy) - 1;
+	if (g_clients[client].headOrigin != nullvec)
+		headOrigin = g_clients[client].headOrigin;
 
 	if ((m_states & STATE_SUSPECTENEMY) && !(m_states & STATE_SEEINGENEMY))
 	{
@@ -752,21 +842,16 @@ WeaponSelectEnd:
 	  // SyPB Pro P.26 - Sniper Skill
 	  if (UsesSniper())
 	  {
-		  // SyPB Pro P.29 - Sniper Skill
-		  if (pev->velocity.GetLength() == 0.0f)
-			  m_sniperReady = true;
-		  else
-			  m_sniperReady = false;
-
-		  if (!m_sniperReady)
+		  // SyPB Pro P.30 - Sniper Skill
+		  if (pev->velocity.GetLength() != 0.0f)
 		  {
+			  m_moveSpeed = 0.0f;
+			  m_strafeSpeed = 0.0f;
+			  m_checkTerrain = false;
 			  m_shootTime = engine->GetTime() + 0.1f;
-			  m_sniperReady = true;
 			  return;
 		  }
 	  }
-	  else
-		  m_sniperReady = false;
 
       if (selectTab[chosenWeaponIndex].primaryFireHold)
       {
@@ -775,11 +860,8 @@ WeaponSelectEnd:
 
          pev->button |= IN_ATTACK;  // use primary attack
       }
-	  else if ((m_sniperReady && UsesSniper()) || (!m_sniperReady && !UsesSniper()))
+	  else
       {  
-		  if (m_sniperReady)
-			  m_sniperReady = false;
-
 		  pev->button |= IN_ATTACK;  // use primary attack
 		  
 		  m_shootTime = engine->GetTime () + baseDelay + engine->RandomFloat (minDelay, maxDelay);
@@ -816,23 +898,6 @@ void Bot::FocusEnemy (void)
    Vector enemyOrigin = GetAimPosition ();
    m_lookAt = enemyOrigin;
 
-   /*
-   // SyPB Pro P.23 - Debug
-   if (!FNullEnt (m_enemy) && IsAlive (m_enemy) && !(EntityIsVisible(GetEntityOrigin (m_enemy))) && !IsShootableThruObstacle(GetEntityOrigin (m_enemy)))
-   {
-	   // SyPB Pro P.24 - Move Target
-	   if (IsZombieBot (GetEntity ()))
-	   {
-	   	   g_botsCanPause = false;
-	   	   SetMoveTarget (m_enemy);
-	   }
-   	   
-	   m_enemy = null;
-	   m_wantsToFire = false;
-
-	   return;
-   }
-    */
    if (m_enemySurpriseTime > engine->GetTime ())
       return;
 
@@ -879,7 +944,7 @@ void Bot::FocusEnemy (void)
    }
 }
 
-// SyPB Pro P.26 - Attack Ai
+// SyPB Pro P.30 - Attack Ai
 void Bot::CombatFight(void)
 {
 	if (FNullEnt(m_enemy))
@@ -888,209 +953,235 @@ void Bot::CombatFight(void)
 	if (m_currentWeapon == WEAPON_KNIFE)
 		m_destOrigin = GetEntityOrigin(m_enemy);
 
-	Vector enemyOrigin = (m_lookAt - EyePosition()).SkipZ();
-	float distance = enemyOrigin.GetLength();  // how far away is the enemy scum?
-
-	if (!IsZombieBot(GetEntity()))
+	// SyPB Pro P.30 - Zombie Mod
+	if (GetGameMod() == 2)
 	{
-		if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
+		m_currentWaypointIndex = -1;
+		m_prevGoalIndex = -1;
+		m_moveToGoal = false;
+		m_navTimeset = engine->GetTime();
+		
+
+		if (IsZombieBot(GetEntity()))
+		{
+			m_moveSpeed = pev->maxspeed; 
+			return;
+		}
+	}
+
+	Vector enemyOrigin = m_enemy->v.origin;
+	float distance = (pev->origin - enemyOrigin).GetLength();
+
+	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
+	{
+		if (GetGameMod() == 2)
+		{
+			float baseDistance = 600.0f;
+
+			if (::IsInViewCone(pev->origin, m_enemy))
+			{
+				if (m_currentWeapon == WEAPON_KNIFE)
+					baseDistance = 450.0f;
+				else
+					baseDistance = 400.0f;
+			}
+			else
+			{
+				if (m_currentWeapon == WEAPON_KNIFE)
+					baseDistance = -1.0f;
+				else
+					baseDistance = 300.0f;
+			}
+
+			if (baseDistance != -1.0f)
+			{
+				int fdPlayer = GetNearbyFriendsNearPosition(pev->origin, (baseDistance > 0.0f) ? int(baseDistance) / 2 : 300);
+				int enPlayer = GetNearbyEnemiesNearPosition(enemyOrigin, (baseDistance > 0.0f) ? int(baseDistance) : 400);
+
+				baseDistance -= (fdPlayer * 10.0f);
+				baseDistance += (enPlayer * 20.0f);
+
+				if (baseDistance <= 0.0f)
+					baseDistance = 50.0f;
+			}
+
+			if (baseDistance < 0.0f)
+				m_moveSpeed = pev->maxspeed;
+			else
+			{
+				if (distance <= baseDistance)
+					m_moveSpeed = -pev->maxspeed;
+				else if (distance >= (baseDistance + 100.0f))
+					m_moveSpeed = 0.0f;
+			}
+
+			if (m_moveSpeed > 0.0f)
+			{
+				if (baseDistance != -1.0f)
+				{
+					if (distance <= 100)
+						m_moveSpeed = -pev->maxspeed;
+					else
+						m_moveSpeed = 0.0f;
+				}
+			}
+		}
+		else if (GetGameMod() == 1)
 		{
 			if (m_currentWeapon == WEAPON_KNIFE)
-				return;
+				m_moveSpeed = pev->maxspeed;
+			else
+				m_moveSpeed = 0.0f;
+		}
+		else
+		{
+			int approach;
 
-			if (GetGameMod() == 2)
-			{
-				// SyPB Pro P.27 - Zombie Mode
-				if (distance <= 400.f || m_currentWeapon == WEAPON_KNIFE)
-				{
-					m_moveSpeed = -pev->maxspeed;
-					m_duckTime = engine->GetTime() - 0.2f;
-				}
-				else
-				{
-					m_moveSpeed = 0.0f;
-					m_duckTime = engine->GetTime() + 0.2f;
-				}
-			}
+			if ((m_states & STATE_SUSPECTENEMY) && !(m_states & STATE_SEEINGENEMY)) // if suspecting enemy stand still
+				approach = 49;
+			else if (m_isReloading || m_isVIP) // if reloading or vip back off
+				approach = 29;
+			else if (m_currentWeapon == WEAPON_KNIFE) // knife?
+				approach = 100;
 			else
 			{
-				int approach;
+				approach = static_cast <int> (pev->health * m_agressionLevel);
 
-				if ((m_states & STATE_SUSPECTENEMY) && !(m_states & STATE_SEEINGENEMY)) // if suspecting enemy stand still
+				if (UsesSniper() && (approach > 49))
 					approach = 49;
-				else if (m_isReloading || m_isVIP) // if reloading or vip back off
-					approach = 29;
-				else if (m_currentWeapon == WEAPON_KNIFE) // knife?
-					approach = 100;
+			}
+
+			// only take cover when bomb is not planted and enemy can see the bot or the bot is VIP
+			if (approach < 30 && !g_bombPlanted && (::IsInViewCone(pev->origin, m_enemy) && !UsesSniper () || m_isVIP))
+			{
+				m_moveSpeed = -pev->maxspeed;
+
+				GetCurrentTask()->taskID = TASK_SEEKCOVER;
+				GetCurrentTask()->canContinue = true;
+				GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
+			}
+			else if (approach < 50)
+				m_moveSpeed = 0.0f;
+			else if (GetGameMod() != 2)
+				m_moveSpeed = pev->maxspeed;
+
+			if (distance < 96 && m_currentWeapon != WEAPON_KNIFE)
+				m_moveSpeed = -pev->maxspeed;
+		}
+
+
+		if (UsesSniper())
+		{
+			m_fightStyle = 1;
+			m_lastFightStyleCheck = engine->GetTime();
+		}
+		else if (UsesRifle() || UsesSubmachineGun())
+		{
+			if (m_lastFightStyleCheck + 3.0f < engine->GetTime())
+			{
+				int rand = engine->RandomInt(1, 100);
+
+				if (distance < 450)
+					m_fightStyle = 0;
+				else if (distance < 1024)
+				{
+					if (rand < (UsesSubmachineGun() ? 50 : 30))
+						m_fightStyle = 0;
+					else
+						m_fightStyle = 1;
+				}
 				else
 				{
-					approach = static_cast <int> (pev->health * m_agressionLevel);
-
-					if (UsesSniper() && (approach > 49))
-						approach = 49;
-				}
-
-				// only take cover when bomb is not planted and enemy can see the bot or the bot is VIP
-				if (approach < 30 && !g_bombPlanted && (::IsInViewCone(pev->origin, m_enemy) || m_isVIP))
-				{
-					m_moveSpeed = -pev->maxspeed;
-
-					GetCurrentTask()->taskID = TASK_SEEKCOVER;
-					GetCurrentTask()->canContinue = true;
-					GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
-				}
-				else if (approach < 50)
-					m_moveSpeed = 0.0f;
-				else if (GetGameMod() != 2)
-					m_moveSpeed = pev->maxspeed;
-
-				if (distance < 96 && m_currentWeapon != WEAPON_KNIFE)
-					m_moveSpeed = -pev->maxspeed;
-			}
-
-			if (UsesSniper())
-			{
-				m_fightStyle = 1;
-				m_lastFightStyleCheck = engine->GetTime();
-			}
-			else if (UsesRifle() || UsesSubmachineGun())
-			{
-				if (m_lastFightStyleCheck + 3.0f < engine->GetTime())
-				{
-					int rand = engine->RandomInt(1, 100);
-
-					if (distance < 450)
-						m_fightStyle = 0;
-					else if (distance < 1024)
-					{
-						if (rand < (UsesSubmachineGun() ? 50 : 30))
-							m_fightStyle = 0;
-						else
-							m_fightStyle = 1;
-					}
-					else
-					{
-						if (rand < (UsesSubmachineGun() ? 80 : 93))
-							m_fightStyle = 1;
-						else
-							m_fightStyle = 0;
-					}
-					m_lastFightStyleCheck = engine->GetTime();
-				}
-			}
-			else
-			{
-				if (m_lastFightStyleCheck + 3.0f < engine->GetTime())
-				{
-					if (engine->RandomInt(0, 100) < 65)
+					if (rand < (UsesSubmachineGun() ? 80 : 93))
 						m_fightStyle = 1;
 					else
 						m_fightStyle = 0;
-
-					m_lastFightStyleCheck = engine->GetTime();
 				}
-			}
-
-			if ((pev->button & IN_RELOAD) || (m_isReloading) || (m_skill >= 70 && m_fightStyle && distance < 800.0f) ||
-				(GetGameMod() == 2 && distance < 400.0f))
-			{
-				if (m_strafeSetTime < engine->GetTime())
-				{
-					// to start strafing, we have to first figure out if the target is on the left side or right side
-					MakeVectors(m_enemy->v.v_angle);
-
-					Vector dirToPoint = (pev->origin - GetEntityOrigin(m_enemy)).Normalize2D();
-					Vector rightSide = g_pGlobals->v_right.Normalize2D();
-
-					if ((dirToPoint | rightSide) < 0)
-						m_combatStrafeDir = 1;
-					else
-						m_combatStrafeDir = 0;
-
-					if (engine->RandomInt(1, 100) < 30)
-						m_combatStrafeDir ^= 1;
-
-					m_strafeSetTime = engine->GetTime() + engine->RandomFloat(0.5, 2.5);
-				}
-
-				if (m_combatStrafeDir == 0)
-				{
-					if (!CheckWallOnLeft())
-						m_strafeSpeed = -160.0f;
-					else
-					{
-						m_combatStrafeDir ^= 1;
-						m_strafeSetTime = engine->GetTime() + 0.7f;
-					}
-				}
-				else
-				{
-					if (!CheckWallOnRight())
-						m_strafeSpeed = 160.0f;
-					else
-					{
-						m_combatStrafeDir ^= 1;
-						m_strafeSetTime = engine->GetTime() + 1.0f;
-					}
-				}
-
-				if (m_skill > 80 && (m_jumpTime + 5.0f < engine->GetTime() && IsOnFloor() && engine->RandomInt(0, 1000) < (m_isReloading ? 8 : 2) && pev->velocity.GetLength2D() > 150.0f))
-					pev->button |= IN_JUMP;
-
-				// SyPB Pro P.29 - Bot Attack skill
-				if (GetGameMod() == 0)
-				{
-					if ((m_wantsToFire || m_sniperReady) && distance > 150.0f &&
-						(m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f))
-					{
-						m_moveSpeed = 0.0f;
-						m_strafeSpeed = 0.0f;
-					}
-				}
-				else if (GetGameMod() == 1)
-				{
-					if (((m_wantsToFire && distance > 600.0f) || (m_sniperReady && distance > 150.0f)) &&
-						(m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f))
-					{
-						m_moveSpeed = 0.0f;
-						m_strafeSpeed = 0.0f;
-					}
-				}
-				else if (GetGameMod() == 2)
-				{
-					if ((m_sniperReady && distance > 400.0f) || (m_wantsToFire && distance > 800.0f))
-					{
-						m_moveSpeed = 0.0f;
-						m_strafeSpeed = 0.0f;
-					}
-				}
-			}
-			else if (GetGameMod() == 2)
-				m_strafeSpeed = 0.0f;
-			else if (m_fightStyle == 1)
-			{
-				bool shouldDuck = true; // should duck
-
-				// check the enemy height
-				float enemyHalfHeight = ((m_enemy->v.flags & FL_DUCKING) == FL_DUCKING ? 36.0f : 72.0f) / 2;
-
-				// check center/feet
-				if (!IsVisible(GetEntityOrigin(m_enemy), GetEntity()) && !IsVisible(GetEntityOrigin(m_enemy) + Vector(0, 0, -enemyHalfHeight), GetEntity()))
-					shouldDuck = false;
-
-				int nearestToEnemyPoint = g_waypoint->FindNearest(GetEntityOrigin(m_enemy));
-
-				if (shouldDuck && GetCurrentTask()->taskID != TASK_SEEKCOVER && GetCurrentTask()->taskID != TASK_HUNTENEMY && (m_visibility & VISIBILITY_BODY) && !(m_visibility & VISIBILITY_OTHER) && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
-					m_duckTime = engine->GetTime() + m_frameInterval * 3.5f;
-
-				m_moveSpeed = 0.0f;
-				m_strafeSpeed = 0.0f;
-				m_navTimeset = engine->GetTime();
+				m_lastFightStyleCheck = engine->GetTime();
 			}
 		}
+		else
+		{
+			if (m_lastFightStyleCheck + 3.0f < engine->GetTime())
+			{
+				if (engine->RandomInt(0, 100) < 65)
+					m_fightStyle = 1;
+				else
+					m_fightStyle = 0;
+
+				m_lastFightStyleCheck = engine->GetTime();
+			}
+		}
+
+		if (((pev->button & IN_RELOAD) || (m_isReloading) || (m_skill >= 70 && m_fightStyle && distance < 800.0f)) &&
+			GetGameMod () != 2 && GetGameMod () != 4)
+		{
+			if (m_strafeSetTime < engine->GetTime())
+			{
+				// to start strafing, we have to first figure out if the target is on the left side or right side
+				MakeVectors(m_enemy->v.v_angle);
+
+				Vector dirToPoint = (pev->origin - GetEntityOrigin(m_enemy)).Normalize2D();
+				Vector rightSide = g_pGlobals->v_right.Normalize2D();
+
+				if ((dirToPoint | rightSide) < 0)
+					m_combatStrafeDir = 1;
+				else
+					m_combatStrafeDir = 0;
+
+				if (engine->RandomInt(1, 100) < 30)
+					m_combatStrafeDir ^= 1;
+
+				m_strafeSetTime = engine->GetTime() + engine->RandomFloat(0.5, 2.5);
+			}
+
+			if (m_combatStrafeDir == 0)
+			{
+				if (!CheckWallOnLeft())
+					m_strafeSpeed = -160.0f;
+				else
+				{
+					m_combatStrafeDir ^= 1;
+					m_strafeSetTime = engine->GetTime() + 0.7f;
+				}
+			}
+			else
+			{
+				if (!CheckWallOnRight())
+					m_strafeSpeed = 160.0f;
+				else
+				{
+					m_combatStrafeDir ^= 1;
+					m_strafeSetTime = engine->GetTime() + 1.0f;
+				}
+			}
+
+			if (m_skill > 80 && (m_jumpTime + 5.0f < engine->GetTime() && IsOnFloor() && engine->RandomInt(0, 1000) < (m_isReloading ? 8 : 2) && pev->velocity.GetLength2D() > 150.0f))
+				pev->button |= IN_JUMP;
+		}
+		else if ((GetGameMod() != 2 && m_fightStyle) || (m_fightStyle && m_moveSpeed == 0.0f))
+		{
+			bool shouldDuck = true; // should duck
+
+			// check the enemy height
+			float enemyHalfHeight = ((m_enemy->v.flags & FL_DUCKING) == FL_DUCKING ? 36.0f : 72.0f) / 2;
+
+			// check center/feet
+			if (!IsVisible(GetEntityOrigin(m_enemy), GetEntity()) && !IsVisible(GetEntityOrigin(m_enemy) + Vector(0, 0, -enemyHalfHeight), GetEntity()))
+				shouldDuck = false;
+
+			int nearestToEnemyPoint = g_waypoint->FindNearest(GetEntityOrigin(m_enemy));
+
+			if (shouldDuck && GetCurrentTask()->taskID != TASK_SEEKCOVER && GetCurrentTask()->taskID != TASK_HUNTENEMY && (m_visibility & VISIBILITY_BODY) && !(m_visibility & VISIBILITY_OTHER) && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
+				m_duckTime = engine->GetTime() + m_frameInterval * 3.5f;
+
+			m_moveSpeed = 0.0f;
+			m_strafeSpeed = 0.0f;
+			m_navTimeset = engine->GetTime();
+		}
+		else
+			m_strafeSpeed = 0.0f;
 	}
-	else
-		m_moveSpeed = pev->maxspeed;
 
 	if (m_duckTime > engine->GetTime())
 	{
@@ -1098,7 +1189,10 @@ void Bot::CombatFight(void)
 		m_strafeSpeed = 0.0f;
 	}
 
-	if (m_moveSpeed != 0.0f && GetGameMod() != 2 && !IsZombieBot (GetEntity ()))
+	if (GetGameMod() == 2)
+		return;
+
+	if (m_moveSpeed != 0.0f)
 		m_moveSpeed = GetWalkSpeed();
 
 	if (m_isReloading)
@@ -1342,7 +1436,7 @@ void Bot::SelectWeaponbyNumber (int num)
 void Bot::AttachToUser (void)
 {
 	// SyPB Pro P.29 - small change
-	if (IsZombieBot(GetEntity()))
+	if (GetGameMod () != 0)
 		return;
 
 	/*
@@ -1442,6 +1536,13 @@ void Bot::CheckReload (void)
       return;
    }
 
+   // SyPB Pro P.30 - AMXX API
+   if (m_weaponReloadAPI)
+   {
+	   m_reloadState = RSTATE_NONE;
+	   return;
+   }
+
    m_isReloading = false;    // update reloading status
    m_reloadCheckTime = engine->GetTime () + 1.0f;
 
@@ -1534,6 +1635,10 @@ void Bot::CheckReload (void)
          maxClip = 7;
          break;
       }
+
+	  // SyPB Pro P.30 - AMXX API
+	  if (m_weaponClipAPI > 0)
+		  maxClip = m_weaponClipAPI;
 
       if (m_ammoInClip[weaponIndex] < (maxClip * 0.8) && m_ammo[g_weaponDefs[weaponIndex].ammo1] > 0)
       {

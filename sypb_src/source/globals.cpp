@@ -250,291 +250,313 @@ FireDelay g_fireDelay[Const_NumWeapons + 1] =
 // bot menus
 MenuText g_menus[25] =
 {
-   // main menu
-   {
-      0x2ff,
-      "\\ySyPB Main Menu\\w\v\v"
-      "1. SyPB Control\v"
-      "2. Features\v\v"
-      "3. Fill Server\v"
-      "4. End Round\v\v"
-      "0. Exit"
-   },
+	// main menu
+	{
+		0x2ff,
+		"\\ySyPB Main Menu\\w\v\v"
+		"1. SyPB Control\v"
+		"2. Features\v\v"
+		"3. Fill Server\v"
+		"4. End Round\v\v"
+		"0. Exit"
+	},
 
-   // bot features menu
-   {
-      0x25f,
-      "\\ySyPB Features\\w\v\v"
-      "1. Weapon Mode Menu\v"
-      "2. Waypoint Menu\v"
-      "3. Select Personality\v\v"
-      "4. Toggle Debug Mode\v"
-      "5. Command Menu\v\v"
-      "0. Exit"
-   },
+	// bot features menu
+	{
+		0x25f,
+		"\\ySyPB Features\\w\v\v"
+		"1. Weapon Mode Menu\v"
+		"2. Waypoint Menu\v"
+		"3. Select Personality\v\v"
+		"4. Toggle Debug Mode\v"
+		"5. Command Menu\v\v"
+		"0. Exit"
+	},
 
-   // bot control menu
-   {
-      0x2ff,
-      "\\ySyPB Control Menu\\w\v\v"
-      "1. Add a Bot, Quick\v"
-      "2. Add a Bot, Specified\v\v"
-      "3. Remove Random Bot\v"
-      "4. Remove All Bots\v\v"
-      "5. Remove Bot Menu\v\v"
-      "0. Exit"
-   },
+	// bot control menu
+	{
+		0x2ff,
+		"\\ySyPB Control Menu\\w\v\v"
+		"1. Add a Bot, Quick\v"
+		"2. Add a Bot, Specified\v\v"
+		"3. Remove Random Bot\v"
+		"4. Remove All Bots\v\v"
+		"5. Remove Bot Menu\v\v"
+		"0. Exit"
+	},
 
-   // weapon mode select menu
-   {
-      0x27f,
-      "\\ySyPB Weapon Mode\\w\v\v"
-      "1. Knives only\v"
-      "2. Pistols only\v"
-      "3. Shotguns only\v"
-      "4. Machine Guns only\v"
-      "5. Rifles only\v"
-      "6. Sniper Weapons only\v"
-      "7. All Weapons\v\v"
-      "0. Exit"
-   },
+	// weapon mode select menu
+	{
+		0x27f,
+		"\\ySyPB Weapon Mode\\w\v\v"
+		"1. Knives only\v"
+		"2. Pistols only\v"
+		"3. Shotguns only\v"
+		"4. Machine Guns only\v"
+		"5. Rifles only\v"
+		"6. Sniper Weapons only\v"
+		"7. All Weapons\v\v"
+		"0. Exit"
+	},
 
-   // personality select menu
-   {
-      0x20f,
-      "\\ySyPB Personality\\w\v\v"
-      "1. Random\v"
-      "2. Normal\v"
-      "3. Aggressive\v"
-      "4. Careful\v\v"
-      "0. Exit"
-   },
+	// personality select menu
+	{
+		0x20f,
+		"\\ySyPB Personality\\w\v\v"
+		"1. Random\v"
+		"2. Normal\v"
+		"3. Aggressive\v"
+		"4. Careful\v\v"
+		"0. Exit"
+	},
 
-   // skill select menu
-   {
-      0x23f,
-      "\\ySyPB Skill Level\\w\v\v"
-      "1. Stupid (0-20)\v"
-      "2. Newbie (20-40)\v"
-      "3. Average (40-60)\v"
-      "4. Advanced (60-80)\v"
-      "5. Professional (80-99)\v"
-      "6. Godlike (100)\v\v"
-      "0. Exit"
-   },
+	// skill select menu
+	{
+		0x23f,
+		"\\ySyPB Skill Level\\w\v\v"
+		"1. Stupid (0-20)\v"
+		"2. Newbie (20-40)\v"
+		"3. Average (40-60)\v"
+		"4. Advanced (60-80)\v"
+		"5. Professional (80-99)\v"
+		"6. Godlike (100)\v\v"
+		"0. Exit"
+	},
 
-   // team select menu
-   {
-      0x213,
-      "\\ySelect a team\\w\v\v"
-      "1. Terrorist Force\v"
-      "2. Counter-Terrorist Force\v\v"
-      "5. Auto-select\v\v"
-      "0. Exit"
-   },
+	// team select menu
+	{
+		0x213,
+		"\\ySelect a team\\w\v\v"
+		"1. Terrorist Force\v"
+		"2. Counter-Terrorist Force\v\v"
+		"5. Auto-select\v\v"
+		"0. Exit"
+	},
 
-   // terrorist model select menu
-   {
-      0x21f,
-      "\\ySelect an appearance\\w\v\v"
-      "1. Phoenix Connexion\v"
-      "2. L337 Krew\v"
-      "3. Arctic Avengers\v"
-      "4. Guerilla Warfare\v\v"
-      "5. Auto-select\v\v"
-      "0. Exit"
-   },
+	// terrorist model select menu
+	{
+		0x21f,
+		"\\ySelect an appearance\\w\v\v"
+		"1. Phoenix Connexion\v"
+		"2. L337 Krew\v"
+		"3. Arctic Avengers\v"
+		"4. Guerilla Warfare\v\v"
+		"5. Auto-select\v\v"
+		"0. Exit"
+	},
 
-   // counter-terrirust model select menu
-   {
-      0x21f,
-      "\\ySelect an appearance\\w\v\v"
-      "1. Seal Team 6 (DEVGRU)\v"
-      "2. German GSG-9\v"
-      "3. UK SAS\v"
-      "4. French GIGN\v\v"
-      "5. Auto-select\v\v"
-      "0. Exit"
-   },
+	// counter-terrirust model select menu
+	{
+		0x21f,
+		"\\ySelect an appearance\\w\v\v"
+		"1. Seal Team 6 (DEVGRU)\v"
+		"2. German GSG-9\v"
+		"3. UK SAS\v"
+		"4. French GIGN\v\v"
+		"5. Auto-select\v\v"
+		"0. Exit"
+	},
 
-   // main waypoint menu
-   {
-      0x3ff,
-      "\\yWaypoint Operations (Page 1)\\w\v\v"
-      "1. Show/Hide waypoints\v"
-      "2. Cache waypoint\v"
-      "3. Create path\v"
-      "4. Delete path\v"
-      "5. Add waypoint\v"
-      "6. Delete waypoint\v"
-      "7. Set Autopath Distance\v"
-      "8. Set Radius\v\v"
-      "9. Next...\v\v"
-      "0. Exit"
-   },
+	// main waypoint menu
+	{
+		0x3ff,
+		"\\yWaypoint Operations (Page 1)\\w\v\v"
+		"1. Show/Hide waypoints\v"
+		"2. Cache waypoint\v"
+		"3. Create path\v"
+		"4. Delete path\v"
+		"5. Add waypoint\v"
+		"6. Delete waypoint\v"
+		"7. Set Autopath Distance\v"
+		"8. Set Radius\v\v"
+		"9. Next...\v\v"
+		"0. Exit"
+	},
 
-   // main waypoint menu (page 2)
-   {
-      0x3ff,
-      "\\yWaypoint Operations (Page 2)\\w\v\v"
-      "1. Waypoint stats\v"
-      "2. Autowaypoint on/off\v"
-      "3. Set flags\v"
-      "4. Save waypoints\v"
-      "5. Save without checking\v"
-      "6. Load waypoints\v"
-      "7. Check waypoints\v"
-      "8. Noclip cheat on/off\v\v"
-      "9. Previous...\v\v"
-      "0. Exit"
-   },
+	// main waypoint menu (page 2)
+	{
+		0x3ff,
+		"\\yWaypoint Operations (Page 2)\\w\v\v"
+		"1. Waypoint stats\v"
+		"2. Autowaypoint on/off\v"
+		"3. Set flags\v"
+		"4. Save waypoints\v"
+		"5. Save without checking\v"
+		"6. Load waypoints\v"
+		"7. Check waypoints\v"
+		"8. Noclip cheat on/off\v\v"
+		"9. Previous...\v\v"
+		"0. Exit"
+	},
 
-   // select waypoint radius menu
-   {
-      0x3ff,
-      "\\yWaypoint Radius\\w\v\v"
-      "1. SetRadius 0\v"
-      "2. SetRadius 8\v"
-      "3. SetRadius 16\v"
-      "4. SetRadius 32\v"
-      "5. SetRadius 48\v"
-      "6. SetRadius 64\v"
-      "7. SetRadius 80\v"
-      "8. SetRadius 96\v"
-      "9. SetRadius 128\v\v"
-      "0. Exit"
-   },
+	// select waypoint radius menu
+	{
+		0x3ff,
+		"\\yWaypoint Radius\\w\v\v"
+		"1. SetRadius 0\v"
+		"2. SetRadius 8\v"
+		"3. SetRadius 16\v"
+		"4. SetRadius 32\v"
+		"5. SetRadius 48\v"
+		"6. SetRadius 64\v"
+		"7. SetRadius 80\v"
+		"8. SetRadius 96\v"
+		"9. SetRadius 128\v\v"
+		"0. Exit"
+	},
 
-   // waypoint add menu
-   {
-      0x3ff,
-      "\\yWaypoint Type\\w\v\v"
-      "1. Normal\v"
-      "\\r2. Terrorist Important\v"
-      "3. Counter-Terrorist Important\v"
-      "\\w4. Block with hostage / Ladder\v"
-      "\\y5. Rescue Zone\v"
-      "\\w6. Camping\v"
-      "7. Camp End\v"
-      "\\r8. Map Goal\v"
-      "\\w9. Jump\v\v"
-      "0. Exit"
-   },
+	// waypoint add menu
+	{
+		0x3ff,
+		"\\yWaypoint Type\\w\v\v"
+		"1. Normal\v"
+		"\\r2. Terrorist Important\v"
+		"3. Counter-Terrorist Important\v"
+		"\\w4. Block with hostage / Ladder\v"
+		"\\y5. Rescue Zone\v"
+		"\\w6. Camping\v"
+		"7. Camp End\v"
+		"\\r8. Map Goal\v"
+		"\\w9. Jump\v\v"
+		"0. Exit"
+	},
 
-   // set waypoint flag menu
-   {
-      0x2ff,
-      "\\yToggle Waypoint Flags\\w\v\v"
-      "1. Block with Hostage\v"
-      "2. Terrorists Specific\v"
-      "3. CTs Specific\v"
-      "4. Use Elevator\v"
-      "5. Sniper Point (\\yFor Camp Points Only!\\w)\v\v"
-      "0. Exit"
-   },
+	// set waypoint flag menu
+	{
+		0x3ff,
+		"\\yToggle Waypoint Flags\\w\v\v"
+		"1. Block with Hostage\v"
+		"2. Terrorists Specific\v"
+		"3. CTs Specific\v"
+		"4. Use Elevator\v"
+		"5. Sniper Point (\\yFor Camp Points Only!\\w)\v"
+		"6. Zombie Mode Camp\v"
+		"7. Crouch\v\v"
+		"9. Delete All Flags\v"
+		"0. Exit"
+	},
 
-   // kickmenu #1
-   {
-      0x0,
-      null,
-   },
+	// kickmenu #1
+	{
+		0x0,
+		null,
+	},
 
-   // kickmenu #2
-   {
-      0x0,
-      null,
-   },
+	// kickmenu #2
+	{
+		0x0,
+		null,
+	},
 
-   // kickmenu #3
-   {
-      0x0,
-      null,
-   },
+	// kickmenu #3
+	{
+		0x0,
+		null,
+	},
 
-   // kickmenu #4
-   {
-      0x0,
-      null,
-   },
+	// kickmenu #4
+	{
+		0x0,
+		null,
+	},
 
-   // command menu
-   {
-      0x23f,
-      "\\yBot Command Menu\\w\v\v"
-      "1. Make Double Jump\v"
-      "2. Finish Double Jump\v\v"
-      "3. Drop the C4 Bomb\v"
-      "4. Drop the Weapon\v\v"
-      "0. Exit"
-   },
+	// command menu
+	{
+		0x23f,
+		"\\yBot Command Menu\\w\v\v"
+		"1. Make Double Jump\v"
+		"2. Finish Double Jump\v\v"
+		"3. Drop the C4 Bomb\v"
+		"4. Drop the Weapon\v\v"
+		"0. Exit"
+	},
 
-   // auto-path max distance
-   {
-      0x27f,
-      "\\yAutoPath Distance\\w\v\v"
-      "1. Distance 0\v"
-      "2. Distance 100\v"
-      "3. Distance 130\v"
-      "4. Distance 160\v"
-      "5. Distance 190\v"
-      "6. Distance 220\v"
-      "7. Distance 250 (Default)\v\v"
-      "0. Exit"
-   },
+	// auto-path max distance
+	{
+		0x27f,
+		"\\yAutoPath Distance\\w\v\v"
+		"1. Distance 0\v"
+		"2. Distance 100\v"
+		"3. Distance 130\v"
+		"4. Distance 160\v"
+		"5. Distance 190\v"
+		"6. Distance 220\v"
+		"7. Distance 250 (Default)\v\v"
+		"0. Exit"
+	},
 
-   // path connections
-   {
-      0x207,
-      "\\yCreate Path (Choose Direction)\\w\v\v"
-      "1. Outgoing Path\v"
-      "2. Incoming Path\v"
-      "3. Bidirectional (Both Ways)\v\v"
-      "0. Exit"
-   },
+	// path connections
+	{
+		//0x207,
+		0x3ff,
+		"\\yCreate Path (Choose Direction)\\w\v\v"
+		"1. Outgoing Path\v"
+		"2. Incoming Path\v"
+		"3. Bidirectional (Both Ways)\v\v"
+		"4. Delete Path\v"
+		"\v0. Exit"
+	},
 
-   // SyPB Pro P.20 - SgdWP
-   {
-	   0x3ff,
-	   "\\y SyPB - Sgd WP Menu \\w\v\v"
-	   "1. Add Waypoint \v"
-	   "2. Delete Waypoint \v\v"
-	   "3. Teleport to Waypoint \v\v"
-	   "4. Auto put Waypoint \v\v\v"
-	   "8. Sgd Wp Mod Off \v"
-	   "9. Save Wp\v"
-	   "\v\v0. Exit"
-   },
+	/*
+	// SyPB Pro P.20 - SgdWP
+	{
+	0x3ff,
+	"\\y SgdWP Menu \\w\v\v"
+	"1. Add Waypoint \v"
+	"2. Delete Waypoint \v"
+	"3. Teleport to Waypoint \v\v"
+	"4. Create Path \v\v"   // SyPB Pro P.30 - Sgdwp
+	"7. Auto put Waypoint \v\v"
+	"8. Sgd Wp Mod Off \v"
+	"9. Save Wp\v"
+	"\v0. Exit"
+	}, */
 
-   {
-	   0x3ff,
-	   "\\y SyPB - SgdWP Add Waypoint Menu \\w\v\v"
-	   "1. Normal \v"
-	   "2. Terrorist Important \v"
-	   "3. Counter-Terrorist Important \v"
-	   "4. Block with hostage / Ladder \v"
-	   "5. Rescue Zone \v"
-	   "6. Map Goal \v"
-	   "7. Camp \v"
-	   "8. Jump \v"
-	   "9. Next \v"
-	   "\v\v0. Exit"
-   },
+	// SyPB Pro P.30 - SgdWP
+	{
+		0x3ff,
+		"\\ySgdWP Menu\\w\v\v"
+		"1. Add Waypoint\v"
+		"2. Set Waypoint Flag\v"
+		"3. Create Path\v"
+		"4. Set Waypoint Radius\v"
+		"5. Teleport to Waypoint\v"
+		"6. Delete Waypoint\v\v"
+		"7. Auto Put Waypoint Mode\v"
+		"9. Save Waypoint\v"
+		"\v0. Exit"
+	},
 
-   {
-	   0x3ff,
-	   "\\y SyPB - SgdWP Add Waypoint Menu2 \\w\v\v"
-	   "1. Use Elevator \v"
-	   "2. Sniper Camp \v"
-	   "3. Zomibe Mode Hm Camp \v" // SyPB Pro P.29 - Zombie Mode Camp Waypoints
-	   "\v\v0. Exit"
-   },
+	{
+		0x3ff,
+		"\\ySgdWP Add Waypoint Menu\\w\v\v"
+		"1. Normal\v"
+		"2. Terrorist Important\v"
+		"3. Counter-Terrorist Important\v"
+		"4. Block with hostage / Ladder\v"
+		"5. Rescue Zone\v"
+		"6. Map Goal\v"
+		"7. Camp\v"
+		"8. Jump\v"
+		"9. Next\v"
+		"\v0. Exit"
+	},
 
-   {
-	   0x3ff,
-	   "\\y SyPB - Waypoint Team \\w\v\v"
-	   "1. Terrorist  \v"
-	   "2. Counter-Terrorist \v"
-	   "3. All"
-	   "\v\v0. Exit"
-   }
+	{
+		0x3ff,
+		"\\ySgdWP Add Waypoint Menu2\\w\v\v"
+		"1. Use Elevator\v"
+		"2. Sniper Camp\v"
+		"3. Zomibe Mode Hm Camp\v" // SyPB Pro P.29 - Zombie Mode Camp Waypoints
+		"\v0. Exit"
+	},
+
+	{
+		0x3ff,
+		"\\ySgdWP Waypoint Team\\w\v\v"
+		"1. Terrorist\v"
+		"2. Counter-Terrorist\v"
+		"3. All\v"
+		"\v0. Exit"
+	}
 };

@@ -2115,6 +2115,43 @@ C_DLLEXPORT int GetNewDLLFunctions_Post (NEW_DLL_FUNCTIONS * pNewFunctionTable, 
 C_DLLEXPORT int GetEngineFunctions (enginefuncs_t * pengfuncsFromEngine, int *interfaceVersion);
 C_DLLEXPORT int GetEngineFunctions_Post (enginefuncs_t * pengfuncsFromEngine, int *interfaceVersion);
 
+// SyPB Pro P.30 - AMXX API
+C_DLLEXPORT bool Amxx_RunSypb(void);
+typedef bool(*AMXX_RUN_SYPB) (void);
+
+C_DLLEXPORT float Amxx_APIVersion(void);
+typedef float(*AMXX_API_VERSION) (void);
+
+C_DLLEXPORT int Amxx_IsSypb(int index);
+typedef int(*AMXX_IS_SYPB) (int index);
+
+C_DLLEXPORT int Amxx_CheckEnemy(int index);
+typedef int(*AMXX_CHECK_ENEMY) (int index);
+
+C_DLLEXPORT int Amxx_CheckMoveTarget(int index);
+typedef int(*AMXX_CHECK_MOVETARGET) (int index);
+
+C_DLLEXPORT void Amxx_SetEnemy(int index, int target, float blockCheckTime);
+typedef void(*AMXX_SET_ENEMY)(int index, int target, float blockCheckTime);
+
+C_DLLEXPORT void Amxx_SetMoveTarget(int index, int target, float blockCheckTime);
+typedef void(*AMXX_SET_MOVETARGET)(int index, int target, float blockCheckTime);
+
+C_DLLEXPORT void Amxx_SetBotMove(int index, int pluginSet);
+typedef void(*AMXX_SET_BOT_MOVE) (int index, int pluginSet);
+
+C_DLLEXPORT void Amxx_SetBotLookAt(int index, Vector lookAt);
+typedef void(*AMXX_SET_BOT_LOOKAT)(int index, Vector lookAt);
+
+C_DLLEXPORT void Amxx_SetWeaponClip(int index, int weaponClip);
+typedef void(*AMXX_SET_WEAPON_CLIP)(int index, int weaponClip);
+
+C_DLLEXPORT void Amxx_BlockWeaponReload(int index, int blockWeaponReload);
+typedef void(*AMXX_BLOCK_WEAPON_RELOAD)(int index, int blockWeaponReload);
+
+C_DLLEXPORT void Amxx_AddSyPB(const char *name, int skill, int team);
+typedef void(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
+// AMXX SyPB API End
 
 #define MDLL_FUNC   gpGamedllFuncs->dllapi_table
 

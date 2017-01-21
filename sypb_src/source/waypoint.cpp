@@ -600,6 +600,18 @@ void Waypoint::Delete (void)
    PlaySound (g_hostEntity, "weapons/mine_activate.wav");
 }
 
+// SyPB Pro P.30 - SgdWP
+void Waypoint::DeleteFlags(void)
+{
+	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
+
+	if (index != -1)
+	{
+		m_paths[index]->flags = 0;
+		PlaySound(g_hostEntity, "common/wpn_hudon.wav");
+	}
+}
+
 void Waypoint::ToggleFlags (int toggleFlag)
 {
    // this function allow manually changing flags
@@ -626,28 +638,26 @@ void Waypoint::ToggleFlags (int toggleFlag)
    }
 }
 
-void Waypoint::SetRadius (int radius)
+void Waypoint::SetRadius(int radius)
 {
-   // this function allow manually setting the zone radius
+	// this function allow manually setting the zone radius
 
-   int index = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
+	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
 
-   if (index != -1)
-   {
-	  // SyPB Pro P.20 - SgdWP
-	  if (g_sgdWaypoint)
-	  {
-		  if (m_paths[index]->radius <= 0)
-			  m_paths[index]->radius = static_cast <float> (radius);
+	if (index != -1)
+	{
+		// SyPB Pro P.30 - SgdWP
+		if (g_sautoWaypoint)
+		{
+			if (m_paths[index]->radius > 0)
+				return;
+		}
 
-		  return;
-	  }
+		m_paths[index]->radius = static_cast <float> (radius);
 
-      m_paths[index]->radius = static_cast <float> (radius);
-
-      // play "done" sound...
-      PlaySound (g_hostEntity, "common/wpn_hudon.wav");
-   }
+		// play "done" sound...
+		PlaySound(g_hostEntity, "common/wpn_hudon.wav");
+	}
 }
 
 bool Waypoint::IsConnected (int pointA, int pointB)
@@ -1037,6 +1047,9 @@ void Waypoint::InitTypes (void)
          m_sniperPoints.Push (i);
       else if (m_paths[i]->flags & WAYPOINT_RESCUE)
          m_rescuePoints.Push (i);
+	  // SyPB Pro P.30 - Zombie Mode Human Camp
+	  else if (m_paths[i]->flags & WAYPOINT_ZMHMCAMP)
+		  m_zmHmPoints.Push(i);
    }
 }
 
@@ -1478,420 +1491,428 @@ char *Waypoint::GetWaypointInfo (int id)
    return messageBuffer;
 }
 
-void Waypoint::Think (void)
+void Waypoint::Think(void)
 {
-   // this function executes frame of waypoint operation code.
+	// this function executes frame of waypoint operation code.
 
-   if (FNullEnt (g_hostEntity))
-      return; // this function is only valid on listenserver, and in waypoint enabled mode.
+	if (FNullEnt(g_hostEntity))
+		return; // this function is only valid on listenserver, and in waypoint enabled mode.
 
-   float nearestDistance = FLT_MAX;
-   int nearestIndex = -1;
+	float nearestDistance = FLT_MAX;
+	int nearestIndex = -1;
 
-   // check if it's time to add jump waypoint
-   if (m_learnJumpWaypoint)
-   {
-      if (!m_endJumpPoint)
-      {
-         if (g_hostEntity->v.button & IN_JUMP)
-         {
-            Add (9);
-
-            m_timeJumpStarted = engine->GetTime ();
-            m_endJumpPoint = true;
-         }
-         else
-         {
-            m_learnVelocity = g_hostEntity->v.velocity;
-            m_learnPosition = GetEntityOrigin (g_hostEntity);
-         }
-      }
-      else if (((g_hostEntity->v.flags & FL_ONGROUND) || g_hostEntity->v.movetype == MOVETYPE_FLY) && m_timeJumpStarted + 0.1 < engine->GetTime () && m_endJumpPoint)
-      {
-         Add (10);
-
-         m_learnJumpWaypoint = false;
-         m_endJumpPoint = false;
-      }
-   }
-
-   // SyPB Pro P.20 - SgdWP
-   if (g_sgdWaypoint)
-   {
-   	   if (g_autoWaypoint)
-   	   	   g_autoWaypoint = false;
-   	   
-   	   g_hostEntity->v.health = fabsf (static_cast <float> (255.0));
-
-   	   if (g_hostEntity->v.button & IN_USE && (g_hostEntity->v.flags & FL_ONGROUND))
-   	   {
-   	   	   if (m_timeGetProTarGet == 0.0f)
-   	   	   	   m_timeGetProTarGet = engine->GetTime ();
-   	   	   else if (m_timeGetProTarGet + 1.0 < engine->GetTime ())
-   	   	   {
-   	   	   	   DisplayMenuToClient (g_hostEntity, &g_menus[21]);
-   	   	   	   m_timeGetProTarGet = 0.0f;
-   	   	   }
-   	   }
-   	   else
-   	   	   m_timeGetProTarGet = 0.0f;
-   	   
-   	   if (g_sautoWaypoint)
-   	   {
-   	   	   if (!m_ladderPoint)
-   	   	   {
-   	   	   	   if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
-   	   	   	   {
-				   if (FindNearest (GetEntityOrigin (g_hostEntity), 50.0f, WAYPOINT_LADDER) == -1)
-					   Add (3);
-
-   	   	   	   	   m_ladderPoint = true;
-   	   	   	   }
-   	   	   }
-   	   	   else
-   	   	   {
-   	   	   	   if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
-   	   	   	   {
-   	   	   	   	   if (FindNearest (GetEntityOrigin (g_hostEntity), 50.0f, WAYPOINT_LADDER) == -1)
-   	   	   	   	   	   Add (3);
-   	   	   	   }
-   	   	   }
-   	   	   
-   	   	   if (g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND))
-   	   	   {
-			   if (m_ladderPoint && !(g_hostEntity->v.movetype == MOVETYPE_FLY))
-			   {
-				   Add (0);
-				   m_ladderPoint = false;
-			   }
-
-			   if (m_fallPosition != nullvec && m_fallPoint)
-			   {
-				   /*
-				   if (((GetEntityOrigin (g_hostEntity)).z + 200) + (m_fallPosition.z))
-				   {
-					   Add (102, m_fallPosition);
-					   Add (103);
-				   }*/
-
-				   // SyPB Pro P.23 - SgdWP
-				   if (m_fallPosition.z > (GetEntityOrigin (g_hostEntity).z + 150.0f))
-				   {
-					   Add (102, m_fallPosition);
-					   Add (103);
-				   }
-
-				   m_fallPoint = false;
-				   m_fallPosition = nullvec;
-			   }
-
-			   if (g_hostEntity->v.button & IN_DUCK)
-			   {
-				   if (m_timeCampWaypoint == 0.0f)
-					   m_timeCampWaypoint = engine->GetTime ();
-				   else if (m_timeCampWaypoint + 2.0 < engine->GetTime ())
-				   {
-					   Add (5);
-					   m_timeCampWaypoint = 0.0f;
-					   Add (6);
-				   }
-			   }
-			   else
-				   m_timeCampWaypoint = 0.0f;
-
-   	   	   	   float distance = (m_lastWaypoint - GetEntityOrigin (g_hostEntity)).GetLengthSquared ();
-   	   	   	   int newWaypointDistance = (g_numWaypoints >= 800) ? 16384 : 6384;
-   	   	   	   if (distance > newWaypointDistance)
-   	   	   	   {
-   	   	   	   	   for (int i = 0; i < g_numWaypoints; i++)
-   	   	   	   	   {
-   	   	   	   	   	   if (IsNodeReachable (GetEntityOrigin (g_hostEntity), m_paths[i]->origin))
-   	   	   	   	   	   {
-   	   	   	   	   	   	   distance = (m_paths[i]->origin - GetEntityOrigin (g_hostEntity)).GetLengthSquared ();
-   	   	   	   	   	   	   
-   	   	   	   	   	   	   if (distance < nearestDistance)
-   	   	   	   	   	   	   	   nearestDistance = distance;
-   	   	   	   	   	   }
-   	   	   	   	   }
-   	   	   	   	   
-   	   	   	   	   if (nearestDistance >= newWaypointDistance)
-   	   	   	   	   	   Add (0);
-   	   	   	   }
-
-			   m_fallPosition = GetEntityOrigin (g_hostEntity);
-			   m_learnJumpWaypoint = true;
-   	   	   }
-		   else if (m_timeGetProTarGet != 0.0f)
-			   m_learnJumpWaypoint = false;
-		   else 
-			   m_fallPoint = true;
-   	   }
-   	   
-   	   SetRadius (64);
-   }
-
-   // check if it's a autowaypoint mode enabled
-   if (g_autoWaypoint && (g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
-   {
-      // find the distance from the last used waypoint
-      float distance = (m_lastWaypoint - GetEntityOrigin (g_hostEntity)).GetLengthSquared ();
-
-      if (distance > 16384)
-      {
-         // check that no other reachable waypoints are nearby...
-         for (int i = 0; i < g_numWaypoints; i++)
-         {
-            if (IsNodeReachable (GetEntityOrigin (g_hostEntity), m_paths[i]->origin))
-            {
-               distance = (m_paths[i]->origin - GetEntityOrigin (g_hostEntity)).GetLengthSquared ();
-
-               if (distance < nearestDistance)
-                  nearestDistance = distance;
-            }
-         }
-
-         // make sure nearest waypoint is far enough away...
-         if (nearestDistance >= 16384)
-            Add (0);  // place a waypoint here
-      }
-   }
-   m_facingAtIndex = GetFacingIndex ();
-
-   // reset the minimal distance changed before
-   nearestDistance = FLT_MAX;
-
-   // now iterate through all waypoints in a map, and draw required ones
-   for (int i = 0; i < g_numWaypoints; i++)
-   {
-      float distance = (m_paths[i]->origin - GetEntityOrigin (g_hostEntity)).GetLengthSquared ();
-
-      // check if waypoint is whitin a distance, and is visible
-      if (distance < 500 * 500 && ((::IsVisible (m_paths[i]->origin, g_hostEntity) && IsInViewCone (m_paths[i]->origin, g_hostEntity)) || !IsAlive (g_hostEntity) || distance < 2500))
-      {
-         // check the distance
-         if (distance < nearestDistance)
-         {
-            nearestIndex = i;
-            nearestDistance = distance;
-         }
-
-         if (m_waypointDisplayTime[i] + 1.0f < engine->GetTime ())
-         {
-            float nodeHeight = (m_paths[i]->flags & WAYPOINT_CROUCH) ? 36.0f : 72.0f; // check the node height
-            float nodeHalfHeight = nodeHeight * 0.5f;
-
-            // all waypoints are by default are green
-            Color nodeColor = Color (0, 255, 0);
-
-            // colorize all other waypoints
-            if (m_paths[i]->flags & WAYPOINT_CAMP)
-               nodeColor = Color (0, 255, 255);
-            else if (m_paths[i]->flags & WAYPOINT_GOAL)
-               nodeColor = Color (128, 0, 255);
-            else if (m_paths[i]->flags & WAYPOINT_LADDER)
-               nodeColor = Color (128, 64, 0);
-            else if (m_paths[i]->flags & WAYPOINT_RESCUE)
-               nodeColor = Color (255, 255, 255);
-
-            // colorize additional flags
-            Color nodeFlagColor = Color (-1, -1, -1);
-
-            // check the colors
-            if (m_paths[i]->flags & WAYPOINT_SNIPER)
-               nodeFlagColor = Color (130, 87, 0);
-            else if (m_paths[i]->flags & WAYPOINT_NOHOSTAGE)
-               nodeFlagColor = Color (255, 255, 255);
-            else if (m_paths[i]->flags & WAYPOINT_TERRORIST)
-               nodeFlagColor = Color (255, 0, 0);
-            else if (m_paths[i]->flags & WAYPOINT_COUNTER)
-               nodeFlagColor = Color (0, 0, 255);
-
-			// SyPB Pro P.24 - Zombie Mod Human Camp
-			if (m_paths[i]->flags & WAYPOINT_ZMHMCAMP)
+	// check if it's time to add jump waypoint
+	if (m_learnJumpWaypoint)
+	{
+		if (!m_endJumpPoint)
+		{
+			if (g_hostEntity->v.button & IN_JUMP)
 			{
-				nodeColor = Color (199, 69, 209);
-				nodeFlagColor = Color (0, 0, 255);
+				Add(9);
+
+				m_timeJumpStarted = engine->GetTime();
+				m_endJumpPoint = true;
+			}
+			else
+			{
+				m_learnVelocity = g_hostEntity->v.velocity;
+				m_learnPosition = GetEntityOrigin(g_hostEntity);
+			}
+		}
+		else if (((g_hostEntity->v.flags & FL_ONGROUND) || g_hostEntity->v.movetype == MOVETYPE_FLY) && m_timeJumpStarted + 0.1 < engine->GetTime() && m_endJumpPoint)
+		{
+			Add(10);
+
+			m_learnJumpWaypoint = false;
+			m_endJumpPoint = false;
+		}
+	}
+
+	// SyPB Pro P.20 - SgdWP
+	if (g_sgdWaypoint)
+	{
+		if (g_autoWaypoint)
+			g_autoWaypoint = false;
+
+		g_hostEntity->v.health = fabsf(static_cast <float> (255.0));
+
+		if (g_hostEntity->v.button & IN_USE && (g_hostEntity->v.flags & FL_ONGROUND))
+		{
+			if (m_timeGetProTarGet == 0.0f)
+				m_timeGetProTarGet = engine->GetTime();
+			else if (m_timeGetProTarGet + 1.0 < engine->GetTime())
+			{
+				DisplayMenuToClient(g_hostEntity, &g_menus[21]);
+				m_timeGetProTarGet = 0.0f;
+			}
+		}
+		else
+			m_timeGetProTarGet = 0.0f;
+
+		if (g_sautoWaypoint)
+		{
+			if (!m_ladderPoint)
+			{
+				if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
+				{
+					if (FindNearest(GetEntityOrigin(g_hostEntity), 50.0f, WAYPOINT_LADDER) == -1)
+					{
+						Add(3);
+						SetRadius(0);
+					}
+
+					m_ladderPoint = true;
+				}
+			}
+			else
+			{
+				if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
+				{
+					if (FindNearest(GetEntityOrigin(g_hostEntity), 50.0f, WAYPOINT_LADDER) == -1)
+					{
+						Add(3);
+						SetRadius(0);
+					}
+				}
 			}
 
-            nodeColor.alpha = 250;
-            nodeFlagColor.alpha = 250;
+			if (g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND))
+			{
+				if (m_ladderPoint && !(g_hostEntity->v.movetype == MOVETYPE_FLY))
+				{
+					Add(0);
+					SetRadius(64);
+					m_ladderPoint = false;
+				}
 
-            // draw node without additional flags
-            if (nodeFlagColor.red == -1)
-               engine->DrawLine (g_hostEntity, m_paths[i]->origin - Vector (0, 0, nodeHalfHeight), m_paths[i]->origin + Vector (0, 0, nodeHalfHeight), nodeColor, 15, 0, 0, 10);
-            else // draw node with flags
-            {
-               engine->DrawLine (g_hostEntity, m_paths[i]->origin - Vector (0.0f, 0.0f, nodeHalfHeight), m_paths[i]->origin - Vector (0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), nodeColor, 14, 0, 0, 10); // draw basic path
-               engine->DrawLine (g_hostEntity, m_paths[i]->origin - Vector (0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), m_paths[i]->origin + Vector (0.0f, 0.0f, nodeHalfHeight), nodeFlagColor, 14, 0, 0, 10); // draw additional path
-            }
-            m_waypointDisplayTime[i] = engine->GetTime ();
-         }
-      }
-   }
+				if (m_fallPosition != nullvec && m_fallPoint)
+				{
+					// SyPB Pro P.23 - SgdWP
+					if (m_fallPosition.z > (GetEntityOrigin(g_hostEntity).z + 150.0f))
+					{
+						Add(102, m_fallPosition);
+						SetRadius(16);
+						Add(103);
+						SetRadius(32);
+					}
 
-   if (nearestIndex == -1)
-      return;
+					m_fallPoint = false;
+					m_fallPosition = nullvec;
+				}
 
-   // draw arrow to a some importaint waypoints
-   if ((m_findWPIndex != -1 && m_findWPIndex < g_numWaypoints) || (m_cacheWaypointIndex != -1 && m_cacheWaypointIndex < g_numWaypoints) || (m_facingAtIndex != -1 && m_facingAtIndex < g_numWaypoints))
-   {
-      // check for drawing code
-      if (m_arrowDisplayTime + 0.5 < engine->GetTime ())
-      {
-         // finding waypoint - pink arrow
-         if (m_findWPIndex != -1)
-            engine->DrawLine (g_hostEntity, GetEntityOrigin (g_hostEntity), m_paths[m_findWPIndex]->origin, Color (128, 0, 128, 200), 10, 0, 0, 5, LINE_ARROW);
+				if (g_hostEntity->v.button & IN_DUCK)
+				{
+					if (m_timeCampWaypoint == 0.0f)
+						m_timeCampWaypoint = engine->GetTime();
+					else if (m_timeCampWaypoint + 2.0 < engine->GetTime())
+					{
+						Add(5);
+						SetRadius(0);
+						m_timeCampWaypoint = 0.0f;
+						Add(6);
+						SetRadius(0);
+						// SyPB Pro P.30 - SgdWP
+						DisplayMenuToClient(g_hostEntity, &g_menus[24]);
+					}
+				}
+				else
+					m_timeCampWaypoint = 0.0f;
 
-         // cached waypoint - yellow arrow
-         if (m_cacheWaypointIndex != -1)
-            engine->DrawLine (g_hostEntity, GetEntityOrigin (g_hostEntity), m_paths[m_cacheWaypointIndex]->origin, Color (255, 255, 0, 200), 10, 0, 0, 5, LINE_ARROW);
+				float distance = (m_lastWaypoint - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
+				int newWaypointDistance = (g_numWaypoints >= 800) ? 16384 : 12000;
+				if (distance > newWaypointDistance)
+				{
+					for (int i = 0; i < g_numWaypoints; i++)
+					{
+						if (IsNodeReachable(GetEntityOrigin(g_hostEntity), m_paths[i]->origin))
+						{
+							distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
 
-         // waypoint user facing at - white arrow
-         if (m_facingAtIndex != -1)
-            engine->DrawLine (g_hostEntity, GetEntityOrigin (g_hostEntity), m_paths[m_facingAtIndex]->origin, Color (255, 255, 255, 200), 10, 0, 0, 5, LINE_ARROW);
+							if (distance < nearestDistance)
+								nearestDistance = distance;
+						}
+					}
 
-         m_arrowDisplayTime = engine->GetTime ();
-      }
-   }
+					if (nearestDistance >= newWaypointDistance)
+					{
+						Add(0);
+						SetRadius(64);
+					}
+				}
 
-   // create path pointer for faster access
-   Path *path = m_paths[nearestIndex];
+				m_fallPosition = GetEntityOrigin(g_hostEntity);
+				m_learnJumpWaypoint = true;
+			}
+			else if (m_timeGetProTarGet != 0.0f)
+				m_learnJumpWaypoint = false;
+			else
+				m_fallPoint = true;
+		}
+	}
 
-   // draw a paths, camplines and danger directions for nearest waypoint
-   if (nearestDistance < 4096 && m_pathDisplayTime <= engine->GetTime ())
-   {
-      m_pathDisplayTime = engine->GetTime () + 1.0f;
+	// check if it's a autowaypoint mode enabled
+	if (g_autoWaypoint && (g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
+	{
+		// find the distance from the last used waypoint
+		float distance = (m_lastWaypoint - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
 
-      // draw the camplines
-      if (path->flags & WAYPOINT_CAMP)
-      {
-         const Vector &src = path->origin + Vector (0, 0, (path->flags & WAYPOINT_CROUCH) ? 18.0f : 36.0f); // check if it's a source
+		if (distance > 16384)
+		{
+			// check that no other reachable waypoints are nearby...
+			for (int i = 0; i < g_numWaypoints; i++)
+			{
+				if (IsNodeReachable(GetEntityOrigin(g_hostEntity), m_paths[i]->origin))
+				{
+					distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
 
-         // draw it now
-         engine->DrawLine (g_hostEntity, src, Vector (path->campStartX, path->campStartY, src.z), Color (255, 0, 0, 200), 10, 0, 0, 10);
-         engine->DrawLine (g_hostEntity, src, Vector (path->campEndX, path->campEndY, src.z), Color (255, 0, 0, 200), 10, 0, 0, 10);
-      }
+					if (distance < nearestDistance)
+						nearestDistance = distance;
+				}
+			}
 
-      // draw the connections
-      for (int i = 0; i < Const_MaxPathIndex; i++)
-      {
-         if (path->index[i] == -1)
-            continue;
+			// make sure nearest waypoint is far enough away...
+			if (nearestDistance >= 16384)
+				Add(0);  // place a waypoint here
+		}
+	}
+	m_facingAtIndex = GetFacingIndex();
 
-         // jump connection
-         if (path->connectionFlags[i] & PATHFLAG_JUMP)
-            engine->DrawLine (g_hostEntity, path->origin, m_paths[path->index[i]]->origin, Color (255, 0, 128, 200), 5, 0, 0, 10);
-         else if (IsConnected (path->index[i], nearestIndex)) // twoway connection
-            engine->DrawLine (g_hostEntity, path->origin, m_paths[path->index[i]]->origin, Color (255, 255, 0, 200), 5, 0, 0, 10);
-         else // oneway connection
-            engine->DrawLine (g_hostEntity, path->origin, m_paths[path->index[i]]->origin, Color (250, 250, 250, 200), 5, 0, 0, 10);
-      }
+	// reset the minimal distance changed before
+	nearestDistance = FLT_MAX;
 
-      // now look for oneway incoming connections
-      for (int i = 0; i < g_numWaypoints; i++)
-      {
-         if (IsConnected (m_paths[i]->pathNumber, path->pathNumber) && !IsConnected (path->pathNumber, m_paths[i]->pathNumber))
-            engine->DrawLine (g_hostEntity, path->origin, m_paths[i]->origin, Color (0, 192, 96, 200), 5, 0, 0, 10);
-      }
+	// now iterate through all waypoints in a map, and draw required ones
+	for (int i = 0; i < g_numWaypoints; i++)
+	{
+		float distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
 
-      // draw the radius circle
-      Vector origin = (path->flags & WAYPOINT_CROUCH) ? path->origin : path->origin - Vector (0, 0, 18);
+		// check if waypoint is whitin a distance, and is visible
+		if (distance < 500 * 500 && ((::IsVisible(m_paths[i]->origin, g_hostEntity) && IsInViewCone(m_paths[i]->origin, g_hostEntity)) || !IsAlive(g_hostEntity) || distance < 2500))
+		{
+			// check the distance
+			if (distance < nearestDistance)
+			{
+				nearestIndex = i;
+				nearestDistance = distance;
+			}
 
-      // if radius is nonzero, draw a full circle
-      if (path->radius > 0.0f)
-      {
-         const float root = sqrtf (path->radius * path->radius * 0.5f);
-         const Color &def = Color (0, 0, 255, 200);
+			if (m_waypointDisplayTime[i] + 1.0f < engine->GetTime())
+			{
+				float nodeHeight = (m_paths[i]->flags & WAYPOINT_CROUCH) ? 36.0f : 72.0f; // check the node height
+				float nodeHalfHeight = nodeHeight * 0.5f;
 
-         engine->DrawLine (g_hostEntity, origin + Vector (path->radius, 0.0f, 0.0f), origin + Vector (root, -root, 0), def, 5, 0, 0, 10);
-         engine->DrawLine (g_hostEntity, origin + Vector (root, -root, 0.0f), origin + Vector (0, -path->radius, 0), def, 5, 0, 0, 10);
+				// all waypoints are by default are green
+				Color nodeColor = Color(0, 255, 0);
 
-         engine->DrawLine (g_hostEntity, origin + Vector (0.0f, -path->radius, 0.0f), origin + Vector (-root, -root, 0), def, 5, 0, 0, 10);
-         engine->DrawLine (g_hostEntity, origin + Vector (-root, -root, 0.0f), origin + Vector (-path->radius, 0, 0), def, 5, 0, 0, 10);
+				// colorize all other waypoints
+				if (m_paths[i]->flags & WAYPOINT_CAMP)
+					nodeColor = Color(0, 255, 255);
+				else if (m_paths[i]->flags & WAYPOINT_GOAL)
+					nodeColor = Color(128, 0, 255);
+				else if (m_paths[i]->flags & WAYPOINT_LADDER)
+					nodeColor = Color(128, 64, 0);
+				else if (m_paths[i]->flags & WAYPOINT_RESCUE)
+					nodeColor = Color(255, 255, 255);
 
-         engine->DrawLine (g_hostEntity, origin + Vector (-path->radius, 0.0f, 0.0f), origin + Vector (-root, root, 0), def, 5, 0, 0, 10);
-         engine->DrawLine (g_hostEntity, origin + Vector (-root, root, 0.0f), origin + Vector (0, path->radius, 0), def, 5, 0, 0, 10);
+				// colorize additional flags
+				Color nodeFlagColor = Color(-1, -1, -1);
 
-         engine->DrawLine (g_hostEntity, origin + Vector (0.0f, path->radius, 0.0f), origin + Vector (root, root, 0), def, 5, 0, 0, 10);
-         engine->DrawLine (g_hostEntity, origin + Vector (root, root, 0.0f), origin + Vector (path->radius, 0, 0), def, 5, 0, 0, 10);
-      }
-      else
-      {
-         const float root = sqrtf (32.0f);
-         const Color &def = Color (255, 0, 0, 200);
+				// check the colors
+				if (m_paths[i]->flags & WAYPOINT_SNIPER)
+					nodeFlagColor = Color(130, 87, 0);
+				else if (m_paths[i]->flags & WAYPOINT_NOHOSTAGE)
+					nodeFlagColor = Color(255, 255, 255);
+				else if (m_paths[i]->flags & WAYPOINT_TERRORIST)
+					nodeFlagColor = Color(255, 0, 0);
+				else if (m_paths[i]->flags & WAYPOINT_COUNTER)
+					nodeFlagColor = Color(0, 0, 255);
 
-         engine->DrawLine (g_hostEntity, origin + Vector (root, -root, 0), origin + Vector (-root, root, 0), def, 5, 0, 0, 10);
-         engine->DrawLine (g_hostEntity, origin + Vector (-root, -root, 0), origin + Vector (root, root, 0), def, 5, 0, 0, 10);
-      }
+				// SyPB Pro P.24 - Zombie Mod Human Camp
+				if (m_paths[i]->flags & WAYPOINT_ZMHMCAMP)
+				{
+					nodeColor = Color(199, 69, 209);
+					nodeFlagColor = Color(0, 0, 255);
+				}
 
-      g_exp.DrawLines (nearestIndex, path);
+				nodeColor.alpha = 250;
+				nodeFlagColor.alpha = 250;
 
-      // display some information
-      char tempMessage[4096];
+				// draw node without additional flags
+				if (nodeFlagColor.red == -1)
+					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0, 0, nodeHalfHeight), m_paths[i]->origin + Vector(0, 0, nodeHalfHeight), nodeColor, 15, 0, 0, 10);
+				else // draw node with flags
+				{
+					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight), m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), nodeColor, 14, 0, 0, 10); // draw basic path
+					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), m_paths[i]->origin + Vector(0.0f, 0.0f, nodeHalfHeight), nodeFlagColor, 14, 0, 0, 10); // draw additional path
+				}
+				m_waypointDisplayTime[i] = engine->GetTime();
+			}
+		}
+	}
 
-      // show the information about that point
-      int length = sprintf (tempMessage, "\n\n\n\n    Waypoint Information:\n\n"
-         "      Waypoint %d of %d, Radius: %.1f\n"
-         "      Flags: %s\n\n", nearestIndex, g_numWaypoints, path->radius, GetWaypointInfo (nearestIndex));
+	if (nearestIndex == -1)
+		return;
+
+	// draw arrow to a some importaint waypoints
+	if ((m_findWPIndex != -1 && m_findWPIndex < g_numWaypoints) || (m_cacheWaypointIndex != -1 && m_cacheWaypointIndex < g_numWaypoints) || (m_facingAtIndex != -1 && m_facingAtIndex < g_numWaypoints))
+	{
+		// check for drawing code
+		if (m_arrowDisplayTime + 0.5 < engine->GetTime())
+		{
+			// finding waypoint - pink arrow
+			if (m_findWPIndex != -1)
+				engine->DrawLine(g_hostEntity, GetEntityOrigin(g_hostEntity), m_paths[m_findWPIndex]->origin, Color(128, 0, 128, 200), 10, 0, 0, 5, LINE_ARROW);
+
+			// cached waypoint - yellow arrow
+			if (m_cacheWaypointIndex != -1)
+				engine->DrawLine(g_hostEntity, GetEntityOrigin(g_hostEntity), m_paths[m_cacheWaypointIndex]->origin, Color(255, 255, 0, 200), 10, 0, 0, 5, LINE_ARROW);
+
+			// waypoint user facing at - white arrow
+			if (m_facingAtIndex != -1)
+				engine->DrawLine(g_hostEntity, GetEntityOrigin(g_hostEntity), m_paths[m_facingAtIndex]->origin, Color(255, 255, 255, 200), 10, 0, 0, 5, LINE_ARROW);
+
+			m_arrowDisplayTime = engine->GetTime();
+		}
+	}
+
+	// create path pointer for faster access
+	Path *path = m_paths[nearestIndex];
+
+	// draw a paths, camplines and danger directions for nearest waypoint
+	if (nearestDistance < 4096 && m_pathDisplayTime <= engine->GetTime())
+	{
+		m_pathDisplayTime = engine->GetTime() + 1.0f;
+
+		// draw the camplines
+		if (path->flags & WAYPOINT_CAMP)
+		{
+			const Vector &src = path->origin + Vector(0, 0, (path->flags & WAYPOINT_CROUCH) ? 18.0f : 36.0f); // check if it's a source
+
+			// draw it now
+			engine->DrawLine(g_hostEntity, src, Vector(path->campStartX, path->campStartY, src.z), Color(255, 0, 0, 200), 10, 0, 0, 10);
+			engine->DrawLine(g_hostEntity, src, Vector(path->campEndX, path->campEndY, src.z), Color(255, 0, 0, 200), 10, 0, 0, 10);
+		}
+
+		// draw the connections
+		for (int i = 0; i < Const_MaxPathIndex; i++)
+		{
+			if (path->index[i] == -1)
+				continue;
+
+			// jump connection
+			if (path->connectionFlags[i] & PATHFLAG_JUMP)
+				engine->DrawLine(g_hostEntity, path->origin, m_paths[path->index[i]]->origin, Color(255, 0, 128, 200), 5, 0, 0, 10);
+			else if (IsConnected(path->index[i], nearestIndex)) // twoway connection
+				engine->DrawLine(g_hostEntity, path->origin, m_paths[path->index[i]]->origin, Color(255, 255, 0, 200), 5, 0, 0, 10);
+			else // oneway connection
+				engine->DrawLine(g_hostEntity, path->origin, m_paths[path->index[i]]->origin, Color(250, 250, 250, 200), 5, 0, 0, 10);
+		}
+
+		// now look for oneway incoming connections
+		for (int i = 0; i < g_numWaypoints; i++)
+		{
+			if (IsConnected(m_paths[i]->pathNumber, path->pathNumber) && !IsConnected(path->pathNumber, m_paths[i]->pathNumber))
+				engine->DrawLine(g_hostEntity, path->origin, m_paths[i]->origin, Color(0, 192, 96, 200), 5, 0, 0, 10);
+		}
+
+		// draw the radius circle
+		Vector origin = (path->flags & WAYPOINT_CROUCH) ? path->origin : path->origin - Vector(0, 0, 18);
+
+		// if radius is nonzero, draw a full circle
+		if (path->radius > 0.0f)
+		{
+			const float root = sqrtf(path->radius * path->radius * 0.5f);
+			const Color &def = Color(0, 0, 255, 200);
+
+			engine->DrawLine(g_hostEntity, origin + Vector(path->radius, 0.0f, 0.0f), origin + Vector(root, -root, 0), def, 5, 0, 0, 10);
+			engine->DrawLine(g_hostEntity, origin + Vector(root, -root, 0.0f), origin + Vector(0, -path->radius, 0), def, 5, 0, 0, 10);
+
+			engine->DrawLine(g_hostEntity, origin + Vector(0.0f, -path->radius, 0.0f), origin + Vector(-root, -root, 0), def, 5, 0, 0, 10);
+			engine->DrawLine(g_hostEntity, origin + Vector(-root, -root, 0.0f), origin + Vector(-path->radius, 0, 0), def, 5, 0, 0, 10);
+
+			engine->DrawLine(g_hostEntity, origin + Vector(-path->radius, 0.0f, 0.0f), origin + Vector(-root, root, 0), def, 5, 0, 0, 10);
+			engine->DrawLine(g_hostEntity, origin + Vector(-root, root, 0.0f), origin + Vector(0, path->radius, 0), def, 5, 0, 0, 10);
+
+			engine->DrawLine(g_hostEntity, origin + Vector(0.0f, path->radius, 0.0f), origin + Vector(root, root, 0), def, 5, 0, 0, 10);
+			engine->DrawLine(g_hostEntity, origin + Vector(root, root, 0.0f), origin + Vector(path->radius, 0, 0), def, 5, 0, 0, 10);
+		}
+		else
+		{
+			const float root = sqrtf(32.0f);
+			const Color &def = Color(255, 0, 0, 200);
+
+			engine->DrawLine(g_hostEntity, origin + Vector(root, -root, 0), origin + Vector(-root, root, 0), def, 5, 0, 0, 10);
+			engine->DrawLine(g_hostEntity, origin + Vector(-root, -root, 0), origin + Vector(root, root, 0), def, 5, 0, 0, 10);
+		}
+
+		g_exp.DrawLines(nearestIndex, path);
+
+		// display some information
+		char tempMessage[4096];
+
+		// show the information about that point
+		int length = sprintf(tempMessage, "\n\n\n\n    Waypoint Information:\n\n"
+			"      Waypoint %d of %d, Radius: %.1f\n"
+			"      Flags: %s\n\n", nearestIndex, g_numWaypoints, path->radius, GetWaypointInfo(nearestIndex));
 
 
-      g_exp.DrawText (nearestIndex, tempMessage, length);
+		g_exp.DrawText(nearestIndex, tempMessage, length);
 
-      // check if we need to show the cached point index
-      if (m_cacheWaypointIndex != -1)
-      {
-         length += sprintf (&tempMessage[length], "\n    Cached Waypoint Information:\n\n"
-            "      Waypoint %d of %d, Radius: %.1f\n"
-            "      Flags: %s\n", m_cacheWaypointIndex, g_numWaypoints, m_paths[m_cacheWaypointIndex]->radius, GetWaypointInfo (m_cacheWaypointIndex));
-      }
+		// check if we need to show the cached point index
+		if (m_cacheWaypointIndex != -1)
+		{
+			length += sprintf(&tempMessage[length], "\n    Cached Waypoint Information:\n\n"
+				"      Waypoint %d of %d, Radius: %.1f\n"
+				"      Flags: %s\n", m_cacheWaypointIndex, g_numWaypoints, m_paths[m_cacheWaypointIndex]->radius, GetWaypointInfo(m_cacheWaypointIndex));
+		}
 
-      // check if we need to show the facing point index
-      if (m_facingAtIndex != -1)
-      {
-         length += sprintf (&tempMessage[length], "\n    Facing Waypoint Information:\n\n"
-            "      Waypoint %d of %d, Radius: %.1f\n"
-            "      Flags: %s\n", m_facingAtIndex, g_numWaypoints, m_paths[m_facingAtIndex]->radius, GetWaypointInfo (m_facingAtIndex));
-      }
+		// check if we need to show the facing point index
+		if (m_facingAtIndex != -1)
+		{
+			length += sprintf(&tempMessage[length], "\n    Facing Waypoint Information:\n\n"
+				"      Waypoint %d of %d, Radius: %.1f\n"
+				"      Flags: %s\n", m_facingAtIndex, g_numWaypoints, m_paths[m_facingAtIndex]->radius, GetWaypointInfo(m_facingAtIndex));
+		}
 
-      // SyPB Pro P.23 - SgdWP      
-      if (g_sgdWaypoint)
-      {
-      	  length += sprintf (&tempMessage[length], "    Hold 'E' Call [SgdWP] Menu \n"
-      	  	  "    [Auto Put Waypoint]:%s \n", g_sautoWaypoint ? "on":"off");
-      	  
-      	  if (!g_sautoWaypoint)
-      	  	  length += sprintf (&tempMessage[length], "    You Can true on [Auto put Waypoint] (menu>4) \n");
-      	  else
-      	  {
-      	  	  length += sprintf (&tempMessage[length], "    System will auto save Waypoint, you can move in the map now \n", 
-				  "    Complete, you will save Waypoint (menu>9) \n\n",
-				  "    Hold 'IN_DUCK' Can make camp Waypoint \n", 
-				  "    System Can auto save 'Fall' and 'Jump' Waypoint \n\n");
-      	  }
-      }
+		// SyPB Pro P.23 - SgdWP      
+		if (g_sgdWaypoint)
+		{
+			length += sprintf(&tempMessage[length], "    Hold 'E' Call [SgdWP] Menu \n"
+				"    [Auto Put Waypoint]:%s \n", g_sautoWaypoint ? "on" : "off");
 
-      // draw entire message
-      MESSAGE_BEGIN (MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
-         WRITE_BYTE (TE_TEXTMESSAGE);
-         WRITE_BYTE (4); // channel
-         WRITE_SHORT (FixedSigned16 (0, 1 << 13)); // x
-         WRITE_SHORT (FixedSigned16 (0, 1 << 13)); // y
-         WRITE_BYTE (0); // effect
-         WRITE_BYTE (255); // r1
-         WRITE_BYTE (255); // g1
-         WRITE_BYTE (255); // b1
-         WRITE_BYTE (1); // a1
-         WRITE_BYTE (255); // r2
-         WRITE_BYTE (255); // g2
-         WRITE_BYTE (255); // b2
-         WRITE_BYTE (255); // a2
-         WRITE_SHORT (0); // fadeintime
-         WRITE_SHORT (0); // fadeouttime
-         WRITE_SHORT (FixedUnsigned16 (1.1f, 1 << 8)); // holdtime
-         WRITE_STRING (tempMessage);
-      MESSAGE_END ();
-   }
+			if (!g_sautoWaypoint)
+				length += sprintf(&tempMessage[length], "    You Can true on [Auto put Waypoint] (menu>4) \n");
+			else
+			{
+				length += sprintf(&tempMessage[length], "    System will auto save Waypoint, you can move in the map now \n",
+					"    Complete, you will save Waypoint (menu>9) \n\n",
+					"    Hold 'IN_DUCK' Can make camp Waypoint \n",
+					"    System Can auto save 'Fall' and 'Jump' Waypoint \n\n");
+			}
+		}
+
+		// draw entire message
+		MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
+		WRITE_BYTE(TE_TEXTMESSAGE);
+		WRITE_BYTE(4); // channel
+		WRITE_SHORT(FixedSigned16(0, 1 << 13)); // x
+		WRITE_SHORT(FixedSigned16(0, 1 << 13)); // y
+		WRITE_BYTE(0); // effect
+		WRITE_BYTE(255); // r1
+		WRITE_BYTE(255); // g1
+		WRITE_BYTE(255); // b1
+		WRITE_BYTE(1); // a1
+		WRITE_BYTE(255); // r2
+		WRITE_BYTE(255); // g2
+		WRITE_BYTE(255); // b2
+		WRITE_BYTE(255); // a2
+		WRITE_SHORT(0); // fadeintime
+		WRITE_SHORT(0); // fadeouttime
+		WRITE_SHORT(FixedUnsigned16(1.1f, 1 << 8)); // holdtime
+		WRITE_STRING(tempMessage);
+		MESSAGE_END();
+	}
 }
+
 
 bool Waypoint::IsConnected (int index)
 {
@@ -2522,17 +2543,10 @@ void Waypoint::SetBombPosition (bool shouldReset)
    }
 }
 
-void Waypoint::SetLearnJumpWaypoint (int mod)
+// SyPB Pro P.30 - SgdWP
+void Waypoint::SetLearnJumpWaypoint(bool mod)
 {
-   //m_learnJumpWaypoint = true;
-
-	if (mod != -1)
-	{
-		m_learnJumpWaypoint = (mod == 0) ? false : true;
-		return;
-	}
-
-	m_learnJumpWaypoint = true;
+	m_learnJumpWaypoint = mod;
 }
 
 void Waypoint::SetFindIndex (int index)

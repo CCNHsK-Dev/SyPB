@@ -61,7 +61,15 @@ int Bot::FindGoal(void)
 			break;
 		}
 	}
-	else// if (GetGameMod() == 1 || GetGameMod () == 3)
+	// SyPB Pro P.30 - Zombie Mode Human Camp
+	else if (GetGameMod() == 2)
+	{
+		if (!IsZombieBot(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
+			offensiveWpts = g_waypoint->m_zmHmPoints;
+		else
+			return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+	}
+	else
 	{
 		offensiveWpts = g_waypoint->m_terrorPoints;
 
@@ -70,10 +78,6 @@ int Bot::FindGoal(void)
 			offensiveWpts.Push(g_waypoint->m_ctPoints[i]);
 		}
 	}
-	//else if (GetGameMod() == 2 || GetGameMod() == 4)
-	//{
-
-	//}
 
    // terrorist carrying the C4?
    if (pev->weapons & (1 << WEAPON_C4) || m_isVIP)
@@ -168,65 +172,21 @@ int Bot::FindGoal(void)
 	   {
 		   defensive += 30;
 		   offensive -= 30;
-
-		   /* Go Camp Waypoint See For 1.3.0*/
 	   }
 	   else
 	   {
 		   defensive -= 30;
 		   offensive += 30;
 
-		   /* Camp Waypoint for Beta1.3.0*/
+		   // SyPB Pro P.30 - Zombie Mode Human Camp
+		   if (!g_waypoint->m_zmHmPoints.IsEmpty())
+		   {
+			   tactic = 4;
+			   goto TacticChoosen;
+		   }
 	   }
    }
 
-   /*
-   else if ((g_mapType & MAP_DE) && team == TEAM_COUNTER)
-   {
-      if (g_bombPlanted && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && g_waypoint->GetBombPosition () != nullvec)
-      {
-         const Vector &bombPos = g_waypoint->GetBombPosition ();
-
-         if (GetBombTimeleft () >= 10.0f && IsBombDefusing (bombPos))
-            return m_chosenGoalIndex = FindDefendWaypoint (bombPos);
-
-         if (g_bombSayString)
-         {
-            ChatMessage (CHAT_PLANTBOMB);
-            g_bombSayString = false;
-         }
-         return m_chosenGoalIndex = ChooseBombWaypoint ();
-      }
-      defensive += 30;
-      offensive -= 30;
-   }
-   else if ((g_mapType & MAP_DE) && team == TEAM_TERRORIST)
-   {
-      defensive -= 30;
-      offensive += 30;
-
-      // send some terrorists to guard planter bomb
-      if (g_bombPlanted && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && GetBombTimeleft () >= 15.0f)
-         return m_chosenGoalIndex = FindDefendWaypoint (g_waypoint->GetBombPosition ());
-
-      float leastPathDistance = 0.0f;
-      int goalIndex = -1;
-
-      ITERATE_ARRAY (g_waypoint->m_goalPoints, i)
-      {
-         float realPathDistance = g_waypoint->GetPathDistanceFloat (m_currentWaypointIndex,  g_waypoint->m_goalPoints[i]) + engine->RandomFloat (0.0, 128.0f);
-
-         if (leastPathDistance > realPathDistance)
-         {
-            goalIndex =  g_waypoint->m_goalPoints[i];
-            leastPathDistance = realPathDistance;
-         }
-      }
-
-      if (goalIndex != -1 && !g_bombPlanted && (pev->weapons & (1 << WEAPON_C4)))
-         return m_chosenGoalIndex = goalIndex;
-   }
-   */
    goalDesire = engine->RandomInt (0, 70) + offensive;
    forwardDesire = engine->RandomInt (0, 50) + offensive;
    campDesire = engine->RandomInt (0, 70) + defensive;
@@ -323,6 +283,36 @@ TacticChoosen:
       else if (pev->weapons & (1 << WEAPON_C4))
          return m_chosenGoalIndex = goalChoices[engine->RandomInt (0, closerIndex - 1)];
    }
+   
+   // SyPB Pro P.30 - Zombie Mode Human Camp
+   else if (tactic == 4 && !offensiveWpts.IsEmpty()) // offensive goal
+   {   
+	   int playerWpIndex = g_waypoint->FindNearest(pev->origin);
+	   int targetWpIndex = -1;
+	   float distance = 9999.9f;
+	   
+	   for (int i = 0; i <= offensiveWpts.GetElementNumber(); i++)
+	   {
+		   int wpIndex;
+		   offensiveWpts.GetAt(i, wpIndex);
+		   if (wpIndex >= 0 && wpIndex < g_numWaypoints)
+		   {
+			   float theDistance = (pev->origin - g_waypoint->GetPath(wpIndex)->origin).GetLength();
+
+			   if (playerWpIndex >= 0 && playerWpIndex < g_numWaypoints)
+				   theDistance = g_waypoint->GetPathDistanceFloat(playerWpIndex, wpIndex);
+
+			   if (theDistance < distance)
+			   {
+				   distance = theDistance;
+				   targetWpIndex = wpIndex;
+			   }
+		   }
+	   }
+
+	   if (targetWpIndex >= 0 && targetWpIndex < g_numWaypoints)
+		   return m_chosenGoalIndex = targetWpIndex; 
+   } 
 
    if (m_currentWaypointIndex == -1 || m_currentWaypointIndex >= g_numWaypoints)
       ChangeWptIndex (g_waypoint->FindNearest (pev->origin));
@@ -596,9 +586,6 @@ void Bot::FindShortestPath(int srcIndex, int destIndex)
 	m_navNodeStart = node;
 	m_navNode = m_navNodeStart;
 
-	// SyPB Pro P.29 - True Shortest Path
-	bool fristNode = true;
-
 	while (srcIndex != destIndex)
 	{
 		srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
@@ -608,37 +595,6 @@ void Bot::FindShortestPath(int srcIndex, int destIndex)
 			GetCurrentTask()->data = -1;
 
 			return;
-		}
-
-		if (fristNode)
-		{
-			fristNode = false;
-			PathNode *newNode = new PathNode;
-			newNode->index = srcIndex;
-			newNode->next = null;
-			Vector targetOrigin = g_waypoint->GetPath(destIndex)->origin;
-
-			if (((targetOrigin - (g_waypoint->GetPath(newNode->index)->origin)).GetLength()) <
-				((targetOrigin - (g_waypoint->GetPath(node->index)->origin)).GetLength()))
-			{
-				node = newNode;
-				node->index = srcIndex;
-				node->next = null;
-
-				m_navNodeStart = node;
-				m_navNode = m_navNodeStart;
-				continue;
-			}
-
-			node->next = newNode;
-			node = node->next;
-
-			if (node == null)
-				TerminateOnMalloc();
-
-			node->index = srcIndex;
-			node->next = null;
-			continue;
 		}
 
 		node->next = new PathNode;
@@ -1036,6 +992,62 @@ void Bot::DeleteSearchNodes (void)
    m_chosenGoalIndex = -1;
 }
 
+// SyPB Pro P.30 - Move Target
+void Bot::MoveTargetSrc(void)
+{
+	float gDistance = 9999.9f, minDistance[3];
+	int i, wpGIndex = -1, wpIndex[3];
+
+	for (i = 0; i < 3; i++)
+	{
+		minDistance[i] = 9999.9f;
+		wpIndex[i] = -1;
+	}
+
+	for (i = 0; i < g_numWaypoints; i++)
+	{
+		float distance = (g_waypoint->m_paths[i]->origin - pev->origin).GetLength();
+		if (distance < minDistance[3] && distance <= 100)
+		{
+			if (m_currentWaypointIndex && !g_waypoint->IsVisible(m_currentWaypointIndex, i))
+				continue;
+			else if (g_waypoint->m_paths[i]->origin.z >= pev->origin.z + 40.0f)
+				continue;
+
+			minDistance[2] = distance;
+			wpIndex[2] = i;
+
+			for (int j = 1; j >= 0; j--)
+			{
+				if (distance < minDistance[j])
+				{
+					minDistance[j + 1] = minDistance[j];
+					wpIndex[j + 1] = wpIndex[j];
+
+					minDistance[j] = distance;
+					wpIndex[j] = i;
+				}
+			}
+		}
+	}
+
+	for (i = 0; i < 3; i++)
+	{
+		if (wpIndex[i] != -1)
+		{
+			float distance = (g_waypoint->m_paths[wpIndex[i]]->origin - m_moveTargetOrigin).GetLength();
+			if (distance < gDistance)
+			{
+				gDistance = distance;
+				wpGIndex = wpIndex[i];
+			}
+		}
+	}
+
+	if (wpGIndex != -1)
+		ChangeWptIndex(wpGIndex, 0);
+}
+
 //SyPB Pro P.24 - Move Target
 void Bot::SetMoveTarget (edict_t *entity)
 {
@@ -1218,7 +1230,7 @@ void Bot::GetValidWaypoint (void)
    }
 }
 
-void Bot::ChangeWptIndex (int waypointIndex)
+void Bot::ChangeWptIndex (int waypointIndex, int nonSet)
 {
    m_prevWptIndex[4] = m_prevWptIndex[3];
    m_prevWptIndex[3] = m_prevWptIndex[2];
@@ -2252,15 +2264,19 @@ int Bot::GetAimingWaypoint (void)
 // SyPB Pro P.26 - no aim type var
 void Bot::FacePosition(void)
 {
+	// SyPB Pro P.30 - AMXX API
+	if (m_lookAtAPI != nullvec)
+		m_lookAt = m_lookAtAPI;
+
 	// adjust all body and view angles to face an absolute vector
-	Vector direction = (m_lookAt - GetGunPosition()).ToAngles() + pev->punchangle * static_cast <float> (m_skill) / 100.0f;
+	//Vector direction = (m_lookAt - GetGunPosition()).ToAngles() + pev->punchangle * static_cast <float> (m_skill) / 100.0f;
+	Vector direction = (m_lookAt - EyePosition ()).ToAngles() + pev->punchangle;
 	direction.x *= -1.0f; // invert for engine
 
 	Vector deviation = (direction - pev->v_angle);
 
 	direction.ClampAngles();
 	deviation.ClampAngles();
-
 
 	// SyPB Pro P.29 - Aim Os
 	if (!FNullEnt(m_enemy) && (m_wantsToFire || m_currentWeapon == WEAPON_AWP) && m_skill >= 80)

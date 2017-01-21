@@ -128,36 +128,43 @@ int BotControl::CreateBot (String name, int skill, int personality, int team, in
       }
    }
 
-   bool getName = false;
-   if (!g_botNames.IsEmpty ())
+   if (name.GetLength () <= 0)  // SyPB Pro P.30 - Set Bot Name
    {
-	   ITERATE_ARRAY (g_botNames, j)
+	   bool getName = false;
+	   if (!g_botNames.IsEmpty())
 	   {
-		   if (!g_botNames[j].isUsed)
+		   ITERATE_ARRAY(g_botNames, j)
 		   {
-			   getName = true;
-			   break;
+			   if (!g_botNames[j].isUsed)
+			   {
+				   getName = true;
+				   break;
+			   }
 		   }
 	   }
-   }
 
-   if (getName)
-   {
-	   bool nameUse = true;
-
-	   while (nameUse)
+	   if (getName)
 	   {
-		   NameItem &botName = g_botNames.GetRandomElement ();
-		   if (!botName.isUsed)
+		   bool nameUse = true;
+
+		   while (nameUse)
 		   {
-			   nameUse = false;
-			   botName.isUsed = true;
-			   sprintf (outputName, "%s", botName.name);
+			   NameItem &botName = g_botNames.GetRandomElement();
+			   if (!botName.isUsed)
+			   {
+				   nameUse = false;
+				   botName.isUsed = true;
+				   sprintf(outputName, "%s", botName.name);
+			   }
 		   }
 	   }
+	   else
+		   sprintf(outputName, "[SyPB] bot%i", engine->RandomInt(-9999, 9999)); // just pick ugly random name
    }
    else
-	   sprintf (outputName, "[SyPB] bot%i", engine->RandomInt (-9999, 9999)); // just pick ugly random name
+	   sprintf(outputName, "[SyPB] %s", name);
+
+
 
    if (FNullEnt ((bot = (*g_engfuncs.pfnCreateFakeClient) (outputName))))
    {
@@ -308,6 +315,32 @@ void BotControl::CheckAutoVacate (edict_t * /*ent*/)
 
    if (sypb_autovacate.GetBool ())
       RemoveRandom ();
+}
+
+// SyPB Pro P.30 - AMXX API
+void BotControl::AddBotAPI(const String &name, int skill, int team)
+{
+	if (g_botManager->GetBotsNum() + 1 > sypb_quota.GetInt())
+		sypb_quota.SetInt(g_botManager->GetBotsNum() + 1);
+
+	int resultOfCall = CreateBot(name, skill, -1, team, -1);
+
+	// check the result of creation
+	if (resultOfCall == 0)
+	{
+		m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
+		sypb_quota.SetInt(0); // reset quota
+
+		// SyPB Pro P.23 - SgdWP
+		ChartPrint("[SyPB] You can input [sypb sgdwp on] make the new waypoints!!");
+	}
+	else if (resultOfCall == 2)
+	{
+		m_creationTab.RemoveAll(); // maximum players reached, so set quota to maximum players
+		sypb_quota.SetInt(GetBotsNum());
+	}
+
+	m_maintainTime = engine->GetTime() + 0.2f;
 }
 
 void BotControl::MaintainBotQuota (void)
@@ -468,63 +501,62 @@ void BotControl::RemoveFromTeam (Team team, bool removeAll)
    }
 }
 
-void BotControl::RemoveMenu (edict_t *ent, int selection)
+void BotControl::RemoveMenu(edict_t *ent, int selection)
 {
-   // this function displays remove bot menu to specified entity (this function show's only sypb's).
+	if ((selection > 4) || (selection < 1))
+		return;
 
-   if (selection > 4 || selection < 1)
-      return;
+	char tempBuffer[1024], buffer[1024];
+	memset(tempBuffer, 0, sizeof(tempBuffer));
+	memset(buffer, 0, sizeof(buffer));
 
-   char tempBuffer[1024], buffer[1024];
+	int validSlots = (selection == 4) ? (1 << 9) : ((1 << 8) | (1 << 9));
+	// SyPB Pro P.30 - Debugs
+	for (int i = ((selection - 1) * 8); i < selection * 8; ++i)
+	{
+		if ((m_bots[i] != null) && !FNullEnt(m_bots[i]->GetEntity()))
+		{
+			validSlots |= 1 << (i - ((selection - 1) * 8));
+			sprintf(buffer, "%s %1.1d. %s%s\n", buffer, i - ((selection - 1) * 8) + 1, STRING(m_bots[i]->pev->netname), GetTeam(m_bots[i]->GetEntity()) == TEAM_COUNTER ? " \\y(CT)\\w" : " \\r(T)\\w");
+		}
+		else if (!FNullEnt(g_clients[i].ent))
+			sprintf(buffer, "%s %1.1d.\\d %s (Not SyPB) \\w\n", buffer, i - ((selection - 1) * 8) + 1, STRING(g_clients[i].ent->v.netname));
+		else
+			sprintf(buffer, "%s %1.1d.\\d Null \\w\n", buffer, i - ((selection - 1) * 8) + 1);
+	}
 
-   memset (tempBuffer, 0, sizeof (tempBuffer));
-   memset (buffer, 0, sizeof (buffer));
+	sprintf(tempBuffer, "\\ySyPB Remove Menu (%d/4):\\w\n\n%s\n%s 0. Back", selection, buffer, (selection == 4) ? "" : " 9. More...\n");
 
-   int validSlots = (selection == 4) ? (1 << 9) : ((1 << 8) | (1 << 9));
+	switch (selection)
+	{
+	case 1:
+		g_menus[14].validSlots = validSlots & static_cast <unsigned int> (-1);
+		g_menus[14].menuText = tempBuffer;
 
-   for (int i = (selection - 1 * 8); i < selection * 8; i++)
-   {
-      if ((m_bots[i] != null) && !FNullEnt (m_bots[i]->GetEntity ()))
-      {
-         validSlots |= 1 << (i - ((selection - 1) * 8));
-         sprintf (buffer, "%s %1.1d. %s%s\n", buffer, i - ((selection - 1) * 8) + 1, STRING (m_bots[i]->pev->netname), GetTeam (m_bots[i]->GetEntity ()) == TEAM_COUNTER ? " \\y(CT)\\w" : " \\r(T)\\w");
-      }
-      else
-         sprintf (buffer, "%s\\d %1.1d. Not a SyPB\\w\n", buffer, i - ((selection - 1) * 8) + 1);
-   }
+		DisplayMenuToClient(ent, &g_menus[14]);
+		break;
 
-   sprintf (tempBuffer, "\\ySyPB Remove Menu (%d/4):\\w\n\n%s\n%s 0. Back", selection, buffer, (selection == 4) ? "" : " 9. More...\n");
+	case 2:
+		g_menus[15].validSlots = validSlots & static_cast <unsigned int> (-1);
+		g_menus[15].menuText = tempBuffer;
 
-   switch (selection)
-   {
-   case 1:
-      g_menus[14].validSlots = validSlots & static_cast <unsigned int> (-1);
-      g_menus[14].menuText = tempBuffer;
+		DisplayMenuToClient(ent, &g_menus[15]);
+		break;
 
-      DisplayMenuToClient (ent, &g_menus[14]);
-      break;
+	case 3:
+		g_menus[16].validSlots = validSlots & static_cast <unsigned int> (-1);
+		g_menus[16].menuText = tempBuffer;
 
-   case 2:
-      g_menus[15].validSlots = validSlots & static_cast <unsigned int> (-1);
-      g_menus[15].menuText = tempBuffer;
+		DisplayMenuToClient(ent, &g_menus[16]);
+		break;
 
-      DisplayMenuToClient (ent, &g_menus[15]);
-      break;
+	case 4:
+		g_menus[17].validSlots = validSlots & static_cast <unsigned int> (-1);
+		g_menus[17].menuText = tempBuffer;
 
-    case 3:
-      g_menus[16].validSlots = validSlots & static_cast <unsigned int> (-1);
-      g_menus[16].menuText = tempBuffer;
-
-      DisplayMenuToClient (ent, &g_menus[16]);
-      break;
-
-   case 4:
-      g_menus[17].validSlots = validSlots & static_cast <unsigned int> (-1);
-      g_menus[17].menuText = tempBuffer;
-
-      DisplayMenuToClient (ent, &g_menus[17]);
-      break;
-   }
+		DisplayMenuToClient(ent, &g_menus[17]);
+		break;
+	}
 }
 
 void BotControl::KillAll (int team)
@@ -938,6 +970,15 @@ void Bot::NewRound (void)
    // delete all allocated path nodes
    DeleteSearchNodes ();
 
+   // SyPB Pro P.30 - AMXX API
+   m_weaponClipAPI = 0;
+   m_weaponReloadAPI = false;
+   m_lookAtAPI = nullvec;
+   m_moveAIAPI = false;
+   m_moveTargetEntityAPI = null;
+   m_enemyAPI = null;
+   m_blockCheckEnemyTime = engine->GetTime();
+
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
    m_currentWaypointIndex = -1;
@@ -1092,8 +1133,6 @@ void Bot::NewRound (void)
    m_combatStrafeDir = 0;
    m_fightStyle = 0;
    m_lastFightStyleCheck = 0.0f;
-
-   m_sniperReady = false; // SyPB Pro P.26 - Sniper Skill
 
    m_checkWeaponSwitch = true;
    m_checkKnifeSwitch = true;
