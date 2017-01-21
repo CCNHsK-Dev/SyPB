@@ -665,11 +665,12 @@ int CorrectGun(int weaponID)
 // SyPB Pro P.21 - New Shootable Thru Obstacle
 bool Bot::IsShootableThruObstacle (Vector dest)
 {
-	if (m_skill < 70)
-		return false;
-
 	int currentWeaponPenetrationPower = CorrectGun (m_currentWeapon);
 	if (currentWeaponPenetrationPower == 0)
+		return false;
+
+	// SyPB Pro P.45 - Shootable Thru Obstacle improve
+	if (m_lastEnemy->v.health >= (currentWeaponPenetrationPower * 20.0f))
 		return false;
 
 	TraceResult tr;
@@ -742,7 +743,7 @@ bool Bot::DoFirePause (float distance, FireDelay *fireDelay)
       return true;
    }
 
-   // SyPB Pro P.26 - CCNHSK
+   // SyPB Pro P.26 - Min Skill Attack Delay 
    if (m_skill < 80 && fireDelay->maxFireBullets + engine->RandomInt (0, 1) <= m_burstShotsFired)
    {
       float delayTime = 0.1f * distance / fireDelay->minBurstPauseFactor;
@@ -1736,8 +1737,12 @@ void Bot::SelectBestWeapon(void)
 
 	int weaponID = selectTab[selectIndex].id;
 
-	if (m_currentWeapon != weaponID)
-		SelectWeaponByName(selectTab[selectIndex].weaponName);
+	// SyPB Pro P.45 - Change Weapon small change 
+	if (weaponID == m_currentWeapon)
+		return;
+
+	//if (m_currentWeapon != weaponID)
+	SelectWeaponByName(selectTab[selectIndex].weaponName);
 
 	m_isReloading = false;
 	m_reloadState = RSTATE_NONE;

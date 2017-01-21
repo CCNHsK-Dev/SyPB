@@ -159,6 +159,9 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		// SyPB Pro P.37 - skill level improve
 		else if (sypb_difficulty.GetInt() == 0)
 			skill = engine->RandomInt(1, 29);
+		// SyPB Pro P.45 - Bot Skill Level improve
+		else if (sypb_difficulty.GetInt() == -2)
+			skill = engine->RandomInt(1, 100);
 		else
 		{
 			int maxSkill = sypb_maxskill.GetInt();
@@ -306,6 +309,45 @@ Bot *BotControl::FindOneValidAliveBot (void)
    return null;
 }
 
+// SyPB Pro P.45 - Bot think improve
+void BotControl::Think(void)
+{
+	extern ConVar sypb_stopbots;
+	for (int i = 0; i < engine->GetMaxClients(); i++)
+	{
+		if (m_bots[i] == null)
+			continue;
+
+		bool runThink = false;
+		if (m_bots[i]->m_thinkTimer <= engine->GetTime())
+		{
+			if (m_bots[i]->m_lastThinkTime <= engine->GetTime())
+				runThink = true;
+		}
+
+		if (runThink)
+		{
+			// SyPB Pro P.43 - Bot think improve
+			m_bots[i]->m_thinkTimer = engine->GetTime() + (1.0f / 24.9f);
+
+			m_bots[i]->Think();
+
+			m_bots[i]->m_moveAnglesForRunMove = m_bots[i]->m_moveAngles;
+			m_bots[i]->m_moveSpeedForRunMove = m_bots[i]->m_moveSpeed;
+			m_bots[i]->m_strafeSpeedForRunMove = m_bots[i]->m_strafeSpeed;
+		}
+		else if (!sypb_stopbots.GetBool())
+			m_bots[i]->FacePosition();
+
+		m_bots[i]->pev->angles.ClampAngles();
+		m_bots[i]->pev->v_angle.ClampAngles();
+
+		m_bots[i]->RunPlayerMovement(); // run the player movement 
+	}
+}
+
+
+/*
 // SyPB Pro P.38 - Bot think improve
 void BotControl::Think(void)
 {
@@ -358,7 +400,7 @@ void BotControl::Think(void)
 		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
 }
-
+*/
 void BotControl::AddBot (const String &name, int skill, int personality, int team, int member)
 {
    // this function putting bot creation process to queue to prevent engine crashes
@@ -913,13 +955,16 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 
 	// set all info buffer keys for this bot
 	char *buffer = GET_INFOKEYBUFFER(bot);
+
+	// SyPB Pro P.45 - Bot Base Data for CS
 	SET_CLIENT_KEYVALUE(clientIndex, buffer, "_vgui_menus", "0");
+	//SET_CLIENT_KEYVALUE(clientIndex, buffer, "model", "");
 
 	if (sypb_tagbots.GetBool())
 		SET_CLIENT_KEYVALUE(clientIndex, buffer, "*bot", "1");
 
 	rejectReason[0] = 0; // reset the reject reason template string
-	MDLL_ClientConnect(bot, "BOT", FormatBuffer("127.0.0.%d", ENTINDEX(bot) + 100), rejectReason);
+	MDLL_ClientConnect(bot, "Bot", "127.0.0.1", rejectReason);
 
 	if (!IsNullString(rejectReason))
 	{

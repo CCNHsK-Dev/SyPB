@@ -86,9 +86,10 @@ void AllReLoad(void)
 
 	g_npcManager->RemoveAll();
 }
-
+/*
 void FN_ClientPutInServer_Post(edict_t *pEntity)
 {
+	
 	if (g_swnpcRun && !FNullEnt(pEntity) && g_numWaypoints == -1)
 	{
 		GetWaypointData();
@@ -98,13 +99,22 @@ void FN_ClientPutInServer_Post(edict_t *pEntity)
 
 	RETURN_META(MRES_IGNORED);
 }
-
+*/
 void FN_StartFrame(void)
 {
+	// Pro P.45 - HLDS Fixed
+	if (g_swnpcRun && g_numWaypoints == -1)
+	{
+		GetWaypointData();
+		if (g_numWaypoints <= 0)
+			g_swnpcRun = false;
+	}
+
 	apiBuffer = 0;
 	SyPB_GetHostEntity();
 
 	g_npcManager->Think();
+
 	RETURN_META(MRES_IGNORED);
 }
 

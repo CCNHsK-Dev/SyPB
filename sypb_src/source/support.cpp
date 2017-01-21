@@ -355,6 +355,86 @@ void SetEntityActionData(int i, int index, int team, int action)
 	g_entityGetWpTime[i] = engine->GetTime();
 }
 
+void FakeClientCommand(edict_t *fakeClient, const char *format, ...)
+{
+	// the purpose of this function is to provide fakeclients (bots) with the same client
+	// command-scripting advantages (putting multiple commands in one line between semicolons)
+	// as real players. It is an improved version of botman's FakeClientCommand, in which you
+	// supply directly the whole string as if you were typing it in the bot's "console". It
+	// is supposed to work exactly like the pfnClientCommand (server-sided client command).
+
+	// This Use YaPB Lastly Version 
+
+	if (FNullEnt(fakeClient))
+		return; // reliability check
+
+	// SyPB Pro P.42 - Base Fixed
+	if (!IsValidBot(fakeClient))
+		return;
+
+	va_list ap;
+	static char string[256];
+
+	va_start(ap, format);
+	vsnprintf(string, sizeof(string), format, ap);
+	va_end(ap);
+
+	if (IsNullString(string))
+		return;
+
+	g_isFakeCommand = true;
+
+	int i, pos = 0;
+	int length = strlen(string);
+	int stringIndex = 0;
+
+	while (pos < length)
+	{
+		int start = pos;
+		int stop = pos;
+
+		while (pos < length && string[pos] != ';')
+			pos++;
+
+		if (string[pos - 1] == '\n')
+			stop = pos - 2;
+		else
+			stop = pos - 1;
+
+		for (i = start; i <= stop; i++)
+			g_fakeArgv[i - start] = string[i];
+
+		g_fakeArgv[i - start] = 0;
+		pos++;
+
+		int index = 0;
+		stringIndex = 0;
+
+		while (index < i - start)
+		{
+			while (index < i - start && g_fakeArgv[index] == ' ')
+				index++;
+
+			if (g_fakeArgv[index] == '"')
+			{
+				index++;
+
+				while (index < i - start && g_fakeArgv[index] != '"')
+					index++;
+				index++;
+			}
+			else
+				while (index < i - start && g_fakeArgv[index] != ' ')
+					index++;
+
+			stringIndex++;
+		}
+		MDLL_ClientCommand(fakeClient);
+	}
+	g_isFakeCommand = false;
+}
+
+/*
 void FakeClientCommand (edict_t *fakeClient, const char *format, ...)
 {
    // the purpose of this function is to provide fakeclients (bots) with the same client
@@ -438,7 +518,7 @@ void FakeClientCommand (edict_t *fakeClient, const char *format, ...)
    g_isFakeCommand = false; // reset the "fakeclient command" flag
    g_fakeArgc = 0; // and the argument count
 }
-
+*/
 const char *GetField (const char *string, int fieldId, bool endLine)
 {
    // This function gets and returns a particuliar field in a string where several szFields are
@@ -659,14 +739,28 @@ void RoundInit (void)
 // SyPB Pro P.43 - Game Mode Setting
 void AutoLoadGameMode(void)
 {
+	// SyPB Pro P.45 - Game Mode Check Num
+	static int checkShowTextTime = 0;
+	checkShowTextTime++;
+
 	// DM:KD
 	char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
 	if (TryFileOpen(Plugin_INI))
 	{
 		if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1)
+		{
+			if (checkShowTextTime < 3 || GetGameMod () != 1)
+				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-DM ***");
+
 			sypb_gamemod.SetInt(1);
+		}
 		else
+		{
+			if (checkShowTextTime < 3 || GetGameMod() != 0)
+				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-TDM ***");
+
 			sypb_gamemod.SetInt(0);
+		}
 
 		goto lastly;
 	}
@@ -675,6 +769,9 @@ void AutoLoadGameMode(void)
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
 	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
 	{
+		if (checkShowTextTime < 3 || GetGameMod() != 4)
+			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
+
 		sypb_gamemod.SetInt(4);
 		sypb_walkallow.SetInt(0);
 
@@ -703,21 +800,25 @@ void AutoLoadGameMode(void)
 
 			if (delayTime > 0)
 			{
+				if (checkShowTextTime < 3 || GetGameMod() != 2)
+					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (ZP) ***");
+
 				sypb_gamemod.SetInt(2);
 				sypb_walkallow.SetInt(0);
 
 				// SyPB Pro P.34 - ZP TIME FIXED
 				g_DelayTimer = engine->GetTime() + delayTime;
-				break;
+				
+				goto lastly;
 			}
-
-			goto lastly;
 		}
 	}
 
-	// CS:BTE
+	// CS:BTE Support 
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
-	if (TryFileOpen(Plugin_INI))
+	if (TryFileOpen(Plugin_INI) ||
+		// SyPB Pro P.45 - BTE Facebook Version Support
+		TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_config/bte_blockresource.txt", GetModName())))
 	{
 		const int Const_GameModes = 13;
 		int bteGameModAi[Const_GameModes] =
@@ -752,9 +853,12 @@ void AutoLoadGameMode(void)
 					g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
 				}
 
-				ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
+				if (checkShowTextTime < 3 || GetGameMod() != bteGameModAi[i])
+					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
+
 				if (i == 3 || i == 9)
 				{
+					ServerPrint("***** SyPB not support the mode now :( *****");
 					ServerPrint("***** SyPB not support the mode now :( *****");
 					ServerPrint("***** SyPB not support the mode now :( *****");
 
@@ -766,11 +870,23 @@ void AutoLoadGameMode(void)
 				// SyPB Pro P.36 - bte support 
 				g_gameVersion = CSVER_CZERO;
 
+				// SyPB Pro P.45 - BTE support improve
+				if (checkShowTextTime < 3)
+					ServerCommand("sv_restart 1");
+
 				break;
 			}
 		}
 
 		goto lastly;
+	}
+
+	if (checkShowTextTime < 3)
+	{
+		if (GetGameMod() == 0)
+			ServerPrint("*** SyPB Auto Game Mode Setting: Base Mode ***");
+		else
+			ServerPrint("*** SyPB Auto Game Mode Setting: N/A ***");
 	}
 
 lastly:
@@ -869,14 +985,16 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		i = ENTINDEX(ent) - 1;
 	else
 	{
-		for (i = 0; i < entityNum; i++)
+		// SyPB Pro P.45 - Small Bug Fixed
+		for (int j = 0; j < entityNum; j++)
 		{
-			if (g_entityId[i] == -1)
+			if (g_entityId[j] == -1)
 				continue;
 
-			if (ent != INDEXENT(g_entityId[i]))
+			if (ent != INDEXENT(g_entityId[j]))
 				continue;
 
+			i = j;
 			break;
 		}
 	}
@@ -949,7 +1067,6 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		int wpIndex;
 		if (isPlayer)
 		{
-			//wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);  testtest
 			wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &g_clients[i].wpIndex2, mode);
 
 			g_clients[i].getWpOrigin = origin;

@@ -458,8 +458,6 @@ bool Bot::DoWaypointNav (void)
 {
    // this function is a main path navigation
 
-	TraceResult tr;//, tr2;
-
    // check if we need to find a waypoint...
    if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
    {
@@ -503,26 +501,48 @@ bool Bot::DoWaypointNav (void)
 		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0, 0, 16);
 	   else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
 	   {
+		   /*
 		   m_moveSpeed = waypointDistance;
 
 		   if (m_moveSpeed < 150.0f)
 			   m_moveSpeed = 150.0f;
 		   else if (m_moveSpeed > pev->maxspeed)
+			   m_moveSpeed = pev->maxspeed; */
+
+		   // SyPB Pro P.45 - Move Speed improve TESTTEST
+		   if (m_moveSpeed > pev->maxspeed)
 			   m_moveSpeed = pev->maxspeed;
+		   else
+		   {
+			   if (m_moveSpeed <= GetWalkSpeed())
+				   m_moveSpeed = GetWalkSpeed();
+			   else if (m_moveSpeed < 150.0f)
+				   m_moveSpeed = 150.0f;
+		   }
 	   }
    }
 
-   // check if we are going through a door...
-   TraceLine(pev->origin, m_waypointOrigin, true, GetEntity(), &tr);
-
-   // SyPB Pro P.13
-   if (!FNullEnt(tr.pHit))
+   // SyPB Pro P.45 - Waypoint Door improve
+   bool haveDoorEntity = false;
+   edict_t *door_entity = null;
+   while (!FNullEnt(door_entity = FIND_ENTITY_IN_SPHERE(door_entity, pev->origin, 150.0f)))
    {
-	   //if (strncmp(STRING(tr.pHit->v.classname), "func_door", 9))
-	   // SyPB Pro P.42 - Shit Bugs Fixed.....
-	   if (strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
+	   if (strncmp(STRING(door_entity->v.classname), "func_door", 9) == 0)
 	   {
-		   if ((GetEntityOrigin(tr.pHit) - pev->origin).GetLength() < 150)
+		   haveDoorEntity = true;
+		   break;
+	   }
+   }
+
+   if (haveDoorEntity)
+   {
+	   TraceResult tr;
+	   TraceLine(pev->origin, m_waypointOrigin, true, GetEntity(), &tr);
+
+	   if (!FNullEnt(tr.pHit))
+	   {
+		   // SyPB Pro P.42 - Shit Bugs Fixed.....
+		   if (strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
 		   {
 			   m_lastCollTime = engine->GetTime() + 0.5f;
 
@@ -555,9 +575,9 @@ bool Bot::DoWaypointNav (void)
 		   else
 			   m_doorOpenAttempt = 0;
 	   }
-	   else
-		   m_doorOpenAttempt = 0;
    }
+   else
+	   m_doorOpenAttempt = 0;
 
    float desiredDistance = 0.0f;
 
@@ -1927,6 +1947,10 @@ bool Bot::CantMoveForward (Vector normal, TraceResult *tr)
       return true;  // bot's head will hit something
    }
 
+   // SyPB Pro P.45 - TESTTEST
+   return false;
+
+   /*
    // bot's head is clear, check at shoulder level...
    // trace from the bot's shoulder left diagonal forward to the right shoulder...
    src = EyePosition () + Vector (0, 0, -16) - g_pGlobals->v_right * 16;
@@ -1993,68 +2017,9 @@ bool Bot::CantMoveForward (Vector normal, TraceResult *tr)
       if (tr->flFraction < 1.0f && strncmp ("func_door", STRING (tr->pHit->v.classname), 9) != 0)
          return true;  // bot's body will hit something
    }
-   return false;  // bot can move forward, return false
+   return false;  // bot can move forward, return false */
 }
 
-/*
-bool Bot::CanStrafeLeft (TraceResult *tr)
-{
-   // this function checks if bot can move sideways
-
-   MakeVectors (pev->v_angle);
-
-   Vector src = pev->origin;
-   Vector left = src - g_pGlobals->v_right * -40;
-
-   // trace from the bot's waist straight left...
-   TraceLine (src, left, true, GetEntity (), tr);
-
-   // check if the trace hit something...
-   if (tr->flFraction < 1.0f)
-      return false;  // bot's body will hit something
-
-   src = left;
-   left = left + g_pGlobals->v_forward * 40;
-
-   // trace from the strafe pos straight forward...
-   TraceLine (src, left, true, GetEntity (), tr);
-
-   // check if the trace hit something...
-   if (tr->flFraction < 1.0f)
-      return false;  // bot's body will hit something
-
-   return true;
-}
-
-bool Bot::CanStrafeRight (TraceResult * tr)
-{
-   // this function checks if bot can move sideways
-
-   MakeVectors (pev->v_angle);
-
-   Vector src = pev->origin;
-   Vector right = src + g_pGlobals->v_right * 40;
-
-   // trace from the bot's waist straight right...
-   TraceLine (src, right, true, GetEntity (), tr);
-
-   // check if the trace hit something...
-   if (tr->flFraction < 1.0f)
-      return false;  // bot's body will hit something
-
-   src = right;
-   right = right + g_pGlobals->v_forward * 40;
-
-   // trace from the strafe pos straight forward...
-   TraceLine (src, right, true, GetEntity (), tr);
-
-   // check if the trace hit something...
-   if (tr->flFraction < 1.0f)
-      return false;  // bot's body will hit something
-
-   return true;
-}
-*/
 bool Bot::CanJumpUp (Vector normal)
 {
    // this function check if bot can jump over some obstacle
@@ -2278,42 +2243,7 @@ bool Bot::CanDuckUnder (Vector normal)
    // if trace hit something, return false
    return tr.flFraction > 1.0f;
 }
-/*
-bool Bot::IsBlockedLeft (void)
-{
-   TraceResult tr;
-   float direction = m_moveSpeed < 0.0f ? -48.0f : 48.0f;
 
-   MakeVectors (pev->angles);
-
-   // do a trace to the left...
-   TraceLine (pev->origin, g_pGlobals->v_forward * direction - g_pGlobals->v_right * 48.0f, true, GetEntity (), &tr);
-
-   // check if the trace hit something...
-   if (tr.flFraction < 1.0f && strncmp ("func_door", STRING (tr.pHit->v.classname), 9) != 0)
-      return true;  // bot's body will hit something
-
-   return false;
-}
-
-bool Bot::IsBlockedRight (void)
-{
-   TraceResult tr;
-   float direction = m_moveSpeed < 0.0f ? -48.0f : 48.0f;
-
-
-   MakeVectors (pev->angles);
-
-   // do a trace to the right...
-   TraceLine (pev->origin, pev->origin + g_pGlobals->v_forward * direction + g_pGlobals->v_right * 48.0f, true, GetEntity (), &tr);
-
-   // check if the trace hit something...
-   if ((tr.flFraction < 1.0f) && (strncmp ("func_door", STRING (tr.pHit->v.classname), 9) != 0))
-      return true; // bot's body will hit something
-
-   return false;
-}
-*/
 bool Bot::CheckWallOnLeft (void)
 {
    TraceResult tr;
@@ -2608,8 +2538,9 @@ void Bot::SetStrafeSpeed (Vector moveDir, float strafeSpeed)
 // SyPB Pro P.28 - CT CS Ai
 int Bot::FindHostage(void)
 {
+	/*
 	if (GetGameMod() != 0)
-		return -1;
+		return -1; */
 
 	if ((GetTeam(GetEntity()) != TEAM_COUNTER) || !(g_mapType & MAP_CS))
 		return -1;

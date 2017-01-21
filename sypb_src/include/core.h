@@ -385,8 +385,7 @@ enum MapType
    MAP_ES = (1 << 3),
    MAP_KA = (1 << 4),
    MAP_FY = (1 << 5),
-   MAP_ZE = (1 << 6),
-   MAP_AWP = (1 << 7)
+   MAP_AWP = (1 << 6)
 };
 
 // defines for waypoint flags field (32 bits are available)
@@ -794,7 +793,8 @@ private:
    float m_GetNewEnemyTimer; // SyPB AIM
 
    int m_msecBuiltin; // random msec method for this bot
-   uint8_t m_msecVal; // calculated msec value
+   //uint8_t m_msecVal; // calculated msec value
+   float m_msecVal;
    float m_msecDel; // used for msec calculation
    float m_msecNum; // also used for mseccalculation
    float m_msecInterval; // used for leon hartwig's method for msec calculation

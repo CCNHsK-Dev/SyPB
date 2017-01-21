@@ -73,7 +73,7 @@ enum WaypointFlag
 	WAYPOINT_CAMP = (1 << 7), // waypoint is a camping point
 	WAYPOINT_NOHOSTAGE = (1 << 8), // only use this waypoint if no hostage
 	WAYPOINT_DJUMP = (1 << 9), // bot help's another bot (requster) to get somewhere (using djump)
-	WAYPOINT_ZMHMCAMP = (1 << 10), // SyPB Pro P.24 - Zombie Mod Human Camp
+	WAYPOINT_ZMHMCAMP = (1 << 10), // Zombie Mod Human Camp for SyPB
 	WAYPOINT_SNIPER = (1 << 28), // it's a specific sniper point
 	WAYPOINT_TERRORIST = (1 << 29), // it's a specific terrorist point
 	WAYPOINT_COUNTER = (1 << 30)  // it's a specific ct point

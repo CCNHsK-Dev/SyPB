@@ -15,12 +15,6 @@ _SwNPCLogFile SwNPCAPI_SwNPCLogFile;
 
 typedef int(*_SyPBGetWaypointData) (Vector **, float **, int32 **, int16 ***, uint16 ***, int32 ***);
 _SyPBGetWaypointData SwNPCAPI_SyPBGetWaypointData;
-/*
-typedef int(*_SyPBGetWaypointPath) (int **);
-_SyPBGetWaypointPath SwNPCAPI_SyPBGetWaypointPath; 
-
-typedef int(*_SyPBGetWaypointDist) (int **);
-_SyPBGetWaypointDist SwNPCAPI_SyPBGetWaypointDist; */
 
 typedef int(*_SyPBSetEntityAction) (int, int, int);
 _SyPBSetEntityAction SwNPCAPI_SyPBSetEntityAction;
@@ -87,21 +81,7 @@ void SyPBDataLoad(void)
 		LogToFile("Loading Fail, Pls Try upgrade your SyPB Version");
 		return;
 	}
-	/*
-	SwNPCAPI_SyPBGetWaypointPath = (_SyPBGetWaypointPath)GetProcAddress(dll, "SwNPC_GetWaypointPath");
-	if (!SwNPCAPI_SyPBGetWaypointPath)
-	{
-		LogToFile("Loading Fail, Pls Try upgrade your SyPB Version");
-		return;
-	}
 
-	SwNPCAPI_SyPBGetWaypointDist = (_SyPBGetWaypointDist)GetProcAddress(dll, "SwNPC_GetWaypointDist");
-	if (!SwNPCAPI_SyPBGetWaypointDist)
-	{
-		LogToFile("Loading Fail, Pls Try upgrade your SyPB Version");
-		return;
-	}
-	*/
 	SwNPCAPI_SyPBSetEntityAction = (_SyPBSetEntityAction)GetProcAddress(dll, "Amxx_SetEntityAction");
 	if (!SwNPCAPI_SyPBSetEntityAction)
 	{
@@ -165,6 +145,8 @@ int GetEntityWaypointPoint(edict_t *entity)
 
 void LoadEntityWaypointPoint(edict_t *getEntity, edict_t *targetEntity)
 {
+	// Pro P.45
+
 	SwNPCAPI_SyPBLoadEntityWaypointPoint(getEntity, targetEntity);
 }
 

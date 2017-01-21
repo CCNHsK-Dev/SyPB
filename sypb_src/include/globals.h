@@ -51,7 +51,6 @@ extern bool g_sendAudioFinished;
 extern bool g_isCommencing;
 extern bool g_leaderChoosen[2];
 
-extern float g_sgdNonCheckSave;
 extern bool g_sgdWaypoint;
 extern bool g_sautoWaypoint;
 extern int m_sautoRadius;
@@ -107,7 +106,7 @@ extern WeaponSelect g_weaponSelect[Const_NumWeapons + 1];
 extern WeaponProperty g_weaponDefs[Const_MaxWeapons + 1];
 
 extern Client_old g_clients[32];
-extern MenuText g_menus[25];
+extern MenuText g_menus[26];
 extern SkillDef g_skillTab[6];
 extern Task g_taskFilters[];
 

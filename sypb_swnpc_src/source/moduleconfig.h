@@ -157,7 +157,7 @@
 // #define FN_ClientConnect_Post				ClientConnect_Post
 // #define FN_ClientDisconnect_Post				ClientDisconnect_Post
 // #define FN_ClientKill_Post					ClientKill_Post
-#define FN_ClientPutInServer_Post				ClientPutInServer_Post
+// #define FN_ClientPutInServer_Post				ClientPutInServer_Post
 // #define FN_ClientCommand_Post				ClientCommand_Post
 // #define FN_ClientUserInfoChanged_Post		ClientUserInfoChanged_Post
 // #define FN_ServerActivate_Post				ServerActivate_Post

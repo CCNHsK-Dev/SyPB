@@ -36,7 +36,7 @@ void Waypoint::LoadWaypointData(Vector *origin, int32 *flags, float *radius, int
 		g_waypointPointFlag[i] = flags[i];
 		g_waypointPointRadius[i] = radius[i];
 
-		for (int j = 0; j < Const_MaxPathIndex; j++)
+		for (j = 0; j < Const_MaxPathIndex; j++)
 		{
 			g_wpConnectionIndex[i][j] = cnIndex[i][j];
 			g_wpConnectionFlags[i][j] = cnFlags[i][j];

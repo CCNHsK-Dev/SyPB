@@ -63,7 +63,6 @@ void NetworkMsg::Execute (void *p)
    {
    case NETMSG_VGUI:
       // this message is sent when a VGUI menu is displayed.
-
       if (m_state == 0)
       {
          switch (PTR_TO_INT (p))
@@ -78,7 +77,7 @@ void NetworkMsg::Execute (void *p)
             break;
          }
       }
-      break;
+      break; 
 
    case NETMSG_SHOWMENU:
       // this message is sent when a text menu is displayed.
@@ -86,8 +85,8 @@ void NetworkMsg::Execute (void *p)
       if (m_state < 3) // ignore first 3 fields of message
          break;
 
-      if (strcmp (PTR_TO_STR (p), "#Team_Select") == 0) // team select menu?
-         m_bot->m_startAction = CMENU_TEAM;
+	  if (strcmp(PTR_TO_STR(p), "#Team_Select") == 0) // team select menu?
+		  m_bot->m_startAction = CMENU_TEAM;
       else if (strcmp (PTR_TO_STR (p), "#Team_Select_Spect") == 0) // team select menu?
          m_bot->m_startAction = CMENU_TEAM;
       else if (strcmp (PTR_TO_STR (p), "#IG_Team_Select_Spect") == 0) // team select menu?
@@ -98,8 +97,8 @@ void NetworkMsg::Execute (void *p)
          m_bot->m_startAction = CMENU_TEAM;
       else if (strcmp (PTR_TO_STR (p), "#IG_VIP_Team_Select_Spect") == 0) // team select menu?
          m_bot->m_startAction = CMENU_TEAM;
-      else if (strcmp (PTR_TO_STR (p), "#Terrorist_Select") == 0) // T model select?
-         m_bot->m_startAction = CMENU_CLASS;
+	  else if (strcmp(PTR_TO_STR(p), "#Terrorist_Select") == 0) // T model select?
+		  m_bot->m_startAction = CMENU_CLASS;
       else if (strcmp (PTR_TO_STR (p), "#CT_Select") == 0) // CT model select menu?
          m_bot->m_startAction = CMENU_CLASS;
 
@@ -119,8 +118,8 @@ void NetworkMsg::Execute (void *p)
          break;
 
       case 2:
-         weaponProp.ammo1Max = PTR_TO_INT (p); // max ammo 1
-         break;
+		  weaponProp.ammo1Max = PTR_TO_INT(p); // max ammo 1
+		  break;
 
       case 5:
          weaponProp.slotID = PTR_TO_INT (p); // slot for this weapon
@@ -246,33 +245,17 @@ void NetworkMsg::Execute (void *p)
 		   break;
 
 	   case 1:
-		   // SyPB Pro P.34 - Base Change
-		   if (GetGameMod() == 0)
+		   if (strcmp(PTR_TO_STR(p), "defuser") == 0)
+			   m_bot->m_hasDefuser = (enabled != 0);
+		   else if (strcmp(PTR_TO_STR(p), "buyzone") == 0)
 		   {
-			   if (strcmp(PTR_TO_STR(p), "defuser") == 0)
-				   m_bot->m_hasDefuser = (enabled != 0);
-			   else if (strcmp(PTR_TO_STR(p), "buyzone") == 0)
-			   {
-				   m_bot->m_inBuyZone = (enabled != 0);
-				   m_bot->EquipInBuyzone(0);
-			   }
-			   else if (strcmp(PTR_TO_STR(p), "vipsafety") == 0)
-				   m_bot->m_inVIPZone = (enabled != 0);
-			   else if (strcmp(PTR_TO_STR(p), "c4") == 0)
-				   m_bot->m_inBombZone = (enabled == 2);
+			   m_bot->m_inBuyZone = (enabled != 0);
+			   m_bot->EquipInBuyzone(0);
 		   }
-		   else
-		   {
-			   m_bot->m_hasDefuser = false;
-			   m_bot->m_inVIPZone = false;
-			   m_bot->m_inBombZone = false;
-
-			   if (strcmp(PTR_TO_STR(p), "buyzone") == 0)
-			   {
-				   m_bot->m_inBuyZone = (enabled != 0);
-				   m_bot->EquipInBuyzone(0);
-			   }
-		   }
+		   else if (strcmp(PTR_TO_STR(p), "vipsafety") == 0)
+			   m_bot->m_inVIPZone = (enabled != 0);
+		   else if (strcmp(PTR_TO_STR(p), "c4") == 0)
+			   m_bot->m_inBombZone = (enabled == 2);
 
 		   break;
 	   }
@@ -290,6 +273,19 @@ void NetworkMsg::Execute (void *p)
          break;
 
       case 2:
+		  // SyPB Pro P.45 - Death Msg improve 
+		  edict_t *victim = INDEXENT(victimIndex);
+		  if (FNullEnt(victim) || !IsValidPlayer(victim))
+			  break;
+
+		  Bot *victimer = g_botManager->GetBot(victim);
+		  if (victimer != null)
+		  {
+			  victimer->GetCurrentTask()->data = -1;
+			  victimer->DeleteSearchNodes();
+		  }
+
+		  /*
 		  // SyPB Pro P.40 - Death Msg improve
 		  if (killerIndex != victimIndex)
 		  {
@@ -356,7 +352,7 @@ void NetworkMsg::Execute (void *p)
 					  victimer->m_notKilled = false;
 				  }
 			  }
-		  }
+		  } */
 		  break;
       }
       break;
@@ -470,7 +466,9 @@ void NetworkMsg::Execute (void *p)
       }
       break;
 
-   case NETMSG_SCOREINFO:
+   //case NETMSG_SCOREINFO:
+	   // SyPB Pro P.45 - TESTTEST
+	   /*
 	   switch (m_state)
 	   {
 	   case 0:
@@ -481,8 +479,8 @@ void NetworkMsg::Execute (void *p)
 		   // SyPB Pro P.29 - msg set team
 		   if (playerIndex >= 0 && playerIndex <= engine->GetMaxClients())
 			   GetTeam(ENT(playerIndex));
-      }
-      break;
+      } */
+    //  break;
 
    case NETMSG_BARTIME:
 	   if (m_state == 0)

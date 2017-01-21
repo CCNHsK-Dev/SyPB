@@ -622,6 +622,9 @@ void NPC::SetMoveTarget(edict_t *entity)
 		LoadEntityWaypointPoint(entity);
 		LoadEntityWaypointPoint(GetEntity(), entity);
 		m_currentWaypointIndex = -1;
+
+		// Pro P.45 - Move Target improve
+		FindWaypoint();
 	}
 	
 	SetEnemy(null);
@@ -876,7 +879,7 @@ void NPC::CheckStuck(float oldSpeed)
 
 			pev->origin.z += 1;
 		}
-
+		
 		m_goalWaypoint = -1;
 		m_currentWaypointIndex = -1;
 		DeleteSearchNodes();
@@ -890,8 +893,8 @@ bool NPC::WalkMove(void)
 	if (!IsOnFloor(GetEntity()))
 		return false;
 
-	float speed = GetDistance2D(pev->velocity);
-	if (speed <= 10.0f && speed >= -10.0f)
+	// P.45 - Walk Move improve
+	if (pev->speed == 0.0f)
 		return false;
 
 	int stepSize = 18;
@@ -903,18 +906,17 @@ bool NPC::WalkMove(void)
 
 	TraceResult tr;
 	UTIL_TraceHull(dest, src, ignore_monsters, head_hull, GetEntity(), &tr);
-	if (tr.flFraction > 0.0f && tr.flFraction != 1.0f && 
-		!tr.fStartSolid && !tr.fAllSolid && tr.fInOpen)
+	if (tr.flFraction != 1.0f) //tr.flFraction > 0.0f && 
 	{
 		float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin (GetEntity ()).z) - stepSize;
 
 		if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= stepSize)
 		{
-			pev->origin.z = newOriginZ;
+			pev->origin.z = newOriginZ + 0.5f;
 			return true;
 		}
-	}
-
+	} 
+	
 	return false;
 }
 
@@ -1296,6 +1298,15 @@ void NPC::DebugModeMsg(void)
 	else
 		strcpy(enemyName, " (null)");
 
+	// P.45 - Debugs Mode improve
+	char npcTeam[33];
+	if (m_npcTeam == 0)
+		sprintf(npcTeam, "TR");
+	else if (m_npcTeam == 1)
+		sprintf(npcTeam, "CT");
+	else 
+		sprintf(npcTeam, "Team-%d", m_npcTeam);
+
 	int navIndex[2] = { -1, -1 };
 	PathNode *navid = &m_navNode[0];
 	while (navid != null)
@@ -1317,14 +1328,16 @@ void NPC::DebugModeMsg(void)
 		"Enemy: %s  Team: %s\n"
 		"CWI: %d  GI: %d\n"
 		"Nav: %d  Next Nav :%d\n"
-		"Move Speed: %.2f  Speed: %.2f"
+		"Move Speed: %.2f  Speed: %.2f\n"
+		"Attack Distance : %.2f"
 		"",
 		gamemodName,
 		GetEntityName(GetEntity()), taskName,
-		enemyName, (m_npcTeam == 0) ? "TR" : "CT", 
+		enemyName, npcTeam, 
 		m_currentWaypointIndex, m_goalWaypoint, 
 		navIndex[0], navIndex[1], 
-		m_moveSpeed, GetDistance2D(pev->velocity));
+		m_moveSpeed, GetDistance2D(pev->velocity), 
+		m_attackDistance);
 
 	MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
 	WRITE_BYTE(TE_TEXTMESSAGE);

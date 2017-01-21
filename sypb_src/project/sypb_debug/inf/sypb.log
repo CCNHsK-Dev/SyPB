@@ -17,3 +17,4 @@ LINK : warning LNK4075: 忽略 '/INCREMENTAL'，由於 '/OPT:ICF' 規格
 basecode.obj : warning LNK4075: 忽略 '/EDITANDCONTINUE'，由於 '/OPT:ICF' 規格
      正在建立程式庫 .\sypb_debug\inf\sypb.lib 和物件 .\sypb_debug\inf\sypb.exp
   sypb.vcxproj -> C:\Users\mikeg\Desktop\sypb_src\project\.\sypb_debug\sypb.dll
+  sypb.vcxproj -> .\sypb_debug\sypb.pdb (Full PDB)

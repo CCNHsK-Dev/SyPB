@@ -350,23 +350,22 @@ void Waypoint::SgdWp_Set (const char *modset)
 		g_sgdWaypoint = true;
 		g_sautoWaypoint = false;
 
-		g_sgdNonCheckSave = engine->GetTime();
-
 		if (g_numWaypoints < 1)
 			CreateBasic ();
+
+		ChartPrint("[SgdWP] Hold 'E' Call [SgdWP] Menu *******");
 	}
 	else if (stricmp (modset, "off") == 0)
 	{
 		g_sautoWaypoint = false;
 		g_sgdWaypoint = false;
 		g_waypointOn = false;
-
-		g_sgdNonCheckSave = 0.0f;
 	}
-	else if (stricmp (modset, "save") == 0 && g_sgdWaypoint)
+	else if ((stricmp (modset, "save") == 0 || stricmp(modset, "save_non-check") == 0) &&
+		g_sgdWaypoint)
 	{
-		// SyPB Pro P.40 - SgdWP
-		if (g_waypoint->NodesValid() || engine->GetTime () <= g_sgdNonCheckSave)
+		// SyPB Pro P.45 - SgdWP 
+		if (stricmp(modset, "save_non-check") == 0 || g_waypoint->NodesValid())
 		{
 			Save();
 			g_sautoWaypoint = false;
@@ -381,10 +380,7 @@ void Waypoint::SgdWp_Set (const char *modset)
 		else
 		{
 			g_editNoclip = false;
-			g_sgdNonCheckSave = engine->GetTime() + 5.0f;
-
-			ChartPrint("[SgdWP] Cannot Savev your waypoint, you can save again now to non-check save");
-
+			ChartPrint("[SgdWP] Cannot Savev your waypoint, Your waypoint has the problem");
 		}
 	}
 
@@ -1494,9 +1490,17 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 			return false;
 	}
 
+	/*
 	TraceResult tr;
 	TraceHull(src, dest, true, head_hull, entity, &tr);
 	if (tr.flFraction >= 0.9f)
+		return true;
+		*/
+
+	// SyPB Pro P.45 - Waypoint OS improve
+	TraceResult tr;
+	TraceLine(src, dest, true, entity, &tr);
+	if (tr.flFraction == 1.0f)
 		return true;
 
 	return false;
@@ -1728,7 +1732,7 @@ char *Waypoint::GetWaypointInfo (int id)
 
    // SyPB Pro P.29 - Zombie Mode Hm Camp Waypoints
    if (path->flags & WAYPOINT_ZMHMCAMP)
-	   sprintf(messageBuffer, "Zombie Mode Hm Camp Waypoint");
+	   sprintf(messageBuffer, "Zombie Mode Human Camp Waypoint");
 
    // return the message buffer
    return messageBuffer;
@@ -2127,13 +2131,14 @@ void Waypoint::ShowWaypointMsg(void)
 		}
 
 		// SyPB Pro P.23 - SgdWP      
+		// SyPB Pro P.45 - SgdWP
 		if (g_sgdWaypoint)
 		{
 			length += sprintf(&tempMessage[length], "    Hold 'E' Call [SgdWP] Menu \n"
 				"    [Auto Put Waypoint]:%s \n", g_sautoWaypoint ? "on" : "off");
 
 			if (!g_sautoWaypoint)
-				length += sprintf(&tempMessage[length], "    You Can true on [Auto put Waypoint] (menu>4) \n");
+				length += sprintf(&tempMessage[length], "    You Can true on [Auto put Waypoint] (menu>7) \n");
 			else
 			{
 				length += sprintf(&tempMessage[length], "    System will auto save Waypoint, you can move in the map now \n"

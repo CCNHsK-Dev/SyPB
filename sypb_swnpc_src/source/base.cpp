@@ -240,9 +240,9 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 			if (force > 1000.0f)
 				force = 1000.0f;
 
-			Vector vecDir = (GetEntityOrigin(victim) - (attacker->v.absmin + attacker->v.absmax) * 0.5).Normalize();
+			Vector vecDir2 = (GetEntityOrigin(victim) - (attacker->v.absmin + attacker->v.absmax) * 0.5).Normalize();
 
-			Vector velocity = victim->v.velocity + vecDir * force;
+			Vector velocity = victim->v.velocity + vecDir2 * force;
 			victim->v.velocity = velocity;
 		}
 

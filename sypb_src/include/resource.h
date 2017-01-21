@@ -35,8 +35,8 @@
 //#define PRODUCT_DEV_VERSION_FORTEST "(Preview-2)"
 // Dev Version Date
 #define PV_VERSION_YEAR 2016
-#define PV_VERSION_MON 6
-#define PV_VERSION_DAY 20
+#define PV_VERSION_MON 8
+#define PV_VERSION_DAY 12
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
 #endif
@@ -46,13 +46,13 @@
 #define SUPPORT_API_VERSION_F 1.42 // SyPB API_P
 
 // SwNPC Version
-#define SUPPORT_SWNPC_VERSION "1.42"
-#define SUPPORT_SWNPC_VERSION_F 1.42
+#define SUPPORT_SWNPC_VERSION "1.45"
+#define SUPPORT_SWNPC_VERSION_F 1.45
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,44,20160613,642 // yyyy/mm/dd  
-#define PRODUCT_VERSION "Beta 1.44"
-#define PRODUCT_VERSION_F 1.44
+#define PRODUCT_VERSION_DWORD 1,45,20160811,650 // yyyy/mm/dd  
+#define PRODUCT_VERSION "Beta 1.45"
+#define PRODUCT_VERSION_F 1.45
 
 // general product information
 #define PRODUCT_NAME "SyPB"

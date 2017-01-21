@@ -51,7 +51,6 @@ bool g_autoWaypoint = false;
 bool g_bLearnJumpWaypoint = false;
 bool g_leaderChoosen[2] = {false, false};
 
-float g_sgdNonCheckSave = 0.0f;
 bool g_sgdWaypoint = false;
 bool g_sautoWaypoint = false;
 int m_sautoRadius = 32;
@@ -273,7 +272,7 @@ FireDelay g_fireDelay[Const_NumWeapons + 1] =
 };
 
 // bot menus
-MenuText g_menus[25] =
+MenuText g_menus[26] =
 {
 	// main menu
 	{
@@ -568,5 +567,15 @@ MenuText g_menus[25] =
 		"2. Counter-Terrorist\v"
 		"3. All\v"
 		"\v0. Exit"
+	},
+
+	// SyPB Pro P.45 - SgdWP
+	{
+		0x3ff,
+		"\\ySgdWP Save \\w\v"
+		"Your waypoint have a problem\v"
+		"Are You Sure Save it?\v"
+		"1. Yes, Save\v"
+		"2. No, I will change it"
 	}
 };

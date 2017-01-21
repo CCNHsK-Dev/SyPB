@@ -219,6 +219,9 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 		   "Version: %s%s (%u.%u.%u.%u)\n"
 		   "Support API Version:%.2f\n"
 		   "Support SwNPC Version:%.2f\n"
+#if defined(PRODUCT_DEV_VERSION)
+		   "Dev Version Outdate: %d/%d/%d \n"
+#endif
 		   "------------------------------------------------\n"
 		   "The AMXX API: %s \n"
 		   "AMXX API Version: %.2f (%u.%u.%u.%u)\n"
@@ -239,8 +242,10 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 	   ClientPrint(ent, print_console, versionData,
 		   PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION_FORTEST, "") != 0) ? "(Dev Version)" : "",
 		   PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, bV16[0], bV16[1], bV16[2], bV16[3],
-		   float(SUPPORT_API_VERSION_F),
-		   float(SUPPORT_SWNPC_VERSION_F),
+		   float(SUPPORT_API_VERSION_F), float(SUPPORT_SWNPC_VERSION_F),
+#if defined(PRODUCT_DEV_VERSION)
+		   PV_VERSION_DAY, PV_VERSION_MON, PV_VERSION_YEAR, 
+#endif
 		   //API_Version, 
 		   (amxxDLL_Version == -1.0) ? "FAIL" : "RUNNING",
 		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
@@ -260,7 +265,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       ClientPrint (ent, print_console, "Bot Commands:");
       ClientPrint (ent, print_console, "sypb version            - display version information.");
       ClientPrint (ent, print_console, "sypb about              - show bot about information.");
-      ClientPrint (ent, print_console, "sypb add                - create a bot in current game.");
+      //ClientPrint (ent, print_console, "sypb add                - create a bot in current game.");
       ClientPrint (ent, print_console, "sypb fill               - fill the server with random bots.");
       ClientPrint (ent, print_console, "sypb kickall            - disconnects all bots from current game.");
       ClientPrint (ent, print_console, "sypb killbots           - kills all bots in current game.");
@@ -268,6 +273,9 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       ClientPrint (ent, print_console, "sypb weaponmode         - select bot weapon mode.");
       ClientPrint (ent, print_console, "sypb votemap            - allows dead bots to vote for specific map.");
       ClientPrint (ent, print_console, "sypb cmenu              - displaying bots command menu.");
+
+
+	  ClientPrint(ent, print_console, "sypb_add                - create a bot in current game.");
 
       // SyPB Pro P.23 - SgdWP
       if (!IsDedicatedServer ())
@@ -1341,8 +1349,6 @@ int Spawn (edict_t *ent)
       g_mapType |= MAP_FY;
    else if (strncmp (GetMapName (), "ka_", 3) == 0) // knife arena map
       g_mapType |= MAP_KA;
-   else if (strncmp(GetMapName(), "ze_", 3) == 0) // SyPB Pro P.12
-	   g_mapType |= MAP_ZE; // Bte ZE Mod
    else if (strncmp(GetMapName(), "awp_", 4) == 0) // SyPB Pro P.32 - AWP MAP TYPE
 	   g_mapType |= MAP_AWP;
 
@@ -1882,9 +1888,7 @@ void ClientCommand(edict_t *ent)
 			{
 				DisplayMenuToClient(ent, null); // reset menu display
 
-#if defined(PRODUCT_DEV_VERSION)
 				extern ConVar sypb_debug;
-#endif
 
 				switch (selection)
 				{
@@ -1901,12 +1905,7 @@ void ClientCommand(edict_t *ent)
 					break;
 
 				case 4:
-#if defined(PRODUCT_DEV_VERSION)
 					sypb_debug.SetInt(sypb_debug.GetInt() ^ 1);
-#else
-					ChartPrint("[SyPB Dev] This function for Dev-Version only");
-#endif
-
 					break;
 
 				case 5:
@@ -2074,6 +2073,10 @@ void ClientCommand(edict_t *ent)
 
 				case 9:
 					g_waypoint->SgdWp_Set("save");
+
+					// SyPB Pro P.45 - SgdWP
+					if (g_sgdWaypoint)
+						DisplayMenuToClient(ent, &g_menus[25]);
 					break;
 
 				case 10:
@@ -2081,48 +2084,6 @@ void ClientCommand(edict_t *ent)
 					break;
 				}
 
-				/*
-				DisplayMenuToClient (ent, null);
-
-				switch (selection)
-				{
-				case 1:
-				DisplayMenuToClient (ent, &g_menus[22]);
-				break;
-
-				case 2:
-				DisplayMenuToClient (ent, &g_menus[21]);
-				g_waypoint->Delete ();
-				break;
-
-				case 3:
-				DisplayMenuToClient (ent, &g_menus[21]);
-				g_waypoint->TeleportWaypoint ();
-				break;
-
-				case 4:  // SyPB Pro P.30 - SgdWP
-				DisplayMenuToClient(ent, &g_menus[20]);
-				break;
-
-				case 7:
-				DisplayMenuToClient(ent, &g_menus[21]);
-				g_sautoWaypoint = g_sautoWaypoint ? false : true;
-				g_waypoint->SetLearnJumpWaypoint(g_sautoWaypoint);
-				break;
-
-				case 8:
-				g_waypoint->SgdWp_Set ("off");
-				break;
-
-				case 9:
-				g_waypoint->SgdWp_Set ("save");
-				break;
-
-				case 10:
-				DisplayMenuToClient (ent, null);
-				break;
-				}
-				*/
 				if (g_isMetamod)
 					RETURN_META(MRES_SUPERCEDE);
 
@@ -2238,6 +2199,27 @@ void ClientCommand(edict_t *ent)
 					g_waypoint->ToggleFlags(WAYPOINT_COUNTER);
 					break;
 
+					break;
+				}
+
+				if (g_isMetamod)
+					RETURN_META(MRES_SUPERCEDE);
+
+				return;
+			}
+			// SyPB Pro P.45 - SgdWP 
+			else if (client->menu == &g_menus[25])
+			{
+				DisplayMenuToClient(ent, null);
+
+				switch (selection)
+				{
+				case 1:
+					g_waypoint->SgdWp_Set("save_non-check");
+					break;
+
+				case 2:
+					DisplayMenuToClient(ent, &g_menus[21]);
 					break;
 				}
 
@@ -3075,7 +3057,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       g_netMsg->SetId (NETMSG_SCREENFADE, GET_USER_MSG_ID (PLID, "ScreenFade", null));
       g_netMsg->SetId (NETMSG_HLTV, GET_USER_MSG_ID (PLID, "HLTV", null));
       g_netMsg->SetId (NETMSG_TEXTMSG, GET_USER_MSG_ID (PLID, "TextMsg", null));
-      g_netMsg->SetId (NETMSG_SCOREINFO, GET_USER_MSG_ID (PLID, "ScoreInfo", null));
+      //g_netMsg->SetId (NETMSG_SCOREINFO, GET_USER_MSG_ID (PLID, "ScoreInfo", null));
       g_netMsg->SetId (NETMSG_BARTIME, GET_USER_MSG_ID (PLID, "BarTime", null));
       g_netMsg->SetId (NETMSG_SENDAUDIO, GET_USER_MSG_ID (PLID, "SendAudio", null));
       g_netMsg->SetId (NETMSG_SAYTEXT, GET_USER_MSG_ID (PLID, "SayText", null));
@@ -3121,7 +3103,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
    {
       g_netMsg->Reset ();
 
-      g_netMsg->HandleMessageIfRequired (msgType, NETMSG_SCOREINFO);
+      //g_netMsg->HandleMessageIfRequired (msgType, NETMSG_SCOREINFO);
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_DEATH);
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_TEXTMSG);
 	  
@@ -3420,8 +3402,8 @@ int pfnRegUserMsg(const char *name, int size)
       g_netMsg->SetId (NETMSG_HLTV, message);
    else if (strcmp (name, "TextMsg") == 0)
       g_netMsg->SetId (NETMSG_TEXTMSG, message);
-   else if (strcmp (name, "ScoreInfo") == 0)
-      g_netMsg->SetId (NETMSG_SCOREINFO, message);
+   //else if (strcmp (name, "ScoreInfo") == 0)
+      //g_netMsg->SetId (NETMSG_SCOREINFO, message);
    else if (strcmp (name, "BarTime") == 0)
       g_netMsg->SetId (NETMSG_BARTIME, message);
    else if (strcmp (name, "SendAudio") == 0)
