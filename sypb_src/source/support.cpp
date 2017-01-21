@@ -1074,20 +1074,27 @@ void CheckWelcomeMessage (void)
    if (IsAlive (g_hostEntity) && !isReceived && receiveTime < 1.0f && (g_numWaypoints > 0 ? g_isCommencing : true))
       receiveTime = engine->GetTime () + 4.0f; // receive welcome message in four seconds after game has commencing
 
-   if (receiveTime > 0.0f && receiveTime < engine->GetTime () && !isReceived && (g_numWaypoints > 0 ? g_isCommencing : true))
+   if (receiveTime > 0.0f && receiveTime < engine->GetTime() && !isReceived && (g_numWaypoints > 0 ? g_isCommencing : true))
    {
-	  // SyPB Pro P.27 - new Start msg
-	   ChartPrint("----- SyPB %s.%u%s, {%s}, (c) %s-----",
-		  PRODUCT_VERSION, GenerateBuildNumber(), PRODUCT_DEV_VERSION, PRODUCT_DATE, PRODUCT_COPYRIGHT_YEAR);
-	   ChartPrint("-----  by %s, [%s]", PRODUCT_AUTHOR, PRODUCT_URL);
+	   // SyPB Pro P.31 - New Msg
+	   if (strcmp(PRODUCT_DEV_VERSION, "") != 0)
+	   {
+		   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+		   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
 
-      char WeComeMessage[4096];
-	  sprintf (WeComeMessage, "\nServer is running SyPB v%s.%u\nWaypoint Developed by %s\n\n%s", PRODUCT_VERSION, GenerateBuildNumber (), PRODUCT_AUTHOR, g_waypoint->GetInfo ());
+		   ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
+		   ChartPrint("***** Dev Version: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
 
-      HudMessage (g_hostEntity, true, Color (engine->RandomInt (33, 255), engine->RandomInt (33, 255), engine->RandomInt (33, 255)), WeComeMessage);
+		   if (amxxDLL_Version != -1.0)
+		   {
+			   ChartPrint("***** Dev Msg: Find API, Support API Version:%.2f", API_Version);
+			   ChartPrint("***** amxx dll version:%.2f (%u.%u.%u.%u)",
+				   amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
+		   }
+	   }
 
-      receiveTime = 0.0f;
-      isReceived = true;
+	   receiveTime = 0.0f;
+	   isReceived = true;
    }
 }
 

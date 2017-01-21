@@ -26,14 +26,14 @@
 #ifndef RESOURCE_INCLUDED
 #define RESOURCE_INCLUDED
 
-#define SUPPORT_API_VERSION "1.00"
+#define SUPPORT_API_VERSION "1.31" // SyPB API_P
 
 // general product information
 #define PRODUCT_NAME "SyPB"
-#define PRODUCT_VERSION_DWORD 1,30,220115,346
-#define PRODUCT_VERSION "Beta1.3.0"
-//#define PRODUCT_DEV_VERSION " (Dev Version 20/1)"
-//#define PRODUCT_DEV_VERSION " (Final Preview)"
+#define PRODUCT_VERSION_DWORD 1,31,1022015,361    // dd/mm/yyyy      
+#define PRODUCT_VERSION "Beta1.3.1"
+//#define PRODUCT_DEV_VERSION "(Dev)"
+//#define PRODUCT_DEV_VERSION " (Preview)"
 #define PRODUCT_DEV_VERSION ""
 #define PRODUCT_AUTHOR "HsK Dev-Blog @ CCN"
 #define PRODUCT_URL "http://ccnhsk-dev.blogspot.com/"

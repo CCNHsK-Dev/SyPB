@@ -788,34 +788,58 @@ WeaponSelectEnd:
    // need to care for burst fire?
    if (distance < 256.0f || m_blindTime > engine->GetTime ())
    {
-      if (selectId == WEAPON_KNIFE)
-      {
-		  /*
-         if (distance < 64.0f)
-         {
-            if (engine->RandomInt (1, 100) < 30 || HasShield ())
-               pev->button |= IN_ATTACK; // use primary attack
-            else
-               pev->button |= IN_ATTACK2; // use secondary attack
-         } */
+	   if (selectId == WEAPON_KNIFE)
+	   {
+		   // SyPB Pro P.31 - Knife Attack Ai
+		   distance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
 
-		  // SyPB Pro P.29 - Zombie Ai
-		  if (IsZombieBot(GetEntity()))
-		  {
-			  if (distance < 60.0f)
-				  pev->button |= IN_ATTACK;
-		  }
-		  else
-		  {
-			  if (distance < 64.0f)
-			  {
-				  if (engine->RandomInt(1, 100) < 30 || HasShield())
-					  pev->button |= IN_ATTACK; // use primary attack
-				  else
-					  pev->button |= IN_ATTACK2; // use secondary attack
-			  }
-		  }
-      }
+		   float kad1 = (m_knifeDistance1API <= 0) ? 64.0f : m_knifeDistance1API;; // Knife Attack Distance (API)
+		   float kad2 = (m_knifeDistance2API <= 0) ? 64.0f : m_knifeDistance2API;
+
+		   if (distance < kad1 || distance < kad2)
+		   {
+			   float distanceSkipZ = (pev->origin - GetEntityOrigin(m_enemy)).GetLength2D();
+			   if (distanceSkipZ < distance && pev->origin.z > GetEntityOrigin(m_enemy).z)
+				   pev->button |= IN_DUCK;
+
+			   if (IsZombieBot(GetEntity()))
+			   {
+				   if (distance < kad1)
+					   pev->button |= IN_ATTACK;
+				   else
+					   pev->button |= IN_ATTACK2;
+			   }
+			   else
+			   {
+				   if (distance > kad1)
+					   pev->button |= IN_ATTACK2;
+				   else if (distance > kad2)
+					   pev->button |= IN_ATTACK;
+				   else if (engine->RandomInt(1, 100) < 30 || HasShield())
+					   pev->button |= IN_ATTACK;
+				   else
+					   pev->button |= IN_ATTACK2;
+			   }
+		   }
+
+		   /*
+		   // SyPB Pro P.29 - Zombie Ai
+		   if (IsZombieBot(GetEntity()))
+		   {
+		   if (distance < 60.0f)
+		   pev->button |= IN_ATTACK;
+		   }
+		   else
+		   {
+		   if (distance < 64.0f)
+		   {
+		   if (engine->RandomInt(1, 100) < 30 || HasShield())
+		   pev->button |= IN_ATTACK; // use primary attack
+		   else
+		   pev->button |= IN_ATTACK2; // use secondary attack
+		   }
+		   } */
+	   }
       else
       {
          if (selectTab[chosenWeaponIndex].primaryFireHold) // if automatic weapon, just press attack
@@ -917,30 +941,40 @@ void Bot::FocusEnemy (void)
    }
    else
    {
-      if (m_currentWeapon == WEAPON_KNIFE)
-         m_wantsToFire = true;
-      else
-      {
-         float dot = GetShootingConeDeviation (GetEntity (), &m_enemyOrigin);
+	   if (m_currentWeapon == WEAPON_KNIFE)
+		   m_wantsToFire = true;
+	   else
+	   {
+		   // SyPB Pro P.31 - Flash Ai (Bot Flash has not enemy now)
+		   if (FNullEnt(m_enemy))
+		   {
+			   float dot = GetShootingConeDeviation(m_lastEnemy, &pev->origin);
+			   if (dot >= 0.90)
+				   m_wantsToFire = true;
+		   }
+		   else
+		   {
+			   float dot = GetShootingConeDeviation(GetEntity(), &m_enemyOrigin);
 
-         if (dot < 0.90)
-            m_wantsToFire = false;
-         else
-         {
-            float enemyDot = GetShootingConeDeviation (m_enemy, &pev->origin);
+			   if (dot < 0.90)
+				   m_wantsToFire = false;
+			   else
+			   {
+				   float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
 
-            // enemy faces bot?
-            if (enemyDot >= 0.90)
-               m_wantsToFire = true;
-            else
-            {
-               if (dot > 0.99)
-                  m_wantsToFire = true;
-               else
-                  m_wantsToFire = false;
-            }
-         }
-      }
+				   // enemy faces bot?
+				   if (enemyDot >= 0.90)
+					   m_wantsToFire = true;
+				   else
+				   {
+					   if (dot > 0.99)
+						   m_wantsToFire = true;
+					   else
+						   m_wantsToFire = false;
+				   }
+			   }
+		   }
+	   }
    }
 }
 

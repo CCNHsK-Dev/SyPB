@@ -2,11 +2,11 @@
 #ifndef RESOURCE_INCLUDED
 #define RESOURCE_INCLUDED
 
-//This Version support sypb api 1.00
-#define PRODUCT_VERSION "1.00"
-float dllVersion = 1.00;
+// SyPB AMXX API Version
+#define PRODUCT_VERSION "1.31"
+float dllVersion = 1.31;
 
-#define PRODUCT_VERSION_DWORD 1,00,210115,16
+#define PRODUCT_VERSION_DWORD 1,31,8022015,28  // dd/mm/yyyy   
 
 // general product information
 #define PRODUCT_NAME "SyPB AMXX DLL"

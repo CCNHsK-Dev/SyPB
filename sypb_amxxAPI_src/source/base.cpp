@@ -5,6 +5,11 @@
 #include "extdll.h"
 #include "version.h"
 
+// Calling the SyPB.dll ****
+typedef void(*_SypbAMXXAPI_Version)(float, int, int, int, int);
+_SypbAMXXAPI_Version AMXX_Check_APIVersion;
+// ****
+
 typedef bool(*_RunSypb)(void);
 _RunSypb Amxx_RunSypb;
 
@@ -41,6 +46,10 @@ _BlockWeaponReload Amxx_BlockWeaponReload;
 typedef void(*_AddSyPB)(const char *, int, int);
 _AddSyPB Amxx_AddSyPB;
 
+// API 1.31
+typedef void(*_SetKaDistance) (int, int, int);
+_SetKaDistance Amxx_SetKaDistance;
+
 float api_version = 0.0;
 
 void think(HMODULE dll)
@@ -49,7 +58,15 @@ void think(HMODULE dll)
 	if (!Amxx_RunSypb)
 	{
 		api_version = 0.0;
-		LogToFile("Load API::Amxx_IsSypb Failed");
+
+		LogToFile("***************************");
+		LogToFile("Error: Cannot Find SyPB");
+		LogToFile("-The Game Has not run SyPB/SyPB is old Version");
+		LogToFile("-Pls check your game running SyPB new version");
+		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
+		LogToFile("[Error] sypb_amxx will stop now");
+		LogToFile("***************************");
+
 		return;
 	}
 
@@ -57,16 +74,47 @@ void think(HMODULE dll)
 	if (!Amxx_APIVersion)
 	{
 		api_version = 0.0;
-		LogToFile("Load API::Amxx_APIVersion Failed");
+		LogToFile("***************************");
+		LogToFile("Error: API Error");
+		LogToFile("-We could not start the SyPB AMXX");
+		LogToFile("-Pls check your game running SyPB new version");
+		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
+		LogToFile("[Error] sypb_amxx will stop now");
+		LogToFile("***************************");
 		return;
 	}
-	else
-		api_version = Amxx_APIVersion();
+	Amxx_RunSypb();
+	
+	// Checking 
+	AMXX_Check_APIVersion = (_SypbAMXXAPI_Version)GetProcAddress(dll, "Amxx_Check_amxxdllversion");
+	if (!AMXX_Check_APIVersion)
+	{
+		LogToFile("***************************");
+		LogToFile("Error: API Version Error");
+		LogToFile("-Your SyPB Version is old");
+		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
+		LogToFile("***************************");
+		return;
+	}
+	AMXX_Check_APIVersion(dllVersion, PRODUCT_VERSION_DWORD);
+	// ---- API part start
+	
+	api_version = Amxx_APIVersion();
 
 	if (dllVersion != api_version)
-		LogToFile("Error: sypb_amxx version:%.2f & SyPB API Version: %.2f", dllVersion, api_version);
+	{
+		//LogToFile("Error: sypb_amxx version:%.2f & SyPB API Version: %.2f", dllVersion, api_version);
 
-	// ---- API part start
+		LogToFile("***************************");
+		LogToFile("Error: API Version Error");
+		if (dllVersion > api_version)
+			LogToFile("-Your SyPB API Version [%.2f] is old [SyPB AMXX Version is %.2f", api_version, dllVersion);
+		else
+			LogToFile("-Your SyPB AMXX Version [%.2f] is old [SyPB API Version is %.2f]", dllVersion, api_version);
+
+		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
+		LogToFile("***************************");
+	}
 
 	Amxx_IsSypb = (_IsSyPB)GetProcAddress(dll, "Amxx_IsSypb");
 	if (!Amxx_IsSypb)
@@ -107,9 +155,14 @@ void think(HMODULE dll)
 	Amxx_AddSyPB = (_AddSyPB)GetProcAddress(dll, "Amxx_AddSyPB");
 	if (!Amxx_AddSyPB)
 		LogToFile("Load API::Amxx_AddSyPB Failed");
+
+	// 1.31
+	Amxx_SetKaDistance = (_SetKaDistance)GetProcAddress(dll, "Amxx_SetKADistance");
+	if (!Amxx_SetKaDistance)
+		LogToFile("Load API::Amxx_SetKaDistance Failed");
 }
 
-static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params)
 {
 	if (!Amxx_RunSypb)
 		return false;
@@ -117,44 +170,44 @@ static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params) // 1.00
 	return Amxx_RunSypb();
 }
 
-static cell AMX_NATIVE_CALL amxx_apiVersion(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_apiVersion(AMX *amx, cell *params) 
 {
 	if (!Amxx_APIVersion)
-		return 0.0;
+		return -2;
 
-	return Amxx_APIVersion();
+	return amx_ftoc(Amxx_APIVersion());
 }
 
-static cell AMX_NATIVE_CALL amxx_IsSypb(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_IsSypb(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_IsSypb || api_version < 1.00)
+	if (!Amxx_IsSypb || api_version < float(1.30))
 		return -2;
 
 	int iType = params[1];
 	return Amxx_IsSypb(iType);
 }
 
-static cell AMX_NATIVE_CALL amxx_CheckEnemy(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_CheckEnemy(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_CheckEnemy || api_version < 1.00)
+	if (!Amxx_CheckEnemy || api_version < float(1.30))
 		return -2;
 
 	int iType = params[1];
 	return Amxx_CheckEnemy(iType);
 }
 
-static cell AMX_NATIVE_CALL amxx_CheckMoveTarget(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_CheckMoveTarget(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_CheckMoveTarget || api_version < 1.00)
+	if (!Amxx_CheckMoveTarget || api_version < float(1.30))
 		return -2;
 
 	int iType = params[1];
 	return Amxx_CheckMoveTarget(iType);
 }
 
-static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_SetEnemy || api_version < 1.00)
+	if (!Amxx_SetEnemy || api_version < float(1.30))
 		return -2;
 
 	int botId = params[1];
@@ -163,9 +216,9 @@ static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.00
 	Amxx_SetEnemy(botId, targetId, blockCheckTime);
 }
 
-static cell AMX_NATIVE_CALL amxx_SetMoveTarget(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_SetMoveTarget(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_SetMoveTarget || api_version < 1.00)
+	if (!Amxx_SetMoveTarget || api_version < float(1.30))
 		return -2;
 
 	int botId = params[1];
@@ -175,9 +228,9 @@ static cell AMX_NATIVE_CALL amxx_SetMoveTarget(AMX *amx, cell *params) // 1.00
 	Amxx_SetMoveTarget(botId, targetId, blockCheckTime);
 }
 
-static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_SetBotMove || api_version < 1.00)
+	if (!Amxx_SetBotMove || api_version < float(1.30))
 		return -2;
 
 	int id = params[1];
@@ -186,9 +239,9 @@ static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.00
 	Amxx_SetBotMove(id, moveAIforPlugin);
 }
 
-static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_SetBotLookAt || api_version < 1.00)
+	if (!Amxx_SetBotLookAt || api_version < float(1.30))
 		return -2;
 
 	int id = params[1];
@@ -199,9 +252,9 @@ static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.00
 	Amxx_SetBotLookAt(id, lookAt);
 }
 
-static cell AMX_NATIVE_CALL amxx_SetWeaponClip(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_SetWeaponClip(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_SetWeaponClip || api_version < 1.00)
+	if (!Amxx_SetWeaponClip || api_version < float(1.30))
 		return -2;
 
 	int id = params[1];
@@ -210,9 +263,9 @@ static cell AMX_NATIVE_CALL amxx_SetWeaponClip(AMX *amx, cell *params) // 1.00
 	Amxx_SetWeaponClip(id, weaponClip);
 }
 
-static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.00
+static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_BlockWeaponReload || api_version < 1.00)
+	if (!Amxx_BlockWeaponReload || api_version < float(1.30))
 		return -2;
 
 	int id = params[1];
@@ -221,9 +274,9 @@ static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.
 	Amxx_BlockWeaponReload(id, blockReload);
 }
 
-static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params)
+static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params) // 1.30
 {
-	if (!Amxx_AddSyPB || api_version < 1.00)
+	if (!Amxx_AddSyPB || api_version < float(1.30))
 		return -2;
 
 	const char *name = g_fn_GetAmxString(amx, params[1], 0, NULL);
@@ -231,6 +284,18 @@ static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params)
 	int team = params[3];
 
 	Amxx_AddSyPB(name, skill, team);
+}
+
+static cell AMX_NATIVE_CALL amxx_SetKaDistance(AMX *amx, cell *params) // 1.31
+{
+	if (!Amxx_SetKaDistance || api_version < float (1.31))
+		return -2;
+
+	int id = params[1];
+	int kad1 = params[2];
+	int kad2 = params[3];
+
+	Amxx_SetKaDistance(id, kad1, kad2);
 }
 
 AMX_NATIVE_INFO sypb_natives[] =
@@ -247,5 +312,7 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ "sypb_set_weapon_clip", amxx_SetWeaponClip}, 
 	{ "sypb_block_weapon_reload", amxx_BlockWeaponReload},
 	{ "sypb_add_bot", amxx_AddSyPB},
+	// 1.31
+	{ "sypb_set_ka_distance", amxx_SetKaDistance }, 
 	{ NULL, NULL },
 };

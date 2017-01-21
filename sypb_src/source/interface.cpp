@@ -178,21 +178,44 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    }
 
    // displays version information
-   else if (stricmp (arg0, "version") == 0 || stricmp (arg0, "ver") == 0)
+   else if (stricmp(arg0, "version") == 0 || stricmp(arg0, "ver") == 0)
    {
-      char versionData[] =
-         "------------------------------------------------\n"
-         "Name: %s\n"
-         "Version: %s.%u %s\n"
-         "Builded by: %s\n"
-		 "URL: %s \n"
-		 "Compiled: %s, %s (UTC +08:00)\n"
-         "Optimization: %s\n"
-         "Meta-Interface Version: %s\n"
-         "------------------------------------------------";
+	   // SyPB Pro P.31 - New Msg
+	   int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	   uint16 bV16[4] = { buildVersion[0], buildVersion[1], buildVersion[2], buildVersion[3] };
 
-	  ClientPrint(ent, print_console, versionData, PRODUCT_NAME, PRODUCT_VERSION, GenerateBuildNumber(), PRODUCT_DEV_VERSION, 
-		  PRODUCT_AUTHOR, PRODUCT_URL,__DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
+	   uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
+	   if (amxxDLL_Version == -1.0)
+	   {
+		   amxxbV16[0] = 0;
+		   amxxbV16[1] = 0;
+		   amxxbV16[2] = 0;
+		   amxxbV16[3] = 0;
+	   }
+
+	   char versionData[] =
+		   "------------------------------------------------\n"
+		   "Name: %s%s\n"
+		   "Version: %s%s (%u.%u.%u.%u)\n"
+		   "Support API Version:%.2f\n"
+		   "------------------------------------------------\n"
+		   "The AMXX API: %s \n"
+		   "AMXX API Version: %.2f (%u.%u.%u.%u)\n"
+		   "------------------------------------------------\n"
+		   "Builded by: %s\n"
+		   "URL: %s \n"
+		   "Compiled: %s, %s (UTC +08:00)\n"
+		   "Optimization: %s\n"
+		   "Meta-Interface Version: %s\n"
+		   "------------------------------------------------";
+
+	   ClientPrint(ent, print_console, versionData, 
+		   PRODUCT_NAME, (strcmp(PRODUCT_DEV_VERSION, "") != 0) ? "(Dev Version)" : "",
+		   PRODUCT_VERSION, PRODUCT_DEV_VERSION, bV16[0], bV16[1], bV16[2], bV16[3],
+		   API_Version, (amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
+		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version, 
+		   amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
+		   PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, PRODUCT_OPT_TYPE, META_INTERFACE_VERSION);
    }
 
    // display some sort of help information
@@ -3538,28 +3561,37 @@ export void Meta_Init (void)
 }
 
 // SyPB Pro P.30 - AMXX API
-float API_Version = 1.00;
 
-export bool Amxx_RunSypb(void) // 1.00
+export bool Amxx_RunSypb(void)
 {
+	API_Version = float(1.31); // SyPB API_P
 	API_TestMSG("Amxx_RunSypb Checking - Done");
 	return true;
 }
 
-export float Amxx_APIVersion(void) // 1.00
+export float Amxx_APIVersion(void)
 {
-	API_TestMSG("Amxx_APIVersion Checking - API Version:%d - Done", API_Version);
+	API_TestMSG("Amxx_APIVersion Checking - API Version:%.2f - Done", API_Version);
 	return API_Version;
 }
 
-export int Amxx_IsSypb(int index) // 1.00
+export void Amxx_Check_amxxdllversion(float version, int bu1, int bu2, int bu3, int bu4)
+{
+	amxxDLL_Version = version;
+	amxxDLL_bV16[0] = bu1;
+	amxxDLL_bV16[1] = bu2;
+	amxxDLL_bV16[2] = bu3;
+	amxxDLL_bV16[3] = bu4;
+}
+
+export int Amxx_IsSypb(int index) // 1.30
 {
 	index -= 1;
 	API_TestMSG("Amxx_IsSypb Checking - Done");
 	return (g_botManager->GetBot(index) != null);
 }
 
-export int Amxx_CheckEnemy(int index) // 1.00
+export int Amxx_CheckEnemy(int index) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3570,7 +3602,7 @@ export int Amxx_CheckEnemy(int index) // 1.00
 	return (bot->m_enemy == null) ? -1 : (ENTINDEX(bot->m_enemy));
 }
 
-export int Amxx_CheckMoveTarget(int index) // 1.00
+export int Amxx_CheckMoveTarget(int index) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3581,7 +3613,7 @@ export int Amxx_CheckMoveTarget(int index) // 1.00
 	return (bot->m_moveTargetEntity == null) ? -1 : (ENTINDEX(bot->m_moveTargetEntity));
 }
 
-export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.00
+export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3601,7 +3633,7 @@ export void Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.00
 	bot->m_enemyAPI = targetEnt;
 }
 
-export void Amxx_SetMoveTarget(int index, int target, float blockCheckTime) // 1.00
+export void Amxx_SetMoveTarget(int index, int target, float blockCheckTime) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3621,7 +3653,7 @@ export void Amxx_SetMoveTarget(int index, int target, float blockCheckTime) // 1
 	bot->m_moveTargetEntityAPI = targetEnt;
 }
 
-export void Amxx_SetBotMove(int index, int pluginSet) // 1.00
+export void Amxx_SetBotMove(int index, int pluginSet) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3632,7 +3664,7 @@ export void Amxx_SetBotMove(int index, int pluginSet) // 1.00
 	API_TestMSG("Amxx_SetBotMove Checking - %d - Done", bot->m_moveAIAPI);
 }
 
-export void Amxx_SetBotLookAt(int index, Vector lookAt) // 1.00
+export void Amxx_SetBotLookAt(int index, Vector lookAt) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3643,7 +3675,7 @@ export void Amxx_SetBotLookAt(int index, Vector lookAt) // 1.00
 	API_TestMSG("Amxx_SetBotLookAt Checking - %.2f | %.2f | %.2f - Done", lookAt[0], lookAt[1], lookAt[2]);
 }
 
-export void Amxx_SetWeaponClip(int index, int weaponClip) // 1.00
+export void Amxx_SetWeaponClip(int index, int weaponClip) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3654,7 +3686,7 @@ export void Amxx_SetWeaponClip(int index, int weaponClip) // 1.00
 	API_TestMSG("Amxx_SetWeaponClip Checking - %d - Done", bot->m_weaponClipAPI);
 }
 
-export void Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.00
+export void Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3665,12 +3697,26 @@ export void Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.00
 	API_TestMSG("Amxx_BlockWeaponReload Checking - %s - Done", (bot->m_weaponReloadAPI) ? "True" : "False");
 }
 
-export void Amxx_AddSyPB(const char *name, int skill, int team) // 1.00
+export void Amxx_AddSyPB(const char *name, int skill, int team) // 1.30
 {
 	//g_botManager->AddBot(name, skill, -1, team, -1);
 	g_botManager->AddBotAPI(name, skill, team);
 
 	API_TestMSG("Amxx_AddSyPB Checking - %s | Skill:%d  | Team:%d - Done", name, skill, team);
+}
+
+// SyPB Pro P.31 - AMXX API
+export void Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
+{
+	index -= 1;
+	Bot *bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return;
+
+	bot->m_knifeDistance1API = k1d;
+	bot->m_knifeDistance2API = k2d;
+
+	API_TestMSG("Amxx_Set_KA_Distance Checking - %d %d - Done", k1d, k2d);
 }
 // AMXX SyPB API End
 

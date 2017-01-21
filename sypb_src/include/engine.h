@@ -2115,13 +2115,18 @@ C_DLLEXPORT int GetNewDLLFunctions_Post (NEW_DLL_FUNCTIONS * pNewFunctionTable, 
 C_DLLEXPORT int GetEngineFunctions (enginefuncs_t * pengfuncsFromEngine, int *interfaceVersion);
 C_DLLEXPORT int GetEngineFunctions_Post (enginefuncs_t * pengfuncsFromEngine, int *interfaceVersion);
 
-// SyPB Pro P.30 - AMXX API
+// AMXX API
 C_DLLEXPORT bool Amxx_RunSypb(void);
 typedef bool(*AMXX_RUN_SYPB) (void);
 
 C_DLLEXPORT float Amxx_APIVersion(void);
 typedef float(*AMXX_API_VERSION) (void);
 
+// SyPB Pro P.31 - AMXX API
+C_DLLEXPORT void Amxx_Check_amxxdllversion(float version, int bu1, int bu2, int bu3, int bu4);
+typedef void(*AMXX_CHECK_APIDLL_VERSION)(float version, int bu1, int bu2, int bu3, int bu4);
+
+// SyPB Pro P.30 - AMXX API
 C_DLLEXPORT int Amxx_IsSypb(int index);
 typedef int(*AMXX_IS_SYPB) (int index);
 
@@ -2151,6 +2156,10 @@ typedef void(*AMXX_BLOCK_WEAPON_RELOAD)(int index, int blockWeaponReload);
 
 C_DLLEXPORT void Amxx_AddSyPB(const char *name, int skill, int team);
 typedef void(*AMXX_ADD_SYPB)(const char *name, int skill, int team);
+
+// SyPB Pro P.31 - AMXX API
+C_DLLEXPORT void Amxx_SetKADistance(int index, int k1d, int k2d);
+typedef void(*AMXX_SET_KA_DISTANCE)(int index, int k1d, int k2d);
 // AMXX SyPB API End
 
 #define MDLL_FUNC   gpGamedllFuncs->dllapi_table

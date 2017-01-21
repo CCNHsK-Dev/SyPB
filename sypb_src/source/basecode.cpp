@@ -402,6 +402,65 @@ void Bot::ZombieModeAi(void)
 	}
 }
 
+// SyPB Pro P.31 - Zombie Mode Human Camp Action
+void Bot::ZmCampPointAction(void)
+{
+	int campAction = 0;
+	int campPointWaypointIndex = m_currentWaypointIndex;
+	if (g_waypoint->GetPath(campPointWaypointIndex)->flags & WAYPOINT_ZMHMCAMP)
+		campAction = 1;
+	else if (!(g_waypoint->m_zmHmPoints.IsEmpty()))
+	{
+		if (&m_navNode[0] != null)
+		{
+			campPointWaypointIndex = m_navNode->index;
+			if ((g_waypoint->GetPath(campPointWaypointIndex)->flags & WAYPOINT_ZMHMCAMP))
+			{
+				if (IsWaypointUsed(campPointWaypointIndex))
+					campAction = 4;
+			}
+			else if (IsWaypointUsed(campPointWaypointIndex) && m_navNode->next != null)
+			{
+				campPointWaypointIndex = m_navNode->next->index;
+				if ((g_waypoint->GetPath(campPointWaypointIndex)->flags & WAYPOINT_ZMHMCAMP) && IsWaypointUsed(campPointWaypointIndex))
+				{
+					float pointDistance = ((g_waypoint->GetPath(campPointWaypointIndex)->origin) - pev->origin).GetLength();
+					if (pointDistance <= 200.0f)
+						campAction = 2;
+				}
+			}
+		}
+	}
+
+	if (campAction == 0)
+		m_checkCampPointTime = 0.0f;
+	else if (m_checkCampPointTime == 0.0f)
+		m_checkCampPointTime = engine->GetTime();
+	else if (m_checkCampPointTime + float(campAction) < engine->GetTime())
+	{
+		m_campButtons = 0;
+		SelectBestWeapon();
+		MakeVectors(pev->v_angle);
+
+		m_timeCamping = engine->GetTime() + 30.0f;
+		PushTask(TASK_CAMP, TASKPRI_CAMP, -1, m_timeCamping, true);
+
+		m_camp.x = g_waypoint->GetPath(campPointWaypointIndex)->campStartX;
+		m_camp.y = g_waypoint->GetPath(campPointWaypointIndex)->campStartY;
+		m_camp.z = 0;
+
+		m_aimFlags |= AIM_CAMP;
+		m_campDirection = 0;
+
+		m_moveToGoal = false;
+		m_checkTerrain = false;
+
+		m_moveSpeed = 0;
+		m_strafeSpeed = 0;
+	}
+}
+
+/*
 // SyPB Pro P.30 - Zombie Mode Human Camp Action
 void Bot::ZmCampPointAction(void)
 {
@@ -446,7 +505,7 @@ void Bot::ZmCampPointAction(void)
 		m_moveSpeed = 0;
 		m_strafeSpeed = 0;
 	}
-}
+} */
 
 void Bot::AvoidEntity (void)
 {
@@ -521,19 +580,12 @@ void Bot::AvoidGrenades (void)
 		  continue;
 
 	  // SyPB Pro P.30 - Flash Ai
-	  if ((GetGameMod () == 0 || GetGameMod () == 1) &&
-		  strcmp (STRING (ent->v.model) + 9, "flashbang.mdl") == 0)
+	  if ((GetGameMod() == 0 || GetGameMod() == 1) &&
+		  strcmp(STRING(ent->v.model) + 9, "flashbang.mdl") == 0)
 	  {
 		  Vector position = (GetEntityOrigin(ent) - EyePosition()).ToAngles();
-		  if (m_skill >= 90 && !FNullEnt (m_enemy))
+		  if (m_skill >= 70)
 		  {
-			  m_lastEnemy = m_enemy;
-			  m_lastEnemyOrigin = m_enemyOrigin;
-			  m_enemy = null;
-			  m_enemyOrigin = nullvec;
-		  }
-		  else if (m_skill >= 70)
-		  { 
 			  pev->v_angle.y = AngleNormalize(position.y + 180.0f);
 			  m_canChooseAimDirection = false;
 		  }

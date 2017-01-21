@@ -979,6 +979,11 @@ void Bot::NewRound (void)
    m_enemyAPI = null;
    m_blockCheckEnemyTime = engine->GetTime();
 
+   // SyPB Pro P.31 - AMXX API
+   m_knifeDistance1API = 0;
+   m_knifeDistance2API = 0;
+
+
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
    m_currentWaypointIndex = -1;

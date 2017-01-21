@@ -974,6 +974,9 @@ public:
    int m_weaponClipAPI;
    bool m_weaponReloadAPI;
 
+   // SyPB Pro P.31 - AMXX API
+   int m_knifeDistance1API, m_knifeDistance2API;
+
    int m_wantedTeam; // player team bot wants select
    int m_wantedClass; // player model bot wants to select
 
