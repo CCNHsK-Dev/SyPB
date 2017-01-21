@@ -1,14 +1,21 @@
 
 /*
- * API Version : 1.40
- */
+* This is SyPB API for AMXX
+* Version : 1.42
+* Support Build: 1.42.40760.44 or new
+* By ' HsK-Dev Blog By CCN
+*
+* Support SyPB Build: 1.42.40760.619 or new
+*
+* Date: 12/3/2016
+*/
 
 #include <amxmodx>
 #include <fakemeta>
 #include <sypb>
 
 #define PLUGIN	"[SyPB API] Testing"
-#define VERSION	"0.1.40"
+#define VERSION	"1.42.40760.44"
 #define AUTHOR	"HsK-Dev Blog By'CCN"
 
 new bool:g_sypb_run;
@@ -30,6 +37,41 @@ public plugin_init()
 	register_clcmd("say /sypb_138_test", "sypb_testing_138");
 	register_clcmd("say /sypb_138b_test", "sypb_testing_138b");
 	register_clcmd("say /sypb_140_test", "sypb_testing_140");
+	register_clcmd("say /sypb_142_test", "sypb_testing_142");
+}
+
+public sypb_testing_142 ()
+{
+	if (!g_sypb_run)
+	{
+		client_print(0, print_chat, "Error: The Game has not run sypb");
+		server_print ("Error: The Game has not run sypb");
+		return;
+	}
+	
+	server_print("[SyPB API TEST_A] API Version: %.2f", sypb_api_version ());
+	for (new id = 1; id <= get_maxplayers(); id++)
+	{
+		if (!is_user_connected(id))
+			continue;
+
+		if (!is_user_alive (id))
+			continue;
+
+		if (!is_user_sypb (id))
+			continue;
+		
+		for (new i = 1; i <= get_maxplayers(); i++)
+		{
+			if (i == id || !is_user_connected(i) || !is_user_sypb (i) || !is_user_alive (i))
+				continue;
+				
+			sypb_set_enemy (id, i, 30.0);
+		}
+		
+		//sypb_set_goal (id, 0);
+		//sypb_block_weapon_pick (id, 1);
+	}
 }
 
 public sypb_testing_140 ()
@@ -124,10 +166,10 @@ public sypb_testing_138b ()
 			
 		for (new i = 1; i <= get_maxplayers(); i++)
 		{
-			if (!is_user_connected(i) || is_user_sypb (i) || !is_user_alive (i))
+			if (!is_user_connected(i) || !is_user_sypb (i) || !is_user_alive (i))
 				continue;
 				
-			sypb_set_enemy (id, i, 10.0);
+			sypb_set_enemy (id, i, 30.0);
 		}
 	}
 }
@@ -208,9 +250,6 @@ public fw_PlayerPreThink (id)
 	 
 	new Float:time = 30.0;
 	sypb_set_enemy (id, -1, time);
-	sypb_set_movetarget (id, -1, time);
-	
-	server_print("[SyPB API TEST_A] [%d] Set Null Enemy & MoveTarget 60s", id);
 	
 	sypb_set_move (id, 1);
 	server_print("[SyPB API TEST_A] [%d] Bot would not move now 20s", id);

@@ -338,8 +338,7 @@ void NetworkMsg::Execute (void *p)
 					  bot->m_actualReactionTime = 0.0f;
 					  bot->m_seeEnemyTime = engine->GetTime();
 					  bot->m_enemy = killer;
-					  bot->m_lastEnemy = killer;
-					  bot->m_lastEnemyOrigin = GetEntityOrigin(killer);
+					  bot->SetLastEnemy(killer);
 				  }
 			  }
 
@@ -482,20 +481,6 @@ void NetworkMsg::Execute (void *p)
 		   // SyPB Pro P.29 - msg set team
 		   if (playerIndex >= 0 && playerIndex <= engine->GetMaxClients())
 			   GetTeam(ENT(playerIndex));
-
-		  /*
-         if (playerIndex >= 0 && playerIndex <= engine->GetMaxClients ())
-         {
-            if (PTR_TO_INT (p) == 1)
-               g_clients[playerIndex - 1].realTeam = TEAM_TERRORIST;
-            else if (PTR_TO_INT (p) == 2)
-               g_clients[playerIndex - 1].realTeam = TEAM_COUNTER;
-
-               g_clients[playerIndex - 1].team = g_clients[playerIndex - 1].realTeam;
-         } 
-
-         break;
-		 */
       }
       break;
 

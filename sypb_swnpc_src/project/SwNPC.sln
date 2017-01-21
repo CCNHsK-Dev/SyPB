@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SwNPC", "SwNPC.vcxproj", "{DA9FD451-9C6F-42F3-97C5-4FB54BA1A1CF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		SwNPC_Debug|Win32 = SwNPC_Debug|Win32
+		SwNPC_Release|Win32 = SwNPC_Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DA9FD451-9C6F-42F3-97C5-4FB54BA1A1CF}.SwNPC_Debug|Win32.ActiveCfg = SwNPC_Debug|Win32
+		{DA9FD451-9C6F-42F3-97C5-4FB54BA1A1CF}.SwNPC_Debug|Win32.Build.0 = SwNPC_Debug|Win32
+		{DA9FD451-9C6F-42F3-97C5-4FB54BA1A1CF}.SwNPC_Release|Win32.ActiveCfg = SwNPC_Release|Win32
+		{DA9FD451-9C6F-42F3-97C5-4FB54BA1A1CF}.SwNPC_Release|Win32.Build.0 = SwNPC_Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,14 +1,24 @@
 #include "main.h"
-
 #include "extdll.h"
+
+#include "version.h"
+
+bool sypbLog = false;
 
 // AMXX API
 void OnPluginsLoaded()
 {
+	sypbLog = false;
+
 	HMODULE dll = GetModuleHandle("sypb.dll");
 	if(!dll)
 	{
-		LogToFile("Would not find the sypb.dll");
+		LogToFile("***************************");
+		LogToFile("We cannot find sypb.dll, SyPB API cannot run");
+		LogToFile("***************************");
+
+		ErrorWindows("We cannot find sypb.dll, SyPB API cannot run"
+			"\n\nExit the Game?");
 		return;
 	}
 
@@ -22,23 +32,12 @@ void OnAmxxAttach()
 }
 void OnAmxxDetach()
 {
+	
 }
 
-int LogToFile(char *szLogText, ...)
+void ErrorWindows(char *text)
 {
-	FILE *fp;
-
-	if (!(fp = fopen("spyb_amxx.txt", "a")))
-		return 0;
-
-	va_list vArgptr;
-	char szText[1024];
-
-	va_start(vArgptr, szLogText);
-	vsprintf(szText, szLogText, vArgptr);
-	va_end(vArgptr);
-
-	fprintf(fp, " %s\n", szText);
-	fclose(fp);
-	return 1;
+	int button = ::MessageBox(NULL, text, "SyPB API Error", MB_YESNO | MB_TOPMOST | MB_ICONINFORMATION);
+	if (button == IDYES)
+		exit(1);
 }

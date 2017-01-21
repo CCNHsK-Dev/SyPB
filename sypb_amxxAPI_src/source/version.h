@@ -3,10 +3,10 @@
 #define RESOURCE_INCLUDED
 
 // SyPB AMXX API Version
-#define PRODUCT_VERSION "1.40"
-float amxxDLLVersion = 1.40;
+#define PRODUCT_VERSION "1.42"
+#define PRODUCT_VERSION_F 1.42
 
-#define PRODUCT_VERSION_DWORD 1,40,20150920,36    // yyyy/mm/dd   
+#define PRODUCT_VERSION_DWORD 1,42,20160312,44    // yyyy/mm/dd   
 
 // general product information
 #define PRODUCT_NAME "SyPB AMXX DLL"

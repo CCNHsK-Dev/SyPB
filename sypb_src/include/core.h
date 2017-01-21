@@ -51,6 +51,9 @@ using namespace Math;
 
 #include "runtime.h"
 
+const int checkEntityNum = 20;
+const int checkEnemyNum = 128;
+
 // defines bots tasks
 enum BotTask
 {
@@ -590,20 +593,21 @@ struct Client_old
    Vector origin; // position in the world
    Vector soundPosition; // position sound was played
    int team; // bot team
-   int realTeam; // real bot team in free for all mode (csdm)
    int flags; // client flags
    float hearingDistance; // distance this sound is heared
    float timeSoundLasting; // time sound is played/heared
    float maxTimeSoundLasting; // max time sound is played/heared (to divide the difference between that above one and the current one)
 
-   Vector headOrigin; // SyPB Pro P.26 - Get Head Origin
-   float headOriginZP;
-   float getHeadOriginTime;
+   //Vector headOrigin; // SyPB Pro P.26 - Get Head Origin
+   //float headOriginZP;
+   //float getHeadOriginTime;
 
    // SyPB Pro P.41 - Get Waypoint improve
    int wpIndex;
    int wpIndex2;
    float getWPTime;
+   // SyPB Pro P.42 - Get Waypoint improve
+   Vector getWpOrigin;
 
    // SyPB Pro P.38 - AMXX API
    int m_isZombieBotAPI = -1;
@@ -848,26 +852,23 @@ private:
    void BotAI (void);
    void FunBotAI(void);
    void DebugModeMsg(void);
+   void MoveAction(void);
    bool IsMorePowerfulWeaponCanBeBought (void);
    void PerformWeaponPurchase (void);
    int BuyWeaponMode (int weaponId);
 
    bool CanDuckUnder (Vector normal);
    bool CanJumpUp (Vector normal);
-   bool CanStrafeLeft (TraceResult *tr);
-   bool CanStrafeRight (TraceResult *tr);
    bool CantMoveForward (Vector normal, TraceResult *tr);
 
    void CheckMessageQueue (void);
    void CheckRadioCommands (void);
    void CheckReload (void);
-   //void AvoidGrenades (void);
    void CheckBurstMode (float distance);
    
    int CheckMaxClip(int weaponId, int *weaponIndex);
 
    void AvoidEntity (void);
-   bool GetEntityItem (int mod);
 
    void ZombieModeAi (void);
    void ZmCampPointAction(int action = 1);
@@ -884,10 +885,14 @@ private:
    bool IsRestricted (int weaponIndex);
    bool IsRestrictedAMX (int weaponIndex);
 
+   bool IsOnAttackDistance(edict_t *targetEntity, float distance);
+
    bool IsInViewCone (Vector origin);
    void ReactOnSound (void);
-   bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart, bool checkOnly);
+   bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart);
    bool IsEnemyViewable (edict_t *player, bool setEnemy = false, bool allCheck = false, bool checkOnly = false);
+
+   void CheckGrenadeThrow(void);
 
    edict_t *FindNearestButton (const char *className);
    edict_t *FindBreakable (void);
@@ -903,8 +908,6 @@ private:
    float InFieldOfView (Vector dest);
 
    bool IsBombDefusing (Vector bombOrigin);
-   bool IsBlockedLeft (void);
-   bool IsBlockedRight (void);
    bool IsWaypointUsed (int index);
    
    bool IsNotAttackLab (edict_t *entity);
@@ -913,8 +916,7 @@ private:
    inline bool IsOnLadder (void) { return pev->movetype == MOVETYPE_FLY; }
    inline bool IsOnFloor (void) { return (pev->flags & (FL_ONGROUND | FL_PARTIALGROUND)) != 0; }
    inline bool IsInWater (void) { return pev->waterlevel >= 2; }
-   //inline float GetWalkSpeed (void) { return static_cast <float> ((static_cast <int> (pev->maxspeed) * 0.5f) + (static_cast <int> (pev->maxspeed) / 50)) - 18; }
-   
+
    float GetWalkSpeed (void);
 
    bool ItemIsVisible (Vector dest, char *itemName, bool bomb = false);
@@ -992,7 +994,6 @@ public:
 
    // SyPB Pro P.30 - AMXX API
    edict_t *m_enemyAPI;
-   edict_t *m_moveTargetEntityAPI;
    bool m_moveAIAPI = false;
    Vector m_lookAtAPI;
    int m_weaponClipAPI;
@@ -1004,13 +1005,14 @@ public:
    // SyPB Pro P.35 - AMXX API
    int m_gunMinDistanceAPI, m_gunMaxDistanceAPI;
 
-   // SyPB Pro P.41 - AMXX API
-   Vector m_waypointGoalAPI;
+   // SyPB Pro P.42 - AMXX API
+   int m_waypointGoalAPI;
+   bool m_blockWeaponPickAPI;
 
    int m_wantedTeam; // player team bot wants select
    int m_wantedClass; // player model bot wants to select
 
-   int m_skill; ;// bots play skill
+   int m_skill; // bots play skill
    int m_moneyAmount; // amount of money in bot's bank
 
    Personality m_personality;
@@ -1108,6 +1110,13 @@ public:
    int m_ammoInClip[Const_MaxWeapons]; // ammo in clip for each weapons
    int m_ammo[MAX_AMMO_SLOTS]; // total ammo amounts
 
+   // SyPB Pro P.42 - Entity Action 
+   int m_allEnemyId[checkEnemyNum];
+   float m_allEnemyDistance[checkEnemyNum];
+
+   int m_enemyEntityId[checkEnemyNum];
+   float m_enemyEntityDistance[checkEnemyNum];
+
    Bot (edict_t *bot, int skill, int personality, int team, int member);
   ~Bot (void);
 
@@ -1132,6 +1141,7 @@ public:
    bool EntityIsVisible (Vector dest, bool fromBody = false);
 
    void SetMoveTarget (edict_t *entity);
+   void SetLastEnemy(edict_t *entity);
 
    void DeleteSearchNodes (void);
    Task *GetCurrentTask (void);
@@ -1347,7 +1357,8 @@ public:
 
    int GetFacingIndex (void);
    int FindFarest (Vector origin, float maxDistance = 32.0f);
-   int FindNearest(Vector origin, float minDistance = 9999.0, int flags = -1, edict_t *entity = null, int *findWaypointPoint = (int *)-2);
+   int FindNearest(Vector origin, float minDistance = 9999.0, int flags = -1, 
+	   edict_t *entity = null, int *findWaypointPoint = (int *)-2, int mode = -1);
    void FindInRadius (Vector origin, float radius, int *holdTab, int *count);
    void FindInRadius (Array <int> &queueID, float radius, Vector origin);
 
@@ -1414,6 +1425,7 @@ public:
    String CheckSubfolderFile (void);
 
    int *GetWaypointPath() { return m_pathMatrix;  }
+   int *GetWaypointDist() { return m_distMatrix; }
 };
 
 
@@ -1429,6 +1441,7 @@ extern int GetGameMod (void);
 extern bool IsZombieEntity (edict_t *ent);
 
 extern int GetEntityWaypoint(edict_t *ent);
+extern int SetEntityWaypoint(edict_t *ent, float waitTime = engine->RandomFloat (1.0f, 2.0f), int mode = -1);
 
 extern float GetShootingConeDeviation (edict_t *ent, Vector *position);
 extern float GetWaveLength (const char *fileName);
@@ -1445,6 +1458,8 @@ extern bool IsValidPlayer (edict_t *ent);
 extern bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant = false);
 extern bool FindNearestPlayer (void **holder, edict_t *to, float searchDistance = 4096.0, bool sameTeam = false, bool needBot = false, bool needAlive = false, bool needDrawn = false);
 
+extern const char *GetEntityName(edict_t *entity);
+
 extern const char *GetMapName (void);
 extern const char *GetWaypointDir (void);
 extern const char *GetModName (void);
@@ -1452,6 +1467,10 @@ extern const char *GetField (const char *string, int fieldId, bool endLine = fal
 
 //extern uint16 GenerateBuildNumber (void);
 extern Vector GetEntityOrigin (edict_t *ent);
+
+extern Vector GetTopOrigin(edict_t *ent);
+extern Vector GetBottomOrigin(edict_t *ent);
+extern Vector GetPlayerHeadOrigin(edict_t *ent);
 
 extern void FreeLibraryMemory (void);
 extern void RoundInit (void);
@@ -1471,9 +1490,13 @@ extern void CenterPrint (const char *format, ...);
 extern void ClientPrint (edict_t *ent, int dest, const char *format, ...);
 extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
 
+extern void SetEntityActionData(int i, int index = -1, int team = -1, int action = -1);
 extern void API_TestMSG(const char *format, ...);
 
 extern void AddLogEntry (bool outputToConsole, int logLevel, const char *format, ...);
+extern void SwNPC_AddLogEntry(char *format);
+extern void AMXX_AddLogEntry(char *format);
+
 extern void DisplayMenuToClient (edict_t *ent, MenuText *menu);
 extern void DecalTrace (entvars_t *pev, TraceResult *trace, int logotypeIndex);
 extern void SoundAttachToThreat (edict_t *ent, const char *sample, float volume);

@@ -30,11 +30,10 @@ float amxxDLL_Version = -1.0;
 uint16 amxxDLL_bV16[4];
 // ****
 
-// SyPB Pro P.41 - SwNPC
+// SyPB Pro P.42 - SwNPC
 float SwNPC_Version = -1.0;
 uint16 SwNPC_Build[4];
-
-int g_testingnow = 0;
+// ****
 
 bool g_isMetamod = false;
 bool g_radioInsteadVoice = false;
@@ -81,22 +80,22 @@ int g_modelIndexLaser = 0;
 int g_modelIndexArrow = 0;
 char g_fakeArgv[256];
 
+// SyPB Pro P.42 - Entity Action
+// Entity Data
+int g_entityId[entityNum];
+int g_entityTeam[entityNum];
+int g_entityAction[entityNum];
+
+int g_entityWpIndex[entityNum];
+Vector g_entityGetWpOrigin[entityNum];
+float g_entityGetWpTime[entityNum];
+//******
+
+
 Array <Array <String> > g_chatFactory;
 Array <Array <ChatterItem> > g_chatterFactory;
 Array <NameItem> g_botNames;
 Array <KwChat> g_replyFactory;
-
-Array <String> g_entityName;
-Array <int> g_entityTeam;
-Array <int> g_entityAction;
-
-// SyPB Pro P.40 - AMXX API
-Array <int> g_entityIdAPI;
-Array <int> g_entityTeamAPI;
-Array <int> g_entityActionAPI;
-
-// SyPB Pro P.41 - Entity TraceLine improve
-Array <int> g_entityWpIndex;
 
 Library *g_gameLib = null;
 

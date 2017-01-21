@@ -1,15 +1,15 @@
 
 /*
 * This is SyPB API for AMXX
-* API Version : 1.40
+* Version : 1.42
+* Support Build: 1.42.40760.44 or new
 * By ' HsK-Dev Blog By CCN
+*
+* Support SyPB Build: 1.42.40760.619 or new
+*
+* Date: 12/3/2016
 */
 
-/* -----------------------------------------------------------------------
- If the native is error or API version is old , would return -2;
- This file support API Version is 1.40
- Pls check your sypb_amxx.dll API version and SyPB Version
------------------------------------------------------------------------ */
 
 /* -----------------------------------------------------------------------
  is_run_sypb - This can check the game has run SyPB
@@ -47,22 +47,13 @@ native sypb_get_enemy (index);
 native sypb_get_movetarget (index);
 
 /* -----------------------------------------------------------------------
- sypb_set_enemy - set the SyPB m_enemy, and block the SyPB check enemy Ai
+ sypb_set_enemy - set the SyPB enemy, and block the SyPB check enemy Ai
                   (index = player id | targetId = enemy Id)
 				  (blockCheckTime = block SyPB check enemy Ai Time)
 				  (void / not return)
      API Verion: 1.00
 */
 native sypb_set_enemy (index, targetId, Float:blockCheckTime);
-
-/* -----------------------------------------------------------------------
- sypb_set_movetarget - set the SyPB move target (Zombie Mode only), and block the SyPB check enemy Ai
-                       (index = player id | targetId = enemy Id)
-					   (blockCheckTime = block SyPB check enemy Ai Time)
-					   (void / not return)
-     API Verion: 1.00
-*/
-native sypb_set_movetarget (index, targetId, Float:blockCheckTime);
 
 /* -----------------------------------------------------------------------
  sypb_set_move - Block the SyPB Move Ai (Bot will not move)
@@ -196,3 +187,22 @@ native sypb_get_bot_nav_pointid (index, navNum);
 	 other pls check sypb_entity.cfg
 */
 native sypb_set_entity_action (index, team, action);
+
+/* -----------------------------------------------------------------------
+ sypb_set_goal - Set the Bot Goal Waypoint
+                            (index = entity id)
+							(goal = goal waypoint Id)
+							(return 1 = ok)
+	 API Verion: 1.42
+*/
+native sypb_set_goal (index, goal);
+
+/* -----------------------------------------------------------------------
+ sypb_block_weapon_pick - Block The Bot Pick the weapon (drop the weapon and get new weapon)
+                           (Zombie Bot not support this API)
+                            (index = entity id)
+							(blockWeaponPick = 1 bot will not pcik the weapon)
+							(return 1 = ok)
+	 API Verion: 1.42
+*/
+native sypb_block_weapon_pick (index, blockWeaponPick);

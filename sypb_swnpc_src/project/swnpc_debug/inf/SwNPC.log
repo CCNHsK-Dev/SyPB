@@ -1,0 +1,14 @@
+﻿  amxxmodule.cpp
+  api.cpp
+  base.cpp
+  main.cpp
+  npc_ai.cpp
+  npc_control.cpp
+  sypbload.cpp
+  waypoint.cpp
+  正在產生程式碼...
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(1189,5): warning MSB8012: TargetPath(C:\Users\mikeg\Desktop\SwNPC_src\project\.\swnpc_debug\SwNPC.dll) does not match the Linker's OutputFile property value (C:\Users\mikeg\Desktop\SwNPC_src\project\swnpc_debug\SwNPC_amxx.dll). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(1191,5): warning MSB8012: TargetName(SwNPC) does not match the Linker's OutputFile property value (SwNPC_amxx). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+amxxmodule.obj : warning LNK4075: 忽略 '/EDITANDCONTINUE'，由於 '/OPT:ICF' 規格
+     正在建立程式庫 C:\Users\mikeg\Desktop\SwNPC_src\project\swnpc_debug\SwNPC.lib 和物件 C:\Users\mikeg\Desktop\SwNPC_src\project\swnpc_debug\SwNPC.exp
+  SwNPC.vcxproj -> C:\Users\mikeg\Desktop\SwNPC_src\project\.\swnpc_debug\SwNPC.dll

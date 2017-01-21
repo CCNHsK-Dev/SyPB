@@ -28,9 +28,6 @@ _checkMoveTarget Amxx_CheckMoveTarget;
 typedef void(*_SetEnemy)(int, int, float);
 _SetEnemy Amxx_SetEnemy;
 
-typedef void(*_SetMoveTarget)(int, int, float);
-_SetMoveTarget Amxx_SetMoveTarget;
-
 typedef void(*_SetBotMove)(int, int);
 _SetBotMove Amxx_SetBotMove;
 
@@ -81,6 +78,16 @@ _GetBotNavPointId Amxx_GetBotNavPointId;
 typedef int(*_SetEntityAction) (int, int, int);
 _SetEntityAction Amxx_SetEntityAction;
 
+// API 1.42
+typedef void(*_AddLog) (char *);
+_AddLog Amxx_AddLog;
+
+typedef int(*_SetBotGoal) (int, int);
+_SetBotGoal Amxx_SetBotGoal;
+
+typedef int(*_BlockWeaponPick) (int, int);
+_BlockWeaponPick Amxx_BlockWeaponPick;
+
 float api_version = 0.0;
 
 void think(HMODULE dll)
@@ -89,7 +96,7 @@ void think(HMODULE dll)
 	if (!Amxx_RunSypb)
 	{
 		api_version = 0.0;
-
+		
 		LogToFile("***************************");
 		LogToFile("Error: Cannot Find SyPB");
 		LogToFile("-The Game Has not run SyPB/SyPB is old Version");
@@ -97,6 +104,13 @@ void think(HMODULE dll)
 		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
 		LogToFile("[Error] sypb_amxx will stop now");
 		LogToFile("***************************");
+		 
+		ErrorWindows("Error: Cannot Find SyPB\n"
+			"-The Game Has not run SyPB/SyPB is old Version\n"
+			"-Pls check your game running SyPB new version\n"
+			"- Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)\n"
+			"[Error] sypb_amxx will stop now\n"
+			"\n\nExit the Game?");
 
 		return;
 	}
@@ -105,6 +119,7 @@ void think(HMODULE dll)
 	if (!Amxx_APIVersion)
 	{
 		api_version = 0.0;
+
 		LogToFile("***************************");
 		LogToFile("Error: API Error");
 		LogToFile("-We could not start the SyPB AMXX");
@@ -112,6 +127,14 @@ void think(HMODULE dll)
 		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
 		LogToFile("[Error] sypb_amxx will stop now");
 		LogToFile("***************************");
+
+		ErrorWindows("Error: API Error\n"
+			"-We could not start the SyPB AMXX\n"
+			"-Pls check your game running SyPB new version\n"
+			"- Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)\n"
+			"[Error] sypb_amxx will stop now\n"
+			"\n\nExit the Game?");
+
 		return;
 	}
 	Amxx_RunSypb();
@@ -125,23 +148,30 @@ void think(HMODULE dll)
 		LogToFile("-Your SyPB Version is old");
 		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
 		LogToFile("***************************");
+
+		ErrorWindows("Error: API Version Error\n"
+			"-Your SyPB Version is old\n"
+			"- Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)\n"
+			"[Error] sypb_amxx will stop now\n"
+			"\n\nExit the Game?");
+
 		return;
 	}
-	AMXX_Check_APIVersion(amxxDLLVersion, PRODUCT_VERSION_DWORD);
+	AMXX_Check_APIVersion(float (PRODUCT_VERSION_F), PRODUCT_VERSION_DWORD);
 	// ---- API part start
 	
 	api_version = Amxx_APIVersion();
 
-	if (amxxDLLVersion != api_version)
+	if (float (PRODUCT_VERSION_F) != api_version)
 	{
 		//LogToFile("Error: sypb_amxx version:%.2f & SyPB API Version: %.2f", dllVersion, api_version);
 
 		LogToFile("***************************");
 		LogToFile("Error: API Version Error");
-		if (amxxDLLVersion > api_version)
-			LogToFile("-Your SyPB API Version [%.2f] is old [SyPB AMXX Version is %.2f", api_version, amxxDLLVersion);
+		if (float (PRODUCT_VERSION_F) > api_version)
+			LogToFile("-Your SyPB API Version [%.2f] is old [SyPB AMXX Version is %.2f", api_version, float (PRODUCT_VERSION_F));
 		else
-			LogToFile("-Your SyPB AMXX Version [%.2f] is old [SyPB API Version is %.2f]", amxxDLLVersion, api_version);
+			LogToFile("-Your SyPB AMXX Version [%.2f] is old [SyPB API Version is %.2f]", float (PRODUCT_VERSION_F), api_version);
 
 		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
 		LogToFile("***************************");
@@ -162,10 +192,6 @@ void think(HMODULE dll)
 	Amxx_SetEnemy = (_SetEnemy)GetProcAddress(dll, "Amxx_SetEnemy");
 	if (!Amxx_SetEnemy)
 		LogToFile("Load API::Amxx_SetEnemy Failed");
-
-	Amxx_SetMoveTarget = (_SetMoveTarget)GetProcAddress(dll, "Amxx_SetMoveTarget");
-	if (!Amxx_SetMoveTarget)
-		LogToFile("Load API::Amxx_SetMoveTarget Failed");
 
 	Amxx_SetBotMove = (_SetBotMove)GetProcAddress(dll, "Amxx_SetBotMove");
 	if (!Amxx_SetBotMove)
@@ -226,6 +252,21 @@ void think(HMODULE dll)
 	Amxx_SetEntityAction = (_SetEntityAction)GetProcAddress(dll, "Amxx_SetEntityAction");
 	if (!Amxx_SetEntityAction)
 		LogToFile("Load API::Amxx_SetEntityAction Failed");
+
+	// 1.42
+	Amxx_AddLog = (_AddLog)GetProcAddress(dll, "Amxx_AddLog");
+	if (!Amxx_AddLog)
+		LogToFile("Load API::Amxx_AddLog Failed");
+	else
+		sypbLog = true;
+
+	Amxx_SetBotGoal = (_SetBotGoal)GetProcAddress(dll, "Amxx_SetBotGoal");
+	if (!Amxx_SetBotGoal)
+		LogToFile("Load API::Amxx_SetBotGoal Failed");
+
+	Amxx_BlockWeaponPick = (_BlockWeaponPick)GetProcAddress(dll, "Amxx_BlockWeaponPick");
+	if (!Amxx_BlockWeaponPick)
+		LogToFile("Load API::Amxx_BlockWeaponPick Failed");
 }
 
 static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params)
@@ -241,7 +282,7 @@ static cell AMX_NATIVE_CALL amxx_apiVersion(AMX *amx, cell *params)
 	if (!Amxx_APIVersion)
 		return -2;
 
-	return amx_ftoc(Amxx_APIVersion());
+	return amx_ftoc(api_version);
 }
 
 static cell AMX_NATIVE_CALL amxx_IsSypb(AMX *amx, cell *params) // 1.30
@@ -280,18 +321,6 @@ static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.30
 	int targetId = params[2];
 	float blockCheckTime = amx_ctof(params[3]);
 	Amxx_SetEnemy(botId, targetId, blockCheckTime);
-}
-
-static cell AMX_NATIVE_CALL amxx_SetMoveTarget(AMX *amx, cell *params) // 1.30
-{
-	if (!Amxx_SetMoveTarget || api_version < float(1.30))
-		return -2;
-
-	int botId = params[1];
-	int targetId = params[2];
-	float blockCheckTime = amx_ctof(params[3]);
-
-	Amxx_SetMoveTarget(botId, targetId, blockCheckTime);
 }
 
 static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.30
@@ -451,6 +480,30 @@ static cell AMX_NATIVE_CALL amxx_SetEntityAction(AMX *amx, cell *params) // 1.40
 	return Amxx_SetEntityAction(id, team, action);
 }
 
+static cell AMX_NATIVE_CALL amxx_SetBotGoal(AMX *amx, cell *params) // 1.42
+{
+	if (!Amxx_SetBotGoal || api_version < float(1.42))
+		return -2;
+
+	int id = params[1];
+	int goalId = params[2];
+	//cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
+	//Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
+
+	return Amxx_SetBotGoal(id, goalId);
+}
+
+static cell AMX_NATIVE_CALL amxx_BlockWeaponPick(AMX *amx, cell *params) // 1.42
+{
+	if (!Amxx_BlockWeaponPick || api_version < float(1.42))
+		return -2;
+
+	int id = params[1];
+	int blockWeaponPick = params[2];
+
+	return Amxx_BlockWeaponPick (id, blockWeaponPick);
+}
+
 AMX_NATIVE_INFO sypb_natives[] =
 {
 	{ "is_run_sypb", amxx_runSypb },
@@ -459,7 +512,6 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ "sypb_get_enemy", amxx_CheckEnemy }, 
 	{ "sypb_get_movetarget", amxx_CheckMoveTarget}, 
 	{ "sypb_set_enemy", amxx_SetEnemy}, 
-	{ "sypb_set_movetarget", amxx_SetMoveTarget},
 	{ "sypb_set_move", amxx_SetBotMove}, 
 	{ "sypb_set_lookat", amxx_SetBotLookAt}, 
 	{ "sypb_set_weapon_clip", amxx_SetWeaponClip}, 
@@ -480,5 +532,42 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ "sypb_get_bot_nav_num", amxx_GetBotNavNum },
 	{ "sypb_get_bot_nav_pointid", amxx_GetBotNavPointId },
 	{ "sypb_set_entity_action", amxx_SetEntityAction }, 
+	// 1.42
+	{ "sypb_set_goal", amxx_SetBotGoal },
+	{ "sypb_block_weapon_pick", amxx_BlockWeaponPick }, 
 	{ NULL, NULL },
 };
+
+int LogToFile(char *szLogText, ...)
+{
+	if (sypbLog)
+	{
+		Amxx_AddLog(szLogText);
+		return 1;
+	}
+
+	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
+
+	char buildVersionName[64];
+	sprintf(buildVersionName, "sypb_amxx_%u_%u_%u_%u.txt", bV16[0], bV16[1], bV16[2], bV16[3]);
+
+	char fileHere[512];
+	sprintf(fileHere, "%s", buildVersionName);
+
+	FILE *fp;
+
+	if (!(fp = fopen(fileHere, "a")))
+		return 0;
+
+	va_list vArgptr;
+	char szText[1024];
+
+	va_start(vArgptr, szLogText);
+	vsprintf(szText, szLogText, vArgptr);
+	va_end(vArgptr);
+
+	fprintf(fp, " %s\n", szText);
+	fclose(fp);
+	return 1;
+}

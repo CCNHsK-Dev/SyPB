@@ -13,7 +13,12 @@ extern AMX_NATIVE_INFO sypb_natives[];
 
 void think(HMODULE dll);
 
+void ErrorWindows(char *text);
+
 // Error Log
 int LogToFile(char *szLogText, ...);
+
+
+extern bool sypbLog;
 
 #endif // MAIN_H

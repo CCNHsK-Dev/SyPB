@@ -169,10 +169,6 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 			else
 				skill = engine->RandomInt(0, 100);
 		}
-
-		/*
-		else if (sypb_difficulty.GetInt() <= 0)
-			skill = engine->RandomInt(10, 29); */
 	}
 
 
@@ -248,7 +244,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 	if (m_bots == null)
 		TerminateOnMalloc();
 
-	ServerPrint("Connecting SyPB Bot - [%s] Skill [%d]", STRING(bot->v.netname), skill);
+	ServerPrint("Connecting SyPB Bot - [%s] Skill [%d]", GetEntityName(bot), skill);
 
 	return index;
 }
@@ -313,15 +309,7 @@ Bot *BotControl::FindOneValidAliveBot (void)
 // SyPB Pro P.38 - Bot think improve
 void BotControl::Think(void)
 {
-	g_testingnow = 0;
-	
-	int botNum = 0;
-	for (int i = 0; i < engine->GetMaxClients(); i++)
-	{
-		if (m_bots[i] != null && IsAlive(m_bots[i]->GetEntity()))
-			botNum++;
-	}
-
+	extern ConVar sypb_stopbots;
 	for (int i = 0; i < engine->GetMaxClients(); i++)
 	{
 		if (m_bots[i] == null)
@@ -343,12 +331,10 @@ void BotControl::Think(void)
 
 		if (runThink)
 		{
-			float thinkTime = (1.0f / 24.9f) * engine->RandomFloat(0.95f, 1.00f);
-
-			if (botNum >= 25)
-				thinkTime *= 0.85f;
-			else if (botNum >= 15)
-				thinkTime *= 0.9f;
+			// SyPB Pro P.42 - Bot think improve
+			float thinkTime = (1.0f / 29.9f);
+			if (GetBotsNum() >= 18)
+				thinkTime = (1.0f / 24.9f);
 
 			m_bots[i]->m_thinkTimer = engine->GetTime() + thinkTime;
 
@@ -358,13 +344,16 @@ void BotControl::Think(void)
 			m_bots[i]->m_moveSpeedForRunMove = m_bots[i]->m_moveSpeed;
 			m_bots[i]->m_strafeSpeedForRunMove = m_bots[i]->m_strafeSpeed;
 		}
-		else
+		// SyPB Pro P.42 - Stop bot cvar fixed
+		else if (!sypb_stopbots.GetBool ())
 		{
 			m_bots[i]->ChooseAimDirection();
 			m_bots[i]->FacePosition();
-
+			
 			if (m_bots[i]->m_wantsToFire && !m_bots[i]->m_isUsingGrenade && m_bots[i]->m_shootTime <= engine->GetTime())
 				m_bots[i]->FireWeapon();
+
+			m_bots[i]->MoveAction();
 		}
 		
 		m_bots[i]->pev->angles.ClampAngles();
@@ -372,9 +361,6 @@ void BotControl::Think(void)
 
 		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
-	/*
-	if (g_testingnow > 0)
-		AddLogEntry(true, LOG_WARNING, "%d", g_testingnow); */
 }
 
 void BotControl::AddBot (const String &name, int skill, int personality, int team, int member)
@@ -523,6 +509,10 @@ void BotControl::InitQuota (void)
 {
    m_maintainTime = engine->GetTime () + 2.0f;
    m_creationTab.RemoveAll ();
+
+   // SyPB Pro P.42 - Entity Action - Reset
+   for (int i = 0; i < entityNum; i++)
+	   SetEntityActionData(i);
 }
 
 void BotControl::FillServer (int selection, int personality, int skill, int numToAdd)
@@ -628,10 +618,10 @@ void BotControl::RemoveMenu(edict_t *ent, int selection)
 		if ((m_bots[i] != null) && !FNullEnt(m_bots[i]->GetEntity()))
 		{
 			validSlots |= 1 << (i - ((selection - 1) * 8));
-			sprintf(buffer, "%s %1.1d. %s%s\n", buffer, i - ((selection - 1) * 8) + 1, STRING(m_bots[i]->pev->netname), GetTeam(m_bots[i]->GetEntity()) == TEAM_COUNTER ? " \\y(CT)\\w" : " \\r(T)\\w");
+			sprintf(buffer, "%s %1.1d. %s%s\n", buffer, i - ((selection - 1) * 8) + 1, GetEntityName(m_bots[i]->GetEntity ()), GetTeam(m_bots[i]->GetEntity()) == TEAM_COUNTER ? " \\y(CT)\\w" : " \\r(T)\\w");
 		}
 		else if (!FNullEnt(g_clients[i].ent))
-			sprintf(buffer, "%s %1.1d.\\d %s (Not SyPB) \\w\n", buffer, i - ((selection - 1) * 8) + 1, STRING(g_clients[i].ent->v.netname));
+			sprintf(buffer, "%s %1.1d.\\d %s (Not SyPB) \\w\n", buffer, i - ((selection - 1) * 8) + 1, GetEntityName (g_clients[i].ent));
 		else
 			sprintf(buffer, "%s %1.1d.\\d Null \\w\n", buffer, i - ((selection - 1) * 8) + 1);
 	}
@@ -765,7 +755,7 @@ void BotControl::ListBots (void)
 
       // is this player slot valid
       if (IsValidBot (player) != null && GetBot (player) != null)
-         ServerPrintNoTag ("[%-3.1d] %-9.13s %-17.18s %-3.4s %-3.1d %-3.1d", i, STRING (player->v.netname), GetBot (player)->m_personality == PERSONALITY_RUSHER ? "rusher" : GetBot (player)->m_personality == PERSONALITY_NORMAL ? "normal" : "careful", GetTeam (player) != 0 ? "CT" : "T", GetBot (player)->m_skill, static_cast <int> (player->v.frags));
+         ServerPrintNoTag ("[%-3.1d] %-9.13s %-17.18s %-3.4s %-3.1d %-3.1d", i, GetEntityName (player), GetBot (player)->m_personality == PERSONALITY_RUSHER ? "rusher" : GetBot (player)->m_personality == PERSONALITY_NORMAL ? "normal" : "careful", GetTeam (player) != 0 ? "CT" : "T", GetBot (player)->m_skill, static_cast <int> (player->v.frags));
    }
 }
 
@@ -949,8 +939,8 @@ Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
 
    if (!IsNullString (rejectReason))
    {
-      AddLogEntry (true, LOG_WARNING, "Server refused '%s' connection (%s)", STRING (bot->v.netname), rejectReason);
-      ServerCommand ("kick \"%s\"", STRING (bot->v.netname)); // kick the bot player if the server refused it
+      AddLogEntry (true, LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName (bot), rejectReason);
+      ServerCommand ("kick \"%s\"", GetEntityName (bot)); // kick the bot player if the server refused it
 
       bot->v.flags |= FL_KILLME;
    }
@@ -960,7 +950,7 @@ Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
       if (engine->GetDeveloperLevel () == 2)
       {
           ServerPrint ("Server requiring authentication");
-          ServerPrint ("Client '%s' connected", STRING (bot->v.netname));
+          ServerPrint ("Client '%s' connected", GetEntityName (bot));
           ServerPrint ("Adr: 127.0.0.%d:27005", ENTINDEX (bot) + 100);
       }
 
@@ -1061,7 +1051,7 @@ Bot::~Bot (void)
    // free used botname
    ITERATE_ARRAY (g_botNames, j)
    {
-      if (strcmp (g_botNames[j].name, STRING (pev->netname)) == 0)
+      if (strcmp (g_botNames[j].name, GetEntityName (GetEntity ())) == 0)
       {
          g_botNames[j].isUsed = false;
          break;
@@ -1083,7 +1073,6 @@ void Bot::NewRound (void)
    m_weaponReloadAPI = false;
    m_lookAtAPI = nullvec;
    m_moveAIAPI = false;
-   m_moveTargetEntityAPI = null;
    m_enemyAPI = null;
    m_blockCheckEnemyTime = engine->GetTime();
 
@@ -1095,8 +1084,12 @@ void Bot::NewRound (void)
    m_gunMinDistanceAPI = 0;
    m_gunMaxDistanceAPI = 0;
 
-   // SyPB Pro P.41 - AMXX API
-   m_waypointGoalAPI = nullvec;
+   // SyPB Pro P.42 - AMXX API
+   m_waypointGoalAPI = -1;
+   m_blockWeaponPickAPI = false;
+
+   // SyPB Pro P.42 - Waypoint improve
+   SetEntityWaypoint(GetEntity(), 2.0f, -2);
 
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
@@ -1177,8 +1170,7 @@ void Bot::NewRound (void)
 
    m_enemy = null;
    m_lastVictim = null;
-   m_lastEnemy = null;
-   m_lastEnemyOrigin = nullvec;
+   SetLastEnemy(null);
    m_trackingEdict = null;
    m_timeNextTracking = 0.0f;
 
@@ -1334,7 +1326,7 @@ void Bot::Kick (void)
    // this function kick off one bot from the server.
 
    ServerCommand ("kick #%d", GETPLAYERUSERID (GetEntity ()));
-   CenterPrint ("Bot '%s' kicked", STRING (pev->netname));
+   CenterPrint ("Bot '%s' kicked", GetEntityName (GetEntity ()));
 
    // balances quota
    if (g_botManager->GetBotsNum () - 1 < sypb_quota.GetInt ())

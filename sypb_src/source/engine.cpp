@@ -58,12 +58,17 @@ float Engine::RandomFloat (float low, float high)
    if (low >= high)
       return low;
 
+   // SyPB Pro P.42 - Engine Small improve
+   return RANDOM_FLOAT(low, high);
+
+
+   /*
    double rnd = GetRandomBase ();
 
    rnd *= static_cast <double> (high - low);
    rnd /= m_divider - 1.0;
 
-   return static_cast <float> (rnd + static_cast <double> (low));
+   return static_cast <float> (rnd + static_cast <double> (low)); */
 }
 
 int Engine::RandomInt (int low, int high)
@@ -71,12 +76,16 @@ int Engine::RandomInt (int low, int high)
    if (low >= high)
       return low;
 
+   // SyPB Pro P.42 - Engine Small improve
+   return RANDOM_LONG(low, high);
+
+   /*
    double rnd = GetRandomBase ();
 
    rnd *= static_cast <double> (high - low) + 1;
    rnd /= m_divider;
 
-   return static_cast <int> (rnd + static_cast <double> (low));
+   return static_cast <int> (rnd + static_cast <double> (low)); */
 }
 
 void Engine::RegisterVariable (const char *variable, const char *value, VarType varType, ConVar *self)

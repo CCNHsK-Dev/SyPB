@@ -135,63 +135,57 @@ enum LogMask
 
 //
 // Class: Singleton
-// Implements no-copying singleton base class.
+//  Implements no-copying singleton.
 //
 template <typename T> class Singleton
 {
-//
-// Group: (Con/De)structors.
-//
+	//
+	// Group: (Con/De)structors
+	//
 protected:
-   //
-   // Function: Singleton
-   //
-   // Default singleton constructor.
-   //
-   inline Singleton (void)
-   {
-   }
 
-   //
-   // Function: ~Singleton
-   //
-   // Default singleton destructor.
-   //
-   virtual inline ~Singleton (void)
-   {
-   }
+	//
+	// Function: Singleton
+	//  Default singleton constructor.
+	//
+	Singleton(void) { }
 
-//
-// Group: Functions.
-//
+	//
+	// Function: ~Singleton
+	//  Default singleton destructor.
+	//
+	virtual ~Singleton(void) { }
+
+
 public:
-   //
-   // Function: GetReference
-   //
-   // Gets the object of singleton as reference.
-   //
-   // Returns:
-   //   Object reference.
-   //
-   static inline T &GetReference (void)
-   {
-      static T reference;
 
-      return reference;
-   }
+	//
+	// Function: GetObject
+	//  Gets the object of singleton.
+	//
+	// Returns:
+	//  Object pointer.
+	//  
+	//
+	static inline T *GetObjectPtr(void)
+	{
+		static T reference;
+		return &reference;
+	}
 
-   //
-   // Function: GetObjectPtr
-   //
-   // Gets the object of singleton.
-   //
-   // Returns:
-   //   Object pointer.
-   //
-   static inline T *GetObjectPtr (void)
-   {
-      return &GetReference ();
-   }
+	//
+	// Function: GetObject
+	//  Gets the object of singleton as reference.
+	//
+	// Returns:
+	//  Object reference.
+	//  
+	//
+	static inline T &GetReference(void)
+	{
+		static T reference;
+		return reference;
+	}
 };
 
 //
@@ -816,382 +810,563 @@ namespace Math
    }
 }
 
+//
+// Class: Array
+//  Universal template array container.
+//
 template <typename T> class Array
 {
-protected:
-   T *m_array;
+private:
+	T *m_elements;
 
-   int m_used;
-   int m_allocated;
+	int m_resizeStep;
+	int m_itemSize;
+	int m_itemCount;
 
-public:
-   bool SetSize (int newSize, bool keepData = true)
-   {
-      if (newSize == 0)
-      {
-         Destory ();
-         return true;
-      }
-
-      int checkSize = m_used / 8;
-
-      if (checkSize < 4)
-         checkSize = 4;
-
-      if (checkSize > 1024)
-         checkSize = 1024;
-
-      checkSize += m_used;
-
-      if (newSize > checkSize)
-         checkSize = newSize;
-
-      T *buffer = new T[checkSize];
-
-      if (buffer == null)
-         return false;
-
-      if (keepData && m_array != null)
-      {
-         if (checkSize < m_used)
-            m_used = checkSize;
-
-         for (int i = 0; i < m_used; i++)
-            buffer[i] = m_array[i];
-      }
-
-      if (m_array != null)
-         delete [] m_array;
-
-      m_array = buffer;
-      m_allocated = checkSize;
-
-      return true;
-   }
-
-//
-// Group: Typedefs
-//
+	//
+	// Group: (Con/De)structors
+	//
 public:
 
-   //
-   // Typedef: Iter
-   // 
-   // Represents Array iterator.
-   //
-   typedef T *Iter;
+	//
+	// Function: Array
+	//  Default array constructor.
+	//
+	// Parameters:
+	//  resizeStep - Array resize step, when new items added, or old deleted.
+	//
+	Array(int resizeStep = 0)
+	{
+		m_elements = NULL;
+		m_itemSize = 0;
+		m_itemCount = 0;
+		m_resizeStep = resizeStep;
+	}
 
+	//
+	// Function: Array
+	//  Array copying constructor.
+	//
+	// Parameters:
+	//  other - Other array that should be assigned to this one.
+	//
+	Array(const Array <T> &other)
+	{
+		m_elements = NULL;
+		m_itemSize = 0;
+		m_itemCount = 0;
+		m_resizeStep = 0;
 
-   //
-   // Typedef: ConstIter
-   //
-   // Represents Array const iterator.
-   //
-   typedef const T *ConstIter;
+		AssignFrom(other);
+	}
 
-   //
-   // Function: GetStart
-   //
-   // Gets the start of the array as iterator.
-   //
-   // Returns:
-   //   Start position of the Array.
-   //
-   inline Iter GetStart (void) const
-   {
-      return m_array;
-   }
+	//
+	// Function: ~Array
+	//  Default array destructor.
+	//
+	virtual ~Array(void)
+	{
+		Destory();
+	}
 
-   //
-   // Function: GetEnd
-   //
-   // Gets the end position of the array as iterator.
-   //
-   // Returns:
-   //   Start position of the Array.
-   //
-   inline Iter GetEnd (void) const
-   {
-      return m_array + m_used;
-   }
-
+	//
+	// Group: Functions
+	//
 public:
-   inline Array (void) : m_array (null), m_allocated (0), m_used (0)
-   {
 
-   }
+	//
+	// Function: Destory
+	//  Destroys array object, and all elements.
+	//
+	void Destory(void)
+	{
+		delete[] m_elements;
 
-   inline Array (const Array <T> &other) : m_array (null), m_allocated (0), m_used (0)
-   {
-      AssignFrom (other);
-   }
+		m_elements = NULL;
+		m_itemSize = 0;
+		m_itemCount = 0;
+	}
 
-   inline ~Array (void)
-   {
-      Destory ();
-   }
+	//
+	// Function: SetSize
+	//  Sets the size of the array.
+	//
+	// Parameters:
+	//  newSize - Size to what array should be resized.
+	//  keepData - Keep exiting data, while resizing array or not.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool SetSize(int newSize, bool keepData = true)
+	{
+		if (newSize == 0)
+		{
+			Destory();
+			return true;
+		}
 
-public:
-   inline void Destory (void)
-   {
-      if (m_array != null)
-         delete [] m_array;
+		int checkSize = 0;
 
-      m_array = null;
-      m_allocated = 0;
-      m_used = 0;
-   }
+		if (m_resizeStep != 0)
+			checkSize = m_itemCount + m_resizeStep;
+		else
+		{
+			checkSize = m_itemCount / 8;
 
-   inline void Reserve (int size)
-   {
-      SetSize (size);
-   }
+			if (checkSize < 4)
+				checkSize = 4;
+			else if (checkSize > 1024)
+				checkSize = 1024;
 
-   inline int GetAllocatedSize (void) const
-   {
-      return m_allocated;
-   }
+			checkSize += m_itemCount;
+		}
 
-   inline int GetElementNumber (void) const
-   {
-      return m_used;
-   }
+		if (newSize > checkSize)
+			checkSize = newSize;
 
-   inline bool SetAt (int index, T object, bool enlarge = true)
-   {
-      if (index >= m_allocated)
-      {
-         if (!enlarge || !SetSize (index + 1))
-            return false;
-      }
-      m_array[index] = object;
+		T *buffer = new T[checkSize];
 
-      if (index >= m_used)
-         m_used = index + 1;
+		if (keepData && m_elements != NULL)
+		{
+			if (checkSize < m_itemCount)
+				m_itemCount = checkSize;
 
-      return true;
-   }
+			for (int i = 0; i < m_itemCount; i++)
+				buffer[i] = m_elements[i];
+		}
+		delete[] m_elements;
 
-   inline T &GetAt (int index)
-   {
-      return m_array[index];
-   }
+		m_elements = buffer;
+		m_itemSize = checkSize;
 
-   inline bool GetAt (int index, T &object)
-   {
-      if (index >= m_used)
-         return false;
+		return true;
+	}
 
-      object = m_array[index];
-      return true;
-   }
+	//
+	// Function: GetSize
+	//  Gets allocated size of array.
+	//
+	// Returns:
+	//  Number of allocated items.
+	//
+	int GetSize(void) const
+	{
+		return m_itemSize;
+	}
 
-   inline bool InsertAt (int index, T object, bool enlarge = true)
-   {
-      return InsertAt (index, &object, 1, enlarge);
-   }
+	//
+	// Function: GetElementNumber
+	//  Gets real number currently in array.
+	//
+	// Returns:
+	//  Number of elements.
+	//
+	int GetElementNumber(void) const
+	{
+		return m_itemCount;
+	}
 
-   inline bool InsertAt (int index, T *objects, int count = 1, bool enlarge = true)
-   {
-      if (objects == null || count < 1)
-         return false;
+	//
+	// Function: SetEnlargeStep
+	//  Sets step, which used while resizing array data.
+	//
+	// Parameters:
+	//  resizeStep - Step that should be set.
+	//  
+	void SetEnlargeStep(int resizeStep = 0)
+	{
+		m_resizeStep = resizeStep;
+	}
 
-      int newSize = 0;
+	//
+	// Function: GetEnlargeStep
+	//  Gets the current enlarge step.
+	//
+	// Returns:
+	//  Current resize step.
+	//
+	int GetEnlargeStep(void)
+	{
+		return m_resizeStep;
+	}
 
-      if (m_used > index)
-         newSize = m_used + count;
-      else
-         newSize = index + count;
+	//
+	// Function: SetAt
+	//  Sets element data, at specified index.
+	//
+	// Parameters:
+	//  index - Index where object should be assigned.
+	//  object - Object that should be assigned.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool SetAt(int index, T object, bool enlarge = true)
+	{
+		if (index >= m_itemSize)
+		{
+			if (!enlarge || !SetSize(index + 1))
+				return false;
+		}
+		m_elements[index] = object;
 
-      if (newSize >= m_allocated)
-      {
-         if (!enlarge || !SetSize (newSize))
-            return false;
-      }
+		if (index >= m_itemCount)
+			m_itemCount = index + 1;
 
-      if (index >= m_used)
-      {
-         for (int i = 0; i < count; i++)
-            m_array[i + index] = objects[i];
+		return true;
+	}
 
-         m_used = newSize;
-      }
-      else
-      {
-         for (int i = m_used; i > index; i--)
-            m_array[i + count - 1] = m_array[i - 1];
+	//
+	// Function: GetAt
+	//  Gets element from specified index
+	//
+	// Parameters:
+	//  index - Element index to retrieve.
+	//
+	// Returns:
+	//  Element object.
+	//
+	T &GetAt(int index)
+	{
+		return m_elements[index];
+	}
 
-         for (int i = 0; i < count; i++)
-            m_array[i + index] = objects[i];
+	//
+	// Function: GetAt
+	//  Gets element at specified index, and store it in reference object.
+	//
+	// Parameters:
+	//  index - Element index to retrieve.
+	//  object - Holder for element reference.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool GetAt(int index, T &object)
+	{
+		if (index >= m_itemCount)
+			return false;
 
-         m_used += count;
-      }
-      return true;
-   }
+		object = m_elements[index];
+		return true;
+	}
 
-   inline bool InsertAt (int index, Array <T> &other, bool enlarge = true)
-   {
-      if (&other == this)
-         return false;
+	//
+	// Function: InsertAt
+	//  Inserts new element at specified index.
+	//
+	// Parameters:
+	//  index - Index where element should be inserted.
+	//  object - Object that should be inserted.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool InsertAt(int index, T object, bool enlarge = true)
+	{
+		return InsertAt(index, &object, 1, enlarge);
+	}
 
-      return InsertAt (index, other.m_array, other.m_used, enlarge);
-   }
+	//
+	// Function: InsertAt
+	//  Inserts number of element at specified index.
+	//
+	// Parameters:
+	//  index - Index where element should be inserted.
+	//  objects - Pointer to object list.
+	//  count - Number of element to insert.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool InsertAt(int index, T *objects, int count = 1, bool enlarge = true)
+	{
+		if (objects == NULL || count < 1)
+			return false;
 
-   inline bool RemoveAt (int index, int count = 1)
-   {
-      if (index + count > m_used)
-         return false;
+		int newSize = 0;
 
-      if (count < 1)
-         return true;
+		if (m_itemCount > index)
+			newSize = m_itemCount + count;
+		else
+			newSize = index + count;
 
-      m_used -= count;
+		if (newSize >= m_itemSize)
+		{
+			if (!enlarge || !SetSize(newSize))
+				return false;
+		}
 
-      for (int i = index; i < m_used; i++)
-         m_array[i] = m_array[i + count];
+		if (index >= m_itemCount)
+		{
+			for (int i = 0; i < count; i++)
+				m_elements[i + index] = objects[i];
 
-      return true;
-   }
+			m_itemCount = newSize;
+		}
+		else
+		{
+			int i = 0;
 
-   inline bool Push (T object, bool enlarge = true)
-   {
-      return InsertAt (m_used, &object, 1, enlarge);
-   }
+			for (i = m_itemCount; i > index; i--)
+				m_elements[i + count - 1] = m_elements[i - 1];
 
-   inline bool Push (T *objects, int count = 1, bool enlarge = true)
-   {
-      return InsertAt (m_used, objects, count, enlarge);
-   }
+			for (i = 0; i < count; i++)
+				m_elements[i + index] = objects[i];
 
-   inline bool Push (Array <T> &other, bool enlarge = true)
-   {
-      if (&other == this)
-         return false;
+			m_itemCount += count;
+		}
+		return true;
+	}
 
-      return InsertAt (m_used, other.m_array, other.m_used, enlarge);
-   }
+	//
+	// Function: InsertAt
+	//  Inserts other array reference into the our array.
+	//
+	// Parameters:
+	//  index - Index where element should be inserted.
+	//  objects - Pointer to object list.
+	//  count - Number of element to insert.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool InsertAt(int index, Array <T> &other, bool enlarge = true)
+	{
+		if (&other == this)
+			return false;
 
-   inline T *GetRawData (void)
-   {
-      return m_array;
-   }
+		return InsertAt(index, other.m_elements, other.m_itemCount, enlarge);
+	}
 
-   inline void RemoveAll (void)
-   {
-      m_used = 0;
-      SetSize (m_used);
-   }
+	//
+	// Function: RemoveAt
+	//  Removes elements from specified index.
+	//
+	// Parameters:
+	//  index - Index, where element should be removed.
+	//  count - Number of elements to remove.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool RemoveAt(int index, int count = 1)
+	{
+		if (index + count > m_itemCount)
+			return false;
 
-   inline bool IsEmpty (void) const
-   {
-      return m_used == 0;
-   }
+		if (count < 1)
+			return true;
 
-   inline void FreeExtra (void)
-   {
-      if (m_used == 0)
-      {
-         Destory ();
-         return;
-      }
+		m_itemCount -= count;
 
-      T *buffer = new T[m_used];
+		for (int i = index; i < m_itemCount; i++)
+			m_elements[i] = m_elements[i + count];
 
-      if (buffer == null)
-         return;
+		return true;
+	}
 
-      if (m_array != null)
-      {
-         for (int i = 0; i <  m_used; i++)
-            buffer[i] = m_array[i];
-      }
+	//
+	// Function: Push
+	//  Appends element to the end of array.
+	//
+	// Parameters:
+	//  object - Object to append.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool Push(T object, bool enlarge = true)
+	{
+		return InsertAt(m_itemCount, &object, 1, enlarge);
+	}
 
-      if (m_array != null)
-         delete [] m_array;
+	//
+	// Function: Push
+	//  Appends number of elements to the end of array.
+	//
+	// Parameters:
+	//  objects - Pointer to object list.
+	//  count - Number of element to insert.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool Push(T *objects, int count = 1, bool enlarge = true)
+	{
+		return InsertAt(m_itemCount, objects, count, enlarge);
+	}
 
-      m_array = buffer;
-      m_allocated = m_used;
-   }
+	//
+	// Function: Push
+	//  Inserts other array reference into the our array.
+	//
+	// Parameters:
+	//  objects - Pointer to object list.
+	//  count - Number of element to insert.
+	//  enlarge - Checks whether array must be resized in case, allocated size + enlarge step is exceeded.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool Push(Array <T> &other, bool enlarge = true)
+	{
+		if (&other == this)
+			return false;
 
-   inline T &Pop (void)
-   {
-      static T element = m_array[m_used - 1];
-      RemoveAt (m_used - 1);
+		return InsertAt(m_itemCount, other.m_elements, other.m_itemCount, enlarge);
+	}
 
-      return element;
-   }
+	//
+	// Function: GetData
+	//  Gets the pointer to all element in array.
+	//
+	// Returns:
+	//  Pointer to object list.
+	//
+	T *GetData(void)
+	{
+		return m_elements;
+	}
 
-   inline bool AssignFrom (const Array <T> &other)
-   {
-      if (&other == this)
-         return true;
+	//
+	// Function: RemoveAll
+	//  Resets array, and removes all elements out of it.
+	// 
+	void RemoveAll(void)
+	{
+		m_itemCount = 0;
+		SetSize(m_itemCount);
+	}
 
-      if (!SetSize (other.m_used, false))
-         return false;
+	//
+	// Function: IsEmpty
+	//  Checks whether element is empty.
+	//
+	// Returns:
+	//  True if element is empty, false otherwise.
+	//
+	inline bool IsEmpty(void)
+	{
+		return m_itemCount <= 0;
+	}
 
-      for (int i = 0; i < other.m_used; i++)
-         m_array[i] = other.m_array[i];
+	//
+	// Function: FreeExtra
+	//  Frees unused space.
+	//
+	void FreeSpace(bool destroyIfEmpty = true)
+	{
+		if (m_itemCount == 0)
+		{
+			if (destroyIfEmpty)
+				Destory();
 
-      m_used = other.m_used;
+			return;
+		}
 
-      return true;
-   }
+		T *buffer = new T[m_itemCount];
 
-   T &GetRandomElement(void) const
-   {
-	   // @TODO@
-	   /*
-	   extern class Engine;
-	   return m_array[Engine::GetReference ().RandomInt (0, m_used - 1)]; */
-	   //return m_array[0];
+		if (m_elements != NULL)
+		{
+			for (int i = 0; i < m_itemCount; i++)
+				buffer[i] = m_elements[i];
+		}
+		delete[] m_elements;
 
+		m_elements = buffer;
+		m_itemSize = m_itemCount;
+	}
 
-	   // SyPB Pro P.29 - WM debug
-	   int32 element = (*g_engfuncs.pfnRandomLong) (0, m_used - 1);
-	   return m_array[element];
-   }
-   inline Array <T> &operator = (const Array <T> &other)
-   {
-      AssignFrom (other);
-      return *this;
-   }
+	//
+	// Function: Pop
+	//  Pops element from array.
+	//
+	// Returns:
+	//  Object popped from the end of array.
+	//
+	T Pop(void)
+	{
+		T element = m_elements[m_itemCount - 1];
+		RemoveAt(m_itemCount - 1);
 
-   inline Array &operator += (const Array <T> &other)
-   {
-      for (int i = 0; i < other.m_used; i++)
-         Push (other.m_array[i]);
+		return element;
+	}
 
-      return *this;
-   }
+	T &Last(void)
+	{
+		return m_elements[m_itemCount - 1];
+	}
 
-   inline T &operator [] (int index)
-   {
-      if (index < m_allocated && index >= m_used)
-         m_used = index + 1;
+	bool GetLast(T &item)
+	{
+		if (m_itemCount <= 0)
+			return false;
 
-      return GetAt (index);
-   }
+		item = m_elements[m_itemCount - 1];
 
-   inline bool operator == (const Array &other) const
-   {
-      if (this != &other)
-      {
-         if (IsEmpty () || m_used != other.m_used)
-            return false;
+		return true;
+	}
 
-         for (int i = 0; i < m_used; ++i)
-         {
-            if (m_array[i] != other.m_array[i])
-               return false;
-         }
-      }
-      return true;
-   }
+	//
+	// Function: AssignFrom
+	//  Reassigns current array with specified one.
+	//
+	// Parameters:
+	//  other - Other array that should be assigned.
+	//
+	// Returns:
+	//  True if operation succeeded, false otherwise.
+	//
+	bool AssignFrom(const Array <T> &other)
+	{
+		if (&other == this)
+			return true;
 
-   inline bool operator != (const Array &other) const
-   {
-      return !operator == (other);
-   }
+		if (!SetSize(other.m_itemCount, false))
+			return false;
+
+		for (int i = 0; i < other.m_itemCount; i++)
+			m_elements[i] = other.m_elements[i];
+
+		m_itemCount = other.m_itemCount;
+		m_resizeStep = other.m_resizeStep;
+
+		return true;
+	}
+
+	//
+	// Function: GetRandomElement
+	//  Gets the random element from the array.
+	//
+	// Returns:
+	//  Random element reference.
+	//
+	T &GetRandomElement(void) const
+	{
+		return m_elements[(*g_engfuncs.pfnRandomLong) (0, m_itemCount - 1)];
+	}
+
+	Array <T> &operator = (const Array <T> &other)
+	{
+		AssignFrom(other);
+		return *this;
+	}
+
+	T &operator [] (int index)
+	{
+		if (index < m_itemSize && index >= m_itemCount)
+			m_itemCount = index + 1;
+
+		return GetAt(index);
+	}
 };
 
 template <typename T1, typename T2> struct Pair
@@ -1213,7 +1388,6 @@ public:
    {
    }
 };
-
 
 template <class K, class V> class Map
 {

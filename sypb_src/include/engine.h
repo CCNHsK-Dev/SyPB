@@ -2139,9 +2139,6 @@ typedef int(*AMXX_CHECK_MOVETARGET) (int index);
 C_DLLEXPORT void Amxx_SetEnemy(int index, int target, float blockCheckTime);
 typedef void(*AMXX_SET_ENEMY)(int index, int target, float blockCheckTime);
 
-C_DLLEXPORT void Amxx_SetMoveTarget(int index, int target, float blockCheckTime);
-typedef void(*AMXX_SET_MOVETARGET)(int index, int target, float blockCheckTime);
-
 C_DLLEXPORT void Amxx_SetBotMove(int index, int pluginSet);
 typedef void(*AMXX_SET_BOT_MOVE) (int index, int pluginSet);
 
@@ -2192,34 +2189,45 @@ typedef int(*AMXX_GET_BOT_NAV_POINTID) (int index, int pointNum);
 C_DLLEXPORT int Amxx_SetEntityAction(int index, int team, int action);
 typedef int(*AMXX_SET_ENTITY_ACTION) (int index, int team, int action);
 
-// SyPB Pro P.41 - AMXX API
-C_DLLEXPORT int Amxx_SetBotGoal(int index, Vector origin);
-typedef int(*_AMXX_SET_BOT_GOAL) (int index, Vector);
+// SyPB Pro P.42 - AMXX API
+C_DLLEXPORT void Amxx_AddLog(char *logText);
+typedef void(*AMXX_ADD_LOG)(char *logText);
+
+C_DLLEXPORT int Amxx_SetBotGoal(int index, int goal);
+typedef int(*_AMXX_SET_BOT_GOAL) (int index, int goal);
+
+C_DLLEXPORT int Amxx_BlockWeaponPick(int index, int blockWeaponPick);
+typedef int(*_AMXX_BLOCK_WEAPON_PICK) (int index, int blockWeaponPick);
 // AMXX SyPB API End
 
 
-// SyPB Pro P.41 - SwNPC API
+// SyPB Pro P.42 - SwNPC API
+C_DLLEXPORT void SwNPC_GetHostEntity(edict_t **hostEntity);
+typedef void(*SwNPC_GET_HOST_ENTITY) (edict_t **hostEntity);
+
 C_DLLEXPORT float SwNPC_GetSyPBVersion(void);
 typedef float(*SWNPC_GET_SYPB_VERSION) (void);
 
 C_DLLEXPORT void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4);
 typedef void(*SWNPC_CHECK_BUILD)(float version, int bu1, int bu2, int bu3, int bu4);
 
-C_DLLEXPORT int SwNPC_GetWaypointsNum(void);
-typedef int(*SWNPC_GET_WAYPOINTS_NUM) (void);
+C_DLLEXPORT void SwNPC_AddLog(char *logText);
+typedef void (*SWNPC_ADD_LOG)(char *logText);
 
+C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance);
+typedef int(SWNPC_GET_WAYPOINT_DATA)(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance);
 /*
-C_DLLEXPORT Vector SwNPC_GetWaypointOrigin(int index);
-typedef Vector(*SWNPC_GET_WAYPOINT_ORIGIN) (int index); */
-
-C_DLLEXPORT int SwNPC_GetWaypointOrigin(int index, Vector *origin);
-typedef int(*SWNPC_GET_WAYPOINT_ORIGIN) (int index, Vector *origin);
-
-C_DLLEXPORT int32 SwNPC_GetWaypointFlags(int index);
-typedef int32(*SWNPC_GET_WAYPOINT_FLAGS) (int index);
-
 C_DLLEXPORT int SwNPC_GetWaypointPath(int **path);
 typedef int(*SWNPC_GET_WAYPOINT_PATH) (int **path);
+
+C_DLLEXPORT int SwNPC_GetWaypointDist(int **dist);
+typedef int(*SWNPC_GET_WAYPOINT_DIST) (int *dist);
+*/
+C_DLLEXPORT int SwNPC_GetEntityWaypointIndex(edict_t *entity);
+typedef int(*SWNPC_GET_WAYPOINT_INDEX) (edict_t *entity);
+
+C_DLLEXPORT void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEntity);
+typedef void(*SWNPC_LOAD_WAYPOINT_INDEX) (edict_t *getEntity, edict_t *targetEntity);
 // SwNPC API End
 
 #define MDLL_FUNC   gpGamedllFuncs->dllapi_table
@@ -2305,7 +2313,7 @@ typedef int(*SWNPC_GET_WAYPOINT_PATH) (int **path);
 
 
 // max buffer size for printed messages
-#define MAX_LOGMSG_LEN  1024
+//#define MAX_LOGMSG_LEN  1024
 
 
 

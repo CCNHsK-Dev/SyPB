@@ -31,11 +31,10 @@ extern float amxxDLL_Version;
 extern uint16 amxxDLL_bV16[4];
 // ****
 
-// SyPB Pro P.41 - SwNPC
+// SyPB Pro P.42 - SwNPC
 extern float SwNPC_Version;
 extern uint16 SwNPC_Build[4];
-
-extern int g_testingnow;
+// ****
 
 extern bool g_bombPlanted;
 extern bool g_bombSayString; 
@@ -89,20 +88,19 @@ extern int g_modelIndexLaser;
 extern int g_modelIndexArrow;
 extern char g_fakeArgv[256];
 
+// SyPB Pro P.42 - Entity Action
+extern const int entityNum = 256;
+extern int g_entityId[entityNum];
+extern int g_entityTeam[entityNum];
+extern int g_entityAction[entityNum];
+extern int g_entityWpIndex[entityNum];
+extern Vector g_entityGetWpOrigin[entityNum];
+extern float g_entityGetWpTime[entityNum];
+
 extern Array <Array <String> > g_chatFactory;
 extern Array <Array <ChatterItem> > g_chatterFactory;
 extern Array <NameItem> g_botNames;
 extern Array <KwChat> g_replyFactory;
-
-extern Array <String> g_entityName;
-extern Array <int> g_entityTeam;
-extern Array <int> g_entityAction;
-
-extern Array <int> g_entityIdAPI;
-extern Array <int> g_entityTeamAPI;
-extern Array <int> g_entityActionAPI;
-
-extern Array <int> g_entityWpIndex;
 
 extern FireDelay g_fireDelay[Const_NumWeapons + 1];
 extern WeaponSelect g_weaponSelect[Const_NumWeapons + 1];
