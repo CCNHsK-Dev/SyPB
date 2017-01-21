@@ -2951,13 +2951,17 @@ bool Bot::ReactOnEnemy(void)
 			}
 			else
 			{
-				// SyPB Pro P.43 - Knife Ai improve TESTTEST
+				// SyPB Pro P.43 - Knife Ai improve
 				if (m_currentWeapon == WEAPON_KNIFE)
 				{
 					m_isEnemyReachable = false;
 
 					if (i == enemyIndex)
 						m_isEnemyReachable = true;
+					// SyPB Pro P.44 - Knife Ai improve TESTTEST
+					else if (m_navNode != null && m_navNode->index == enemyIndex)
+						m_isEnemyReachable = true;
+					/*
 					else
 					{
 						for (int j = 0; j < Const_MaxPathIndex; j++)
@@ -2968,7 +2972,7 @@ bool Bot::ReactOnEnemy(void)
 								break;
 							}
 						}
-					}
+					} */
 
 					if (!m_isEnemyReachable)
 						SetMoveTarget(m_enemy);
