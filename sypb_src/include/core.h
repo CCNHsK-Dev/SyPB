@@ -954,7 +954,7 @@ private:
 
    int CheckGrenades (void);
    void CommandTeam (void);
-   void AttachToUser (void);
+   //void AttachToUser (void);
    void CombatFight (void);
    bool IsWeaponBadInDistance (int weaponIndex, float distance);
    bool DoFirePause (float distance, FireDelay *fireDelay);
@@ -1225,7 +1225,8 @@ public:
    void Think (void);
    void Free (void);
    void Free (int index);
-   void CheckAutoVacate (edict_t *ent);
+   //void CheckAutoVacate (edict_t *ent);
+   void CheckAutoBotNum(void);
 
    void AddRandom (void) { AddBot ("", -1, -1, -1, -1); }
    void AddBot (const String &name, int skill, int personality, int team, int member);
@@ -1489,6 +1490,8 @@ extern void ServerPrintNoTag (const char *format, ...);
 extern void CenterPrint (const char *format, ...);
 extern void ClientPrint (edict_t *ent, int dest, const char *format, ...);
 extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
+
+extern void AutoLoadGameMode(void);
 
 extern void SetEntityActionData(int i, int index = -1, int team = -1, int action = -1);
 extern void API_TestMSG(const char *format, ...);

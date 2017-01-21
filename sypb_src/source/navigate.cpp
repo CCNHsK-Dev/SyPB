@@ -73,19 +73,37 @@ int Bot::FindGoal(void)
 			offensiveWpts = g_waypoint->m_zmHmPoints;
 		else if (IsZombieEntity(GetEntity()) && FNullEnt (m_moveTargetEntity) && FNullEnt (m_enemy))
 		{
+			// SyPB Pro P.43 - Zombie improve
 			int checkPoint[3];
 			for (int i = 0; i < 3; i++)
 				checkPoint[i] = engine->RandomInt(0, g_numWaypoints - 1);
 
-			float minDistance = 9999.9f;
-			int movePoint = checkPoint[0], playerWpIndex = GetEntityWaypoint (GetEntity ());
-			for (int i = 0; i < 3; i++)
+			int movePoint = checkPoint[0];
+			if (engine->RandomInt(1, 5) <= 2)
 			{
-				float distance = g_waypoint->GetPathDistanceFloat(playerWpIndex, checkPoint[i]);
-				if (distance <= minDistance)
+				int maxEnemyNum = 0;
+				for (int i = 0; i < 3; i++)
 				{
-					minDistance = distance;
-					movePoint = checkPoint[i];
+					int enemyNum = GetNearbyEnemiesNearPosition(g_waypoint->GetPath(checkPoint[i])->origin, 300);
+					if (enemyNum > maxEnemyNum)
+					{
+						maxEnemyNum = enemyNum;
+						movePoint = checkPoint[i];
+					}
+				}
+			}
+			else
+			{
+				int playerWpIndex = GetEntityWaypoint(GetEntity());
+				float maxDistance = 0.0f;
+				for (int i = 0; i < 3; i++)
+				{
+					float distance = g_waypoint->GetPathDistanceFloat(playerWpIndex, checkPoint[i]);
+					if (distance >= maxDistance)
+					{
+						maxDistance = distance;
+						movePoint = checkPoint[i];
+					}
 				}
 			}
 
@@ -548,10 +566,10 @@ bool Bot::DoWaypointNav (void)
       desiredDistance = 50.0f;
    else if ((pev->flags & FL_DUCKING) || (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_GOAL))
       desiredDistance = 25.0f;
-   else if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
-      desiredDistance = 15.0f;
+   else if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
+	   desiredDistance = 15.0f;
    else if (m_currentTravelFlags & PATHFLAG_JUMP)
-      desiredDistance = 0.0f;
+	   desiredDistance = 0.0f;
    else
       desiredDistance = g_waypoint->GetPath (m_currentWaypointIndex)->radius;
 
@@ -574,12 +592,12 @@ bool Bot::DoWaypointNav (void)
 		  desiredDistance = waypointDistance + 1.0f;
    }
 
+   // SyPB Pro P.42 - AMXX API
+   if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
+	   m_waypointGoalAPI = -1;
+
    if (waypointDistance < desiredDistance)
    {
-	   // SyPB Pro P.42 - AMXX API
-	   if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
-		   m_waypointGoalAPI = -1;
-
       // Did we reach a destination Waypoint?
       if (GetCurrentTask ()->data == m_currentWaypointIndex)
       {
@@ -609,13 +627,20 @@ bool Bot::DoWaypointNav (void)
          else
             g_waypoint->SetGoalVisited (m_tasks->data); // doesn't hear so not a good goal
       }
+
       HeadTowardWaypoint (); // do the actual movement checking
 	  return false;
    }
 
-   // SyPB Pro P.40 - Base Change for Waypoint OS
-   if ((m_waypointOrigin - pev->origin).GetLength() <= 2.0f)
-	   HeadTowardWaypoint();
+
+   // SyPB Pro P.43 - Waypoint improve
+   if ((m_waypointOrigin - pev->origin).GetLength2D() <= 2.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
+   //if ((m_waypointOrigin - pev->origin).GetLength2D() <= 1.0f && m_waypointOrigin.z <= pev->origin.z + 16.0f)
+   {
+	   if (m_navNode == null || 
+		   (m_navNode->next != null && g_waypoint->Reachable (GetEntity (), m_navNode->next->index)))
+		   HeadTowardWaypoint();
+   }
 
    return false;
 }
@@ -1114,13 +1139,30 @@ void Bot::SetMoveTarget (edict_t *entity)
 	{
 		m_moveTargetEntity = null;
 		m_moveTargetOrigin = nullvec;
+
 		// SyPB Pro P.42 - Small Change
 		if (GetCurrentTask()->taskID == TASK_MOVETOTARGET)
+		{
 			RemoveCertainTask(TASK_MOVETOTARGET);
+
+			// SyPB Pro P.43 - Move Target improve
+			m_prevGoalIndex = -1;
+			GetCurrentTask()->data = -1;
+
+			DeleteSearchNodes();
+		}
 		return;
 	}
 
+	//m_enemy = null;
+
+	// SyPB Pro P.43 - Fixed 
+	m_states &= ~STATE_SEEINGENEMY;
 	m_enemy = null;
+	m_enemyOrigin = nullvec;
+	SetLastEnemy(null);
+	m_enemyUpdateTime = 0.0f;
+	m_aimFlags &= ~AIM_ENEMY;
 
 	// SyPB Pro P.42 - Move Target
 	if (m_moveTargetEntity == entity)
@@ -1218,74 +1260,6 @@ int Bot::FindWaypoint (void)
 			waypointIndex = waypointIndex2;
 		else
 			waypointIndex = waypointIndex1;
-
-		/*
-		float checkMinDistance = (pev->origin - g_waypoint->GetPath(waypointIndex2)->origin).GetLengthSquared();
-		if (waypointIndex2 == -1)
-			checkMinDistance = (pev->origin - g_waypoint->GetPath(waypointIndex1)->origin).GetLengthSquared();
-
-		const int checkNum = 2;
-		int checkWaypointI[checkNum];
-		float checkWaypointD[checkNum];
-
-		for (int i = 0; i < checkNum; i++)
-		{
-			checkWaypointI[i] = -1;
-			checkWaypointD[i] = 9999.0f;
-		}
-
-		for (int i = 0; i < g_numWaypoints; i++)
-		{
-			if (i == m_currentWaypointIndex)
-				continue;
-
-			float distance = (g_waypoint->GetPath(i)->origin - pev->origin).GetLengthSquared();
-			if (distance < checkMinDistance)
-				continue;
-
-			if ((g_waypoint->GetPath(i)->origin - pev->origin).GetLength2D() <= 30.0f &&
-				pev->origin.z + 16.0f < g_waypoint->GetPath(i)->origin.z)
-				continue;
-
-			for (int j = 0; j < checkNum; j++)
-			{
-				if (distance < checkWaypointD[j])
-				{
-					if (j < checkNum - 1)
-					{
-						int oldPoint = -1;
-						float oldDistance = 9999.0f;
-						for (int z = j + 1; z < checkNum; z++)
-						{
-							oldPoint = checkWaypointI[z - 1];
-							oldDistance = checkWaypointD[z - 1];
-
-							checkWaypointI[z] = oldPoint;
-							checkWaypointD[z] = oldDistance;
-						}
-					}
-
-					checkWaypointI[j] = i;
-					checkWaypointD[j] = distance;
-				}
-			}
-		}
-
-		for (int i = 0; i < checkNum; i++)
-		{
-			if (IsWaypointUsed(checkWaypointI[i]))
-				continue;
-
-			if (!g_waypoint->Reachable(GetEntity(), checkWaypointI[i]))
-				continue;
-
-			waypointIndex = checkWaypointI[i];
-			break;
-		}
-
-		if (waypointIndex == -1)
-			waypointIndex = waypointIndex1;
-		*/
 	}
 
 	m_collideTime = engine->GetTime();
@@ -1805,6 +1779,49 @@ bool Bot::HeadTowardWaypoint (void)
          // find out about connection flags
          if (m_currentWaypointIndex != -1)
          {
+			 Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+
+			 for (int i = 0; i < Const_MaxPathIndex; i++)
+			 {
+				 if (path->index[i] == m_navNode->index)
+				 {
+					 m_currentTravelFlags = path->connectionFlags[i];
+					 m_desiredVelocity = path->connectionVelocity[i];
+					 m_jumpFinished = false;
+
+					 break;
+				 }
+			 }
+
+			 // check if bot is going to jump
+			 bool willJump = false;
+			 float jumpDistance = 0.0f;
+
+			 Vector src = nullvec;
+			 Vector destination = nullvec;
+
+			 // try to find out about future connection flags
+			 if (m_navNode->next != null)
+			 {
+				 for (int i = 0; i < Const_MaxPathIndex; i++)
+				 {
+					 if (g_waypoint->GetPath(m_navNode->index)->index[i] == m_navNode->next->index && (g_waypoint->GetPath(m_navNode->index)->connectionFlags[i] & PATHFLAG_JUMP))
+					 {
+						 src = g_waypoint->GetPath(m_navNode->index)->origin;
+						 destination = g_waypoint->GetPath(m_navNode->next->index)->origin;
+
+						 jumpDistance = (g_waypoint->GetPath(m_navNode->index)->origin - g_waypoint->GetPath(m_navNode->next->index)->origin).GetLength();
+						 willJump = true;
+
+						 break;
+					 }
+				 }
+			 }
+
+			 // is there a jump waypoint right ahead and do we need to draw out the light weapon ?
+			 if (willJump && (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || pev->maxspeed <= 210) && !(m_states & STATE_SEEINGENEMY) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading)
+				 SelectWeaponByName("weapon_knife"); // draw out the knife if we needed
+
 			// SyPB Pro P.42 - Ladder improve
 			if (!IsAntiBlock(GetEntity()) && !IsOnLadder () &&
 				g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER)
@@ -1860,50 +1877,6 @@ bool Bot::HeadTowardWaypoint (void)
 					return false;
 				}
 			}
-
-			Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
-
-			for (int i = 0; i < Const_MaxPathIndex; i++)
-			{
-				if (path->index[i] == m_navNode->index)
-				{
-					m_currentTravelFlags = path->connectionFlags[i];
-					m_desiredVelocity = path->connectionVelocity[i];
-					m_jumpFinished = false;
-
-					break;
-				}
-			}
-
-			// check if bot is going to jump
-			bool willJump = false;
-			float jumpDistance = 0.0f;
-
-			Vector src = nullvec;
-			Vector destination = nullvec;
-
-			// try to find out about future connection flags
-			if (m_navNode->next != null)
-			{
-				for (int i = 0; i < Const_MaxPathIndex; i++)
-				{
-					if (g_waypoint->GetPath(m_navNode->index)->index[i] == m_navNode->next->index && (g_waypoint->GetPath(m_navNode->index)->connectionFlags[i] & PATHFLAG_JUMP))
-					{
-						src = g_waypoint->GetPath(m_navNode->index)->origin;
-						destination = g_waypoint->GetPath(m_navNode->next->index)->origin;
-
-						jumpDistance = (g_waypoint->GetPath(m_navNode->index)->origin - g_waypoint->GetPath(m_navNode->next->index)->origin).GetLength();
-						willJump = true;
-
-						break;
-					}
-				}
-			}
-
-			// is there a jump waypoint right ahead and do we need to draw out the light weapon ?
-			if (willJump && (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || pev->maxspeed <= 210) && !(m_states & STATE_SEEINGENEMY) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading)
-				SelectWeaponByName("weapon_knife"); // draw out the knife if we needed
-
          }
          ChangeWptIndex (destIndex);
       }

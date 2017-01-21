@@ -186,10 +186,18 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 		float distance = (m_paths[i]->origin - origin).GetLength();
 		if (distance > minDistance)
 			continue;
-
+		/*
 		// SyPB Pro P.42 - Find Waypoint improve
 		if (((m_paths[i]->origin - origin).GetLength2D() <= 30.0f && origin.z + 10.0f < m_paths[i]->origin.z) ||
 			((m_paths[i]->origin - origin).GetLength2D() <= 100.0f && origin.z + 20.0f < m_paths[i]->origin.z))
+			continue;
+			*/
+
+		// SyPB Pro P.43 - Find Waypoint improve
+		Vector dest = m_paths[i]->origin;
+		float distance2D = (dest - origin).GetLength2D();
+		if (((dest.z > origin.z + 62.0f || dest.z < origin.z - 100.0f) &&
+			!(m_paths[i]->flags & WAYPOINT_LADDER)) && distance2D <= 130.0f)
 			continue;
 
 		for (int y = 0; y < checkPoint; y++)
@@ -1476,22 +1484,15 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 	if (index < 0 || index >= g_numWaypoints)
 		return false;
 
+	// SyPB Pro P.43 - Waypoint OS improve
 	Vector src = GetEntityOrigin(entity);
 	Vector dest = m_paths[index]->origin;
-
-	if (IsValidPlayer(entity) && (entity->v.waterlevel == 2 || entity->v.waterlevel == 3))
+	if (entity->v.waterlevel != 2 && entity->v.waterlevel != 3)
 	{
-		if ((dest.z > src.z + 40.0f || dest.z < src.z - 75.0f) && 
-			(!(GetPath(index)->flags & WAYPOINT_LADDER) || (dest - src).GetLength2D() >= 16.0f))
-			return false; // unable to reach this one
+		if ((dest.z > src.z + 62.0f || dest.z < src.z - 100.0f) &&
+			(!(GetPath(index)->flags & WAYPOINT_LADDER) || (dest - src).GetLength2D() >= 120.0f))
+			return false;
 	}
-	/*
-	TraceResult tr;
-	TraceLine(src, dest, true, entity, &tr);
-
-	if (tr.flFraction >= 1.0f)
-		return true;
-		*/
 
 	TraceResult tr;
 	TraceHull(src, dest, true, head_hull, entity, &tr);
@@ -1499,6 +1500,24 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 		return true;
 
 	return false;
+
+	/*
+	Vector src = GetEntityOrigin(entity);
+	Vector dest = m_paths[index]->origin;
+
+	if (IsValidPlayer(entity) && (entity->v.waterlevel == 2 || entity->v.waterlevel == 3))
+	{
+	if ((dest.z > src.z + 40.0f || dest.z < src.z - 75.0f) &&
+	(!(GetPath(index)->flags & WAYPOINT_LADDER) || (dest - src).GetLength2D() >= 16.0f))
+	return false; // unable to reach this one
+	}
+
+	TraceResult tr;
+	TraceHull(src, dest, true, head_hull, entity, &tr);
+	if (tr.flFraction >= 0.9f)
+	return true;
+
+	return false; */
 }
 
 bool Waypoint::IsNodeReachable (Vector src, Vector destination)

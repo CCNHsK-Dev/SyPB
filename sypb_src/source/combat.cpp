@@ -783,6 +783,7 @@ void Bot::FireWeapon(void)
 	int selectId = WEAPON_KNIFE, selectIndex = 0, chosenWeaponIndex = 0;
 	int weapons = pev->weapons;
 
+	/*
 	// if jason mode use knife only
 	if (sypb_knifemode.GetBool())
 		goto WeaponSelectEnd;
@@ -800,6 +801,14 @@ void Bot::FireWeapon(void)
 		else if (IsZombieEntity (GetEntity ())) // SyPB Pro P.38 - Small Change
 			goto WeaponSelectEnd;
 	}
+	*/
+
+	// SyPB Pro P.43 - Attack Ai improve
+	if (IsZombieEntity(GetEntity()) || sypb_knifemode.GetBool())
+		goto WeaponSelectEnd;
+	else if (!FNullEnt(enemy) && m_skill >= 80 && !IsZombieEntity(enemy) && IsOnAttackDistance(enemy, 120.0f) &&
+		(enemy->v.health <= 30 || pev->health > enemy->v.health) && !IsOnLadder() && !IsGroupOfEnemies(pev->origin))
+		goto WeaponSelectEnd;
 
 	// loop through all the weapons until terminator is found...
 	while (selectTab[selectIndex].id)
@@ -861,7 +870,7 @@ WeaponSelectEnd:
 		GetGameMod() == 2 && !IsZombieEntity(GetEntity()))
 	{
 		m_reloadState = RSTATE_PRIMARY;
-		m_reloadCheckTime = engine->GetTime() + 0.1f;
+		m_reloadCheckTime = engine->GetTime() + 1.5f;
 		return;
 	}
 
@@ -1258,10 +1267,17 @@ void Bot::CombatFight(void)
 		m_navTimeset = engine->GetTime();
 	}
 
+	/*
 	// SyPB Pro P.40 - Knife Attack improve
 	if (m_currentWeapon == WEAPON_KNIFE && m_moveSpeed != 0.0f &&
 		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH && 
 		(pev->velocity.GetLength () < GetWalkSpeed () || m_isStuck))
+		pev->button |= IN_DUCK; */
+
+	// SyPB Pro P.43 - Attack Ai improve 
+	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) && 
+		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
+		(pev->velocity.GetLength() < GetWalkSpeed() || m_isStuck))
 		pev->button |= IN_DUCK;
 
 	// SyPB Pro P.39 - Zombie Ai improve
@@ -1289,15 +1305,14 @@ void Bot::CombatFight(void)
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		if (GetGameMod() == 2)
+		if (GetGameMod() == 2 || GetGameMod () == 4)
 		{
 			float baseDistance = 600.0f;
 
 			// SyPB Pro P.39 - Zombie Mode Attack Ai improve
 			if (!::IsInViewCone(pev->origin, m_enemy))
 			{
-				if (m_currentWeapon == WEAPON_KNIFE &&
-					GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 300) < 3)
+				if (m_currentWeapon == WEAPON_KNIFE)
 					baseDistance = -1.0f;
 				else if (m_currentWeapon == WEAPON_XM1014 || m_currentWeapon == WEAPON_M3)
 					baseDistance = 220.0f;
@@ -1326,7 +1341,7 @@ void Bot::CombatFight(void)
 			{
 				// SyPB Pro P.38 - Zomibe Mode Attack Ai small improve
 				if (m_reloadState != RSTATE_NONE)
-					baseDistance *= 1.8f;
+					baseDistance *= 1.5f;
 				else if (m_currentWeapon != WEAPON_KNIFE)
 				{
 					int weapons = pev->weapons, weaponIndex = -1;
@@ -1534,7 +1549,7 @@ void Bot::CombatFight(void)
 		m_strafeSpeed = 0.0f;
 	}
 
-	if (GetGameMod() == 2)
+	if (GetGameMod() == 2 || GetGameMod () == 4)
 		return;
 
 	if (m_moveSpeed != 0.0f)
@@ -1769,6 +1784,7 @@ void Bot::SelectWeaponbyNumber (int num)
    FakeClientCommand (GetEntity (), g_weaponSelect[num].weaponName);
 }
 
+/*
 void Bot::AttachToUser (void)
 {
 	// SyPB Pro P.29 - small change
@@ -1796,7 +1812,7 @@ void Bot::AttachToUser (void)
    ChatterMessage (Chatter_LeadOnSir);
    PushTask (TASK_FOLLOWUSER, TASKPRI_FOLLOWUSER, -1, 0.0, true);
 }
-
+*/
 void Bot::CommandTeam (void)
 {
    // prevent spamming
@@ -1878,7 +1894,7 @@ void Bot::CheckReload (void)
    }
 
    m_isReloading = false;    // update reloading status
-   m_reloadCheckTime = engine->GetTime () + 1.0f;
+   m_reloadCheckTime = engine->GetTime () + 3.0f;
 
    if (m_reloadState != RSTATE_NONE)
    {
@@ -1903,6 +1919,7 @@ void Bot::CheckReload (void)
 	   int weaponIndex = -1;
 	   int maxClip = CheckMaxClip(weapons, &weaponIndex);
 
+	   /*
 	   if (m_ammoInClip[weaponIndex] < (maxClip * 0.8) && m_ammo[g_weaponDefs[weaponIndex].ammo1] > 0)
 	   {
 		   if (m_currentWeapon != weaponIndex)
@@ -1913,6 +1930,21 @@ void Bot::CheckReload (void)
 
 		   m_isReloading = true;
 		   m_fearLevel = 1.0f; // SyPB Pro P.7
+	   } */
+
+	   // SyPB Pro P.43 - Weapon Reload improve
+	   if (m_ammoInClip[weaponIndex] < maxClip * 0.8f && g_weaponDefs[weaponIndex].ammo1 != -1 &&
+		   g_weaponDefs[weaponIndex].ammo1 < 32 && m_ammo[g_weaponDefs[weaponIndex].ammo1] > 0)
+	   {
+		   if (m_currentWeapon != weaponIndex)
+			   SelectWeaponByName(g_weaponDefs[weaponIndex].className);
+
+		   pev->button &= ~IN_ATTACK;
+
+		   if ((pev->oldbuttons & IN_RELOAD) == RSTATE_NONE)
+			   pev->button |= IN_RELOAD; // press reload button
+
+		   m_isReloading = true;
 	   }
 	   else
 	   {

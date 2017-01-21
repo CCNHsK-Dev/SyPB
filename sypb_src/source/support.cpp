@@ -648,132 +648,136 @@ void RoundInit (void)
    g_lastRadioTime[1] = 0.0f;
    g_botsCanPause = false;
 
-   // SyPB Pro P.15
-   char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
-   if (TryFileOpen(Plugin_INI))
-   {
-	   if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1)
-		   sypb_gamemod.SetInt(1);
-	   else
-		   sypb_gamemod.SetInt(0);
-   }
-
-   // SyPB Pro P.35 - ZP5.0 Fixed
-   char *zpGameVersion[] =
-   {
-	   "plugins-zplague",  // ZP4.3
-	   "plugins-zp50_ammopacks", // ZP5.0
-	   "plugins-zp50_money" //ZP5.0
-   };
-
-   for (int i = 0; i < 3; i++)
-   {
-	   Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zpGameVersion[i]);
-	   if (TryFileOpen(Plugin_INI))
-	   {
-		   float delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
-		   if (i != 0)
-			   delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
-
-		   if (delayTime > 0)
-		   {
-			   sypb_gamemod.SetInt(2);
-			   sypb_walkallow.SetInt(0);
-			   //g_DelayTimer = engine->GetTime() + delayTime + 6.0f;
-
-			   // SyPB Pro P.34 - ZP TIME FIXED
-			   g_DelayTimer = engine->GetTime() + delayTime;// +1.99f;
-			   break;
-		   }
-	   }
-   }
-
-   // SyPB Pro P.11
-   Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
-   if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
-   {
-	   sypb_gamemod.SetInt(4);
-	   sypb_walkallow.SetInt(0);
-
-	   extern ConVar sypb_quota;
-	   sypb_quota.SetInt(static_cast <int> (CVAR_GET_FLOAT("zh_zombie_maxslots")));
-   }
-
-   // SyPB Pro P.29 - Support CSBTE Final
-   Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
-   if (TryFileOpen(Plugin_INI))
-   {
-	   const int Const_GameModes = 13;
-	   int bteGameModAi[Const_GameModes] =
-	   {
-		   0, 0, 1, 3, 0, 2, 2, 2, 2, 4, 2, 3, 2
-	   };//1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13
-
-	   char *bteGameINI[Const_GameModes] =
-	   {
-		   "plugins-none", //1
-		   "plugins-td",   //2
-		   "plugins-dm",   //3
-		   "plugins-dr",   //4
-		   "plugins-gd",   //5
-		   "plugins-ghost",//6
-		   "plugins-zb1",  //7
-		   "plugins-zb3",  //8
-		   "plugins-zb4",  //9 
-		   "plugins-ze",   //10
-		   "plugins-zse",  //11
-		   "plugins-npc",  //12
-		   "plugins-zb5"   //13
-	   };
-
-	   for (int i = 0; i < Const_GameModes; i++)
-	   {
-		   if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
-		   {
-			   //sypb_gamemod.SetInt(bteGameModAi[i]);
-
-			   if (bteGameModAi[i] == 2 && i != 5)
-			   {
-				   sypb_walkallow.SetInt(0);
-				   g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
-			   }
-
-			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
-			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
-			   ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
-			   if (i == 3 || i == 9)
-			   {
-				   ServerPrint("***** SyPB not support the mode now :( *****");
-				   ServerPrint("***** SyPB not support the mode now :( *****");
-				   ServerPrint("***** SyPB not support the mode now :( *****");
-				   ServerPrint("***** SyPB not support the mode now :( *****");
-				   ServerPrint("***** SyPB not support the mode now :( *****");
-
-				   sypb_gamemod.SetInt(10);
-			   }
-			   else
-				   sypb_gamemod.SetInt(bteGameModAi[i]);
-
-			   // SyPB Pro P.36 - bte support 
-			   g_gameVersion = CSVER_CZERO;
-
-			   break;
-		   }
-	   }
-   }
-
-   // SyPB Pro P.38 - Base Change 
-   if (GetGameMod() != 0)
-	   g_mapType |= MAP_DE;
-
-   // SyPB Pro P.35 - Game Mode Setting
-   if (GetGameMod () == 0)
-	   g_exp.UpdateGlobalKnowledge (); // update experience data on round start
+   AutoLoadGameMode();
 
    // calculate the round mid/end in world time
    g_timeRoundStart = engine->GetTime () + engine->GetFreezeTime ();
    g_timeRoundMid = g_timeRoundStart + engine->GetRoundTime () * 60 / 2;
    g_timeRoundEnd = g_timeRoundStart + engine->GetRoundTime () * 60;
+}
+
+// SyPB Pro P.43 - Game Mode Setting
+void AutoLoadGameMode(void)
+{
+	// DM:KD
+	char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
+	if (TryFileOpen(Plugin_INI))
+	{
+		if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1)
+			sypb_gamemod.SetInt(1);
+		else
+			sypb_gamemod.SetInt(0);
+
+		goto lastly;
+	}
+
+	// Zombie Hell
+	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
+	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
+	{
+		sypb_gamemod.SetInt(4);
+		sypb_walkallow.SetInt(0);
+
+		extern ConVar sypb_quota;
+		sypb_quota.SetInt(static_cast <int> (CVAR_GET_FLOAT("zh_zombie_maxslots")));
+
+		goto lastly;
+	}
+
+	// ZP
+	char *zpGameVersion[] =
+	{
+		"plugins-zplague",  // ZP4.3
+		"plugins-zp50_ammopacks", // ZP5.0
+		"plugins-zp50_money" //ZP5.0
+	};
+
+	for (int i = 0; i < 3; i++)
+	{
+		Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zpGameVersion[i]);
+		if (TryFileOpen(Plugin_INI))
+		{
+			float delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
+			if (i != 0)
+				delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
+
+			if (delayTime > 0)
+			{
+				sypb_gamemod.SetInt(2);
+				sypb_walkallow.SetInt(0);
+
+				// SyPB Pro P.34 - ZP TIME FIXED
+				g_DelayTimer = engine->GetTime() + delayTime;
+				break;
+			}
+
+			goto lastly;
+		}
+	}
+
+	// CS:BTE
+	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
+	if (TryFileOpen(Plugin_INI))
+	{
+		const int Const_GameModes = 13;
+		int bteGameModAi[Const_GameModes] =
+		{
+			0, 0, 1, 3, 0, 2, 2, 2, 2, 4, 2, 3, 2
+		};//1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13
+
+		char *bteGameINI[Const_GameModes] =
+		{
+			"plugins-none", //1
+			"plugins-td",   //2
+			"plugins-dm",   //3
+			"plugins-dr",   //4
+			"plugins-gd",   //5
+			"plugins-ghost",//6
+			"plugins-zb1",  //7
+			"plugins-zb3",  //8
+			"plugins-zb4",  //9 
+			"plugins-ze",   //10
+			"plugins-zse",  //11
+			"plugins-npc",  //12
+			"plugins-zb5"   //13
+		};
+
+		for (int i = 0; i < Const_GameModes; i++)
+		{
+			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
+			{
+				if (bteGameModAi[i] == 2 && i != 5)
+				{
+					sypb_walkallow.SetInt(0);
+					g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
+				}
+
+				ServerPrint("*** CS:BTE [%s] - GameMod Setting [%d] ***", bteGameINI[i], bteGameModAi[i]);
+				if (i == 3 || i == 9)
+				{
+					ServerPrint("***** SyPB not support the mode now :( *****");
+					ServerPrint("***** SyPB not support the mode now :( *****");
+
+					sypb_gamemod.SetInt(10);
+				}
+				else
+					sypb_gamemod.SetInt(bteGameModAi[i]);
+
+				// SyPB Pro P.36 - bte support 
+				g_gameVersion = CSVER_CZERO;
+
+				break;
+			}
+		}
+
+		goto lastly;
+	}
+
+lastly:
+	if (GetGameMod() != 0)
+		g_mapType |= MAP_DE;
+	else
+		g_exp.UpdateGlobalKnowledge(); // update experience data on round start
 }
 
 bool IsWeaponShootingThroughWall (int id)
@@ -945,7 +949,9 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		int wpIndex;
 		if (isPlayer)
 		{
-			wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);
+			//wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);  testtest
+			wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &g_clients[i].wpIndex2, mode);
+
 			g_clients[i].getWpOrigin = origin;
 			g_clients[i].getWPTime = engine->GetTime() + waitTime;
 			g_clients[i].wpIndex = wpIndex;
@@ -1249,6 +1255,18 @@ void ServerCommand (const char *format, ...)
 
 const char *GetEntityName(edict_t *entity)
 {
+	// SyPB Pro P.43 - Name Fixed 
+	static char entityName[256];
+	if (FNullEnt(entity))
+		strcpy(entityName, "null");
+	else if (IsValidPlayer(entity))
+		strcpy(entityName, (char *) STRING(entity->v.netname));
+	else
+		strcpy(entityName, (char *) STRING(entity->v.classname));
+
+	return entityName;
+
+	/*
 	// SyPB Pro P.42 - Name Fixed 
 	static char entityName[256];
 	if (FNullEnt(entity))
@@ -1258,7 +1276,7 @@ const char *GetEntityName(edict_t *entity)
 	else
 		strcpy(entityName, STRING(entity->v.classname));
 
-	return &entityName[0];
+	return &entityName[0]; */
 }
 
 const char *GetMapName (void)

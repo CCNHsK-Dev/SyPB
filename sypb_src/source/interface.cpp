@@ -242,12 +242,12 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 		   float(SUPPORT_API_VERSION_F),
 		   float(SUPPORT_SWNPC_VERSION_F),
 		   //API_Version, 
-		   (amxxDLL_Version == -1.0) ? "FAIL" : "RUN",
+		   (amxxDLL_Version == -1.0) ? "FAIL" : "RUNNING",
 		   (amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
 		   amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
 		   (amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
 		   // SwNPC
-		   (SwNPC_Version == -1.0) ? "FAIL" : "RUN",
+		   (SwNPC_Version == -1.0) ? "FAIL" : "RUNNING",
 		   (SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
 		   swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3], 
 		   (SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
@@ -1388,7 +1388,7 @@ void ClientPutInServer (edict_t *ent)
 {
  //  callbacks->OnClientEntersServer (ent);
 
-   g_botManager->CheckAutoVacate (ent);
+   //g_botManager->CheckAutoVacate (ent);
 
    if (g_isMetamod)
       RETURN_META (MRES_IGNORED);
@@ -1424,6 +1424,9 @@ int ClientConnect (edict_t *ent, const char *name, const char *addr, char reject
    if (strcmp (addr, "loopback") == 0)
       g_hostEntity = ent; // save the edict of the listen server client...
 
+	// SyPB Pro P.43 - New Cvar for auto sypb number
+   //g_botManager->CheckAutoBotNum();
+
    if (g_isMetamod)
       RETURN_META_VALUE (MRES_IGNORED, 0);
 
@@ -1444,27 +1447,24 @@ void ClientDisconnect (edict_t *ent)
    // listen server client disconnects, and we don't want to send him any sort of message then.
 
    //callbacks->OnClientDisconnect (ent);
+	int i = ENTINDEX(ent) - 1;
 
-   extern ConVar sypb_autovacate, sypb_quota;
+	InternalAssert(i >= 0 && i < 32);
 
-   if (sypb_autovacate.GetBool () && IsValidPlayer (ent) && !IsValidBot (ent) && sypb_quota.GetInt () < engine->GetMaxClients () - 1)
-      sypb_quota.SetInt (sypb_quota.GetInt () + 1);
+	// check if its a bot
+	if (g_botManager->GetBot(i) != null)
+	{
+		if (g_botManager->GetBot(i)->pev == &ent->v)
+			g_botManager->Free(i);
+	}
 
-   int i = ENTINDEX (ent) - 1;
+	// SyPB Pro P.43 - New Cvar for auto sypb number
+	//g_botManager->CheckAutoBotNum();
 
-   InternalAssert (i >= 0 && i < 32);
+	if (g_isMetamod)
+		RETURN_META(MRES_IGNORED);
 
-   // check if its a bot
-   if (g_botManager->GetBot (i) != null)
-   {
-      if (g_botManager->GetBot (i)->pev == &ent->v)
-         g_botManager->Free (i);
-   }
-
-   if (g_isMetamod)
-      RETURN_META (MRES_IGNORED);
-
-   (*g_functionTable.pfnClientDisconnect) (ent);
+	(*g_functionTable.pfnClientDisconnect) (ent);
 }
 
 void ClientUserInfoChanged (edict_t *ent, char *infobuffer)
@@ -2718,6 +2718,7 @@ void KeyValue (edict_t *ent, KeyValueData *data)
    (*g_functionTable.pfnKeyValue) (ent, data);
 }
 
+
 void StartFrame (void)
 {
    // this function starts a video frame. It is called once per video frame by the engine. If
@@ -2745,7 +2746,7 @@ void StartFrame (void)
 	edict_t *entity = null;
 	int i;
 
-	// SyPB Pro P.42 - Entity Action
+	// SyPB Pro P.43 - Entity Action 
 	for (i = 0; i < entityNum; i++)
 	{
 		if (g_entityId[i] == -1)
@@ -2753,19 +2754,13 @@ void StartFrame (void)
 
 		entity = INDEXENT(g_entityId[i]);
 		if (FNullEnt(entity) || !IsAlive(entity))
+		{
 			SetEntityActionData(i);
-	}
-
-	for (i = 0; i < entityNum; i++)
-	{
-		if (g_entityId[i] == -1)
 			continue;
+		}
 
 		if (g_entityGetWpTime[i] < engine->GetTime() || g_entityWpIndex[i] == -1)
-		{
-			entity = INDEXENT(g_entityId[i]);
 			SetEntityWaypoint(entity);
-		}
 	}
 
 	// record some stats of all players on the server
@@ -2822,7 +2817,7 @@ void StartFrame (void)
    static float secondTimer = 0.0f;
 
    // **** AI EXECUTION STARTS ****
-   g_botManager->Think ();
+   //g_botManager->Think ();
    // **** AI EXECUTION FINISH ****
 
    if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
@@ -2905,6 +2900,22 @@ void StartFrame (void)
       RETURN_META (MRES_IGNORED);
 
    (*g_functionTable.pfnStartFrame) ();
+}
+
+// SyPB Pro P.43 - Base improve
+void StartFrame_Post(void)
+{
+	// this function starts a video frame. It is called once per video frame by the engine. If
+	// you run Half-Life at 90 fps, this function will then be called 90 times per second. By
+	// placing a hook on it, we have a good place to do things that should be done continuously
+	// during the game, for example making the bots think (yes, because no Think() function exists
+	// for the bots by the MOD side, remember).  Post version called only by metamod.
+
+	// **** AI EXECUTION STARTS ****
+	g_botManager->Think();
+	// **** AI EXECUTION FINISH ****
+
+	RETURN_META(MRES_IGNORED);
 }
 
 int Spawn_Post (edict_t *ent)
@@ -3550,6 +3561,7 @@ export int GetEntityAPI2_Post (DLL_FUNCTIONS *functionTable, int * /*interfaceVe
 
    functionTable->pfnSpawn = Spawn_Post;
    functionTable->pfnServerActivate = ServerActivate_Post;
+   functionTable->pfnStartFrame = StartFrame_Post;
    functionTable->pfnGameInit = GameDLLInit_Post;
 
    return true;

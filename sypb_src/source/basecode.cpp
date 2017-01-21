@@ -27,11 +27,11 @@
 // console variables
 ConVar sypb_debug ("sypb_debug", "0");
 ConVar sypb_followuser ("sypb_followuser", "3");
-ConVar sypb_followpercent ("sypb_followpercent", "40");
+//ConVar sypb_followpercent ("sypb_followpercent", "40");
 ConVar sypb_debuggoal ("sypb_debuggoal", "-1");
 ConVar sypb_knifemode ("sypb_knifemode", "0");
 ConVar sypb_commtype ("sypb_commtype", "2");
-ConVar sypb_ecorounds ("sypb_ecorounds", "1");
+//ConVar sypb_ecorounds ("sypb_ecorounds", "1");
 ConVar sypb_walkallow ("sypb_walkallow", "1");
 
 ConVar sypb_tkpunish ("sypb_tkpunish", "1");
@@ -1118,6 +1118,10 @@ void Bot::InstantChatterMessage (int type)
       reportTime = engine->GetTime () + engine->RandomFloat (30.0, 80.0f);
    }
 
+   // SyPB Pro P.43 - Small Fixed
+   if (g_chatterFactory[Chatter_DiePain].IsEmpty())
+	   return;
+
    String defaultSound = g_chatterFactory[type].GetRandomElement ().name;
    String painSound = g_chatterFactory[Chatter_DiePain].GetRandomElement ().name;
 
@@ -1908,24 +1912,21 @@ void Bot::SetConditions (void)
 	   // SyPB Pro P.42 - Have enemy action improve
 	   if (GetCurrentTask()->taskID == TASK_CAMP)
 	   {
-		   bool needStopCamp = false;
 		   if (IsZombieEntity(GetEntity()))
-			   needStopCamp = true;
+			   RemoveCertainTask(TASK_CAMP);
 		   else if (IsZombieEntity(m_enemy))
 		   {
 			   if (GetEntityWaypoint(GetEntity()) == GetEntityWaypoint(m_enemy) || 
 				   IsOnAttackDistance(m_enemy, 150.0f))
-				   needStopCamp = true;
-		   }
-		   
-		   if (needStopCamp)
-			   RemoveCertainTask(TASK_CAMP);
+				   RemoveCertainTask(TASK_CAMP);
+		   } 
 	   }
 
 	   SetMoveTarget(null);
    }
    else
    {
+	   /*
 	   // SyPB Pro P.42 - Waypoint OS improve
 	   if (!FNullEnt(m_enemy))
 	   {
@@ -1935,6 +1936,19 @@ void Bot::SetConditions (void)
 			   m_currentWaypointIndex = -1;
 			   GetValidWaypoint();
 		   }
+	   } */
+
+	   // SyPB Pro P.43 - Waypoint OS improve
+	   if (!FNullEnt(m_enemy))
+	   {
+		   DeleteSearchNodes();
+
+		   m_prevGoalIndex = -1;
+		   GetCurrentTask()->data = -1;
+
+		   SetEntityWaypoint(GetEntity());
+		   m_currentWaypointIndex = -1;
+		   GetValidWaypoint();
 	   }
 
 	   m_states &= ~STATE_SEEINGENEMY;
@@ -2876,6 +2890,10 @@ bool Bot::EnemyIsThreat (void)
    if (IsZombieEntity (GetEntity ()))
    	   return true;
    	   
+   // SyPB Pro P.43 - Zombie Mode Human improve
+   if (IsZombieEntity(m_enemy))
+	   return true;
+
    if (GetCurrentTask ()->taskID == TASK_SEEKCOVER)
    	   return false;
 
@@ -2891,13 +2909,94 @@ bool Bot::EnemyIsThreat (void)
       return true;
 	  */
 
-   // SyPB Pro P.42 - Enemy Ai small improve
-   if (IsOnAttackDistance(m_enemy, 256) || IsInViewCone(GetEntityOrigin(m_enemy)))
+   //if (IsOnAttackDistance(m_enemy, 256) || IsInViewCone(GetEntityOrigin(m_enemy)))
+   //   return true;
+
+   // SyPB Pro P.43 - Enemy Ai small improve 
+   if (IsOnAttackDistance(m_enemy, 256) ||
+	   (m_currentWaypointIndex != WEAPON_KNIFE && IsInViewCone(GetEntityOrigin(m_enemy))))
 	   return true;
 
    return false;
 }
 
+// SyPB Pro P.43 - Enemy Ai improve (for more mode)
+bool Bot::ReactOnEnemy(void)
+{
+	if (!EnemyIsThreat())
+		return false;
+
+	if (m_enemyReachableTimer < engine->GetTime())
+	{
+		if (IsZombieEntity(GetEntity()))
+			m_isEnemyReachable = true;
+		else
+		{
+			int i = GetEntityWaypoint(GetEntity());
+			int enemyIndex = GetEntityWaypoint(m_enemy);
+
+			float pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
+
+			if (IsZombieEntity(m_enemy))
+			{
+				if (m_navNode == null || m_navNode->next == null)
+					m_isEnemyReachable = true;
+				else
+				{
+					if (g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) <= pathDist)
+						m_isEnemyReachable = true;
+					else
+						m_isEnemyReachable = false;
+				}
+			}
+			else
+			{
+				// SyPB Pro P.43 - Knife Ai improve TESTTEST
+				if (m_currentWeapon == WEAPON_KNIFE)
+				{
+					m_isEnemyReachable = false;
+
+					if (i == enemyIndex)
+						m_isEnemyReachable = true;
+					else
+					{
+						for (int j = 0; j < Const_MaxPathIndex; j++)
+						{
+							if (g_waypoint->GetPath(i)->index[j] == enemyIndex)
+							{
+								m_isEnemyReachable = true;
+								break;
+							}
+						}
+					}
+
+					if (!m_isEnemyReachable)
+						SetMoveTarget(m_enemy);
+				}
+				else
+				{
+					float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
+					if (pathDist - lineDist > 112.0f)
+						m_isEnemyReachable = false;
+					else
+						m_isEnemyReachable = true;
+				}
+			}
+		}
+
+		m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat (0.5f, 1.0f);
+	}
+
+	if (m_isEnemyReachable)
+	{
+		m_navTimeset = engine->GetTime(); // override existing movement by attack movement
+		return true;
+	}
+
+	return false;
+}
+
+/*
 bool Bot::ReactOnEnemy (void)
 {
    // the purpose of this function is check if task has to be interrupted because an enemy is near (run attack actions then)
@@ -2927,7 +3026,7 @@ bool Bot::ReactOnEnemy (void)
       return true;
    }
    return false;
-}
+} */
 
 bool Bot::LastEnemyShootable (void)
 {
@@ -3803,10 +3902,13 @@ void Bot::Think(void)
       }
       extern ConVar sypb_chat;
 
-      if (sypb_chat.GetBool () && !RepliesToPlayer () && m_lastChatTime + 10.0f < engine->GetTime () && g_lastChatTime + 5.0f < engine->GetTime ()) // bot chatting turned on?
+      if (sypb_chat.GetBool () && !RepliesToPlayer () && m_lastChatTime + 10.0f < engine->GetTime () && 
+		  g_lastChatTime + 5.0f < engine->GetTime ()) // bot chatting turned on?
       {
          // say a text every now and then
-         if (engine->RandomInt (1, 1500) < 2)
+         //if (engine->RandomInt (1, 1500) < 2)
+		  // SyPB Pro P.43 - Small Fixed
+		  if (engine->RandomInt (1, 1500) < 2 && !g_chatFactory[CHAT_DEAD].IsEmpty ())
          {
             m_lastChatTime = engine->GetTime ();
             g_lastChatTime = engine->GetTime ();
@@ -3967,7 +4069,7 @@ void Bot::RunTask (void)
       }
 
       // user forced a waypoint as a goal?
-      if (sypb_debuggoal.GetInt () != -1)
+      if (sypb_debuggoal.GetInt () != -1 && sypb_debuggoal.GetInt() >= 0 && sypb_debuggoal.GetInt() < g_numWaypoints)
       {
          // check if we reached it
          if (((g_waypoint->GetPath (m_currentWaypointIndex)->origin - pev->origin).SkipZ ()).GetLengthSquared () < 16 && GetCurrentTask ()->data == sypb_debuggoal.GetInt ())
@@ -3989,7 +4091,7 @@ void Bot::RunTask (void)
       }
 
 	  // SyPB Pro P.42 - AMXX API
-	  if (m_waypointGoalAPI != -1)
+	  if (m_waypointGoalAPI != -1 && m_waypointGoalAPI >= 0 && m_waypointGoalAPI < g_numWaypoints)
 	  {
 		  if (GetCurrentTask()->data != m_waypointGoalAPI)
 		  {
@@ -4197,7 +4299,7 @@ void Bot::RunTask (void)
          m_moveSpeed = pev->maxspeed;
 
 		 // SyPB Pro P.35 - Zombie Mode Human Camp
-		 if (GetGameMod() == 2 && !IsZombieEntity(GetEntity()))
+		 if (GetGameMod() == 2 && !IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
 		 {
 			 ZmCampPointAction();
 
@@ -4456,7 +4558,15 @@ void Bot::RunTask (void)
       else
       {
          TaskComplete ();
-         FindWaypoint ();
+         //FindWaypoint ();
+
+		 // SyPB Pro P.43 - Waypoint improve
+		 m_prevGoalIndex = -1;
+		 m_tasks->data = -1;
+
+		 SetEntityWaypoint(GetEntity());
+		 GetValidWaypoint();
+		 // --------------
 
          m_destOrigin = m_lastEnemyOrigin;
       }
@@ -5906,19 +6016,19 @@ void Bot::DebugModeMsg(void)
 					break;
 
 				case 1:
-					sprintf(gamemodName, "Dm");
+					sprintf(gamemodName, "DeathMatch");
 					break;
 
 				case 2:
-					sprintf(gamemodName, "ZP");
+					sprintf(gamemodName, "Zombie");
 					break;
 
 				case 3:
-					sprintf(gamemodName, "VS Npc");
+					sprintf(gamemodName, "No Team");
 					break;
 
 				case 4:
-					sprintf(gamemodName, "ZH");
+					sprintf(gamemodName, "Zombie Hell");
 					break;
 				}
 
@@ -5938,17 +6048,19 @@ void Bot::DebugModeMsg(void)
 					navid = navid->next;
 				}
 
+				int client = ENTINDEX(GetEntity ()) - 1;
+
 				char outputBuffer[512];
 				sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
 					"\n [%s] \n Task: %s  AimFlags: %s \n"
 					"Weapon: %s  Clip: %d   Ammo: %d \n"
 					"Money: %d  Bot Ai: %s \n"
-					"Enemy: %s  Pickup: %s  Type: %s  \n"
+					"Enemy: %s  Pickup: %s  Type: %s \n\n"
 					"CWI: %d  GI: %d  TD: %d \n"
 					"Nav: %d  Next Nav: %d \n"
+					"GEWI: %d GEWI2: %d \n"
 					"Move Speed: %2.f  Strafe Speed: %2.f \n "
-					"Check Terran: %d  Stuck: %d \n"
-					"Speed: %2.f Victim: %s\n", 
+					"Check Terran: %d  Stuck: %d \n", 
 					gamemodName,
 					GetEntityName (GetEntity ()), taskName, aimFlags,
 					&weaponName[7], GetAmmoInClip(), GetAmmo(),
@@ -5956,9 +6068,9 @@ void Bot::DebugModeMsg(void)
 					enemyName, pickupName, botType,
 					m_currentWaypointIndex, m_prevGoalIndex, m_tasks->data,
 					navIndex[0], navIndex[1],
+					g_clients[client].wpIndex, g_clients[client].wpIndex2, 
 					m_moveSpeed, m_strafeSpeed,
-					m_checkTerrain, m_isStuck,
-					pev->velocity.GetLength(), (m_damageTime >= engine->GetTime ()) ? "Yes" : "No");
+					m_checkTerrain, m_isStuck);
 
 				MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
 				WRITE_BYTE(TE_TEXTMESSAGE);
@@ -6068,6 +6180,23 @@ void Bot::BotAI (void)
 
    int team = GetTeam (GetEntity ());
 
+   // SyPB Pro P.43 - Base Mode Small improve
+   if (m_checkKnifeSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat(4.0, 6.5) < engine->GetTime())
+   {
+	   m_checkKnifeSwitch = false;
+
+	   if (GetGameMod() == 0)
+	   {
+		   if (sypb_spraypaints.GetBool() && engine->RandomInt(1, 100) < 2)
+			   PushTask(TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime() + 1.0f, false);
+
+		   if (m_skill > 75 && engine->RandomInt(0, 100) < (m_personality == PERSONALITY_RUSHER ? 99 : 80) &&
+			   !m_isReloading && (g_mapType & (MAP_CS | MAP_DE | MAP_ES | MAP_AS)))
+			   SelectWeaponByName("weapon_knife");
+	   }
+   }
+
+   /*
    // switch to knife if time to do this
    if (m_checkKnifeSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat (4.0, 6.5) < engine->GetTime () && 
 	   GetGameMod () == 0) // SyPB Pro P.37 - small change
@@ -6080,9 +6209,9 @@ void Bot::BotAI (void)
 	  if (m_skill > 75 && engine->RandomInt(0, 100) < (m_personality == PERSONALITY_RUSHER ? 99 : 80) && !m_isReloading && (g_mapType & (MAP_CS | MAP_DE | MAP_ES | MAP_AS)))
 		  SelectWeaponByName("weapon_knife");
 
-      if (engine->RandomInt (0, 100) < sypb_followpercent.GetInt () && FNullEnt (m_targetEntity) && !m_isLeader && !(pev->weapons & (1 << WEAPON_C4)))
-         AttachToUser ();
-   }
+      //if (engine->RandomInt (0, 100) < sypb_followpercent.GetInt () && FNullEnt (m_targetEntity) && !m_isLeader && !(pev->weapons & (1 << WEAPON_C4)))
+      //   AttachToUser ();
+   }*/
 
    // SyPB Pro P.30 - Zombie Ai
    if (IsZombieEntity(GetEntity()) && m_currentWeapon != WEAPON_KNIFE)
@@ -6831,8 +6960,23 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 	m_lastDamageType = bits;
 	RemoveCertainTask(TASK_HIDE);
 
+	// SyPB Pro P.43 - Zombie Ai improve
+	if (IsZombieEntity(GetEntity()))
+	{
+		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity))
+		{
+			if (IsEnemyViewable(inflictor, false, true))
+				SetMoveTarget(inflictor);
+			else
+				goto lastly;
+		}
+
+		return;
+	}
 	if (FNullEnt(m_enemy))
 	{
+	lastly:
+
 		SetLastEnemy(inflictor);
 
 		m_seeEnemyTime = engine->GetTime();

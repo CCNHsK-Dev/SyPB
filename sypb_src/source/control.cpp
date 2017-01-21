@@ -24,13 +24,12 @@
 
 #include <core.h>
 
-ConVar sypb_autovacate ("sypb_autovacate", "-1");
 ConVar sypb_quota ("sypb_quota", "9");
 ConVar sypb_forceteam ("sypb_forceteam", "any");
+ConVar sypb_auto_players ("sypb_auto_players", "-1");
 
 ConVar sypb_minskill ("sypb_minskill", "60");
 ConVar sypb_maxskill ("sypb_maxskill", "100"); 
-
 
 ConVar sypb_tagbots ("sypb_tagbots", "0");
 
@@ -104,6 +103,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 	{
 		m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
 		sypb_quota.SetInt(0); // reset quota
+		sypb_auto_players.SetInt(-1);
 
 		ChartPrint("[SyPB Preview] This Preview version outdate *****");
 		ChartPrint("[SyPB Preview] This Preview version outdate *****");
@@ -225,7 +225,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		sprintf(outputName, "%s", (char *)name);
 
 	// SyPB Pro P.37 - Bot Name / Tag
-	char botName[33];
+	char botName[64];
 	sprintf(botName, "%s%s", sypb_tagbots.GetBool () == true ? "" : "[SyPB] ", outputName);
 
 	if (FNullEnt((bot = (*g_engfuncs.pfnCreateFakeClient) (botName))))
@@ -331,12 +331,8 @@ void BotControl::Think(void)
 
 		if (runThink)
 		{
-			// SyPB Pro P.42 - Bot think improve
-			float thinkTime = (1.0f / 29.9f);
-			if (GetBotsNum() >= 18)
-				thinkTime = (1.0f / 24.9f);
-
-			m_bots[i]->m_thinkTimer = engine->GetTime() + thinkTime;
+			// SyPB Pro P.43 - Bot think improve
+			m_bots[i]->m_thinkTimer = engine->GetTime() + (1.0f / 24.9f);
 
 			m_bots[i]->Think();
 
@@ -404,12 +400,26 @@ void BotControl::AddBot (const String &name, const String &skill, const String &
       sypb_quota.SetInt (GetBotsNum () + 1);
 }
 
-void BotControl::CheckAutoVacate (edict_t * /*ent*/)
+// SyPB Pro P.43 - New Cvar for auto sypb number
+void BotControl::CheckAutoBotNum(void)
 {
-   // this function sets timer to kick one bot off.
+	if (sypb_auto_players.GetInt() == -1)
+		return;
 
-   if (sypb_autovacate.GetBool ())
-      RemoveRandom ();
+	if (sypb_auto_players.GetInt() == 0)
+	{
+		sypb_quota.SetInt(0);
+		return;
+	}
+
+	if (sypb_auto_players.GetInt() > engine->GetMaxClients())
+		sypb_auto_players.SetInt(engine->GetMaxClients());
+
+	int needBotNumber = sypb_auto_players.GetInt() - GetHumansNum();
+	if (needBotNumber <= 0)
+		sypb_quota.SetInt(0);
+	else
+		sypb_quota.SetInt(needBotNumber);
 }
 
 // SyPB Pro P.30 - AMXX API
@@ -466,42 +476,26 @@ void BotControl::MaintainBotQuota (void)
 		  sypb_quota.SetInt(GetBotsNum());
 	  }
 
-      m_maintainTime = engine->GetTime () + 0.2f;
+	  m_maintainTime = engine->GetTime() + 0.15f;
    }
 
-   // now keep bot number up to date
-   if (m_maintainTime < engine->GetTime ())
+   // SyPB Pro P.43 - Base improve and New Cvar Setting
+   g_botManager->CheckAutoBotNum();
+   if (m_maintainTime < engine->GetTime())
    {
-      int botNumber = GetBotsNum ();
-      int humanNumber = GetHumansNum ();
+	   int botNumber = GetBotsNum();
 
-      if (botNumber > sypb_quota.GetInt ())
-         RemoveRandom ();
+	   if (botNumber > sypb_quota.GetInt())
+		   RemoveRandom();
+	   else if (botNumber < sypb_quota.GetInt() && botNumber < engine->GetMaxClients())
+		   AddRandom();
 
-      if (sypb_autovacate.GetBool ())
-      {
-         if (botNumber < sypb_quota.GetInt () && botNumber < engine->GetMaxClients () - 1)
-            AddRandom ();
+	   if (sypb_quota.GetInt() > engine->GetMaxClients())
+		   sypb_quota.SetInt(engine->GetMaxClients());
+	   else if (sypb_quota.GetInt() < 0)
+		   sypb_quota.SetInt(0);
 
-         if (humanNumber >= engine->GetMaxClients ())
-            RemoveRandom ();
-      }
-      else
-      {
-         if (botNumber < sypb_quota.GetInt () && botNumber < engine->GetMaxClients ())
-            AddRandom ();
-      }
-
-      int botQuota = sypb_autovacate.GetBool () ? (engine->GetMaxClients () - 1 - (humanNumber + 1)) : engine->GetMaxClients ();
-
-      // check valid range of quota
-      if (sypb_quota.GetInt () > botQuota)
-         sypb_quota.SetInt (botQuota);
-
-      else if (sypb_quota.GetInt () < 0)
-         sypb_quota.SetInt (0);
-
-      m_maintainTime = engine->GetTime () + 0.25f;
+	   m_maintainTime = engine->GetTime() + 0.18f;
    }
 }
 
@@ -583,7 +577,7 @@ void BotControl::RemoveAll (void)
 
    // reset cvars
    sypb_quota.SetInt (0);
-   sypb_autovacate.SetInt (0);
+   sypb_auto_players.SetInt(-1);
 }
 
 void BotControl::RemoveFromTeam (Team team, bool removeAll)
@@ -832,13 +826,21 @@ void BotControl::CheckTeamEconomics (int team)
    // that have not enough money to buy primary (with economics), and if this result higher 80%, player is can't
    // buy primary weapons.
 
+	/*
    extern ConVar sypb_ecorounds;
 
    if (!sypb_ecorounds.GetBool ())
    {
       m_economicsGood[team] = true;
       return; // don't check economics while economics disable
-   }
+   } */
+
+	// SyPB Pro P.43 - Game Mode Support improve
+	if (GetGameMod() != 0)
+	{
+		m_economicsGood[team] = true;
+		return;
+	}
 
    int numPoorPlayers = 0;
    int numTeamPlayers = 0;
@@ -890,6 +892,114 @@ void BotControl::Free (int index)
    m_bots[index] = null;
 }
 
+// SyPB Pro P.43 - Base improve
+Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
+{
+	char rejectReason[128];
+	int clientIndex = ENTINDEX(bot);
+
+	memset(reinterpret_cast <void *> (this), 0, sizeof(*this));
+
+	pev = &bot->v;
+
+	if (bot->pvPrivateData != NULL)
+		FREE_PRIVATE(bot);
+
+	bot->pvPrivateData = NULL;
+	bot->v.frags = 0;
+
+	// create the player entity by calling MOD's player function
+	BotControl::CallGameEntity(&bot->v);
+
+	// set all info buffer keys for this bot
+	char *buffer = GET_INFOKEYBUFFER(bot);
+	SET_CLIENT_KEYVALUE(clientIndex, buffer, "_vgui_menus", "0");
+
+	if (sypb_tagbots.GetBool())
+		SET_CLIENT_KEYVALUE(clientIndex, buffer, "*bot", "1");
+
+	rejectReason[0] = 0; // reset the reject reason template string
+	MDLL_ClientConnect(bot, "BOT", FormatBuffer("127.0.0.%d", ENTINDEX(bot) + 100), rejectReason);
+
+	if (!IsNullString(rejectReason))
+	{
+		AddLogEntry(true, LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName(bot), rejectReason);
+		ServerCommand("kick \"%s\"", GetEntityName(bot)); // kick the bot player if the server refused it
+
+		bot->v.flags |= FL_KILLME;
+	}
+
+	MDLL_ClientPutInServer(bot);
+	bot->v.flags |= FL_FAKECLIENT; // set this player as fakeclient
+
+	// initialize all the variables for this bot...
+	m_notStarted = true;  // hasn't joined game yet
+
+	m_startAction = CMENU_IDLE;
+	m_moneyAmount = 0;
+	m_logotypeIndex = engine->RandomInt(0, 5);
+
+	// initialize msec value
+	m_msecNum = m_msecDel = 0.0f;
+	m_msecInterval = engine->GetTime();
+	m_msecVal = static_cast <uint8_t> (g_pGlobals->frametime * 1000.0f);
+	m_msecBuiltin = engine->RandomInt(1, 4);
+
+	// assign how talkative this bot will be
+	m_sayTextBuffer.chatDelay = engine->RandomFloat(3.8f, 10.0f);
+	m_sayTextBuffer.chatProbability = engine->RandomInt(1, 100);
+
+	m_notKilled = false;
+	m_skill = skill;
+	m_weaponBurstMode = BURST_DISABLED;
+
+	m_lastThinkTime = engine->GetTime();
+	m_frameInterval = engine->GetTime();
+
+	switch (personality)
+	{
+	case 1:
+		m_personality = PERSONALITY_RUSHER;
+		m_baseAgressionLevel = engine->RandomFloat(0.7f, 1.0f);
+		m_baseFearLevel = engine->RandomFloat(0.0f, 0.4f);
+		break;
+
+	case 2:
+		m_personality = PERSONALITY_CAREFUL;
+		m_baseAgressionLevel = engine->RandomFloat(0.0f, 0.4f);
+		m_baseFearLevel = engine->RandomFloat(0.7f, 1.0f);
+		break;
+
+	default:
+		m_personality = PERSONALITY_NORMAL;
+		m_baseAgressionLevel = engine->RandomFloat(0.4f, 0.7f);
+		m_baseFearLevel = engine->RandomFloat(0.4f, 0.7f);
+		break;
+	}
+
+	memset(&m_ammoInClip, 0, sizeof(m_ammoInClip));
+	memset(&m_ammo, 0, sizeof(m_ammo));
+
+	m_currentWeapon = 0; // current weapon is not assigned at start
+	m_voicePitch = engine->RandomInt(166, 250) / 2; // assign voice pitch
+
+													// copy them over to the temp level variables
+	m_agressionLevel = m_baseAgressionLevel;
+	m_fearLevel = m_baseFearLevel;
+	m_nextEmotionUpdate = engine->GetTime() + 0.5f;
+
+	// just to be sure
+	m_actMessageIndex = 0;
+	m_pushMessageIndex = 0;
+
+	// assign team and class
+	m_wantedTeam = team;
+	m_wantedClass = member;
+
+	NewRound();
+}
+
+/*
 Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
 {
    // this function does core operation of creating bot, it's called by CreateBot (),
@@ -917,10 +1027,6 @@ Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
    SET_CLIENT_KEYVALUE (clientIndex, buffer, "model", "");
    SET_CLIENT_KEYVALUE (clientIndex, buffer, "rate", "3500.000000");
    SET_CLIENT_KEYVALUE (clientIndex, buffer, "cl_updaterate", "20");
-   /*
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "cl_lw", "1");
-   SET_CLIENT_KEYVALUE (clientIndex, buffer, "cl_lc", "1");
-   */
    SET_CLIENT_KEYVALUE (clientIndex, buffer, "tracker", "0");
    SET_CLIENT_KEYVALUE (clientIndex, buffer, "cl_dlmax", "128");
    SET_CLIENT_KEYVALUE (clientIndex, buffer, "friends", "0");
@@ -1039,7 +1145,7 @@ Bot::Bot (edict_t *bot, int skill, int personality, int team, int member)
 
    NewRound ();
 }
-
+*/
 Bot::~Bot (void)
 {
    // this is bot destructor
@@ -1048,6 +1154,7 @@ Bot::~Bot (void)
    DeleteSearchNodes ();
    ResetTasks ();
 
+   /*
    // free used botname
    ITERATE_ARRAY (g_botNames, j)
    {
@@ -1056,6 +1163,20 @@ Bot::~Bot (void)
          g_botNames[j].isUsed = false;
          break;
       }
+   }  */
+
+   // SyPB Pro P.43 - Bot Name Fixed
+   char botName[64];
+   ITERATE_ARRAY(g_botNames, j)
+   {
+	   sprintf(botName, "[SyPB] %s", (char *)g_botNames[j].name);
+
+	   if (strcmp(g_botNames[j].name, GetEntityName(GetEntity())) == 0 || 
+		   strcmp(botName, GetEntityName(GetEntity())) == 0)
+	   {
+		   g_botNames[j].isUsed = false;
+		   break;
+	   }
    }
 }
 
@@ -1088,12 +1209,9 @@ void Bot::NewRound (void)
    m_waypointGoalAPI = -1;
    m_blockWeaponPickAPI = false;
 
-   // SyPB Pro P.42 - Waypoint improve
-   SetEntityWaypoint(GetEntity(), 2.0f, -2);
-
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
-   m_currentWaypointIndex = -1;
+   //m_currentWaypointIndex = -1;
    m_currentTravelFlags = 0;
    m_desiredVelocity = nullvec;
    m_prevGoalIndex = -1;
@@ -1159,10 +1277,6 @@ void Bot::NewRound (void)
    ResetDoubleJumpState ();
 
    SetMoveTarget (null);
-
-   //m_checkFallDistance = -1.0f;
-   //m_checkFallPoint[0] = -1;
-   //m_checkFallPoint[1] = -1;
 
    m_checkFallPoint[0] = nullvec;
    m_checkFallPoint[1] = nullvec;
@@ -1282,6 +1396,15 @@ void Bot::NewRound (void)
 
    m_actMessageIndex = 0;
    m_pushMessageIndex = 0;
+
+   // SyPB Pro P.43 - Waypoint improve
+   m_prevGoalIndex = -1;
+   GetCurrentTask()->data = -1;
+
+   SetEntityWaypoint(GetEntity());
+   m_currentWaypointIndex = -1;
+   GetValidWaypoint();
+   // --------------
 
    // and put buying into its message queue
    PushMessageQueue (CMENU_BUY);
