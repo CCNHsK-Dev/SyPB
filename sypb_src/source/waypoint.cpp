@@ -2544,9 +2544,13 @@ void Waypoint::SetBombPosition (bool shouldReset)
 }
 
 // SyPB Pro P.30 - SgdWP
-void Waypoint::SetLearnJumpWaypoint(bool mod)
+void Waypoint::SetLearnJumpWaypoint(int mod)
 {
-	m_learnJumpWaypoint = mod;
+	// SyPB Pro P.32 - SgdWP
+	if (mod == -1)
+		m_learnJumpWaypoint = (m_learnJumpWaypoint ? false : true);
+	else
+		m_learnJumpWaypoint = (mod == 1 ? true : false);
 }
 
 void Waypoint::SetFindIndex (int index)

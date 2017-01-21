@@ -1045,7 +1045,7 @@ void Bot::MoveTargetSrc(void)
 	}
 
 	if (wpGIndex != -1)
-		ChangeWptIndex(wpGIndex, 0);
+		ChangeWptIndex(wpGIndex);
 }
 
 //SyPB Pro P.24 - Move Target
@@ -1230,7 +1230,7 @@ void Bot::GetValidWaypoint (void)
    }
 }
 
-void Bot::ChangeWptIndex (int waypointIndex, int nonSet)
+void Bot::ChangeWptIndex (int waypointIndex, int action)
 {
    m_prevWptIndex[4] = m_prevWptIndex[3];
    m_prevWptIndex[3] = m_prevWptIndex[2];

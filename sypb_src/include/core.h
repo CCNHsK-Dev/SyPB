@@ -383,7 +383,8 @@ enum MapType
    MAP_ES = (1 << 3),
    MAP_KA = (1 << 4),
    MAP_FY = (1 << 5),
-   MAP_ZE = (1 << 6)
+   MAP_ZE = (1 << 6),
+   MAP_AWP = (1 << 7)
 };
 
 // defines for waypoint flags field (32 bits are available)
@@ -917,7 +918,7 @@ private:
 
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
-   void ChangeWptIndex (int waypointIndex, int nonSet = 1);
+   void ChangeWptIndex (int waypointIndex, int action = 0);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);
@@ -936,6 +937,8 @@ private:
    bool LookupEnemy (void);
    void FireWeapon (void);
    void FocusEnemy (void);
+
+   bool KnifeAttack(edict_t *entity);
 
    void SelectBestWeapon (void);
    void SelectPistol (void);
@@ -1356,7 +1359,7 @@ public:
 
    int AddGoalScore (int index, int other[4]);
    void SetFindIndex (int index);
-   void SetLearnJumpWaypoint (bool mod = 0);
+   void SetLearnJumpWaypoint (int mod = -1);
    void ClearGoalScore (void);
 
    bool IsGoalVisited (int index);

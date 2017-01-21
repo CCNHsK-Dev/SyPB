@@ -1223,8 +1223,10 @@ int Spawn (edict_t *ent)
       g_mapType |= MAP_FY;
    else if (strncmp (GetMapName (), "ka_", 3) == 0) // knife arena map
       g_mapType |= MAP_KA;
-   else if (strncmp (GetMapName (), "ze_", 3) == 0) // SyPB Pro P.12
-   	   g_mapType |= MAP_ZE; // Bte ZE Mod
+   else if (strncmp(GetMapName(), "ze_", 3) == 0) // SyPB Pro P.12
+	   g_mapType |= MAP_ZE; // Bte ZE Mod
+   else if (strncmp(GetMapName(), "awp_", 4) == 0) // SyPB Pro P.32 - AWP MAP TYPE
+	   g_mapType |= MAP_AWP;
 
    // SyPB Pro P.24 - Testing
    else if (strcmp (STRING (ent->v.classname), "player") == 0)
@@ -1961,7 +1963,7 @@ void ClientCommand(edict_t *ent)
 				case 7:
 					DisplayMenuToClient(ent, &g_menus[21]);
 					g_sautoWaypoint = g_sautoWaypoint ? false : true; // Auto Put Waypoint Mode
-					g_waypoint->SetLearnJumpWaypoint(g_sautoWaypoint);
+					g_waypoint->SetLearnJumpWaypoint(g_sautoWaypoint ? 1 : 0);
 					break;
 
 				case 9:

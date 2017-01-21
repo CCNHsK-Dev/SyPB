@@ -30,8 +30,8 @@
 
 // general product information
 #define PRODUCT_NAME "SyPB"
-#define PRODUCT_VERSION_DWORD 1,31,1022015,361    // dd/mm/yyyy      
-#define PRODUCT_VERSION "Beta1.3.1"
+#define PRODUCT_VERSION_DWORD 1,32,22022015,371    // dd/mm/yyyy      
+#define PRODUCT_VERSION "Beta1.3.2"
 //#define PRODUCT_DEV_VERSION "(Dev)"
 //#define PRODUCT_DEV_VERSION " (Preview)"
 #define PRODUCT_DEV_VERSION ""

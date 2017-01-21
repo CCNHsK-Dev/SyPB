@@ -730,6 +730,7 @@ bool Bot::RateGroundWeapon (edict_t *ent)
    return groundIndex > hasWeapon;
 }
 
+/*
 edict_t *Bot::FindBreakable (void)
 {
 	// SyPB Pro P.23 - Breakable Debug
@@ -769,6 +770,59 @@ edict_t *Bot::FindBreakable (void)
 		{
 			m_breakable = tr.vecEndPos;
 			return ent;
+		}
+	}
+
+	m_breakableEntity = null;
+	m_breakable = nullvec;
+	return null;
+}
+*/
+
+// SyPB Pro P.32 - Breakable 
+edict_t *Bot::FindBreakable(void)
+{
+	TraceResult tr;
+	edict_t *ent = null;
+	Vector v_src;
+	Vector v_dest;
+
+	for (int i = 0; i <= 2; i++)
+	{
+		ent = null;
+		if (i == 0)
+		{
+			v_src = EyePosition();
+			v_dest = EyePosition() + (m_destOrigin - EyePosition()).Normalize() * 256;
+		}
+		else if (i == 1)
+		{
+			if (&m_navNode[0] == null || m_navNode->next == null)
+				continue;
+
+			v_src = EyePosition();
+			v_dest = g_waypoint->GetPath(m_navNode->next->index)->origin;
+		}
+		else
+		{
+			if (&m_navNode[0] == null || m_navNode->next == null)
+				continue;
+
+			v_src = g_waypoint->GetPath(m_navNode->index)->origin;
+			v_dest = g_waypoint->GetPath(m_navNode->next->index)->origin;
+		}
+
+		TraceLine(v_src, v_dest, dont_ignore_monsters, GetEntity(), &tr);
+		if (!FNullEnt(tr.pHit))
+		{
+			ent = tr.pHit;
+			if ((tr.flFraction != 1.0) && ((IsShootableBreakable(ent)) && (pev->origin - tr.vecEndPos).GetLength() < 120 
+				|| (((i == 2) || (i == 1)) && (FStrEq(STRING(ent->v.classname), "func_breakable"))
+				&& (ent->v.takedamage > 0) && ((ent->v.impulse == 0) || (i == 2)))))
+			{
+				m_breakable = tr.vecEndPos;
+				return ent;
+			}
 		}
 	}
 
@@ -1393,7 +1447,7 @@ void Bot::CheckMessageQueue (void)
          m_buyState = 6;
 
       // prevent teams from buying on fun maps
-      if (g_mapType & (MAP_KA | MAP_FY))
+	  if (g_mapType & (MAP_KA | MAP_FY | MAP_AWP)) // SyPB Pro P.32 - AWP MAP TYPE
       {
          m_buyState = 6;
 
@@ -2193,6 +2247,7 @@ void Bot::SetConditions (void)
 
 		   if (IsZombieBot(GetEntity()))
 		   {
+			   /*  SyPB Pro P.32 - 
 			   if (IsAlive(m_moveTargetEntity))
 				   targetEnt = m_moveTargetEntity;
 
@@ -2229,6 +2284,7 @@ void Bot::SetConditions (void)
 						   m_states &= ~STATE_THROWEXPLODE;
 				   }
 			   }
+			   */
 		   }
 		   else if (GetGameMod() != 2 && GetGameMod() != 4 && IsAlive(m_lastEnemy))
 		   {
@@ -4229,6 +4285,7 @@ void Bot::RunTask (void)
 	  // New knife attack skill
 	  if (m_currentWeapon == WEAPON_KNIFE && !FNullEnt(m_enemy) && IsAlive(m_enemy) && !HasShield())
 	  {
+		  /*
 		  float distance = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
 
 		  // SyPB Pro P.27 - Zomibe Ai
@@ -4243,7 +4300,14 @@ void Bot::RunTask (void)
 				  pev->button |= IN_ATTACK2;
 				  m_knifeAttackTime = engine->GetTime() + engine->RandomFloat(2.6f, 3.8f);
 			  }
-		  } 
+		  } */
+
+		  // SyPB Pro P.32 - Base Knife Attack
+		  if (m_knifeAttackTime < engine->GetTime())
+		  {
+			  KnifeAttack(m_enemy);
+			  m_knifeAttackTime = engine->GetTime() + engine->RandomFloat(2.6f, 3.8f);
+		  }
 	  }
 
       if (IsShieldDrawn ())
@@ -5651,7 +5715,7 @@ void Bot::RunTask (void)
 
       src = m_breakable;
       m_camp = src;
-
+	  /*
 	  // SyPB Pro P.21 - Breakable
 	  if (!IsZombieBot (GetEntity ()))
 	  {
@@ -5664,7 +5728,17 @@ void Bot::RunTask (void)
 	  else
 		  m_moveSpeed = pev->maxspeed;
 
-	  m_wantsToFire = true;
+	  m_wantsToFire = true; */
+
+	  // SyPB Pro P.32 - Breakable Zombie 
+	  if (m_currentWeapon == WEAPON_KNIFE)
+	  {
+		  m_moveSpeed = pev->maxspeed;
+		  KnifeAttack(m_breakableEntity);
+	  }
+	  else
+		  m_wantsToFire = true;
+
 	  break;
 
    // picking up items and stuff behaviour
@@ -5680,6 +5754,10 @@ void Bot::RunTask (void)
       destination = GetEntityOrigin (m_pickupItem);
       m_destOrigin = destination;
       m_entity = destination;
+
+	  // SyPB Pro P.32 - Base Change
+	  if (m_moveSpeed <= 0)
+		  m_moveSpeed = pev->maxspeed;
 
       // find the distance to the item
       float itemDistance = (destination - pev->origin).GetLength ();
@@ -6340,12 +6418,19 @@ void Bot::BotAI (void)
    // calculate 2 direction vectors, 1 without the up/down component
    Vector directionOld = m_destOrigin - (pev->origin + pev->velocity * m_frameInterval);
 
+   // SyPB Pro P.32 - Base Ai Change
+   if (!FNullEnt (m_enemy))
+	   directionOld = GetEntityOrigin(m_enemy) - (pev->origin + pev->velocity * m_frameInterval);
+   else if (!FNullEnt (m_breakableEntity))
+	   directionOld = GetEntityOrigin(m_breakableEntity) - (pev->origin + pev->velocity * m_frameInterval);
+
+   /*
    // SyPB Pro P.30 - Zombie Mode Ai TESTTEST
    if (GetGameMod() == 2 || GetGameMod() == 4)
    {
-	   if (!FNullEnt (m_enemy))
-		   directionOld = GetEntityOrigin (m_enemy) - (pev->origin + pev->velocity * m_frameInterval);
-   }
+   if (!FNullEnt (m_enemy))
+   directionOld = GetEntityOrigin (m_enemy) - (pev->origin + pev->velocity * m_frameInterval);
+   } */
 
    Vector directionNormal = directionOld.Normalize ();
 
@@ -6423,11 +6508,12 @@ void Bot::BotAI (void)
 	   if (!FNullEnt(ent)) // has breakable entity
 	   {
 		   m_breakableEntity = ent;
+		   
 		   // SyPB Pro P.23 - Breakable Debug
 		   if (pev->origin.z > m_breakable.z)
 			   m_campButtons = IN_DUCK;
 		   else
-			   m_campButtons = pev->button & IN_DUCK;
+			   m_campButtons = pev->button & IN_DUCK; 
 
 		   PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
 	   }
@@ -6805,8 +6891,11 @@ void Bot::BotAI (void)
 				   {
 				   case COSTATE_JUMP:
 					   if (IsOnFloor() || IsInWater())
-						   pev->button |= IN_JUMP;
-
+					   {
+						   // SyPB Pro P.32 - Base Change
+						   if (!IsZombieBot(GetEntity()) || FNullEnt(m_enemy) || !KnifeAttack(m_enemy))
+							   pev->button |= IN_JUMP;
+					   }
 					   break;
 
 				   case COSTATE_DUCK:
@@ -7563,6 +7652,24 @@ void Bot::ReactOnSound (void)
    }
 }
 
+// SyPB Pro P.32 - Breakable
+bool Bot::IsShootableBreakable(edict_t *ent)
+{
+	if (FNullEnt(ent))
+		return false;
+
+	return (((FClassnameIs(ent, "func_breakable")
+		&& ((ent->v.playerclass == 1) || (ent->v.health == 0)
+		|| ((ent->v.health > 1) && (ent->v.health < 1000))
+		|| (ent->v.rendermode == 4)) // KWo - 21.02.2006 - br. crates has rendermode 4
+		|| (FClassnameIs(ent, "func_pushable")
+		&& (ent->v.health < 1000) && (ent->v.spawnflags & SF_PUSH_BREAKABLE))))  // KWo - 03.02.2007
+		&& (ent->v.impulse == 0)
+		&& (ent->v.takedamage > 0)
+		&& !(ent->v.spawnflags & SF_BREAK_TRIGGER_ONLY));
+}
+
+/*
 // SyPB Pro P.25 - Breakable - Debug
 bool Bot::IsShootableBreakable (edict_t *ent)
 {
@@ -7585,7 +7692,7 @@ bool Bot::IsShootableBreakable (edict_t *ent)
 
 	return false;
 }
-
+*/
 void Bot::EquipInBuyzone (int iBuyCount)
 {
    // this function is gets called when bot enters a buyzone, to allow bot to buy some stuff
