@@ -11,7 +11,7 @@
 // API calling
 extern AMX_NATIVE_INFO sypb_natives[];
 
-void think(HMODULE dll);
+void SyPBDataLoad(void);
 
 void ErrorWindows(char *text);
 

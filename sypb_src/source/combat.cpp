@@ -213,7 +213,7 @@ bool Bot::LookupEnemy(void)
 		{
 			entity = INDEXENT(i + 1);
 
-			if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
+			if (!IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
 				continue;
 
 			m_allEnemyId[allEnemy] = i + 1;

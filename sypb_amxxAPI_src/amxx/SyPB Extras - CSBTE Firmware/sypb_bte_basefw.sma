@@ -3,8 +3,8 @@
  * SyPB Extras - CSBTE Base Firmware
  
  * Support Version
- *  SyPB Version: Beta 1.35 or new veriosn
- *  SyPB API Version: 1.35 or new veriosn
+ *  SyPB Version: Beta 1.46 or new veriosn
+ *  SyPB API Version: 1.42 or new veriosn
  *  CSBTE: N/A
  */
 
@@ -13,13 +13,18 @@
 #include <fakemeta>
 
 #define PLUGIN	"SyPB Extras - CSBTE Base Firmware"
-#define VERSION	"1.10"
+#define VERSION	"1.20"
 #define AUTHOR	"HsK-Dev Blog By'CCN"
 
+// SyPB API Version 
+new const Float:supportAPI = 1.42;
+
+// Base for Firmware
 new bool:g_runSyPB = false;
 new bool:g_baseFirmware = false;
 
-new bool:g_gameStart = false;
+// BTE Weapon Data
+new g_weaponname[32][64];
 
 public plugin_init()
 {	
@@ -35,13 +40,16 @@ public plugin_init()
 
 public firmwareCheck ()
 {
+	server_print("*** [SyPB Extras] CSBTE Firmware Loading..... ***");
+
 	if (!g_runSyPB) // Server has not run SyPB, The firmware stop
+	{
+		server_print("*** [SyPB Extras] Cannot find SyPB or SyPB API ***");
+		server_print("*** [SyPB Extras] CSBTE Firmware Stop ***");
 		return;
+	}
 		
 	g_baseFirmware = true;
-	server_print("*** [SyPB Extras] CSBTE Base Firmware Start ***");
-	server_print("*** [SyPB Extras] CSBTE Base Firmware Start ***");
-	server_print("*** [SyPB Extras] CSBTE Base Firmware Start ***");
 	
 	checkMapWaypoint ();
 }
@@ -57,53 +65,38 @@ public checkMapWaypoint ()
 	if (!file_exists(buffer))
 	{
 		g_baseFirmware = false;
-		server_print("*** [SyPB Extras] Has not Waypoint in the Map %n   CSBTE Base Firmware Stop! ***");
-		server_print("*** [SyPB Extras] Has not Waypoint in the Map %n   CSBTE Base Firmware Stop! ***");
-		server_print("*** [SyPB Extras] Has not Waypoint in the Map %n   CSBTE Base Firmware Stop! ***");
+		server_print("*** [SyPB Extras] SyPB not support the map ***");
+		server_print("*** [SyPB Extras] CSBTE Firmware Stop ***");
+		
+		return;
 	}
 	
-	server_print("*** [SyPB Extras] CSBTE Base Firmware Would Run in the Game ***");
-	server_print("*** [SyPB Extras] CSBTE Base Firmware Would Run in the Game ***");
-	server_print("*** [SyPB Extras] CSBTE Base Firmware Would Run in the Game ***");
-}
-
-public client_putinserver(id)
-	set_task(1.0,"task1",id+13876);
-
-public task1 (fid)
-{
-	new id = fid - 13876;
-
-	if (!g_baseFirmware)
-		return;
-	
-	if (g_gameStart)
-		return;
-
-	if (!is_user_sypb (id))
-		return;
+	if (sypb_api_version () < supportAPI)
+	{
+		g_baseFirmware = false;
+		server_print("*** [SyPB Extras] SyPB API is old ***");
+		server_print("*** [SyPB Extras] CSBTE Firmware Stop ***");
 		
-	set_cvar_string ("sv_restart", "3");
-	g_gameStart = true;
+		return;
+	}
+	
+	server_print("*** [SyPB Extras] CSBTE Firmware Loading - Done ***");
+	server_print("*** [SyPB Extras] CSBTE Firmware Running ***");
 }
 
-new g_weaponname[32][64];
 public event_cur_weapon(id)
 {
 	if (!g_baseFirmware)
 		return;
-		
-	if (sypb_api_version () < 1.35)
-		return;
-	
+
 	if (!is_user_alive(id) || !is_user_sypb (id))
 		return;
 	
 	new weap_id, weap_clip, weap_bpammo;
 	weap_id = get_user_weapon(id, weap_clip, weap_bpammo);
-	if ((1<<weap_id) & ((1<<CSW_KNIFE)|(1<<CSW_HEGRENADE)|(1<<CSW_FLASHBANG)|(1<<CSW_SMOKEGRENADE)|(1<<CSW_C4)))
+	if ((1<<weap_id) & (((1<<CSW_HEGRENADE)|(1<<CSW_FLASHBANG)|(1<<CSW_SMOKEGRENADE)|(1<<CSW_C4)))
 		return;
-
+		
 	static weaponname[64];
 	pev(id, pev_viewmodel2, weaponname, 63);
 	
@@ -112,6 +105,14 @@ public event_cur_weapon(id)
 	
 	g_weaponname[id] = weaponname;
 	
+	// Knife Setting
+	if ((1<<weap_id) & (1<<CSW_KNIFE)))
+	{
+		
+		return;
+	}
+	
+	// Gun Setting
 	if (strcmp (weaponname, "models/v_railcannon.mdl") == 0)
 		sypb_set_weapon_clip (id, 12);
 	else if (strcmp (weaponname, "models/v_m1918bar.mdl") == 0)

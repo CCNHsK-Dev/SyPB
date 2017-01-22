@@ -1,13 +1,13 @@
 
 /*
 * This is SyPB API for AMXX
-* Version : 1.42
-* Support Build: 1.42.40760.44 or new
+* Version : 1.48
+* Support Build: 1.48.50571.48 or new
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.42.40760.619 or new
+* Support SyPB Build: 1.48.50571.694 or new
 *
-* Date: 12/3/2016
+* Date: 23/1/2017
 */
 
 #include <amxmodx>
@@ -15,7 +15,7 @@
 #include <sypb>
 
 #define PLUGIN	"[SyPB API] Testing"
-#define VERSION	"1.42.40760.44"
+#define VERSION	"1.48.50571.48"
 #define AUTHOR	"HsK-Dev Blog By'CCN"
 
 new bool:g_sypb_run;
@@ -38,6 +38,29 @@ public plugin_init()
 	register_clcmd("say /sypb_138b_test", "sypb_testing_138b");
 	register_clcmd("say /sypb_140_test", "sypb_testing_140");
 	register_clcmd("say /sypb_142_test", "sypb_testing_142");
+	register_clcmd("say /sypb_148_test", "sypb_testing_148");
+}
+
+public sypb_testing_148 ()
+{
+	if (!g_sypb_run)
+	{
+		client_print(0, print_chat, "Error: The Game has not run sypb");
+		server_print ("Error: The Game has not run sypb");
+		return;
+	}
+	
+	for (new id = 1; id <= get_maxplayers(); id++)
+	{
+		if (!is_user_connected(id))
+			continue;
+
+		if (!is_user_alive (id))
+			continue;
+			
+		new waypointid = sypb_get_entity_point (id);
+		server_print("[SyPB API TEST_A] Id:%d WID:%d", id, waypointid);
+	}
 }
 
 public sypb_testing_142 ()

@@ -1222,19 +1222,6 @@ void Touch (edict_t *pentTouched, edict_t *pentOther)
 	(*g_functionTable.pfnTouch) (pentTouched, pentOther);
 }
 
-/*
-void ClientPutInServer (edict_t *ent)
-{
- //  callbacks->OnClientEntersServer (ent);
-
-   //g_botManager->CheckAutoVacate (ent);
-
-   if (g_isMetamod)
-      RETURN_META (MRES_IGNORED);
-
-   (*g_functionTable.pfnClientPutInServer) (ent);
-} */
-
 int ClientConnect (edict_t *ent, const char *name, const char *addr, char rejectReason[128])
 {
    // this function is called in order to tell the MOD DLL that a client attempts to connect the
@@ -3336,7 +3323,6 @@ export int GetEntityAPI2 (DLL_FUNCTIONS *functionTable, int * /*interfaceVersion
    functionTable->pfnSpawn = Spawn;
    functionTable->pfnClientConnect = ClientConnect;
    functionTable->pfnClientDisconnect = ClientDisconnect;
-   //functionTable->pfnClientPutInServer = ClientPutInServer;
    functionTable->pfnClientUserInfoChanged = ClientUserInfoChanged;
    functionTable->pfnClientCommand = ClientCommand;
    functionTable->pfnServerActivate = ServerActivate;
@@ -3881,7 +3867,7 @@ export int Amxx_SetBotGoal(int index, int goal) // 1.42
 	if (goal < 0 || goal >= g_numWaypoints)
 		return -1;
 
-	API_TestMSG("Amxx_SetBotGoal Checking - Index:%d - goal:%d - Done", index, goal);
+	API_TestMSG("Amxx_SetBotGoal Checking - Index:%d[%s] - goal:%d - Done", index, GetEntityName(bot->GetEntity()), goal);
 	bot->m_waypointGoalAPI = goal;
 	return 1;
 }
@@ -3896,14 +3882,28 @@ export int Amxx_BlockWeaponPick(int index, int blockWeaponPick) // 1.42
 	if (IsZombieEntity(bot->GetEntity()))
 	{
 		bot->m_blockWeaponPickAPI = false;
-		API_TestMSG("Amxx_BlockWeaponPick Checking - Index:%d - Zombie Bot cannot set this - Done", index);
+		API_TestMSG("Amxx_BlockWeaponPick Checking - Index:%d[%s] - Zombie Bot cannot set this - Done", 
+			index, GetEntityName(bot->GetEntity()));
 		return -1;
 	}
 
 	bot->m_blockWeaponPickAPI = (blockWeaponPick == 1) ? true : false;
-	API_TestMSG("Amxx_BlockWeaponPick Checking - Index:%d - Block:%s - Done", index, 
+	API_TestMSG("Amxx_BlockWeaponPick Checking - Index:%d[%s] - Block:%s - Done", 
+		index, GetEntityName(bot->GetEntity ()),
 		bot->m_blockWeaponPickAPI ? "Blocking" : "None (Base Mode)");
 	return 1;
+}
+
+// SyPB Pro P.48 - AMXX API
+export int Amxx_GetEntityWaypointId(int index) // 1.48
+{
+	edict_t *entity = INDEXENT(index);
+	if (!IsAlive(entity) || !IsValidPlayer(entity))
+		return -2;
+
+	API_TestMSG("Amxx_GetEntityWaypointId Checking - [%s] - Done", GetEntityName (entity));
+
+	return GetEntityWaypoint(entity);
 }
 // AMXX SyPB API End
 

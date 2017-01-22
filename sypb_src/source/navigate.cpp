@@ -111,48 +111,10 @@ int Bot::FindGoal(void)
 		}
 		else
 			return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
-
-		/*
-		if (!IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
-			offensiveWpts = g_waypoint->m_zmHmPoints;
-		else
-			//return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
-			// SyPB Pro P.40 - Zombie Mode improve 
-		{
-			if ((FNullEnt(m_moveTargetEntity) || FNullEnt(m_enemy)) || engine->RandomInt (0, 100) <= 5)
-			{
-				for (int i = 0; i < g_numWaypoints; i++)
-				{
-					float checkRadius = g_waypoint->GetPath(i)->radius;
-					if (checkRadius <= 16.0f)
-						checkRadius = 16.0f;
-
-					edict_t *ent = null;
-					while (!FNullEnt(ent = FIND_ENTITY_IN_SPHERE(ent, g_waypoint->GetPath(i)->origin, checkRadius)))
-					{
-						if (ent != GetEntity() && IsValidPlayer(ent) && IsAlive(ent) && GetTeam (ent) != GetTeam (GetEntity ()))
-							return m_chosenGoalIndex = i;
-					}
-				}
-			}
-			else
-				return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
-		} */
 	}
 	// SyPB Pro P.40 - Goal Point change
 	else
 		return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
-
-	/*
-	else
-	{
-		offensiveWpts = g_waypoint->m_terrorPoints;
-
-		ITERATE_ARRAY(g_waypoint->m_ctPoints, i)
-		{
-			offensiveWpts.Push(g_waypoint->m_ctPoints[i]);
-		}
-	} */
 
    // terrorist carrying the C4?
    if (pev->weapons & (1 << WEAPON_C4) || m_isVIP)
@@ -2579,57 +2541,22 @@ bool Bot::IsWaypointUsed (int index)
    if (IsAntiBlock(GetEntity()))
 	   return false;
 
-   // SyPB Pro P.42 - Small improve
+   // SyPB Pro P.48 - Small improve
    for (int i = 0; i < engine->GetMaxClients(); i++)
    {
+	   edict_t *player = INDEXENT(i + 1);
+	   if (!IsAlive(player) || IsAntiBlock(player) || player == GetEntity())
+		   continue;
+
+	   if ((g_waypoint->GetPath(index)->origin - GetEntityOrigin (player)).GetLength() < 50.0f)
+		   return true;
+
 	   Bot *bot = g_botManager->GetBot(i);
-	   if (bot == null || bot == this)
-		   continue;
-
-	   if (!IsAlive(bot->GetEntity()) || IsAntiBlock(bot->GetEntity()))
-		   continue;
-
-	   if (bot->m_currentWaypointIndex == index || bot->GetCurrentTask()->data == index || 
-		   (g_waypoint->GetPath(index)->origin - bot->pev->origin).GetLength() < 50.0f)
+	   if (bot != null && bot->m_currentWaypointIndex == index)
 		   return true;
    }
 
    return false;
-
-   /*
-   // first check if current waypoint of one of the bots is index waypoint
-   for (int i = 0; i < engine->GetMaxClients (); i++)
-   {
-      Bot *bot = g_botManager->GetBot (i);
-
-      if (bot == null || bot == this)
-         continue;
-
-      // check if this waypoint is already used
-	  if (IsAlive(bot->GetEntity()) && (bot->m_currentWaypointIndex == index || bot->GetCurrentTask()->data == index || (g_waypoint->GetPath(index)->origin - bot->pev->origin).GetLength() < 50.0f))
-	  {
-		  if (IsAntiBlock(bot->GetEntity()))
-			  continue;
-
-		  return true;
-	  }
-   }
-
-   // secondary check waypoint radius for any player
-   edict_t *ent = null;
-
-   // search player entities in waypoint radius
-   while (!FNullEnt (ent = FIND_ENTITY_IN_SPHERE (ent, g_waypoint->GetPath (index)->origin, 50)))
-   {
-	   if (ent != GetEntity() && IsValidBot(ent) && IsAlive(ent))
-	   {
-		   if (IsAntiBlock(ent))
-			   continue;
-
-		   return true;
-	   }
-   }
-   return false; */
 }
 
 edict_t *Bot::FindNearestButton (const char *className)

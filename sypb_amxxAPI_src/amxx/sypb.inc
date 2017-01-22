@@ -1,13 +1,13 @@
 
 /*
 * This is SyPB API for AMXX
-* Version : 1.42
-* Support Build: 1.42.40760.44 or new
+* Version : 1.48
+* Support Build: 1.48.50571.48 or new
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.42.40760.619 or new
+* Support SyPB Build: 1.48.50571.694 or new
 *
-* Date: 12/3/2016
+* Date: 23/1/2017
 */
 
 
@@ -206,3 +206,11 @@ native sypb_set_goal (index, goal);
 	 API Verion: 1.42
 */
 native sypb_block_weapon_pick (index, blockWeaponPick);
+
+/* -----------------------------------------------------------------------
+ sypb_get_entity_point - Get Entity Waypoint ID
+							(index = entity id)
+							(return waypoint id)
+	 API Verion: 1.48
+*/
+native sypb_get_entity_point (index);

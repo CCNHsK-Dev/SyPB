@@ -2599,13 +2599,6 @@ bool Bot::EnemyIsThreat (void)
    // SyPB Pro P.16
    if (FNullEnt (m_enemy))
    	   return false;
-   /*
-   if (IsZombieEntity (GetEntity ()))
-   	   return true;
-   	   
-   // SyPB Pro P.43 - Zombie Mode Human improve
-   if (IsZombieEntity(m_enemy))
-	   return true; */
 
    if (GetCurrentTask ()->taskID == TASK_SEEKCOVER)
    	   return false;
@@ -2613,10 +2606,6 @@ bool Bot::EnemyIsThreat (void)
    // SyPB Pro P.48 - Zombie Mode Human Camp improve
    if (GetCurrentTask()->taskID == TASK_CAMP && m_zhCampPointIndex == -1)
 	   return false;
-
-   // if bot is camping, he should be firing anyway and not leaving his position
-   //if (GetCurrentTask ()->taskID == TASK_CAMP)
-    //  return false;
 
    // SyPB Pro P.43 - Enemy Ai small improve 
    if (IsOnAttackDistance(m_enemy, 256) ||
@@ -3314,20 +3303,11 @@ void Bot::SelectLeaderEachTeam (int team)
 
 float Bot::GetWalkSpeed(void)
 {
-	/*
-	// SyPB Pro P.40 - Jump Speed
-	if (m_currentTravelFlags & PATHFLAG_JUMP)
-		return pev->maxspeed;
-
-	if (pev->maxspeed <= 180.f)
-		return pev->maxspeed; */
-
 	// SyPB Pro P.48 - Base improve
 	if (GetGameMod () == MODE_ZH || GetGameMod () == MODE_ZP || 
 		pev->maxspeed <= 180.f || m_currentTravelFlags & PATHFLAG_JUMP || 
 		pev->button & IN_JUMP || pev->oldbuttons & IN_JUMP ||
-		pev->flags & FL_DUCKING || pev->button & IN_DUCK || pev->oldbuttons & IN_DUCK || 
-		IsOnLadder() || IsInWater())
+		pev->flags & FL_DUCKING || pev->button & IN_DUCK || pev->oldbuttons & IN_DUCK || IsInWater())
 		return pev->maxspeed;
 
 	return static_cast <float> ((static_cast <int> (pev->maxspeed) * 0.5f) + (static_cast <int> (pev->maxspeed) / 50)) - 18;
@@ -3437,22 +3417,6 @@ void Bot::ChooseAimDirection (void)
 		  if ((pev->origin - m_lastEnemyOrigin).GetLength() >= 1600.0f)
 			  m_lastEnemyOrigin = nullvec;
 	  }
-
-	  /*
-      // did bot just see enemy and is quite aggressive?
-      if (m_seeEnemyTime + 3.0f - m_actualReactionTime + m_baseAgressionLevel > engine->GetTime ())
-      {
-         // feel free to fire if shootable
-         if (!UsesSniper () && LastEnemyShootable ())
-            m_wantsToFire = true;
-      }
-      else // forget an enemy far away
-      {
-         m_aimFlags &= ~AIM_LASTENEMY;
-
-         if ((pev->origin - m_lastEnemyOrigin).GetLength () >= 1600.0f)
-            m_lastEnemyOrigin = nullvec;
-      } */
    }
    else if (flags & AIM_PREDICTENEMY)
    {
@@ -4464,11 +4428,6 @@ void Bot::RunTask (void)
       pev->button |= m_campButtons;
       m_navTimeset = engine->GetTime ();
 
-	  /*
-      // stop camping if time over or gets hurt by something else than bullets
-      if (m_tasks->time < engine->GetTime () || m_lastDamageType > 0)
-         TaskComplete (); */
-
 	  // SyPB Pro P.37 - Base Mode improve
 	  if (m_lastDamageType > 0 || m_tasks->time < engine->GetTime())
 	  {
@@ -4684,10 +4643,6 @@ void Bot::RunTask (void)
             break;
          }
       }
-
-	  /*
-      if (m_targetEntity->v.maxspeed != 0 && m_targetEntity->v.maxspeed < pev->maxspeed)
-         m_moveSpeed = m_targetEntity->v.maxspeed; */
 
 	  // SyPB Pro P.45 - Move Speed improve
 	  if (m_targetEntity->v.maxspeed != 0.0f)

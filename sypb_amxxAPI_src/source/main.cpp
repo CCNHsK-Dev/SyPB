@@ -10,19 +10,7 @@ void OnPluginsLoaded()
 {
 	sypbLog = false;
 
-	HMODULE dll = GetModuleHandle("sypb.dll");
-	if(!dll)
-	{
-		LogToFile("***************************");
-		LogToFile("We cannot find sypb.dll, SyPB API cannot run");
-		LogToFile("***************************");
-
-		ErrorWindows("We cannot find sypb.dll, SyPB API cannot run"
-			"\n\nExit the Game?");
-		return;
-	}
-
-	think(dll);
+	SyPBDataLoad();
 }
 
 void OnAmxxAttach()

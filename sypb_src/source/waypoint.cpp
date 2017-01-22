@@ -628,7 +628,7 @@ void Waypoint::Add (int flags, Vector waypointOrigin)
    }
 
    if (flags == 104)
-	   /* SyPB Pro P.24 - Zombie Mod Human Camp */
+	   // SyPB Pro P.24 - Zombie Mod Human Camp
 	   path->flags |= WAYPOINT_ZMHMCAMP;
 
    // Ladder waypoints need careful connections
@@ -1399,19 +1399,17 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 	// SyPB Pro P.43 - Waypoint OS improve
 	Vector src = GetEntityOrigin(entity);
 	Vector dest = m_paths[index]->origin;
+
+	// SyPB Pro P.48 - Waypoint OS improve
+	if ((dest - src).GetLength() >= 1200.0f)
+		return false;
+
 	if (entity->v.waterlevel != 2 && entity->v.waterlevel != 3)
 	{
 		if ((dest.z > src.z + 62.0f || dest.z < src.z - 100.0f) &&
 			(!(GetPath(index)->flags & WAYPOINT_LADDER) || (dest - src).GetLength2D() >= 120.0f))
 			return false;
 	}
-
-	/*
-	TraceResult tr;
-	TraceHull(src, dest, true, head_hull, entity, &tr);
-	if (tr.flFraction >= 0.9f)
-		return true;
-		*/
 
 	// SyPB Pro P.45 - Waypoint OS improve
 	TraceResult tr;
@@ -1420,24 +1418,6 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 		return true;
 
 	return false;
-
-	/*
-	Vector src = GetEntityOrigin(entity);
-	Vector dest = m_paths[index]->origin;
-
-	if (IsValidPlayer(entity) && (entity->v.waterlevel == 2 || entity->v.waterlevel == 3))
-	{
-	if ((dest.z > src.z + 40.0f || dest.z < src.z - 75.0f) &&
-	(!(GetPath(index)->flags & WAYPOINT_LADDER) || (dest - src).GetLength2D() >= 16.0f))
-	return false; // unable to reach this one
-	}
-
-	TraceResult tr;
-	TraceHull(src, dest, true, head_hull, entity, &tr);
-	if (tr.flFraction >= 0.9f)
-	return true;
-
-	return false; */
 }
 
 bool Waypoint::IsNodeReachable (Vector src, Vector destination)

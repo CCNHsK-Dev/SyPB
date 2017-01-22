@@ -2200,6 +2200,10 @@ typedef int(*_AMXX_SET_BOT_GOAL) (int index, int goal);
 
 C_DLLEXPORT int Amxx_BlockWeaponPick(int index, int blockWeaponPick);
 typedef int(*_AMXX_BLOCK_WEAPON_PICK) (int index, int blockWeaponPick);
+
+// SyPB Pro P.48 - AMXX API
+C_DLLEXPORT int Amxx_GetEntityWaypointId(int index);
+typedef int(*_AMXX_GET_ENTITY_WAYPOINT_ID) (int index);
 // AMXX SyPB API End
 
 
