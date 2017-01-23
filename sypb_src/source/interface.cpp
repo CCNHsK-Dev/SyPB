@@ -35,7 +35,7 @@ ConVar sypb_lockzbot("sypb_lockzbot", "1");
 ConVar sypb_showwp("sypb_showwp", "0");
 
 // SyPB Pro P.47 - SyPB Version MSG
-char *SyPBVersionMSG(void)
+void SyPBVersionMSG(edict_t *entity = null)
 {
 	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
 	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
@@ -59,7 +59,7 @@ char *SyPBVersionMSG(void)
 	}
 
 	char versionData[1024];
-	sprintf(versionData,
+	sprintf(versionData, 
 		"------------------------------------------------\n"
 		"%s %s%s\n"
 		"Build: %u.%u.%u.%u\n"
@@ -95,28 +95,14 @@ char *SyPBVersionMSG(void)
 		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
 		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, META_INTERFACE_VERSION);
 
-	return &versionData[0];
+	if (IsValidPlayer (entity))
+		ClientPrint(entity, print_console, versionData);
+	else
+		ServerPrintNoTag(versionData);
 }
 
 int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, const String &arg2, const String &arg3, const String &arg4, const String /*&arg5*/)
 {
-	/*
-   // adding one bot with random parameters to random team
-   if (stricmp (arg0, "addbot") == 0 || stricmp (arg0, "add") == 0)
-      g_botManager->AddBot (arg4, arg1, arg2, arg3, arg5);
-
-   // adding one bot with high skill parameters to random team
-   else if (stricmp (arg0, "addbot_hs") == 0 || stricmp (arg0, "addhs") == 0)
-      g_botManager->AddBot (arg4, "100", "1", arg3, arg5);
-
-   // adding one bot with random parameters to terrorist team
-   else if (stricmp (arg0, "addbot_t") == 0 || stricmp (arg0, "add_t") == 0)
-      g_botManager->AddBot (arg4, arg1, arg2, "1", arg5);
-
-   // adding one bot with random parameters to counter-terrorist team
-   else if (stricmp (arg0, "addbot_ct") == 0 || stricmp (arg0, "add_ct") == 0)
-      g_botManager->AddBot (arg4, arg1, arg2, "2", arg5); */
-
 	if (stricmp(arg0, "addbot") == 0 || stricmp(arg0, "add") == 0 || 
 		stricmp(arg0, "addbot_hs") == 0 || stricmp(arg0, "addhs") == 0 || 
 		stricmp(arg0, "addbot_t") == 0 || stricmp(arg0, "add_t") == 0 || 
@@ -253,7 +239,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
    // displays version information
    else if (stricmp(arg0, "version") == 0 || stricmp(arg0, "ver") == 0)
-	   ClientPrint(ent, print_console, SyPBVersionMSG());
+	   SyPBVersionMSG(ent);
 
    // display some sort of help information
    else if (stricmp (arg0, "?") == 0 || stricmp (arg0, "help") == 0)
@@ -631,7 +617,7 @@ void CommandHandler (void)
 // SyPB Pro P.35 - new command
 void SyPB_Version_Command(void)
 {
-	ServerPrintNoTag(SyPBVersionMSG());
+	SyPBVersionMSG();
 }
 
 // SyPB Pro P.46 - Entity Action Check Cvar
@@ -2529,7 +2515,7 @@ void LoadEntityData(void)
 			continue;
 		}
 
-		if (g_entityGetWpTime[i] < engine->GetTime() || g_entityWpIndex[i] == -1)
+		if (g_entityGetWpTime[i] + 1.5f < engine->GetTime() || g_entityWpIndex[i] == -1)
 			SetEntityWaypoint(entity);
 	}
 
@@ -2544,7 +2530,7 @@ void LoadEntityData(void)
 			g_clients[i].wpIndex = -1;
 			g_clients[i].wpIndex2 = -1;
 			g_clients[i].getWpOrigin = nullvec;
-			g_clients[i].getWPTime = engine->GetTime();
+			g_clients[i].getWPTime = 0.0f;
 
 			g_clients[i].isZombiePlayerAPI = -1;
 			continue;
@@ -2567,7 +2553,7 @@ void LoadEntityData(void)
 			g_clients[i].origin = GetEntityOrigin(entity);
 
 			// SyPB Pro P.41 - Get Waypoint improve
-			if (g_clients[i].getWPTime < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+			if (g_clients[i].getWPTime + 1.2f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
 				SetEntityWaypoint(entity);
 
 			SoundSimulateUpdate(i);
@@ -2577,7 +2563,7 @@ void LoadEntityData(void)
 		g_clients[i].wpIndex = -1;
 		g_clients[i].wpIndex2 = -1;
 		g_clients[i].getWpOrigin = nullvec;
-		g_clients[i].getWPTime = engine->GetTime();
+		g_clients[i].getWPTime = 0.0f;
 
 		g_clients[i].isZombiePlayerAPI = -1;
 	}
@@ -4011,7 +3997,7 @@ export void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEnt
 	if (FNullEnt(targetEntity))
 		SetEntityWaypoint(getEntity);
 	else
-		SetEntityWaypoint(getEntity, 1.5f, GetEntityWaypoint(targetEntity));
+		SetEntityWaypoint(getEntity, GetEntityWaypoint(targetEntity));
 }
 // SwNPC API End
 

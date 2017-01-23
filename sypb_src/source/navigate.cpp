@@ -1099,7 +1099,7 @@ void Bot::SetEnemy(edict_t *entity)
 	{
 		if (!FNullEnt(m_enemy) && &m_navNode[0] == null)
 		{
-			SetEntityWaypoint(GetEntity(), 1.5f, -2);
+			SetEntityWaypoint(GetEntity(), -2);
 			m_currentWaypointIndex = -1;
 			GetValidWaypoint();
 		}
@@ -1108,6 +1108,10 @@ void Bot::SetEnemy(edict_t *entity)
 		m_enemyOrigin = nullvec;
 		return;
 	}
+
+	// SyPB Pro P.48 - Base improve
+	if (m_enemy != entity)
+		m_enemyReachableTimer = 0.0f;
 
 	m_enemy = entity;
 }
@@ -1161,7 +1165,7 @@ void Bot::SetMoveTarget (edict_t *entity)
 		return;
 
 	SetEntityWaypoint(entity);
-	SetEntityWaypoint(GetEntity(), 2.0f, GetEntityWaypoint(entity));
+	SetEntityWaypoint(GetEntity(), GetEntityWaypoint(entity));
 
 	m_currentWaypointIndex = -1;
 	GetValidWaypoint();

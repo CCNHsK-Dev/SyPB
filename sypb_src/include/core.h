@@ -1389,7 +1389,7 @@ extern bool IsZombieEntity (edict_t *ent);
 extern void SetGameMod(int gamemode);
 
 extern int GetEntityWaypoint(edict_t *ent);
-extern int SetEntityWaypoint(edict_t *ent, float waitTime = 1.0f, int mode = -1);
+extern int SetEntityWaypoint(edict_t *ent, int mode = -1);
 
 extern float GetShootingConeDeviation (edict_t *ent, Vector *position);
 

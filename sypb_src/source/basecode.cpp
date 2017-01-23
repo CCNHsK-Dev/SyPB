@@ -2681,7 +2681,7 @@ bool Bot::ReactOnEnemy(void)
 					// SyPB Pro P.44 - Knife Ai improve
 					else if (m_navNode != null && m_navNode->index == enemyIndex)
 						m_isEnemyReachable = true;
-
+						
 					if (!m_isEnemyReachable)
 					{
 						SetMoveTarget(m_enemy);
@@ -2702,7 +2702,7 @@ bool Bot::ReactOnEnemy(void)
 			}
 		}
 
-		m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat (0.2f, 0.5f);
+		m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat (0.3f, 0.5f);
 	}
 	// SyPB Pro P.48 - Base improve
 	else if ((pev->origin - GetEntityOrigin(m_enemy)).GetLength() <= 150.0f)
@@ -6011,7 +6011,7 @@ void Bot::BotAI (void)
    if (fixFall)
    {
 	   // SyPB Pro P.42 - Fall Ai improve
-	   SetEntityWaypoint(GetEntity(), 1.0f, -2);
+	   SetEntityWaypoint(GetEntity(), -2);
 	   m_currentWaypointIndex = -1;
 	   GetValidWaypoint();
 

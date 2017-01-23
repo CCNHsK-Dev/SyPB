@@ -357,7 +357,7 @@ void SetEntityActionData(int i, int index, int team, int action)
 	g_entityAction[i] = action;
 	g_entityWpIndex[i] = -1;
 	g_entityGetWpOrigin[i] = nullvec;
-	g_entityGetWpTime[i] = engine->GetTime();
+	g_entityGetWpTime[i] = 0.0f;
 }
 
 void FakeClientCommand(edict_t *fakeClient, const char *format, ...)
@@ -936,7 +936,7 @@ int GetTeam (edict_t *ent)
 }
 
 // SyPB Pro P.42 - Base Waypoint improve
-int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
+int SetEntityWaypoint(edict_t *ent, int mode)
 {
 	if (FNullEnt(ent))
 		return -1;
@@ -967,9 +967,10 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		return -1;
 		
 	bool needCheckNewWaypoint = false;
-	if (mode != -1)
+	float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
+	if ((isPlayer && g_clients[i].wpIndex == -1) || (!isPlayer && g_entityWpIndex[i] == -1))
 		needCheckNewWaypoint = true;
-	else if ((isPlayer && g_clients[i].wpIndex == -1) || (!isPlayer && g_entityWpIndex[i] == -1))
+	else if (mode != -1)
 		needCheckNewWaypoint = true;
 	else
 	{
@@ -989,9 +990,9 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 		if (getWpOrigin != nullvec && wpIndex >= 0 && wpIndex < g_numWaypoints)
 		{
 			float distance = (getWpOrigin - origin).GetLength();
-			if (distance >= 300.0f)
+			if (distance >= 300.0f )
 				needCheckNewWaypoint = true;
-			else if (distance >= 25.0f)
+			else if (distance >= 32.0f)
 			{
 				Vector wpOrigin = g_waypoint->GetPath(wpIndex)->origin;
 				distance = (wpOrigin - origin).GetLength();
@@ -1000,9 +1001,8 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 					needCheckNewWaypoint = true;
 				else
 				{
-					float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
 					if (traceCheckTime + 5.0f <= engine->GetTime() || 
-						(traceCheckTime <= engine->GetTime() && !g_waypoint->Reachable(ent, wpIndex)))
+						(traceCheckTime + 1.5f <= engine->GetTime() && !g_waypoint->Reachable(ent, wpIndex)))
 						needCheckNewWaypoint = true;
 				} 
 			}
@@ -1015,11 +1015,11 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 	{
 		if (isPlayer)
 		{
-			g_clients[i].getWPTime = engine->GetTime() + waitTime;
+			g_clients[i].getWPTime = engine->GetTime();
 			return g_clients[i].wpIndex;
 		}
 
-		g_entityGetWpTime[i] = engine->GetTime() + waitTime;
+		g_entityGetWpTime[i] = engine->GetTime();
 		return g_entityWpIndex[i];
 	}
 
@@ -1032,7 +1032,7 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 			wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &g_clients[i].wpIndex2, mode);
 
 			g_clients[i].getWpOrigin = origin;
-			g_clients[i].getWPTime = engine->GetTime() + waitTime;
+			g_clients[i].getWPTime = engine->GetTime();
 			g_clients[i].wpIndex = wpIndex;
 		}
 		else
@@ -1044,7 +1044,7 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 
 			g_entityWpIndex[i] = wpIndex;
 			g_entityGetWpOrigin[i] = origin;
-			g_entityGetWpTime[i] = engine->GetTime() + waitTime;
+			g_entityGetWpTime[i] = engine->GetTime();
 		}
 
 		return wpIndex;
@@ -1055,7 +1055,7 @@ int SetEntityWaypoint(edict_t *ent, float waitTime, int mode)
 	g_clients[i].wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex2, mode);
 	g_clients[i].wpIndex2 = wpIndex2;
 	g_clients[i].getWpOrigin = origin;
-	g_clients[i].getWPTime = engine->GetTime() + waitTime;
+	g_clients[i].getWPTime = engine->GetTime();
 
 	return g_clients[i].wpIndex;
 }
@@ -1089,7 +1089,7 @@ int GetEntityWaypoint(edict_t *ent)
 
 	// SyPB Pro P.42 - Base Waypoint improve
 	int client = ENTINDEX(ent) - 1;
-	if (g_clients[client].getWPTime < engine->GetTime() || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
+	if (g_clients[client].getWPTime < engine->GetTime() + 1.5f || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
 		SetEntityWaypoint(ent);
 
 	return g_clients[client].wpIndex;

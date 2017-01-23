@@ -1289,7 +1289,7 @@ void Bot::NewRound (void)
    m_prevGoalIndex = -1;
    GetCurrentTask()->data = -1;
 
-   SetEntityWaypoint(GetEntity(), 1.5f, -2);
+   SetEntityWaypoint(GetEntity(), -2);
    m_currentWaypointIndex = -1;
    GetValidWaypoint();
    // --------------

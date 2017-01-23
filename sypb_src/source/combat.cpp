@@ -463,7 +463,6 @@ bool Bot::LookupEnemy(void)
 
 		SetEnemy(targetEntity);
 		SetLastEnemy(m_enemy);
-		m_enemyReachableTimer = 0.0f;
 		m_seeEnemyTime = engine->GetTime();
 
 		if (!IsZombieEntity(GetEntity()))
