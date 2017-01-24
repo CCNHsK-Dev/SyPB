@@ -419,7 +419,7 @@ void Bot::ZmCampPointAction(int mode)
 // SyPB Pro P.47 - Small Change for Avoid Entity
 void Bot::AvoidEntity(void)
 {
-	if (FNullEnt(m_avoidEntity) || !IsAlive (m_avoidEntity) || 
+	if (FNullEnt(m_avoidEntity) || 
 		(m_avoidEntity->v.flags & FL_ONGROUND) || (m_avoidEntity->v.effects & EF_NODRAW))
 	{
 		m_avoidEntity = null;
@@ -484,7 +484,7 @@ void Bot::AvoidEntity(void)
 				continue;
 		}
 
-		if (InFieldOfView(GetEntityOrigin(entity) - EyePosition()) > pev->fov / 3 &&
+		if (InFieldOfView(GetEntityOrigin(entity) - EyePosition()) > pev->fov * 0.5f &&
 			!EntityIsVisible(GetEntityOrigin(entity)))
 			continue;
 
@@ -767,7 +767,8 @@ void Bot::FindItem(void)
 			continue;
 
 		// SyPB Pro P.42 - AMXX API
-		if (m_blockWeaponPickAPI && (pickupType == PICKTYPE_WEAPON || pickupType == PICKTYPE_SHIELDGUN))
+		if (m_blockWeaponPickAPI &&
+			(pickupType == PICKTYPE_WEAPON || pickupType == PICKTYPE_SHIELDGUN || pickupType == PICKTYPE_SHIELDGUN))
 			continue;
 
 		if (pickupType == PICKTYPE_NONE)
@@ -4218,23 +4219,28 @@ void Bot::RunTask (void)
          m_wantsToFire = true; // and shoot it
       }
 
-      m_moveSpeed = m_blindMoveSpeed;
-      m_strafeSpeed = m_blindSidemoveSpeed;
-      pev->button |= m_blindButton;
-
-	  // SyPB Pro P.26 - Blind Ai Skill
-	  if (m_skill > 60)
+	  // SyPB Pro P.48 - Blind Action improve
+	  if (m_blindCampPoint == -1)
 	  {
-		  DeleteSearchNodes ();
-		  int Bindex = FindDefendWaypoint (GetEntityOrigin (GetEntity ()));
+		  m_moveSpeed = m_blindMoveSpeed;
+		  m_strafeSpeed = m_blindSidemoveSpeed;
+		  pev->button |= m_blindButton;
+	  }
+	  else
+	  {
+		  m_moveToGoal = true;
 
-		  PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (15.0f, 35.0f), true);
-		  PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, Bindex, engine->GetTime () + engine->RandomFloat (15.0f, 35.0f), true);
+		  DeleteSearchNodes();
 
-		  if (g_waypoint->GetPath (Bindex)->vis.crouch <= g_waypoint->GetPath (Bindex)->vis.stand)
+		  PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(15.0f, 35.0f), true);
+		  PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, m_blindCampPoint, engine->GetTime() + engine->RandomFloat(10.0f, 20.0f), true);
+
+		  if (g_waypoint->GetPath(m_blindCampPoint)->vis.crouch <= g_waypoint->GetPath(m_blindCampPoint)->vis.stand)
 			  m_campButtons |= IN_DUCK;
 		  else
 			  m_campButtons &= ~IN_DUCK;
+
+		  m_blindCampPoint = -1;
 	  }
 
       if (m_blindTime < engine->GetTime ())
@@ -6487,36 +6493,42 @@ void Bot::TakeBlinded (Vector fade, int alpha)
    SetEnemy(null);
 
    m_maxViewDistance = engine->RandomFloat (10.0f, 20.0f);
-   m_blindTime = engine->GetTime () + static_cast <float> (alpha - 170) / 16.0f;
+   m_blindTime = engine->GetTime () + static_cast <float> (alpha - 200) / 16.0f;
 
-   if (m_skill <= 80)
+   if (m_skill < 80)
    {
       m_blindMoveSpeed = 0.0f;
       m_blindSidemoveSpeed = 0.0f;
       m_blindButton = IN_DUCK;
+	  m_blindCampPoint = -1;
+	  return;
    }
-   else if (m_skill < 99 || m_skill == 100)
+
+   // SyPB Pro P.48 - Blind Action improve
+   m_blindCampPoint = FindDefendWaypoint(GetEntityOrigin(GetEntity()));
+   if ((g_waypoint->GetPath(m_blindCampPoint)->origin - GetEntityOrigin(GetEntity())).GetLength() >= 512.0f)
+	   m_blindCampPoint = -1;
+
+   if (m_blindCampPoint != -1)
+	   return;
+
+   m_blindMoveSpeed = -pev->maxspeed;
+   m_blindSidemoveSpeed = 0.0f;
+
+   if (engine->RandomInt(0, 100) > 50)
+	   m_blindSidemoveSpeed = pev->maxspeed;
+   else
+	   m_blindSidemoveSpeed = -pev->maxspeed;
+
+   if (pev->health < 85.0f)
+	   m_blindMoveSpeed = -GetWalkSpeed();
+   else if (m_personality == PERSONALITY_CAREFUL)
    {
-      m_blindMoveSpeed = -pev->maxspeed;
-      m_blindSidemoveSpeed = 0.0f;
-
-      float walkSpeed = GetWalkSpeed ();
-
-      if (engine->RandomInt (0, 100) > 50)
-         m_blindSidemoveSpeed = walkSpeed;
-      else
-         m_blindSidemoveSpeed = -walkSpeed;
-
-      if (pev->health < 85)
-         m_blindMoveSpeed = -GetWalkSpeed ();
-      else if (m_personality == PERSONALITY_CAREFUL)
-      {
-         m_blindMoveSpeed = 0.0f;
-         m_blindButton = IN_DUCK;
-      }
-      else
-         m_blindMoveSpeed = walkSpeed;
+	   m_blindMoveSpeed = 0.0f;
+	   m_blindButton = IN_DUCK;
    }
+   else
+	   m_blindMoveSpeed = pev->maxspeed;
 }
 
 void Bot::ChatMessage (int type, bool isTeamSay)

@@ -998,6 +998,7 @@ public:
    float m_blindMoveSpeed; // mad speeds when bot is blind
    float m_blindSidemoveSpeed; // mad side move speeds when bot is blind
    int m_blindButton; // buttons bot press, when blind
+   int m_blindCampPoint; // SyPB Pro P.48 - Blind Action improve
 
    edict_t *m_doubleJumpEntity; // pointer to entity that request double jump
    edict_t *m_radioEntity; // pointer to entity issuing a radio command

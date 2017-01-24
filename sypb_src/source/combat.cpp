@@ -288,7 +288,7 @@ bool Bot::LookupEnemy(void)
 			if (entity == oneTimeCheckEntity)
 				continue;
 
-			if (IsBehindSmokeClouds(entity) && m_blindRecognizeTime < engine->GetTime())
+			if (m_blindRecognizeTime < engine->GetTime() && IsBehindSmokeClouds(entity))
 				m_blindRecognizeTime = engine->GetTime() + engine->RandomFloat(2.0f, 3.0f);
 
 			if (m_blindRecognizeTime >= engine->GetTime())
