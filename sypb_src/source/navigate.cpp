@@ -1246,10 +1246,10 @@ int Bot::FindWaypoint (void)
 		waypointIndex2 = g_clients[client].wpIndex2;
 	}
 
-	if (!IsWaypointUsed(waypointIndex1))
-		waypointIndex = waypointIndex1;
-	else if (!IsWaypointUsed(waypointIndex2))
+	if (!IsWaypointUsed(waypointIndex2))
 		waypointIndex = waypointIndex2;
+	else if (!IsWaypointUsed(waypointIndex1))
+		waypointIndex = waypointIndex1;
 	else
 	{
 		if (waypointIndex2 != -1)

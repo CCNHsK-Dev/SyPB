@@ -965,7 +965,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 
 	if (i == -1)
 		return -1;
-		
+
 	bool needCheckNewWaypoint = false;
 	float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
 	if ((isPlayer && g_clients[i].wpIndex == -1) || (!isPlayer && g_entityWpIndex[i] == -1))
@@ -1023,41 +1023,29 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		return g_entityWpIndex[i];
 	}
 
-	Bot *bot = g_botManager->GetBot(ent);
-	if (bot == null)
-	{
-		int wpIndex;
-		if (isPlayer)
-		{
-			wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &g_clients[i].wpIndex2, mode);
-
-			g_clients[i].getWpOrigin = origin;
-			g_clients[i].getWPTime = engine->GetTime();
-			g_clients[i].wpIndex = wpIndex;
-		}
-		else
-		{
-			if (mode == -1 || mode == -2)
-				wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);
-			else
-				g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex, mode);
-
-			g_entityWpIndex[i] = wpIndex;
-			g_entityGetWpOrigin[i] = origin;
-			g_entityGetWpTime[i] = engine->GetTime();
-		}
-
-		return wpIndex;
-	}
-
+	int wpIndex = -1;
 	int wpIndex2 = -1;
 
-	g_clients[i].wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex2, mode);
-	g_clients[i].wpIndex2 = wpIndex2;
-	g_clients[i].getWpOrigin = origin;
-	g_clients[i].getWPTime = engine->GetTime();
+	if (mode == -1 || g_botManager->GetBot(ent) == null)
+		wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);
+	else
+		wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex2, mode);
 
-	return g_clients[i].wpIndex;
+	if (!isPlayer)
+	{
+		g_entityWpIndex[i] = wpIndex;
+		g_entityGetWpOrigin[i] = origin;
+		g_entityGetWpTime[i] = engine->GetTime();
+	}
+	else
+	{
+		g_clients[i].wpIndex = wpIndex;
+		g_clients[i].wpIndex2 = wpIndex2;
+		g_clients[i].getWpOrigin = origin;
+		g_clients[i].getWPTime = engine->GetTime();
+	}
+
+	return wpIndex;
 }
 
 // SyPB Pro P.41 - Base Waypoint improve
@@ -1080,8 +1068,7 @@ int GetEntityWaypoint(edict_t *ent)
 			if (g_entityWpIndex[i] >= 0 && g_entityWpIndex[i] < g_numWaypoints)
 				return g_entityWpIndex[i];
 
-			SetEntityWaypoint(ent);
-			return g_entityWpIndex[i];
+			return SetEntityWaypoint(ent);
 		}
 
 		return g_waypoint->FindNearest(GetEntityOrigin(ent), 9999.0f, -1, ent);
