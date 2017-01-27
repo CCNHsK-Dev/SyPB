@@ -364,7 +364,6 @@ static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.30
 		return -2;
 
 	int id = params[1];
-	//cell *cpVec1 = get_amxaddr(amx, params[2]);
 	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
 	Vector lookAt = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 	

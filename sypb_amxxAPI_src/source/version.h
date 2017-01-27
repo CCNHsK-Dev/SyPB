@@ -6,7 +6,7 @@
 #define PRODUCT_VERSION "1.48"
 #define PRODUCT_VERSION_F 1.48
 
-#define PRODUCT_VERSION_DWORD 1,48,20170123,48    // yyyy/mm/dd   
+#define PRODUCT_VERSION_DWORD 1,48,20170128,49    // yyyy/mm/dd   
 
 // general product information
 #define PRODUCT_NAME "SyPB AMXX DLL"
