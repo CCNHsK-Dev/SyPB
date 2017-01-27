@@ -3941,8 +3941,7 @@ void Bot::RunTask (void)
       if (engine->IsFootstepsOn () && m_skill > 80 && !(m_aimFlags & AIM_ENEMY) && 
 		  (m_heardSoundTime + 13.0f >= engine->GetTime () || (m_states & (STATE_HEARENEMY))) && 
 		  GetNearbyEnemiesNearPosition (pev->origin, 1024) >= 1 && !(m_currentTravelFlags & PATHFLAG_JUMP) && 
-		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && !sypb_knifemode.GetBool () && 
-		  !g_bombPlanted && !IsZombieEntity (GetEntity ()))
+		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && !g_bombPlanted && !IsZombieEntity (GetEntity ()))
          m_moveSpeed = GetWalkSpeed ();
 
       // bot hasn't seen anything in a long time and is asking his teammates to report in
@@ -4741,6 +4740,10 @@ void Bot::RunTask (void)
 		   break;
 	   }
 
+	   // SyPB Pro P.48 - More Mode Support improve 
+	   if (!IsZombieEntity(GetEntity()) && m_currentWeapon == WEAPON_KNIFE)
+		   SelectBestWeapon();
+
 	   m_aimFlags |= AIM_NAVPOINT;
 
 	   SetLastEnemy(null);
@@ -5426,333 +5429,326 @@ void Bot::DebugModeMsg(void)
 	static float timeDebugUpdate = 0.0f;
 
 	int specIndex = g_hostEntity->v.iuser2;
+	if (specIndex != ENTINDEX(GetEntity()))
+		return;
 
-	if (specIndex == ENTINDEX(GetEntity()))
+	static int index, goal, taskID;
+
+	if (m_tasks != null)
 	{
-		static int index, goal, taskID;
-
-		if (m_tasks != null)
+		if (taskID != m_tasks->taskID || index != m_currentWaypointIndex || goal != m_tasks->data || timeDebugUpdate < engine->GetTime())
 		{
-			if (taskID != m_tasks->taskID || index != m_currentWaypointIndex || goal != m_tasks->data || timeDebugUpdate < engine->GetTime())
+			taskID = m_tasks->taskID;
+			index = m_currentWaypointIndex;
+			goal = m_tasks->data;
+
+			char taskName[80];
+
+			switch (taskID)
 			{
-				taskID = m_tasks->taskID;
-				index = m_currentWaypointIndex;
-				goal = m_tasks->data;
+			case TASK_NORMAL:
+				sprintf(taskName, "Normal");
+				break;
 
-				char taskName[80];
+			case TASK_PAUSE:
+				sprintf(taskName, "Pause");
+				break;
 
-				switch (taskID)
+			case TASK_MOVETOPOSITION:
+				sprintf(taskName, "MoveToPosition");
+				break;
+
+			case TASK_FOLLOWUSER:
+				sprintf(taskName, "FollowUser");
+				break;
+
+			case TASK_MOVETOTARGET:
+				sprintf(taskName, "MoveToTarget");
+				break;
+
+			case TASK_PICKUPITEM:
+				sprintf(taskName, "PickupItem");
+				break;
+
+			case TASK_CAMP:
+				sprintf(taskName, "Camp");
+				break;
+
+			case TASK_PLANTBOMB:
+				sprintf(taskName, "PlantBomb");
+				break;
+
+			case TASK_DEFUSEBOMB:
+				sprintf(taskName, "DefuseBomb");
+				break;
+
+			case TASK_FIGHTENEMY:
+				sprintf(taskName, "AttackEnemy");
+				break;
+
+			case TASK_HUNTENEMY:
+				sprintf(taskName, "HuntEnemy");
+				break;
+
+			case TASK_SEEKCOVER:
+				sprintf(taskName, "SeekCover");
+				break;
+
+			case TASK_THROWHEGRENADE:
+				sprintf(taskName, "ThrowExpGrenade");
+				break;
+
+			case TASK_THROWFBGRENADE:
+				sprintf(taskName, "ThrowFlashGrenade");
+				break;
+
+			case TASK_THROWSMGRENADE:
+				sprintf(taskName, "ThrowSmokeGrenade");
+				break;
+
+			case TASK_DOUBLEJUMP:
+				sprintf(taskName, "PerformDoubleJump");
+				break;
+
+			case TASK_ESCAPEFROMBOMB:
+				sprintf(taskName, "EscapeFromBomb");
+				break;
+
+			case TASK_DESTROYBREAKABLE:
+				sprintf(taskName, "ShootBreakable");
+				break;
+
+			case TASK_HIDE:
+				sprintf(taskName, "Hide");
+				break;
+
+			case TASK_BLINDED:
+				sprintf(taskName, "Blinded");
+				break;
+
+			case TASK_SPRAYLOGO:
+				sprintf(taskName, "SprayLogo");
+				break;
+			}
+
+			char weaponName[80], aimFlags[32], botType[32];
+			char enemyName[80], pickName[80];
+
+			// SyPB Pro P.42 - small improve
+			if (IsAlive(m_enemy))
+				sprintf(enemyName, "[E]: %s", GetEntityName(m_enemy));
+			else if (IsAlive(m_moveTargetEntity))
+				sprintf(enemyName, "[MT]: %s", GetEntityName(m_moveTargetEntity));
+			else if (IsAlive(m_lastEnemy))
+				sprintf(enemyName, "[LE]: %s", GetEntityName(m_lastEnemy));
+			else
+				sprintf(enemyName, ": %s", GetEntityName(null));
+
+			sprintf(pickName, "%s", GetEntityName(m_pickupItem));
+
+			WeaponSelect *selectTab = &g_weaponSelect[0];
+			char weaponCount = 0;
+
+			while (m_currentWeapon != selectTab->id && weaponCount < Const_NumWeapons)
+			{
+				selectTab++;
+				weaponCount++;
+			}
+
+			// set the aim flags
+			sprintf(aimFlags, "%s%s%s%s%s%s%s%s",
+				m_aimFlags & AIM_NAVPOINT ? " NavPoint" : "",
+				m_aimFlags & AIM_CAMP ? " CampPoint" : "",
+				m_aimFlags & AIM_PREDICTENEMY ? " PredictEnemy" : "",
+				m_aimFlags & AIM_LASTENEMY ? " LastEnemy" : "",
+				m_aimFlags & AIM_ENTITY ? " Entity" : "",
+				m_aimFlags & AIM_ENEMY ? " Enemy" : "",
+				m_aimFlags & AIM_GRENADE ? " Grenade" : "",
+				m_aimFlags & AIM_OVERRIDE ? " Override" : "");
+
+			// set the bot type
+			sprintf(botType, "%s%s%s", m_personality == PERSONALITY_RUSHER ? "Rusher" : "",
+				m_personality == PERSONALITY_CAREFUL ? "Careful" : "",
+				m_personality == PERSONALITY_NORMAL ? "Normal" : "");
+
+			if (weaponCount >= Const_NumWeapons)
+			{
+				// prevent printing unknown message from known weapons
+				switch (m_currentWeapon)
 				{
-				case TASK_NORMAL:
-					sprintf(taskName, "Normal");
+				case WEAPON_HEGRENADE:
+					sprintf(weaponName, "weapon_hegrenade");
 					break;
 
-				case TASK_PAUSE:
-					sprintf(taskName, "Pause");
+				case WEAPON_FBGRENADE:
+					sprintf(weaponName, "weapon_flashbang");
 					break;
 
-				case TASK_MOVETOPOSITION:
-					sprintf(taskName, "MoveToPosition");
+				case WEAPON_SMGRENADE:
+					sprintf(weaponName, "weapon_smokegrenade");
 					break;
 
-				case TASK_FOLLOWUSER:
-					sprintf(taskName, "FollowUser");
-					break;
-
-				case TASK_MOVETOTARGET:
-					sprintf(taskName, "MoveToTarget");
-					break;
-
-				case TASK_PICKUPITEM:
-					sprintf(taskName, "PickupItem");
-					break;
-
-				case TASK_CAMP:
-					sprintf(taskName, "Camp");
-					break;
-
-				case TASK_PLANTBOMB:
-					sprintf(taskName, "PlantBomb");
-					break;
-
-				case TASK_DEFUSEBOMB:
-					sprintf(taskName, "DefuseBomb");
-					break;
-
-				case TASK_FIGHTENEMY:
-					sprintf(taskName, "AttackEnemy");
-					break;
-
-				case TASK_HUNTENEMY:
-					sprintf(taskName, "HuntEnemy");
-					break;
-
-				case TASK_SEEKCOVER:
-					sprintf(taskName, "SeekCover");
-					break;
-
-				case TASK_THROWHEGRENADE:
-					sprintf(taskName, "ThrowExpGrenade");
-					break;
-
-				case TASK_THROWFBGRENADE:
-					sprintf(taskName, "ThrowFlashGrenade");
-					break;
-
-				case TASK_THROWSMGRENADE:
-					sprintf(taskName, "ThrowSmokeGrenade");
-					break;
-
-				case TASK_DOUBLEJUMP:
-					sprintf(taskName, "PerformDoubleJump");
-					break;
-
-				case TASK_ESCAPEFROMBOMB:
-					sprintf(taskName, "EscapeFromBomb");
-					break;
-
-				case TASK_DESTROYBREAKABLE:
-					sprintf(taskName, "ShootBreakable");
-					break;
-
-				case TASK_HIDE:
-					sprintf(taskName, "Hide");
-					break;
-
-				case TASK_BLINDED:
-					sprintf(taskName, "Blinded");
-					break;
-
-				case TASK_SPRAYLOGO:
-					sprintf(taskName, "SprayLogo");
-					break;
-				}
-
-				char weaponName[80], aimFlags[32], botType[32];
-				char enemyName[80] , pickName[80];
-
-				// SyPB Pro P.42 - small improve
-				if (!FNullEnt(m_enemy))
-					sprintf(enemyName, "[E]: %s", GetEntityName (m_enemy));
-				else if (!FNullEnt(m_moveTargetEntity))
-					sprintf(enemyName, "[MT]: %s", GetEntityName(m_moveTargetEntity));
-				else if (!FNullEnt(m_lastEnemy))
-					sprintf(enemyName, "[LE]: %s", GetEntityName(m_lastEnemy));
-				else
-					sprintf(enemyName, ": %s", GetEntityName(null));
-
-				sprintf(pickName, "%s", GetEntityName(m_pickupItem));
-
-				WeaponSelect *selectTab = &g_weaponSelect[0];
-				char weaponCount = 0;
-
-				while (m_currentWeapon != selectTab->id && weaponCount < Const_NumWeapons)
-				{
-					selectTab++;
-					weaponCount++;
-				}
-
-				// set the aim flags
-				sprintf(aimFlags, "%s%s%s%s%s%s%s%s",
-					m_aimFlags & AIM_NAVPOINT ? " NavPoint" : "",
-					m_aimFlags & AIM_CAMP ? " CampPoint" : "",
-					m_aimFlags & AIM_PREDICTENEMY ? " PredictEnemy" : "",
-					m_aimFlags & AIM_LASTENEMY ? " LastEnemy" : "",
-					m_aimFlags & AIM_ENTITY ? " Entity" : "",
-					m_aimFlags & AIM_ENEMY ? " Enemy" : "",
-					m_aimFlags & AIM_GRENADE ? " Grenade" : "",
-					m_aimFlags & AIM_OVERRIDE ? " Override" : "");
-
-				// set the bot type
-				sprintf(botType, "%s%s%s", m_personality == PERSONALITY_RUSHER ? " Rusher" : "",
-					m_personality == PERSONALITY_CAREFUL ? " Careful" : "",
-					m_personality == PERSONALITY_NORMAL ? " Normal" : "");
-
-				if (weaponCount >= Const_NumWeapons)
-				{
-					// prevent printing unknown message from known weapons
-					switch (m_currentWeapon)
-					{
-					case WEAPON_HEGRENADE:
-						sprintf(weaponName, "weapon_hegrenade");
-						break;
-
-					case WEAPON_FBGRENADE:
-						sprintf(weaponName, "weapon_flashbang");
-						break;
-
-					case WEAPON_SMGRENADE:
-						sprintf(weaponName, "weapon_smokegrenade");
-						break;
-
-					case WEAPON_C4:
-						sprintf(weaponName, "weapon_c4");
-						break;
-
-					default:
-						sprintf(weaponName, "Unknown! (%d)", m_currentWeapon);
-					}
-				}
-				else
-					sprintf(weaponName, selectTab->weaponName);
-
-				char gamemodName[80];
-				switch (GetGameMod())
-				{
-				case MODE_BASE:
-					sprintf(gamemodName, "Normal");
-					break;
-
-				case MODE_DM:
-					sprintf(gamemodName, "DeathMatch");
-					break;
-
-				case MODE_ZP:
-					sprintf(gamemodName, "Zombie");
-					break;
-
-				case MODE_NOTEAM:
-					sprintf(gamemodName, "No Team");
-					break;
-
-				case MODE_ZH:
-					sprintf(gamemodName, "Zombie Hell");
+				case WEAPON_C4:
+					sprintf(weaponName, "weapon_c4");
 					break;
 
 				default:
-					sprintf(gamemodName, "UNKNOWN MODE");
+					sprintf(weaponName, "Unknown! (%d)", m_currentWeapon);
+				}
+			}
+			else
+				sprintf(weaponName, selectTab->weaponName);
+
+			char gamemodName[80];
+			switch (GetGameMod())
+			{
+			case MODE_BASE:
+				sprintf(gamemodName, "Normal");
+				break;
+
+			case MODE_DM:
+				sprintf(gamemodName, "DeathMatch");
+				break;
+
+			case MODE_ZP:
+				sprintf(gamemodName, "Zombie");
+				break;
+
+			case MODE_NOTEAM:
+				sprintf(gamemodName, "No Team");
+				break;
+
+			case MODE_ZH:
+				sprintf(gamemodName, "Zombie Hell");
+				break;
+
+			default:
+				sprintf(gamemodName, "UNKNOWN MODE");
+			}
+
+			PathNode *navid = &m_navNode[0];
+			int navIndex[2] = { 0, 0 };
+
+			while (navid != null)
+			{
+				if (navIndex[0] == 0)
+					navIndex[0] = navid->index;
+				else
+				{
+					navIndex[1] = navid->index;
+					break;
 				}
 
-				PathNode *navid = &m_navNode[0];
-				int navIndex[2] = { 0, 0 };
+				navid = navid->next;
+			}
 
-				while (navid != null)
+			int client = ENTINDEX(GetEntity()) - 1;
+
+			char outputBuffer[512];
+			sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
+				"\n [%s] \n Task: %s  AimFlags:%s \n"
+				"Weapon: %s  Clip: %d   Ammo: %d \n"
+				"Type: %s  Money: %d  Bot Ai: %s \n"
+				"Enemy%s  Pickup: %s  \n\n"
+
+				"CWI: %d  GI: %d  TD: %d \n"
+				"Nav: %d  Next Nav: %d \n"
+				"GEWI: %d GEWI2: %d \n"
+				"Move Speed: %2.f  Strafe Speed: %2.f \n "
+				"Check Terran: %d  Stuck: %d \n",
+				gamemodName,
+				GetEntityName(GetEntity()), taskName, aimFlags,
+				&weaponName[7], GetAmmoInClip(), GetAmmo(),
+				botType, m_moneyAmount, IsZombieEntity(GetEntity()) ? "Zombie" : "Normal",
+				enemyName, pickName,
+
+				m_currentWaypointIndex, m_prevGoalIndex, m_tasks->data,
+				navIndex[0], navIndex[1],
+				g_clients[client].wpIndex, g_clients[client].wpIndex2,
+				m_moveSpeed, m_strafeSpeed,
+				m_checkTerrain, m_isStuck);
+
+			MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
+			WRITE_BYTE(TE_TEXTMESSAGE);
+			WRITE_BYTE(1);
+			WRITE_SHORT(FixedSigned16(-1, 1 << 13));
+			WRITE_SHORT(FixedSigned16(0, 1 << 13));
+			WRITE_BYTE(0);
+			WRITE_BYTE(GetTeam(GetEntity()) == TEAM_COUNTER ? 0 : 255);
+			WRITE_BYTE(100);
+			WRITE_BYTE(GetTeam(GetEntity()) != TEAM_COUNTER ? 0 : 255);
+			WRITE_BYTE(0);
+			WRITE_BYTE(255);
+			WRITE_BYTE(255);
+			WRITE_BYTE(255);
+			WRITE_BYTE(0);
+			WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+			WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+			WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
+			WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
+			MESSAGE_END();
+
+			timeDebugUpdate = engine->GetTime() + 2.0f;
+		}
+
+		if (m_moveTargetOrigin != nullvec && !FNullEnt (m_moveTargetEntity))
+			engine->DrawLine(g_hostEntity, EyePosition(), m_moveTargetOrigin, Color(0, 255, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+
+		if (m_enemyOrigin != nullvec && !FNullEnt(m_enemy))
+			engine->DrawLine(g_hostEntity, EyePosition(), m_enemyOrigin, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+
+		// now draw line from source to destination
+		PathNode *node = &m_navNode[0];
+
+		// SyPB Pro P.40 - Debug MSG
+		Vector src = nullvec;
+		while (node != null)
+		{
+			Path *path = g_waypoint->GetPath(node->index);
+			src = path->origin;
+			node = node->next;
+
+			if (node != null)
+			{
+				bool jumpPoint = false;
+				for (int j = 0; j < Const_MaxPathIndex; j++)
 				{
-					if (navIndex[0] == 0)
-						navIndex[0] = navid->index;
-					else
+					if (path->index[j] == node->index &&
+						path->connectionFlags[j] & PATHFLAG_JUMP)
 					{
-						navIndex[1] = navid->index;
+						jumpPoint = true;
 						break;
 					}
-
-					navid = navid->next;
 				}
 
-				int client = ENTINDEX(GetEntity ()) - 1;
-
-				char outputBuffer[512];
-				sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
-					"\n [%s] \n Task: %s  AimFlags: %s \n"
-					"Weapon: %s  Clip: %d   Ammo: %d \n"
-					"Type: %s  Money: %d  Bot Ai: %s \n"
-					"Enemy%s  Pickup: %s  \n\n"
-
-					"CWI: %d  GI: %d  TD: %d \n"
-					"Nav: %d  Next Nav: %d \n"
-					"GEWI: %d GEWI2: %d \n"
-					"Move Speed: %2.f  Strafe Speed: %2.f \n "
-					"Check Terran: %d  Stuck: %d \n", 
-					gamemodName,
-					GetEntityName (GetEntity ()), taskName, aimFlags,
-					&weaponName[7], GetAmmoInClip(), GetAmmo(),
-					botType, m_moneyAmount, IsZombieEntity(GetEntity()) ? "Zombie" : "Normal",
-					enemyName, pickName,
-					m_currentWaypointIndex, m_prevGoalIndex, m_tasks->data,
-					navIndex[0], navIndex[1],
-					g_clients[client].wpIndex, g_clients[client].wpIndex2, 
-					m_moveSpeed, m_strafeSpeed,
-					m_checkTerrain, m_isStuck);
-
-				MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
-				WRITE_BYTE(TE_TEXTMESSAGE);
-				WRITE_BYTE(1);
-				WRITE_SHORT(FixedSigned16(-1, 1 << 13));
-				WRITE_SHORT(FixedSigned16(0, 1 << 13));
-				WRITE_BYTE(0);
-				WRITE_BYTE(GetTeam(GetEntity()) == TEAM_COUNTER ? 0 : 255);
-				WRITE_BYTE(100);
-				WRITE_BYTE(GetTeam(GetEntity()) != TEAM_COUNTER ? 0 : 255);
-				WRITE_BYTE(0);
-				WRITE_BYTE(255);
-				WRITE_BYTE(255);
-				WRITE_BYTE(255);
-				WRITE_BYTE(0);
-				WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-				WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-				WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
-				WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
-				MESSAGE_END();
-
-				timeDebugUpdate = engine->GetTime() + 2.0f;
+				if (jumpPoint)
+					engine->DrawLine(g_hostEntity, src, g_waypoint->GetPath(node->index)->origin,
+						Color(255, 0, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
+				else
+					engine->DrawLine(g_hostEntity, src, g_waypoint->GetPath(node->index)->origin,
+						Color(255, 100, 55, 20), 15, 0, 8, 1, LINE_SIMPLE);
 			}
+		}
 
-			if (m_moveTargetOrigin != nullvec)
-				engine->DrawLine(g_hostEntity, EyePosition(), m_moveTargetOrigin, Color(0, 255, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+		if (m_prevWptIndex[0] != -1)
+		{
+			src = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
+			engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
+				Color(255, 0, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
+		}
 
-			if (m_enemyOrigin != nullvec && !FNullEnt(m_enemy))
-				engine->DrawLine(g_hostEntity, EyePosition(), m_enemyOrigin, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+		if (m_currentWaypointIndex != -1)
+		{
+			src = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
+			engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
+				Color(0, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
+		}
 
-			// now draw line from source to destination
-			PathNode *node = &m_navNode[0];
-
-			// SyPB Pro P.40 - Debug MSG
-			Vector src = nullvec;
-			while (node != null)
-			{
-				Path *path = g_waypoint->GetPath(node->index);
-				src = path->origin;
-				node = node->next;
-
-				if (node != null)
-				{
-					bool jumpPoint = false;
-					for (int j = 0; j < Const_MaxPathIndex; j++)
-					{
-						if (path->index[j] == node->index &&
-							path->connectionFlags[j] & PATHFLAG_JUMP)
-						{
-							jumpPoint = true;
-							break;
-						}
-					}
-
-					if (jumpPoint)
-						engine->DrawLine(g_hostEntity, src, g_waypoint->GetPath(node->index)->origin,
-							Color(255, 0, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
-					else
-						engine->DrawLine(g_hostEntity, src, g_waypoint->GetPath(node->index)->origin,
-							Color(255, 100, 55, 20), 15, 0, 8, 1, LINE_SIMPLE);
-				}
-			}
-
-			if (m_prevWptIndex[0] != -1)
-			{
-				src = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
-				engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
-					Color(255, 0, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
-			}
-
-			if (m_currentWaypointIndex != -1)
-			{
-				src = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
-				engine->DrawLine(g_hostEntity, src, src+ Vector (0.0f, 0.0f, 40.0f),
-					Color(0, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
-			}
-
-			if (m_lookAt != nullvec)
-			{
-				src = m_lookAt;
-				engine->DrawLine(g_hostEntity, src - Vector(0.0f, 0.0f, 20.0f), src + Vector(0.0f, 0.0f, 20.0f),
-					Color(0, 0, 255, 100), 15, 0, 8, 1, LINE_SIMPLE);
-			}
-
-			if (m_prevGoalIndex != -1)
-			{
-				src = g_waypoint->GetPath(m_prevGoalIndex)->origin;
-				engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
-					Color(0, 255, 255, 100), 15, 0, 8, 1, LINE_SIMPLE);
-			}
+		if (m_prevGoalIndex != -1)
+		{
+			src = g_waypoint->GetPath(m_prevGoalIndex)->origin;
+			engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
+				Color(0, 255, 255, 100), 15, 0, 8, 1, LINE_SIMPLE);
 		}
 	}
 }
@@ -5905,7 +5901,7 @@ void Bot::BotAI (void)
 	   (((m_aimFlags & AIM_ENEMY) || (m_states & (STATE_SEEINGENEMY)) || !FNullEnt(m_enemy)) ||
 	   ((GetCurrentTask()->taskID == TASK_SEEKCOVER) && (m_isReloading || m_isVIP))) &&
 		   ((GetGameMod() == MODE_BASE && m_skill >= 75) || (GetGameMod() == MODE_DM && m_skill >= 60) ||
-	   (IsZombieEntity(GetEntity())) || UsesSniper ()))
+	   (IsZombieEntity(GetEntity())) || UsesSniper () || !IsValidPlayer (m_enemy)))
    {
 	   m_moveToGoal = false; // don't move to goal
 	   m_navTimeset = engine->GetTime();

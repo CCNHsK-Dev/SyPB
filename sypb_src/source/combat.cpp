@@ -66,7 +66,7 @@ float Bot::GetEntityDistance(edict_t *entity)
 
 	int srcIndex, destIndex;
 	if (IsZombieEntity(GetEntity()) || !IsZombieEntity (entity) || 
-		(m_currentWaypointIndex == WEAPON_KNIFE && !FNullEnt (m_moveTargetEntity)))
+		(m_currentWeapon == WEAPON_KNIFE && !FNullEnt (m_moveTargetEntity)))
 	{
 		srcIndex = m_currentWaypointIndex;
 		destIndex = GetEntityWaypoint(entity);
@@ -373,8 +373,7 @@ bool Bot::LookupEnemy(void)
 	if (!FNullEnt(targetEntity))
 	{
 		// SyPB Pro P.34 - Zombie Ai
-		if (IsZombieEntity(GetEntity()) || 
-			(m_currentWaypointIndex == WEAPON_KNIFE && targetEntity == m_moveTargetEntity))
+		if (IsZombieEntity(GetEntity()) || m_currentWeapon == WEAPON_KNIFE)
 		{
 			// SyPB Pro P.38 - Zombie Ai
 			bool moveTotarget = true;
@@ -423,8 +422,8 @@ bool Bot::LookupEnemy(void)
 			if (moveTotarget)
 			{
 				// SyPB Pro P.35 - Fixed
-				if (IsOnAttackDistance (targetEntity, 80.0f))
-					pev->button |= IN_ATTACK;
+				if (IsOnAttackDistance(targetEntity, 80.0f))
+					KnifeAttack();
 
 				if (targetEntity != m_moveTargetEntity)
 				{
@@ -616,12 +615,12 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 	if (FNullEnt(entity) || !IsValidPlayer(entity) || IsZombieEntity(entity))
 		return false;
 
-	int currentWeaponPenetrationPower = CorrectGun (m_currentWeapon);
-	if (currentWeaponPenetrationPower == 0)
-		return false;
-
 	// SyPB Pro P.48 - Shootable Thru Obstacle improve
 	if (entity->v.health >= 60.0f)
+		return false;
+
+	int currentWeaponPenetrationPower = CorrectGun (m_currentWeapon);
+	if (currentWeaponPenetrationPower == 0)
 		return false;
 
 	TraceResult tr;
@@ -1167,7 +1166,7 @@ void Bot::CombatFight(void)
 	m_destOrigin = GetEntityOrigin(m_enemy);
 
 	// SyPB Pro P.30 - Zombie Mod
-	if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH) // SyPB Pro P.37 - small change
+	if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH) // SyPB Pro P.37 - small change
 	{
 		m_prevGoalIndex = -1;
 		m_moveToGoal = false;
@@ -1187,12 +1186,25 @@ void Bot::CombatFight(void)
 		(pev->velocity.GetLength() < 2.0f))
 		pev->button |= IN_DUCK;
 
+	// SyPB Pro P.48 - Attack Ai improve
+	if (!IsValidPlayer(m_enemy))
+	{
+		m_prevGoalIndex = -1;
+		m_moveToGoal = false;
+		m_navTimeset = engine->GetTime();
+
+		m_moveSpeed = (m_currentWeapon == WEAPON_KNIFE) ? pev->maxspeed : 0.0f;
+		m_strafeSpeed = 0.0f;
+		return;
+	}
+
 	Vector enemyOrigin = GetEntityOrigin(m_enemy);
 	float distance = (pev->origin - enemyOrigin).GetLength();
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH)
+		if ((GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH) || 
+			IsZombieEntity (m_enemy) || m_currentWeapon == WEAPON_KNIFE)
 		{
 			float baseDistance = 600.0f;
 			bool viewCone = ::IsInViewCone(pev->origin, m_enemy);
@@ -1430,7 +1442,7 @@ void Bot::CombatFight(void)
 
 	if (!IsInWater() && !IsOnLadder())
 	{
-		if (m_moveSpeed != 0 || m_strafeSpeed != 0)
+		if (m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f)
 		{
 			if (IsDeadlyDrop(pev->origin + (g_pGlobals->v_forward * m_moveSpeed * 0.2f) + (g_pGlobals->v_right * m_strafeSpeed * 0.2f) + (pev->velocity * m_frameInterval)))
 			{
