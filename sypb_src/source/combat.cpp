@@ -65,7 +65,8 @@ float Bot::GetEntityDistance(edict_t *entity)
 		return distance;
 
 	int srcIndex, destIndex;
-	if (IsZombieEntity(GetEntity()) || !IsZombieEntity (entity))
+	if (IsZombieEntity(GetEntity()) || !IsZombieEntity (entity) || 
+		(m_currentWaypointIndex == WEAPON_KNIFE && !FNullEnt (m_moveTargetEntity)))
 	{
 		srcIndex = m_currentWaypointIndex;
 		destIndex = GetEntityWaypoint(entity);
@@ -273,7 +274,9 @@ bool Bot::LookupEnemy(void)
 
 		// SyPB Pro P.42 - Look up enemy improve
 		bool allCheck = false;
-		if (IsZombieEntity(GetEntity()) && FNullEnt(m_enemy) && !FNullEnt(m_moveTargetEntity))
+		if ((IsZombieEntity(GetEntity()) ||
+			(m_currentWaypointIndex == WEAPON_KNIFE && targetEntity == m_moveTargetEntity)) &&
+			FNullEnt(m_enemy) && !FNullEnt(m_moveTargetEntity))
 		{
 			if (!IsEnemyViewable(m_moveTargetEntity, false, true, true))
 				allCheck = true;
@@ -351,7 +354,8 @@ bool Bot::LookupEnemy(void)
 	// SyPB Pro P.48 - Shootable Thru Obstacle improve
 	if (!FNullEnt(m_enemy) && FNullEnt(targetEntity))
 	{
-		if (IsZombieEntity(GetEntity()))
+		if (IsZombieEntity(GetEntity()) || 
+			(m_currentWaypointIndex == WEAPON_KNIFE && targetEntity == m_moveTargetEntity))
 		{
 			g_botsCanPause = false;
 
@@ -369,23 +373,25 @@ bool Bot::LookupEnemy(void)
 	if (!FNullEnt(targetEntity))
 	{
 		// SyPB Pro P.34 - Zombie Ai
-		if (IsZombieEntity(GetEntity()))
+		if (IsZombieEntity(GetEntity()) || 
+			(m_currentWaypointIndex == WEAPON_KNIFE && targetEntity == m_moveTargetEntity))
 		{
 			// SyPB Pro P.38 - Zombie Ai
 			bool moveTotarget = true;
 			int movePoint = 0;
 
 			// SyPB Pro P.42 - Zombie Ai improve
+			// SyPB Pro P.48 - Zombie Ai improve
 			int srcIndex = GetEntityWaypoint(GetEntity());
 			int destIndex = GetEntityWaypoint(targetEntity);
 			if ((m_currentTravelFlags & PATHFLAG_JUMP))
-				movePoint = 99;
+				movePoint = 10;
 			else if (srcIndex == destIndex || m_currentWaypointIndex == destIndex)
 				moveTotarget = false;
 			else
 			{
 				Path *path;
-				while (srcIndex != destIndex && movePoint < 99 && srcIndex >= 0 && destIndex >= 0)
+				while (srcIndex != destIndex && movePoint <= 3 && srcIndex >= 0 && destIndex >= 0)
 				{
 					path = g_waypoint->GetPath(srcIndex);
 					srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
@@ -398,7 +404,7 @@ bool Bot::LookupEnemy(void)
 						if (path->index[j] == srcIndex &&
 							path->connectionFlags[j] & PATHFLAG_JUMP)
 						{
-							movePoint = 99;
+							movePoint += 3;
 							break;
 						}
 					}
@@ -406,7 +412,7 @@ bool Bot::LookupEnemy(void)
 			}
 
 			enemy_distance = (GetEntityOrigin(targetEntity) - pev->origin).GetLength();
-			if ((enemy_distance <= 150.0f && movePoint <= 2) ||
+			if ((enemy_distance <= 150.0f && movePoint <= 1) ||
 				(targetEntity == m_moveTargetEntity && movePoint <= 2))
 			{
 				moveTotarget = false;
@@ -1012,6 +1018,9 @@ bool Bot::KnifeAttack(float attackDistance)
 			pev->button |= IN_DUCK;
 			// SyPB Pro P.40 - Knife Attack Change
 			m_campButtons |= IN_DUCK; 
+
+			// SyPB Pro P.48 - Knife Attack Change
+			pev->button &= ~IN_JUMP;
 		}
 		else
 		{
@@ -1163,6 +1172,13 @@ void Bot::CombatFight(void)
 		m_prevGoalIndex = -1;
 		m_moveToGoal = false;
 		m_navTimeset = engine->GetTime();
+
+		// SyPB Pro P.39 - Zombie Ai improve
+		if (IsZombieEntity(GetEntity()))
+		{
+			m_moveSpeed = pev->maxspeed;
+			return;
+		}
 	}
 
 	// SyPB Pro P.47 - Attack Ai improve
@@ -1170,13 +1186,6 @@ void Bot::CombatFight(void)
 		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
 		(pev->velocity.GetLength() < 2.0f))
 		pev->button |= IN_DUCK;
-
-	// SyPB Pro P.39 - Zombie Ai improve
-	if (IsZombieEntity(GetEntity()))
-	{
-		m_moveSpeed = pev->maxspeed;
-		return;
-	}
 
 	Vector enemyOrigin = GetEntityOrigin(m_enemy);
 	float distance = (pev->origin - enemyOrigin).GetLength();

@@ -1349,27 +1349,23 @@ void Bot::GetValidWaypoint(void)
 
 void Bot::ChangeWptIndex (int waypointIndex)
 {
-	// SyPB Pro P.40 - Base Change for Waypoint OS
+	// SyPB Pro P.48 - Base Change for Waypoint OS
 	bool badPrevWpt = true;
-	if (waypointIndex != -1)
+	for (int i = 0; (m_currentWaypointIndex != -1 && i < Const_MaxPathIndex); i++)
 	{
-		m_prevWptIndex[4] = m_prevWptIndex[3];
-		m_prevWptIndex[3] = m_prevWptIndex[2];
-		m_prevWptIndex[2] = m_prevWptIndex[1];
-		m_prevWptIndex[1] = m_prevWptIndex[0];
-		m_prevWptIndex[0] = m_currentWaypointIndex;
-
-		for (int i = 0; i < Const_MaxPathIndex; i++)
-		{
-			if (g_waypoint->GetPath(waypointIndex)->index[i] == m_prevWptIndex[0])
-				badPrevWpt = false;
-		}
+		if (g_waypoint->GetPath(m_currentWaypointIndex)->index[i] == waypointIndex)
+			badPrevWpt = false;
 	}
 
 	if (badPrevWpt == true)
 	{
-		for (int i = 0; i < 5; i++)
-			m_prevWptIndex[i] = -1;
+		m_prevWptIndex[1] = -1;
+		m_prevWptIndex[0] = -1;
+	}
+	else
+	{
+		m_prevWptIndex[1] = m_prevWptIndex[0];
+		m_prevWptIndex[0] = m_currentWaypointIndex;
 	}
 
    m_currentWaypointIndex = waypointIndex;

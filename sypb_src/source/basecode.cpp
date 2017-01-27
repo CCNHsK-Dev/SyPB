@@ -186,7 +186,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 					else if (!FNullEnt(m_enemy))
 						addTime += 0.2f;
 
-					m_backCheckEnemyTime = addTime;
+					m_backCheckEnemyTime = engine->GetTime() + addTime;
 				}
 
 				// SyPB Pro P.47 - Small Fixed 
@@ -472,7 +472,7 @@ void Bot::AvoidEntity(void)
 
 		if (strcmp(STRING(entity->v.classname), "grenade") == 0)
 		{
-			if (IsZombieEntity(GetEntity()))
+			if ((GetGameMod () == MODE_ZH || GetGameMod () == MODE_ZP) && IsZombieEntity(GetEntity()))
 				continue;
 
 			if (strcmp(STRING(entity->v.model) + 9, "flashbang.mdl") == 0 &&
@@ -763,7 +763,8 @@ void Bot::FindItem(void)
 			}
 		}
 
-		if (IsZombieEntity(GetEntity()) && pickupType != PICKTYPE_GETENTITY)
+		if ((GetGameMod() == MODE_ZH || GetGameMod() == MODE_ZP) && IsZombieEntity(GetEntity()) 
+			&& pickupType != PICKTYPE_GETENTITY)
 			continue;
 
 		// SyPB Pro P.42 - AMXX API
@@ -2444,7 +2445,7 @@ void Bot::CheckGrenadeThrow(void)
 	edict_t *targetEntity = null;
 	if (GetGameMod() == MODE_BASE)
 		targetEntity = m_lastEnemy;
-	else if (GetGameMod() == MODE_ZP)
+	else if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH)
 	{
 		if (IsZombieEntity(GetEntity()) && !FNullEnt(m_moveTargetEntity))
 			targetEntity = m_moveTargetEntity;
@@ -5788,7 +5789,8 @@ void Bot::BotAI (void)
 
 
    // SyPB Pro P.30 - Zombie Ai
-   if (IsZombieEntity(GetEntity()) && m_currentWeapon != WEAPON_KNIFE)
+   if ((GetGameMod () == MODE_ZH || GetGameMod () == MODE_ZP) &&
+	   IsZombieEntity(GetEntity()) && m_currentWeapon != WEAPON_KNIFE)
 	   SelectWeaponByName("weapon_knife");
 
    // check if we already switched weapon mode

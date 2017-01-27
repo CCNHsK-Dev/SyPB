@@ -705,7 +705,7 @@ private:
 
    int m_currentWaypointIndex; // current waypoint index
    int m_travelStartIndex; // travel start index to double jump action
-   int m_prevWptIndex[5]; // previous waypoint indices from waypoint find
+   int m_prevWptIndex[2]; // previous waypoint indices from waypoint find
    int m_waypointFlags; // current waypoint flags
    int m_loosedBombWptIndex; // nearest to loosed bomb waypoint
 

@@ -1115,9 +1115,6 @@ void Bot::NewRound (void)
 
    m_prevWptIndex[0] = -1;
    m_prevWptIndex[1] = -1;
-   m_prevWptIndex[2] = -1;
-   m_prevWptIndex[3] = -1;
-   m_prevWptIndex[4] = -1;
 
    m_navTimeset = engine->GetTime ();
 
