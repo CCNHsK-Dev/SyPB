@@ -5,7 +5,7 @@
 
 #define PRODUCT_VERSION "Beta 1.48"
 #define PRODUCT_VERSION_F 1.48
-#define PRODUCT_VERSION_DWORD 1,48,20170122,120 // yyyy/mm/dd   
+#define PRODUCT_VERSION_DWORD 1,48,20170128,121 // yyyy/mm/dd   
 
 #define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
 //#define PRODUCT_DEV_VERSION_FORTEST "(Preview-1)"

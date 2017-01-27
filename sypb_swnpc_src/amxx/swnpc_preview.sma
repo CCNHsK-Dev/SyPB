@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.48
-* Support Build: 1.48.50566.118
+* Support Build: 1.48.50576.121
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.48.50565.690 or new
+* Support SyPB Build: 1.48.50576.699 or new
 *
-* Date: 18/1/2017
+* Date: 28/1/2017
 */
 
 #include <amxmodx>
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in"
-#define VERSION	"1.48.50566.118"
+#define VERSION	"1.48.50576.121"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
