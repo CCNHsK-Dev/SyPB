@@ -27,7 +27,7 @@
 #define RESOURCE_INCLUDED
 
 // This is test version?
-//#define PRODUCT_DEV_VERSION
+// #define PRODUCT_DEV_VERSION
 
 #if defined(PRODUCT_DEV_VERSION)
 #define PRODUCT_DEV_VERSION_FORTEST "(PRV)"
@@ -35,8 +35,8 @@
 //#define PRODUCT_DEV_VERSION_FORTEST "(Preview-2)"
 // Dev Version Date
 #define PV_VERSION_YEAR 2017
-#define PV_VERSION_MON 1
-#define PV_VERSION_DAY 28
+#define PV_VERSION_MON 2
+#define PV_VERSION_DAY 10
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
 #endif
