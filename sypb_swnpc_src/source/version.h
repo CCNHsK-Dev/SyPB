@@ -7,9 +7,8 @@
 #define PRODUCT_VERSION_F 1.48
 #define PRODUCT_VERSION_DWORD 1,48,20170128,121 // yyyy/mm/dd   
 
-#define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
-//#define PRODUCT_DEV_VERSION_FORTEST "(Preview-1)"
-//#define PRODUCT_DEV_VERSION_FORTEST ""
+//#define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
+#define PRODUCT_DEV_VERSION_FORTEST ""
 
 // general product information
 #define PRODUCT_NAME "SwNPC"

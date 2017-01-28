@@ -27,7 +27,7 @@
 #define RESOURCE_INCLUDED
 
 // This is test version?
-#define PRODUCT_DEV_VERSION
+//#define PRODUCT_DEV_VERSION
 
 #if defined(PRODUCT_DEV_VERSION)
 #define PRODUCT_DEV_VERSION_FORTEST "(PRV)"

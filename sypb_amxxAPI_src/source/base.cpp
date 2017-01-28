@@ -178,8 +178,6 @@ void SyPBDataLoad (void)
 
 	if (float (PRODUCT_VERSION_F) != api_version)
 	{
-		//LogToFile("Error: sypb_amxx version:%.2f & SyPB API Version: %.2f", dllVersion, api_version);
-
 		LogToFile("***************************");
 		LogToFile("Error: API Version Error");
 
