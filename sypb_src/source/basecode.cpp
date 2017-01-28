@@ -2661,14 +2661,12 @@ bool Bot::ReactOnEnemy(void)
 				m_isEnemyReachable = false;
 				if (m_navNode == null)
 					m_isEnemyReachable = true;
-				else
+				else if (pathDist <= 600.0f)
 				{
-					if (pathDist <= 700.0f)
-					{
-						// SyPB Pro P.48 - Zombie Mode Human Action improve
-						if (g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) < pathDist)
-							m_isEnemyReachable = true;
-					}
+					// SyPB Pro P.48 - Zombie Mode Human Action improve
+					if (m_navNode->next == null || 
+						g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) < pathDist)
+						m_isEnemyReachable = true;
 				}
 			}
 			else
