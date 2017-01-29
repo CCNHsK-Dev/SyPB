@@ -893,6 +893,7 @@ private:
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
    void ChangeWptIndex (int waypointIndex);
+   void ChangeBotEntityWaypoint (void);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);

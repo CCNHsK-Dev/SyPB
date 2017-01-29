@@ -972,7 +972,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		needCheckNewWaypoint = true;
 	else if ((!isPlayer && g_entityGetWpTime[i] == engine->GetTime()) || 
 		(isPlayer && g_clients[i].getWPTime == engine->GetTime() && 
-			mode > 0 && g_clients[i].wpIndex2 == -1))
+			mode != -1 && g_clients[i].wpIndex2 == -1))
 		needCheckNewWaypoint = false;
 	else if (mode != -1)
 		needCheckNewWaypoint = true;

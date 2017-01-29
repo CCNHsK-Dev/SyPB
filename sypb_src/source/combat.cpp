@@ -24,8 +24,6 @@
 
 #include <core.h>
 
-ConVar sypb_testfunction("sypb_testfunction", "1");
-
 int Bot::GetNearbyFriendsNearPosition (Vector origin, int radius)
 {
    int count = 0, team = GetTeam (GetEntity ());

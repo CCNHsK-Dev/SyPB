@@ -1347,6 +1347,20 @@ void Bot::GetValidWaypoint(void)
 	}
 }
 
+// SyPB Pro P.49 - Base Waypoint improve
+void Bot::ChangeBotEntityWaypoint(void)
+{
+	int i = ENTINDEX(GetEntity ()) - 1;
+	int waypointId = m_currentWaypointIndex;
+
+	if (m_prevWptIndex[0] != -1)
+		waypointId = m_prevWptIndex[0];
+
+	g_clients[i].wpIndex = waypointId;
+	g_clients[i].getWpOrigin = GetEntityOrigin (GetEntity ());
+	g_clients[i].getWPTime = engine->GetTime();
+}
+
 void Bot::ChangeWptIndex (int waypointIndex)
 {
 	// SyPB Pro P.48 - Base Change for Waypoint OS
@@ -1869,7 +1883,10 @@ bool Bot::HeadTowardWaypoint (void)
 				}
 			}
          }
+
          ChangeWptIndex (destIndex);
+		 // SyPB Pro P.49 - Base Waypoint improve
+		 ChangeBotEntityWaypoint();
       }
    }
 
