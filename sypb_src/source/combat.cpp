@@ -24,6 +24,8 @@
 
 #include <core.h>
 
+ConVar sypb_testfunction("sypb_testfunction", "1");
+
 int Bot::GetNearbyFriendsNearPosition (Vector origin, int radius)
 {
    int count = 0, team = GetTeam (GetEntity ());
@@ -1162,7 +1164,6 @@ void Bot::CombatFight(void)
 	if (FNullEnt(m_enemy))
 		return;
 
-	// SyPB Pro P.34 - Base Ai
 	m_destOrigin = GetEntityOrigin(m_enemy);
 
 	// SyPB Pro P.30 - Zombie Mod
@@ -1203,7 +1204,7 @@ void Bot::CombatFight(void)
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		if ((GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH) || 
+		if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH || 
 			IsZombieEntity (m_enemy) || m_currentWeapon == WEAPON_KNIFE)
 		{
 			float baseDistance = 600.0f;
@@ -1247,13 +1248,16 @@ void Bot::CombatFight(void)
 			}
 
 			if (baseDistance < 0.0f)
-				m_moveSpeed = baseDistance == -1.0f ? pev->maxspeed : m_moveSpeed = 0.0f;
+				m_moveSpeed = (baseDistance == -1.0f) ? pev->maxspeed : -pev->maxspeed;
 			else
 			{
 				if (distance <= baseDistance)
 					m_moveSpeed = -pev->maxspeed;
 				else if (distance >= (baseDistance + 100.0f))
+				{
 					m_moveSpeed = 0.0f;
+					m_fightStyle = 0;
+				}
 			}
 		}
 		else if (GetGameMod() == MODE_DM)
@@ -1428,11 +1432,11 @@ void Bot::CombatFight(void)
 		m_strafeSpeed = 0.0f;
 	}
 
-	//if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH)
-	//	return;
-
-	if (m_moveSpeed != 0.0f)
+	// SyPB Pro P.49 - Base improve
+	if (m_moveSpeed > 0.0f)
 		m_moveSpeed = GetWalkSpeed();
+	else if (m_moveSpeed < 0.0f)
+		m_moveSpeed = -GetWalkSpeed();
 
 	if (m_isReloading)
 	{

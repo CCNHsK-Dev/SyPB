@@ -2617,96 +2617,99 @@ bool Bot::EnemyIsThreat (void)
    return false;
 }
 
-// SyPB Pro P.43 - Enemy Ai improve (for more mode)
+// SyPB Pro P.49 - Enemy Ai improve (for more mode)
 bool Bot::ReactOnEnemy(void)
 {
 	if (!EnemyIsThreat())
 		return false;
 
-	if (m_enemyReachableTimer < engine->GetTime())
+	m_isEnemyReachable = false;
+
+	float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
+	if (m_enemyReachableTimer >= engine->GetTime())
 	{
-		if (IsZombieEntity(GetEntity()))
+		m_isEnemyReachable = (enemyDistance <= 150.0f);
+		goto lastly;
+	}
+
+	if (IsZombieEntity(GetEntity()) || enemyDistance <= 150.0f)
+	{
+		m_isEnemyReachable = true;
+		goto lastly;
+	}
+
+	int i = GetEntityWaypoint(GetEntity());
+	int enemyIndex = GetEntityWaypoint(m_enemy);
+
+	if (m_zhCampPointIndex != -1)
+	{
+		if (enemyIndex == m_zhCampPointIndex || enemyIndex == i)
 			m_isEnemyReachable = true;
-		else
+		else if (enemyDistance <= 240.0f)
 		{
-			// SyPB Pro P.48 - Base Enemy Ai improve
-			int i = GetEntityWaypoint(GetEntity());
-			int enemyIndex = GetEntityWaypoint(m_enemy);
-			float pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
-			float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
-
-			m_isEnemyReachable = false;
-			if (enemyDistance <= 150.0f)
-				m_isEnemyReachable = true;
-			else if (m_zhCampPointIndex != -1)
+			for (int j = 0; j < Const_MaxPathIndex; j++)
 			{
-				if (enemyIndex == m_zhCampPointIndex)
+				if (g_waypoint->GetPath(enemyIndex)->index[j] == i &&
+					!(g_waypoint->GetPath(enemyIndex)->connectionFlags[j] & PATHFLAG_JUMP))
+				{
 					m_isEnemyReachable = true;
-				else if (enemyDistance <= 240.0f)
-				{
-					for (int j = 0; j < Const_MaxPathIndex; j++)
-					{
-						if (g_waypoint->GetPath(enemyIndex)->index[j] == i &&
-							// SyPB Pro P.47 - Zombie Mode Human Camp improve
-							!(g_waypoint->GetPath(enemyIndex)->connectionFlags[j] & PATHFLAG_JUMP))
-						{
-							m_isEnemyReachable = true;
-							break;
-						}
-					}
-				}
-			}
-			else if (IsZombieEntity(m_enemy))
-			{
-				m_isEnemyReachable = false;
-				if (m_navNode == null)
-					m_isEnemyReachable = true;
-				else if (pathDist <= 600.0f)
-				{
-					// SyPB Pro P.48 - Zombie Mode Human Action improve
-					if (m_navNode->next == null || 
-						g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) < pathDist)
-						m_isEnemyReachable = true;
-				}
-			}
-			else
-			{
-				// SyPB Pro P.43 - Knife Ai improve
-				if (m_currentWeapon == WEAPON_KNIFE)
-				{
-					m_isEnemyReachable = false;
-
-					if (i == enemyIndex || enemyDistance <= 150.0f)
-						m_isEnemyReachable = true;
-					// SyPB Pro P.44 - Knife Ai improve
-					else if (m_navNode != null && m_navNode->index == enemyIndex)
-						m_isEnemyReachable = true;
-						
-					if (!m_isEnemyReachable)
-					{
-						SetMoveTarget(m_enemy);
-
-						// SyPB Pro P.45 - Knife Ai improve
-						// Bot will try to change best weapon / not use knife only....
-						SelectBestWeapon();
-					}
-				}
-				else
-				{
-					float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
-					if (pathDist - lineDist > 112.0f)
-						m_isEnemyReachable = false;
-					else
-						m_isEnemyReachable = true;
+					break;
 				}
 			}
 		}
 
-		m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat (0.3f, 0.5f);
+		goto lastly;
 	}
-	// SyPB Pro P.48 - Base improve
-	else if ((pev->origin - GetEntityOrigin(m_enemy)).GetLength() <= 150.0f)
-		m_isEnemyReachable = true;
+
+	float pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
+
+	if (IsZombieEntity(m_enemy))
+	{
+		if (m_navNode == null)
+			m_isEnemyReachable = true;
+		else if (pathDist <= 700.0f)
+		{
+			if ((m_navNode->index != i && 
+				g_waypoint->GetPathDistanceFloat(m_navNode->index, enemyIndex) < pathDist) ||
+				(m_navNode->next == null || 
+					g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) < pathDist))
+			{
+				m_isEnemyReachable = true;
+				goto lastly;
+			}
+		}
+		goto lastly;
+	}
+
+	// SyPB Pro P.43 - Knife Ai improve
+	if (m_currentWeapon == WEAPON_KNIFE)
+	{
+		if (i == enemyIndex)
+			m_isEnemyReachable = true;
+		// SyPB Pro P.44 - Knife Ai improve
+		else if (m_navNode != null && m_navNode->index == enemyIndex)
+			m_isEnemyReachable = true;
+
+		if (!m_isEnemyReachable)
+		{
+			SetMoveTarget(m_enemy);
+
+			// SyPB Pro P.45 - Knife Ai improve
+			// Bot will try to change best weapon / not use knife only....
+			SelectBestWeapon();
+		}
+	}
+	else
+	{
+		float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
+		if (pathDist - lineDist > 112.0f)
+			m_isEnemyReachable = false;
+		else
+			m_isEnemyReachable = true;
+	}
+
+lastly:
+	m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat(0.3f, 0.5f);
 
 	if (m_isEnemyReachable)
 	{
@@ -2716,6 +2719,108 @@ bool Bot::ReactOnEnemy(void)
 
 	return false;
 }
+
+/*
+// SyPB Pro P.43 - Enemy Ai improve (for more mode)
+bool Bot::ReactOnEnemy(void)
+{
+if (!EnemyIsThreat())
+return false;
+
+if (m_enemyReachableTimer < engine->GetTime())
+{
+if (IsZombieEntity(GetEntity()))
+m_isEnemyReachable = true;
+else
+{
+// SyPB Pro P.48 - Base Enemy Ai improve
+int i = GetEntityWaypoint(GetEntity());
+int enemyIndex = GetEntityWaypoint(m_enemy);
+float pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
+float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
+
+m_isEnemyReachable = false;
+if (enemyDistance <= 150.0f)
+m_isEnemyReachable = true;
+else if (m_zhCampPointIndex != -1)
+{
+if (enemyIndex == m_zhCampPointIndex)
+m_isEnemyReachable = true;
+else if (enemyDistance <= 240.0f)
+{
+for (int j = 0; j < Const_MaxPathIndex; j++)
+{
+if (g_waypoint->GetPath(enemyIndex)->index[j] == i &&
+// SyPB Pro P.47 - Zombie Mode Human Camp improve
+!(g_waypoint->GetPath(enemyIndex)->connectionFlags[j] & PATHFLAG_JUMP))
+{
+m_isEnemyReachable = true;
+break;
+}
+}
+}
+}
+else if (IsZombieEntity(m_enemy))
+{
+m_isEnemyReachable = false;
+if (m_navNode == null)
+m_isEnemyReachable = true;
+else if (pathDist <= 600.0f)
+{
+// SyPB Pro P.48 - Zombie Mode Human Action improve
+if (m_navNode->next == null ||
+g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) < pathDist)
+m_isEnemyReachable = true;
+}
+}
+else
+{
+// SyPB Pro P.43 - Knife Ai improve
+if (m_currentWeapon == WEAPON_KNIFE)
+{
+m_isEnemyReachable = false;
+
+if (i == enemyIndex || enemyDistance <= 150.0f)
+m_isEnemyReachable = true;
+// SyPB Pro P.44 - Knife Ai improve
+else if (m_navNode != null && m_navNode->index == enemyIndex)
+m_isEnemyReachable = true;
+
+if (!m_isEnemyReachable)
+{
+SetMoveTarget(m_enemy);
+
+// SyPB Pro P.45 - Knife Ai improve
+// Bot will try to change best weapon / not use knife only....
+SelectBestWeapon();
+}
+}
+else
+{
+float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
+if (pathDist - lineDist > 112.0f)
+m_isEnemyReachable = false;
+else
+m_isEnemyReachable = true;
+}
+}
+}
+
+m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat (0.3f, 0.5f);
+}
+// SyPB Pro P.48 - Base improve
+else if ((pev->origin - GetEntityOrigin(m_enemy)).GetLength() <= 150.0f)
+m_isEnemyReachable = true;
+
+if (m_isEnemyReachable)
+{
+m_navTimeset = engine->GetTime(); // override existing movement by attack movement
+return true;
+}
+
+return false;
+}
+*/
 
 bool Bot::LastEnemyShootable (void)
 {
@@ -3466,15 +3571,6 @@ void Bot::ChooseAimDirection (void)
 	   {
 		   if (!FNullEnt(m_moveTargetEntity) && m_currentWaypointIndex == m_prevGoalIndex)
 			   m_lookAt = GetEntityOrigin(m_moveTargetEntity);
-	   }
-
-	   if (m_lookAt == nullvec)
-	   {
-		   // SyPB Pro P.40 - Loot At improve
-		   if (m_currentWaypointIndex != -1)
-			   m_lookAt = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
-		   else if (&m_navNode[0] != null)
-			   m_lookAt = g_waypoint->GetPath(m_navNode->index)->origin;
 	   }
    }
 
@@ -5694,6 +5790,10 @@ void Bot::DebugModeMsg(void)
 
 		if (m_enemyOrigin != nullvec && !FNullEnt(m_enemy))
 			engine->DrawLine(g_hostEntity, EyePosition(), m_enemyOrigin, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+
+		if (m_destOrigin != nullvec)
+			engine->DrawLine(g_hostEntity, pev->origin, m_destOrigin, Color(0, 0, 255, 200), 10, 0, 5, 1, LINE_SIMPLE);
+
 
 		// now draw line from source to destination
 		PathNode *node = &m_navNode[0];
