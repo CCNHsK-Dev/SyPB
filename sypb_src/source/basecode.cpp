@@ -6432,23 +6432,16 @@ void Bot::BotAI (void)
 	   }
    }
 
-   // SyPB Pro P.21 - Ladder Strengthen
-   bool OnLadderNoDuck = false;
-
-   // SyPB Pro P.45 - Ladder Strengthen
-   if (IsOnLadder() || (m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER))
+   // SyPB Pro P.49 - Ladder improve
+   if (m_duckTime >= engine->GetTime())
+	   pev->button |= IN_DUCK;
+   else if (pev->button & IN_DUCK)
    {
-	   if (!(g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH))
-		   OnLadderNoDuck = true;
+	   if (m_currentWaypointIndex != -1 &&
+		   (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) &&
+		   (!IsOnLadder() || m_isStuck))
+		   pev->button &= ~IN_DUCK;
    }
-
-   if (OnLadderNoDuck)
-   {
-   	   m_campButtons &= ~IN_DUCK;
-   	   pev->button &= ~IN_DUCK;
-   }
-   else if (m_duckTime > engine->GetTime ())
-      pev->button |= IN_DUCK;
 
    // SyPB Pro P.39 - Small change for Jump
    if (pev->button & IN_JUMP)
@@ -6468,18 +6461,18 @@ void Bot::BotAI (void)
 		   if (point1Origin != nullvec && point2Origin != nullvec)
 		   {
 			   if ((point1Origin - point2Origin).GetLength () >= 100.0f)
-				   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.8f, 1.2f);
+				   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.85f, 1.35f);
 			   else if (point1Origin.z > point2Origin.z)
 				   m_jumpTime = engine->GetTime();
 			   else
-				   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.5f, 0.8f);
+				   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.6f, 0.85f);
 		   }
 	   }
 	   else
-		   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.3f, 0.5f);
+		   m_jumpTime = engine->GetTime() + 0.85f;
    }
 
-   if (m_jumpTime >= engine->GetTime() && !IsOnFloor() && !IsInWater() && !IsOnLadder())
+   if (m_jumpTime > engine->GetTime())
 	   pev->button |= IN_DUCK; 
 
    // save the previous speed (for checking if stuck)

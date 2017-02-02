@@ -445,12 +445,16 @@ bool Bot::DoWaypointNav (void)
          // pressing the jump button gives the illusion of the bot actual jmping.
          if (IsOnFloor () || IsOnLadder ())
          {
-            pev->velocity = m_desiredVelocity;
-            pev->button |= IN_JUMP;
+            //pev->velocity = m_desiredVelocity;
+			 // SyPB Pro P.49 - Jump improve  (use YaPB, Thank about it)
+			 if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
+				 pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
 
-            m_jumpFinished = true;
-            m_checkTerrain = false;
-            m_desiredVelocity = nullvec;
+			 pev->button |= IN_JUMP;
+
+			 m_jumpFinished = true;
+			 m_checkTerrain = false;
+			 m_desiredVelocity = nullvec;
          }
       }
       else if (!sypb_knifemode.GetBool () && m_currentWeapon == WEAPON_KNIFE && IsOnFloor ())
@@ -463,25 +467,19 @@ bool Bot::DoWaypointNav (void)
 		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0.0f, 0.0f, 16.0f);
 	   else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
 	   {
-		   // SyPB Pro P.45 - Move Speed improve
-		   // SyPB Pro P.46 - Ladder Move Speed improve
 		   m_moveSpeed = waypointDistance;
-		   if (m_moveSpeed > pev->maxspeed)
+
+		   if (m_moveSpeed < 150.0f)
+			   m_moveSpeed = 150.0f;
+		   else if (m_moveSpeed > pev->maxspeed)
 			   m_moveSpeed = pev->maxspeed;
-		   else
-		   {
-			   if (m_moveSpeed <= GetWalkSpeed())
-				   m_moveSpeed = GetWalkSpeed();
-			   else if (m_moveSpeed < 150.0f)
-				   m_moveSpeed = 150.0f;
-		   }
 	   }
    }
 
    // SyPB Pro P.45 - Waypoint Door improve
    bool haveDoorEntity = false;
    edict_t *door_entity = null;
-   while (!FNullEnt(door_entity = FIND_ENTITY_IN_SPHERE(door_entity, pev->origin, 150.0f)))
+   while (!FNullEnt(door_entity = FIND_ENTITY_IN_SPHERE(door_entity, pev->origin, waypointDistance)))
    {
 	   if (strncmp(STRING(door_entity->v.classname), "func_door", 9) == 0)
 	   {
@@ -495,41 +493,43 @@ bool Bot::DoWaypointNav (void)
 	   TraceResult tr;
 	   TraceLine(pev->origin, m_waypointOrigin, true, GetEntity(), &tr);
 
-	   if (!FNullEnt(tr.pHit))
+	   // SyPB Pro P.49 - Door improve (use YaPB, Thank about it)
+	   if (!FNullEnt(tr.pHit) && strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
 	   {
-		   // SyPB Pro P.42 - Shit Bugs Fixed.....
-		   if (strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
+		   // if bot hits the door, then it opens, so wait a bit to let it open safely
+		   if (pev->velocity.GetLength2D() < 2 && m_timeDoorOpen < engine->GetTime())
 		   {
-			   m_lastCollTime = engine->GetTime() + 0.5f;
+			   PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1.0f, false);
 
-			   edict_t *button = FindNearestButton(STRING(tr.pHit->v.classname));
+			   m_doorOpenAttempt++;
+			   m_timeDoorOpen = engine->GetTime() + 1.0f; // retry in 1 sec until door is open
 
-			   if (!FNullEnt(button))
+			   edict_t *ent = nullptr;
+
+			   if (m_doorOpenAttempt > 2 && !FNullEnt(ent = FIND_ENTITY_IN_SPHERE(ent, pev->origin, 512.0f)))
 			   {
-				   m_pickupItem = button;
-				   m_pickupType = PICKTYPE_BUTTON;
+				   if (IsValidPlayer(ent) && IsAlive(ent) && GetTeam (GetEntity ()) != GetTeam(ent) && 
+					   IsShootableThruObstacle (ent))
+				   {
+					   m_seeEnemyTime = engine->GetTime() - 0.5f;
 
-				   m_navTimeset = engine->GetTime();
-			   }
+					   m_states |= STATE_SEEINGENEMY;
+					   m_aimFlags |= AIM_ENEMY;
 
-			   if (m_timeDoorOpen < engine->GetTime())
-			   {
-				   m_doorOpenAttempt++;
-				   m_timeDoorOpen = engine->GetTime() + 1.0f; // retry in 1 sec until door is open
+					   m_lastEnemy = ent;
+					   m_enemy = ent;
+					   m_lastEnemyOrigin = ent->v.origin;
 
-				   if (m_doorOpenAttempt >= 5)
-					   m_doorOpenAttempt = 0;
-				   else if (m_doorOpenAttempt >= 2)
+				   }
+				   else if (IsValidPlayer(ent) && IsAlive(ent) && GetTeam(GetEntity()) == GetTeam(ent))
 				   {
 					   DeleteSearchNodes();
 					   ResetTasks();
 				   }
-				   else
-					   PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1, false);
+				   else if (IsValidPlayer(ent) && (!IsAlive(ent) || (ent->v.deadflag & DEAD_DYING)))
+					   m_doorOpenAttempt = 0; // reset count
 			   }
 		   }
-		   else
-			   m_doorOpenAttempt = 0;
 	   }
    }
    else
@@ -1723,7 +1723,7 @@ bool Bot::HeadTowardWaypoint (void)
    // we're not at the end of the list?
    if (m_navNode != null)
    {
-	   if (m_navNode->next != null && !(g_waypoint->GetPath(m_navNode->next->index)->flags & WAYPOINT_LADDER))
+	   if (m_navNode->next != null)// && !(g_waypoint->GetPath(m_navNode->next->index)->flags & WAYPOINT_LADDER))
 	   {
 		   if (m_navNodeStart != m_navNode)
 		   {
@@ -1835,7 +1835,8 @@ bool Bot::HeadTowardWaypoint (void)
 				for (int c = 0; c < engine->GetMaxClients(); c++)
 				{
 					Bot *otherBot = g_botManager->GetBot(c);
-					if (otherBot == null || otherBot == this || !IsAlive(otherBot->GetEntity()))
+					if (otherBot == null || otherBot == this || !IsAlive(otherBot->GetEntity()) || 
+						IsAntiBlock (otherBot->GetEntity ()))
 						continue;
 
 					if (!otherBot->IsOnLadder())
