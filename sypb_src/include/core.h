@@ -322,8 +322,7 @@ enum BurstMode
 enum Visibility
 {
    VISIBILITY_HEAD = (1 << 1),
-   VISIBILITY_BODY = (1 << 2),
-   VISIBILITY_OTHER = (1 << 3)
+   VISIBILITY_BODY = (1 << 2)
 };
 
 // defines map type
@@ -832,6 +831,7 @@ private:
    bool DoWaypointNav (void);
    bool EnemyIsThreat (void);
    void FacePosition (void);
+
    bool IsRestricted (int weaponIndex);
    bool IsRestrictedAMX (int weaponIndex);
 
@@ -1097,7 +1097,6 @@ public:
    void DeleteSearchNodes (void);
    Task *GetCurrentTask (void);
 
-   //void MoveTargetSrc(void);
    void CheckTouchEntity(edict_t *entity);
 
    void RemoveCertainTask (BotTask taskID);
@@ -1174,7 +1173,6 @@ public:
    void Think (void);
    void Free (void);
    void Free (int index);
-   //void CheckAutoVacate (edict_t *ent);
    void CheckBotNum(void);
 
    void AddRandom (void) { AddBot ("", -1, -1, -1, -1); }

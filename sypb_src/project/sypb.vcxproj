@@ -26,9 +26,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -49,11 +50,11 @@
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</IgnoreImportLibrary>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</LinkIncremental>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</GenerateManifest>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</GenerateManifest>
     <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</EmbedManifest>
-    <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</EmbedManifest>
+    <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">true</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -154,13 +155,13 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <AdditionalIncludeDirectories>.\;..\;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <StringPooling>false</StringPooling>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>
+      </StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>
       </FunctionLevelLinking>
-      <RuntimeTypeInfo>
-      </RuntimeTypeInfo>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>core.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>.\sypb_debug\inf\sypb.pch</PrecompiledHeaderOutputFile>
@@ -168,9 +169,9 @@
       <ObjectFileName>.\sypb_debug\obj\</ObjectFileName>
       <ProgramDataBaseFileName>.\sypb_debug\inf\</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
@@ -188,13 +189,12 @@
       <MinimalRebuild>false</MinimalRebuild>
       <BrowseInformation>
       </BrowseInformation>
-      <FloatingPointModel>Strict</FloatingPointModel>
+      <FloatingPointModel>Precise</FloatingPointModel>
       <BrowseInformationFile />
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>
-      </Culture>
+      <PreprocessorDefinitions>_USING_V110_SDK71_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
     </ResourceCompile>
     <PreLinkEvent>
       <Command>
@@ -215,9 +215,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <SetChecksum>false</SetChecksum>
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
-      <DataExecutionPrevention>
-      </DataExecutionPrevention>
-      <TurnOffAssemblyGeneration>false</TurnOffAssemblyGeneration>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
       <ImportLibrary>.\sypb_debug\inf\sypb.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <IgnoreAllDefaultLibraries>
@@ -225,7 +224,7 @@
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
       <MinimumRequiredVersion>5.01</MinimumRequiredVersion>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
@@ -235,6 +234,7 @@
     </Manifest>
     <Manifest>
       <VerboseOutput>true</VerboseOutput>
+      <OutputManifestFile />
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>

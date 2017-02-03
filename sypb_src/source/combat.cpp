@@ -523,12 +523,10 @@ Vector Bot::GetAimPosition(void)
 	}
 	else if (m_visibility & VISIBILITY_HEAD)
 		enemyOrigin = GetPlayerHeadOrigin(m_enemy);
-	else if (m_visibility & VISIBILITY_OTHER)
-		enemyOrigin = m_enemyOrigin;
 	else
 		enemyOrigin = m_lastEnemyOrigin;
 
-	if ((GetGameMod() == MODE_BASE || GetGameMod() == 1) && m_skill <= engine->RandomInt(30, 60))
+	if ((GetGameMod() == MODE_BASE || GetGameMod() == MODE_DM) && m_skill <= engine->RandomInt(30, 60))
 	{
 		enemyOrigin.x += engine->RandomFloat(m_enemy->v.mins.x, m_enemy->v.maxs.x);
 		enemyOrigin.y += engine->RandomFloat(m_enemy->v.mins.y, m_enemy->v.maxs.y);
@@ -1413,7 +1411,7 @@ void Bot::CombatFight(void)
 
 			int nearestToEnemyPoint = GetEntityWaypoint(m_enemy);
 
-			if (shouldDuck && GetCurrentTask()->taskID != TASK_SEEKCOVER && GetCurrentTask()->taskID != TASK_HUNTENEMY && (m_visibility & VISIBILITY_BODY) && !(m_visibility & VISIBILITY_OTHER) && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
+			if (shouldDuck && GetCurrentTask()->taskID != TASK_SEEKCOVER && GetCurrentTask()->taskID != TASK_HUNTENEMY && (m_visibility & VISIBILITY_BODY) && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
 				m_duckTime = engine->GetTime() + m_frameInterval * 3.5f;
 
 			m_moveSpeed = 0.0f;
