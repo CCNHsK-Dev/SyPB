@@ -416,15 +416,20 @@ void Bot::ZmCampPointAction(int mode)
 	}
 }
 
-// SyPB Pro P.47 - Small Change for Avoid Entity
+// SyPB Pro P.49 - Small Change for Avoid Entity
 void Bot::AvoidEntity(void)
 {
-	if (FNullEnt(m_avoidEntity) || 
-		(m_avoidEntity->v.flags & FL_ONGROUND) || (m_avoidEntity->v.effects & EF_NODRAW))
+	if (!FNullEnt(m_avoidEntity))
 	{
-		m_avoidEntity = null;
-		m_needAvoidEntity = 0;
+		if ((m_avoidEntity->v.flags & FL_ONGROUND) || (m_avoidEntity->v.effects & EF_NODRAW))
+		{
+			m_needAvoidEntity = 0;
+			m_avoidEntity = null;
+		}
+
+		return;
 	}
+	m_needAvoidEntity = 0;
 
 	edict_t *entity = null;
 	int i, allEntity = 0;
@@ -490,43 +495,47 @@ void Bot::AvoidEntity(void)
 
 		if (strcmp(STRING(entity->v.model) + 9, "flashbang.mdl") == 0)
 		{
-			Vector position = (GetEntityOrigin(entity) - EyePosition()).ToAngles();
 			if (m_skill >= 70)
 			{
+				Vector position = (GetEntityOrigin(entity) - EyePosition()).ToAngles();
 				pev->v_angle.y = AngleNormalize(position.y + 180.0f);
 				m_canChooseAimDirection = false;
 				return;
 			}
+
+			continue;
 		}
 
 		if ((entity->v.flags & FL_ONGROUND) == 0)
 		{
 			float distance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-			float distanceMoved = ((GetEntityOrigin(entity) + entity->v.velocity * m_frameInterval) - pev->origin).GetLength();
+			Vector entityNewOrigin = (GetEntityOrigin(entity) + entity->v.velocity * m_frameInterval);
+			float distanceMoved = (entityNewOrigin - pev->origin).GetLength();
 
-			if (distanceMoved < distance && distance < 500)
+			if (distanceMoved >= distance || distance > 500.0f)
+				continue;
+
+			if (&m_navNode[0] != null && m_navNode->next != null)
 			{
-				if (m_currentWaypointIndex != -1)
-				{
-					if ((GetEntityOrigin(entity) - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength() > distance ||
-						((GetEntityOrigin(entity) + entity->v.velocity * m_frameInterval) - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength() > distanceMoved)
-						continue;
-				}
-
-				MakeVectors(pev->v_angle);
-
-				Vector dirToPoint = (pev->origin - GetEntityOrigin(entity)).Normalize2D();
-				Vector rightSide = g_pGlobals->v_right.Normalize2D();
-
-				if ((dirToPoint | rightSide) > 0)
-					m_needAvoidEntity = -1;
-				else
-					m_needAvoidEntity = 1;
-
-				m_avoidEntity = entity;
-
-				return;
+				Vector newOrigin = g_waypoint->GetPath(m_navNode->next->index)->origin;
+				if ((GetEntityOrigin(entity) - newOrigin).GetLength() > distance &&
+					((entityNewOrigin + entity->v.velocity * m_frameInterval) - newOrigin).GetLength() > distanceMoved)
+					continue;
 			}
+
+			MakeVectors(pev->v_angle);
+
+			Vector dirToPoint = (pev->origin - GetEntityOrigin(entity)).Normalize2D();
+			Vector rightSide = g_pGlobals->v_right.Normalize2D();
+
+			if ((dirToPoint | rightSide) > 0)
+				m_needAvoidEntity = -1;
+			else
+				m_needAvoidEntity = 1;
+
+			m_avoidEntity = entity;
+
+			return;
 		}
 	}
 }
@@ -3454,9 +3463,7 @@ void Bot::ChooseAimDirection (void)
    {
 	   // SyPB Pro P.45 - LookAt improve
 	   m_lookAt = m_destOrigin;
-	   if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER || IsOnLadder())
-		   m_lookAt = m_destOrigin;
-	   else if (!FNullEnt(m_breakableEntity))
+	   if (!FNullEnt(m_breakableEntity))
 		   m_lookAt = m_breakable;
 	   else if (!(m_currentTravelFlags & PATHFLAG_JUMP))
 	   {
@@ -4015,7 +4022,6 @@ void Bot::RunTask (void)
 		 if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
 			 destIndex = m_tasks->data;
 		 else // no. we need to find a new one
-			//destIndex = g_waypoint->FindNearest (m_lastEnemyOrigin);
 			 destIndex = GetEntityWaypoint(m_lastEnemy);
 
          // remember index
@@ -5899,12 +5905,12 @@ void Bot::BotAI (void)
 		   CombatFight();
    }
 
-   // SyPB Pro P.42 - Miss C4 Action improve
-   if ((g_mapType & MAP_DE) && g_bombPlanted && m_notKilled && OutOfBombTimer ())
+   // SyPB Pro P.49 - Miss C4 Action improve
+   if (g_bombPlanted && m_notKilled && OutOfBombTimer ())
    {
-	   if (GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->taskID != TASK_CAMP)
+	   if ((g_waypoint->GetPath(m_currentWaypointIndex)->origin - g_waypoint->GetBombPosition()).GetLength() < 1024.0f)
 	   {
-		   if ((g_waypoint->GetPath(m_currentWaypointIndex)->origin - g_waypoint->GetBombPosition()).GetLength() < 1024.0f)
+		   if (GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB)
 		   {
 			   TaskComplete();
 			   PushTask(TASK_ESCAPEFROMBOMB, TASKPRI_ESCAPEFROMBOMB, -1, 0.0, true);
@@ -6843,7 +6849,8 @@ float Bot::GetEstimatedReachTime (void)
 
 bool Bot::OutOfBombTimer (void)
 {
-   if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints || ((g_mapType & MAP_DE) && (m_hasProgressBar || GetCurrentTask ()->taskID == TASK_ESCAPEFROMBOMB)))
+   if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints || 
+	   ((g_mapType & MAP_DE) && (m_hasProgressBar || GetCurrentTask ()->taskID == TASK_ESCAPEFROMBOMB)))
       return false; // if CT bot already start defusing, or already escaping, return false
 
    // calculate left time
@@ -6856,7 +6863,7 @@ bool Bot::OutOfBombTimer (void)
    Vector bombOrigin = g_waypoint->GetBombPosition ();
 
    // for terrorist, if timer is lower than eleven seconds, return true
-   if (static_cast <int> (timeLeft) < 12 && GetTeam (GetEntity ()) == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength () < 1000)
+   if (static_cast <int> (timeLeft) < 12 && GetTeam (GetEntity ()) == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength () < 1024.0f)
       return true;
 
    bool hasTeammatesWithDefuserKit = false;
@@ -6867,7 +6874,7 @@ bool Bot::OutOfBombTimer (void)
       Bot *bot = null; // temporaly pointer to bot
 
       // search players with defuse kit
-      if ((bot = g_botManager->GetBot (i)) != null && GetTeam (bot->GetEntity ()) == TEAM_COUNTER && bot->m_hasDefuser && (bombOrigin - bot->pev->origin).GetLength () < 500)
+      if ((bot = g_botManager->GetBot (i)) != null && GetTeam (bot->GetEntity ()) == TEAM_COUNTER && bot->m_hasDefuser && (bombOrigin - bot->pev->origin).GetLength () < 500.0f)
       {
          hasTeammatesWithDefuserKit = true;
          break;
@@ -6878,10 +6885,10 @@ bool Bot::OutOfBombTimer (void)
    float reachTime = g_waypoint->GetTravelTime (pev->maxspeed, g_waypoint->GetPath (m_currentWaypointIndex)->origin, bombOrigin);
 
    // for counter-terrorist check alos is we have time to reach position plus average defuse time
-   if ((timeLeft < reachTime + 10.0f && !m_hasDefuser && !hasTeammatesWithDefuserKit) || (timeLeft < reachTime + 5.0f && m_hasDefuser))
+   if ((timeLeft < reachTime + 6.0f && !m_hasDefuser && !hasTeammatesWithDefuserKit) || (timeLeft < reachTime + 3.0f && m_hasDefuser))
       return true;
 
-   if (m_hasProgressBar && IsOnFloor () && (m_hasDefuser ? 6.0f : 11.0f > GetBombTimeleft ()))
+   if (m_hasProgressBar && IsOnFloor () && (m_hasDefuser ? 10.0f : 15.0f > GetBombTimeleft ()))
       return true;
 
    return false; // return false otherwise

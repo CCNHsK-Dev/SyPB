@@ -815,8 +815,8 @@ void AutoLoadGameMode(void)
 	}
 
 	// SyPB Pro P.47 - CSDM Mode Check
-	static auto dmActive = g_engfuncs.pfnCVarGetPointer("csdm_active");
-	static auto freeForAll = g_engfuncs.pfnCVarGetPointer("mp_freeforall");
+	static cvar_t* dmActive = g_engfuncs.pfnCVarGetPointer("csdm_active");
+	static cvar_t* freeForAll = g_engfuncs.pfnCVarGetPointer("mp_freeforall");
 
 	if (dmActive && freeForAll)
 	{
@@ -881,10 +881,13 @@ void SetGameMod(int gamemode)
 
 int GetGameMod (void)
 {
-	// SyPB Pro P.2
-	// return the gamemod
-	
-	return sypb_gamemod.GetInt ();
+	static int gameMode = sypb_gamemod.GetInt();
+	static float nextGetTime = engine->GetTime() + 0.8f;
+
+	if (nextGetTime >= engine->GetTime ())
+		gameMode = sypb_gamemod.GetInt();
+
+	return gameMode;
 }
 
 int GetTeam (edict_t *ent)
@@ -971,8 +974,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	if ((isPlayer && g_clients[i].wpIndex == -1) || (!isPlayer && g_entityWpIndex[i] == -1))
 		needCheckNewWaypoint = true;
 	else if ((!isPlayer && g_entityGetWpTime[i] == engine->GetTime()) || 
-		(isPlayer && g_clients[i].getWPTime == engine->GetTime() && 
-			mode != -1 && g_clients[i].wpIndex2 == -1))
+		(isPlayer && g_clients[i].getWPTime == engine->GetTime() && mode == -1))
 		needCheckNewWaypoint = false;
 	else if (mode != -1)
 		needCheckNewWaypoint = true;
@@ -1100,15 +1102,11 @@ bool IsZombieEntity(edict_t *ent)
 	if (g_clients[playerId].isZombiePlayerAPI != -1)
 		return (g_clients[playerId].isZombiePlayerAPI == 1) ? true : false;
 
-	// SyPB Pro P.38 - Knife Mode Use Zombie Ai
-	if (sypb_knifemode.GetBool() == true)
-		return true;
-
 	// SyPB Pro P.12
 	if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH) // Zombie Mod
 		return (GetTeam(ent) == TEAM_TERRORIST);
 
-	return false;
+	return sypb_knifemode.GetBool();
 }
 
 bool IsValidPlayer (edict_t *ent)

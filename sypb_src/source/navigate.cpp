@@ -474,6 +474,8 @@ bool Bot::DoWaypointNav (void)
 		   else if (m_moveSpeed > pev->maxspeed)
 			   m_moveSpeed = pev->maxspeed;
 	   }
+
+	   m_destOrigin = m_waypointOrigin;
    }
 
    // SyPB Pro P.45 - Waypoint Door improve

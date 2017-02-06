@@ -500,33 +500,19 @@ Vector Bot::GetAimPosition(void)
 	if (enemyOrigin == nullvec)
 		return m_enemyOrigin = m_lastEnemyOrigin;
 
-	if (!(m_states & STATE_SEEINGENEMY))
-	{
-		if (!IsValidPlayer(m_enemy))
-			return m_enemyOrigin = enemyOrigin;
-
-		enemyOrigin.x += engine->RandomFloat(m_enemy->v.mins.x, m_enemy->v.maxs.x);
-		enemyOrigin.y += engine->RandomFloat(m_enemy->v.mins.y, m_enemy->v.maxs.y);
-		enemyOrigin.z += engine->RandomFloat(m_enemy->v.mins.z, m_enemy->v.maxs.z);
-
-		return m_enemyOrigin = enemyOrigin;
-	}
-
 	if (!IsValidPlayer(m_enemy))
 		return m_enemyOrigin = m_lastEnemyOrigin = enemyOrigin;
 
 	if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)))
 	{
-		if (GetGameMod() == MODE_ZP || ((m_skill >= 80 || m_skill >= engine->RandomInt(0, 100)) &&
-			(m_currentWeapon != WEAPON_AWP || m_enemy->v.health > 100)))
+		if (IsZombieEntity (m_enemy) || (m_skill >= engine->RandomInt(30, 80) &&
+			(m_currentWeapon != WEAPON_AWP || m_enemy->v.health > 300.0f)))
 			enemyOrigin = GetPlayerHeadOrigin(m_enemy);
 	}
 	else if (m_visibility & VISIBILITY_HEAD)
 		enemyOrigin = GetPlayerHeadOrigin(m_enemy);
-	else
-		enemyOrigin = m_lastEnemyOrigin;
 
-	if ((GetGameMod() == MODE_BASE || GetGameMod() == MODE_DM) && m_skill <= engine->RandomInt(30, 60))
+	if ((GetGameMod() == MODE_BASE || GetGameMod() == MODE_DM) && m_skill <= engine->RandomInt(50, 75))
 	{
 		enemyOrigin.x += engine->RandomFloat(m_enemy->v.mins.x, m_enemy->v.maxs.x);
 		enemyOrigin.y += engine->RandomFloat(m_enemy->v.mins.y, m_enemy->v.maxs.y);
