@@ -463,19 +463,27 @@ bool Bot::DoWaypointNav (void)
 
    if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
    {
-	   if (m_waypointOrigin.z >= (pev->origin.z + 16.0f))
-		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0.0f, 0.0f, 16.0f);
-	   else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
+	   if (!IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
 	   {
-		   m_moveSpeed = waypointDistance;
+		   m_checkTerrain = false;
 
-		   if (m_moveSpeed < 150.0f)
-			   m_moveSpeed = 150.0f;
-		   else if (m_moveSpeed > pev->maxspeed)
-			   m_moveSpeed = pev->maxspeed;
+		   if (m_waypointOrigin.z < pev->origin.z + 16.0f &&
+			   (pev->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength2D() < 25.0f)
+		   {
+			   m_moveSpeed = waypointDistance;
+
+			   if (m_moveSpeed < 150.0f)
+				   m_moveSpeed = 150.0f;
+			   else if (m_moveSpeed > pev->maxspeed)
+				   m_moveSpeed = pev->maxspeed;
+		   }
 	   }
-
-	   m_destOrigin = m_waypointOrigin;
+	   
+	   if (m_waypointOrigin.z >= (pev->origin.z + 16.0f))
+	   {
+		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0.0f, 0.0f, 16.0f);
+		   m_destOrigin = m_waypointOrigin + Vector(0.0f, 0.0f, 16.0f);
+	   }
    }
 
    // SyPB Pro P.45 - Waypoint Door improve
@@ -570,6 +578,21 @@ bool Bot::DoWaypointNav (void)
 		  desiredDistance = waypointDistance + 1.0f;
    }
 
+   // SyPB Pro P.49 - Waypoint improve
+   if (m_waypointOrigin.z <= pev->origin.z + 32.0f && 
+	   !(g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER))
+   {
+	   float waypointDistance2D = (m_waypointOrigin - pev->origin).GetLength2D();
+	   Vector nextFrameOrigin = pev->origin + (pev->velocity * m_frameInterval);
+	   if (waypointDistance2D < 30.0f && waypointDistance2D + 8.0f < waypointDistance)
+	   {
+		   if ((nextFrameOrigin - m_waypointOrigin).GetLength2D() <= waypointDistance2D && 
+			   (m_navNode == null || 
+			   (m_navNode->next != null && g_waypoint->Reachable(GetEntity(), m_navNode->next->index))))
+			   desiredDistance = waypointDistance - 1.0f;
+	   }
+   }
+
    // SyPB Pro P.42 - AMXX API
    if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
 	   m_waypointGoalAPI = -1;
@@ -608,15 +631,6 @@ bool Bot::DoWaypointNav (void)
 
       HeadTowardWaypoint (); // do the actual movement checking
 	  return false;
-   }
-
-
-   // SyPB Pro P.43 - Waypoint improve
-   if ((m_waypointOrigin - pev->origin).GetLength2D() <= 4.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
-   {
-	   if (m_navNode == null || 
-		   (m_navNode->next != null && g_waypoint->Reachable (GetEntity (), m_navNode->next->index)))
-		   HeadTowardWaypoint();
    }
 
    return false;
@@ -2330,6 +2344,84 @@ int Bot::GetCampAimingWaypoint(void)
       return indeces[engine->RandomInt (0, count)];
 
    return engine->RandomInt (0, g_numWaypoints - 1);
+}
+
+void Bot::CheckFall(void)
+{
+	// SyPB Pro P.40 - Fall Ai
+	if (!m_checkFall)
+	{
+		if (!IsOnFloor() && !IsOnLadder() && !IsInWater())
+		{
+			if (m_checkFallPoint[0] != nullvec && m_checkFallPoint[1] != nullvec)
+				m_checkFall = true;
+		}
+		else if (IsOnFloor())
+		{
+			if (!FNullEnt(m_enemy))
+			{
+				m_checkFallPoint[0] = pev->origin;
+				m_checkFallPoint[1] = GetEntityOrigin(m_enemy);
+			}
+			else
+			{
+				if (m_prevWptIndex[0] != -1)
+					m_checkFallPoint[0] = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
+				else
+					m_checkFallPoint[0] = pev->origin;
+
+				if (m_currentWaypointIndex != -1)
+					m_checkFallPoint[1] = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
+				else if (&m_navNode[0] != null)
+					m_checkFallPoint[1] = g_waypoint->GetPath(m_navNode->index)->origin;
+			}
+		}
+	}
+	else
+	{
+		if (IsOnLadder() || IsInWater())
+		{
+			m_checkFallPoint[0] = nullvec;
+			m_checkFallPoint[1] = nullvec;
+			m_checkFall = false;
+		}
+		else if (IsOnFloor())
+		{
+			bool fixFall = false;
+
+			float baseDistance = (m_checkFallPoint[0] - m_checkFallPoint[1]).GetLength();
+			float nowDistance = (pev->origin - m_checkFallPoint[1]).GetLength();
+
+			if (nowDistance > baseDistance &&
+				(nowDistance > baseDistance * 1.2 || nowDistance > baseDistance + 200.0f) &&
+				baseDistance >= 80.0f && nowDistance >= 100.0f)
+				fixFall = true;
+			else if (pev->origin.z + 128.0f < m_checkFallPoint[1].z && pev->origin.z + 128.0f < m_checkFallPoint[0].z)
+				fixFall = true;
+			else if (m_currentWaypointIndex != -1)
+			{
+				float distance2D = (pev->origin - m_checkFallPoint[1]).GetLength();
+				if (distance2D <= 32.0f && pev->origin.z + 16.0f < m_checkFallPoint[1].z)
+					fixFall = true;
+			}
+
+			m_checkFallPoint[0] = nullvec;
+			m_checkFallPoint[1] = nullvec;
+			m_checkFall = false;
+
+			if (fixFall)
+			{
+				// SyPB Pro P.42 - Fall Ai improve
+				SetEntityWaypoint(GetEntity(), -2);
+				m_currentWaypointIndex = -1;
+				GetValidWaypoint();
+
+				// SyPB Pro P.39 - Fall Ai improve
+				if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
+					m_enemyUpdateTime = engine->GetTime();
+			}
+		}
+	}
 }
 
 void Bot::FacePosition(void)

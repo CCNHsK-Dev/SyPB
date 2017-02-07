@@ -2628,17 +2628,14 @@ bool Bot::ReactOnEnemy(void)
 	m_isEnemyReachable = false;
 
 	float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
-	if (m_enemyReachableTimer >= engine->GetTime())
-	{
-		m_isEnemyReachable = (enemyDistance <= 150.0f);
-		goto lastly;
-	}
-
 	if (IsZombieEntity(GetEntity()) || enemyDistance <= 150.0f)
 	{
 		m_isEnemyReachable = true;
 		goto lastly;
 	}
+
+	if (m_enemyReachableTimer >= engine->GetTime())
+		goto lastly;
 
 	int i = GetEntityWaypoint(GetEntity());
 	int enemyIndex = GetEntityWaypoint(m_enemy);
@@ -2710,9 +2707,9 @@ bool Bot::ReactOnEnemy(void)
 			m_isEnemyReachable = true;
 	}
 
-lastly:
 	m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat(0.3f, 0.5f);
 
+lastly:
 	if (m_isEnemyReachable)
 	{
 		m_navTimeset = engine->GetTime(); // override existing movement by attack movement
@@ -5944,80 +5941,7 @@ void Bot::BotAI (void)
       }
    }
 
-   // SyPB Pro P.40 - Fall Ai
-   bool fixFall = false;
-   if (!m_checkFall)
-   {
-	   if (!IsOnFloor() && !IsOnLadder() && !IsInWater())
-	   {
-		   if (m_checkFallPoint[0] != nullvec && m_checkFallPoint[1] != nullvec)
-			   m_checkFall = true;
-	   }
-	   else if (IsOnFloor())
-	   {
-		   if (!FNullEnt(m_enemy))
-		   {
-			   m_checkFallPoint[0] = pev->origin;
-			   m_checkFallPoint[1] = GetEntityOrigin(m_enemy);
-		   }
-		   else
-		   {
-			   if (m_prevWptIndex[0] != -1)
-				   m_checkFallPoint[0] = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
-			   else
-				   m_checkFallPoint[0] = pev->origin;
-
-			   if (m_currentWaypointIndex != -1)
-				   m_checkFallPoint[1] = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
-			   else if (&m_navNode[0] != null)
-				   m_checkFallPoint[1] = g_waypoint->GetPath(m_navNode->index)->origin;
-		   }
-	   }
-   }
-   else
-   {
-	   if (IsOnLadder() || IsInWater())
-	   {
-		   m_checkFallPoint[0] = nullvec;
-		   m_checkFallPoint[1] = nullvec;
-		   m_checkFall = false;
-	   }
-	   else if (IsOnFloor())
-	   {
-		   float baseDistance = (m_checkFallPoint[0] - m_checkFallPoint[1]).GetLength();
-		   float nowDistance = (pev->origin - m_checkFallPoint[1]).GetLength();
-
-		   if (nowDistance > baseDistance &&
-			   (nowDistance > baseDistance * 1.2 || nowDistance > baseDistance + 200.0f) &&
-			   baseDistance >= 80.0f && nowDistance >= 100.0f)
-			   fixFall = true;
-		   else if (pev->origin.z + 128.0f < m_checkFallPoint[1].z && pev->origin.z + 128.0f < m_checkFallPoint[0].z)
-			   fixFall = true;
-
-		   if (m_currentWaypointIndex != -1 && !fixFall)
-		   {
-			   float distance2D = (pev->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength();
-			   if (distance2D <= 32.0f && pev->origin.z + 16.0f < g_waypoint->GetPath(m_currentWaypointIndex)->origin.z)
-				   fixFall = true;
-		   }
-
-		   m_checkFallPoint[0] = nullvec;
-		   m_checkFallPoint[1] = nullvec;
-		   m_checkFall = false;
-	   }
-   }
-
-   if (fixFall)
-   {
-	   // SyPB Pro P.42 - Fall Ai improve
-	   SetEntityWaypoint(GetEntity(), -2);
-	   m_currentWaypointIndex = -1;
-	   GetValidWaypoint();
-
-	   // SyPB Pro P.39 - Fall Ai improve
-	   if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
-		   m_enemyUpdateTime = engine->GetTime();
-   }
+   CheckFall();
 
    if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
 	   m_checkTerrain = false;
