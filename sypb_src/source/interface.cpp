@@ -2406,7 +2406,7 @@ void ClientCommand(edict_t *ent)
 
 			// SyPB Pro P.41 - Change the ZM Camp Point
 			if (radioCommand == Radio_HoldPosition && !IsValidBot(ent) &&
-				GetGameMod() == MODE_ZP && !IsZombieEntity(ent))
+				g_gameMode == MODE_ZP && !IsZombieEntity(ent))
 				g_waypoint->ChangeZBCampPoint(GetEntityOrigin (ent));
 
 			// SyPB Pro P.42 - Fixed 
@@ -2593,14 +2593,9 @@ void StartFrame (void)
 		}
 	}
 
+	g_gameMode = GetGameMod();
 	LoadEntityData();
 	int i;
-
-	static float secondTimer = 0.0f;
-
-	// **** AI EXECUTION STARTS ****
-	//g_botManager->Think ();
-	// **** AI EXECUTION FINISH ****
 
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
@@ -2631,6 +2626,7 @@ void StartFrame (void)
 		CheckWelcomeMessage();
 	}
 
+	static float secondTimer = 0.0f;
 	if (secondTimer < engine->GetTime())
 	{
 		for (i = 0; i < engine->GetMaxClients(); i++)

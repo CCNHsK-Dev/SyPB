@@ -512,7 +512,7 @@ Vector Bot::GetAimPosition(void)
 	else if (m_visibility & VISIBILITY_HEAD)
 		enemyOrigin = GetPlayerHeadOrigin(m_enemy);
 
-	if ((GetGameMod() == MODE_BASE || GetGameMod() == MODE_DM) && m_skill <= engine->RandomInt(50, 75))
+	if ((g_gameMode == MODE_BASE || g_gameMode == MODE_DM) && m_skill <= engine->RandomInt(50, 75))
 	{
 		enemyOrigin.x += engine->RandomFloat(m_enemy->v.mins.x, m_enemy->v.maxs.x);
 		enemyOrigin.y += engine->RandomFloat(m_enemy->v.mins.y, m_enemy->v.maxs.y);
@@ -525,7 +525,7 @@ Vector Bot::GetAimPosition(void)
 bool Bot::IsFriendInLineOfFire (float distance)
 {
    // bot can't hurt teammates, if friendly fire is not enabled...
-   if (!engine->IsFriendlyFireOn () || GetGameMod () == MODE_DM)
+   if (!engine->IsFriendlyFireOn () || g_gameMode == MODE_DM)
       return false;
 
    MakeVectors (pev->v_angle);
@@ -581,7 +581,7 @@ bool Bot::IsFriendInLineOfFire (float distance)
 // SyPB Pro P.29 - new value for correct gun
 int CorrectGun(int weaponID)
 {
-	if (GetGameMod() != MODE_BASE)
+	if (g_gameMode != MODE_BASE)
 		return 0;
 
 	if (weaponID == WEAPON_AUG || weaponID == WEAPON_M4A1 || weaponID == WEAPON_SG552 ||
@@ -785,7 +785,7 @@ WeaponSelectEnd:
 
 	// SyPB Pro P.42 - Zombie Mode Human Knife
 	if (m_currentWeapon == WEAPON_KNIFE && selectId != WEAPON_KNIFE && 
-		GetGameMod() == MODE_ZP && !IsZombieEntity(GetEntity()))
+		g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()))
 	{
 		m_reloadState = RSTATE_PRIMARY;
 		m_reloadCheckTime = engine->GetTime() + 1.5f;
@@ -1081,7 +1081,7 @@ bool Bot::IsWeaponBadInDistance(int weaponIndex, float distance)
 	if ((weaponID == WEAPON_M3 || weaponID == WEAPON_XM1014) && distance > 750.0f)
 		return true;
 
-	if (GetGameMod() == MODE_BASE)
+	if (g_gameMode == MODE_BASE)
 	{
 		if ((weaponID == WEAPON_SCOUT || weaponID == WEAPON_AWP || weaponID == WEAPON_G3SG1 || weaponID == WEAPON_SG550) && distance < 300.0f)
 			return true;
@@ -1149,7 +1149,7 @@ void Bot::CombatFight(void)
 	m_destOrigin = GetEntityOrigin(m_enemy);
 
 	// SyPB Pro P.30 - Zombie Mod
-	if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH) // SyPB Pro P.37 - small change
+	if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH) // SyPB Pro P.37 - small change
 	{
 		m_prevGoalIndex = -1;
 		m_moveToGoal = false;
@@ -1186,7 +1186,7 @@ void Bot::CombatFight(void)
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH || 
+		if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH ||
 			IsZombieEntity (m_enemy) || m_currentWeapon == WEAPON_KNIFE)
 		{
 			float baseDistance = 600.0f;
@@ -1242,7 +1242,7 @@ void Bot::CombatFight(void)
 				}
 			}
 		}
-		else if (GetGameMod() == MODE_DM)
+		else if (g_gameMode == MODE_DM)
 		{
 			if (m_currentWeapon == WEAPON_KNIFE)
 				m_moveSpeed = pev->maxspeed;
@@ -1384,7 +1384,7 @@ void Bot::CombatFight(void)
 			if (m_skill > 80 && (m_jumpTime + 5.0f < engine->GetTime() && IsOnFloor() && engine->RandomInt(0, 1000) < (m_isReloading ? 8 : 2) && pev->velocity.GetLength2D() > 150.0f))
 				pev->button |= IN_JUMP;
 		}
-		else if ((GetGameMod() != MODE_ZP && m_fightStyle) || (m_fightStyle && m_moveSpeed == 0.0f))
+		else if ((g_gameMode != MODE_ZP && m_fightStyle) || (m_fightStyle && m_moveSpeed == 0.0f))
 		{
 			bool shouldDuck = true; // should duck
 
@@ -1656,7 +1656,7 @@ void Bot::SelectWeaponbyNumber (int num)
 void Bot::CommandTeam (void)
 {
 	// SyPB Pro P.37 - small chanage
-	if (GetGameMod() != MODE_BASE)
+	if (g_gameMode != MODE_BASE)
 		return;
 
 	// prevent spamming

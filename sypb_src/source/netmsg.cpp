@@ -342,7 +342,7 @@ void NetworkMsg::Execute (void *p)
             g_roundEnded = true;
 
 			// SyPB Pro P.29 - msg setting
-			if (GetGameMod() == MODE_BASE)
+			if (g_gameMode == MODE_BASE)
 			{
 				if (FStrEq(PTR_TO_STR(p), "#CTs_Win"))
 					g_botManager->SetLastWinner(TEAM_COUNTER); // update last winner for economics
@@ -381,16 +381,10 @@ void NetworkMsg::Execute (void *p)
    case NETMSG_BARTIME:
 	   if (m_state == 0)
 	   {
-		   // SyPB Pro P.34 - Base Change
-		   if (GetGameMod() == MODE_BASE)
-		   {
-			   if (PTR_TO_INT(p) > 0)
-				   m_bot->m_hasProgressBar = true; // the progress bar on a hud
-			   else if (PTR_TO_INT(p) == 0)
-				   m_bot->m_hasProgressBar = false; // no progress bar or disappeared
-		   }
-		   else
-			   m_bot->m_hasProgressBar = false;
+		   if (PTR_TO_INT(p) > 0)
+			   m_bot->m_hasProgressBar = true; // the progress bar on a hud
+		   else if (PTR_TO_INT(p) == 0)
+			   m_bot->m_hasProgressBar = false; // no progress bar or disappeared
 	   }
 	   break;
 

@@ -617,7 +617,7 @@ void RoundInit (void)
    g_roundEnded = false;
 
    // SyPB Pro P.35 - Game Mode Setting
-   if (GetGameMod() == MODE_BASE)
+   if (g_gameMode  == MODE_BASE)
    {
 	   // check team economics
 	   g_botManager->CheckTeamEconomics(TEAM_TERRORIST);
@@ -715,7 +715,7 @@ void AutoLoadGameMode(void)
 				if (bteGameModAi[i] == 2 && i != 5)
 					g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
 
-				if (checkShowTextTime < 3 || GetGameMod() != bteGameModAi[i])
+				if (checkShowTextTime < 3 || g_gameMode != bteGameModAi[i])
 					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
 
 				if (i == 3 || i == 9)
@@ -763,7 +763,7 @@ void AutoLoadGameMode(void)
 
 			if (delayTime > 0)
 			{
-				if (checkShowTextTime < 3 || GetGameMod() != MODE_ZP)
+				if (checkShowTextTime < 3 || g_gameMode != MODE_ZP)
 					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (ZP) ***");
 
 				SetGameMod(MODE_ZP);
@@ -783,14 +783,14 @@ void AutoLoadGameMode(void)
 		if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1 || 
 			CVAR_GET_FLOAT("DMKD_DMMODE") == 1)
 		{
-			if (checkShowTextTime < 3 || GetGameMod () != MODE_DM)
+			if (checkShowTextTime < 3 || g_gameMode != MODE_DM)
 				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-DM ***");
 
 			SetGameMod(MODE_DM);
 		}
 		else
 		{
-			if (checkShowTextTime < 3 || GetGameMod() != MODE_BASE)
+			if (checkShowTextTime < 3 || g_gameMode != MODE_BASE)
 				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-TDM ***");
 
 			SetGameMod(MODE_BASE);
@@ -803,7 +803,7 @@ void AutoLoadGameMode(void)
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
 	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
 	{
-		if (checkShowTextTime < 3 || GetGameMod() != MODE_ZH)
+		if (checkShowTextTime < 3 || g_gameMode != MODE_ZH)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
 
 		SetGameMod(MODE_ZH);
@@ -824,14 +824,14 @@ void AutoLoadGameMode(void)
 		{
 			if (freeForAll->value > 0.0f)
 			{
-				if (checkShowTextTime < 3 || GetGameMod() != MODE_DM)
+				if (checkShowTextTime < 3 || g_gameMode != MODE_DM)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-DM ***");
 
 				SetGameMod(MODE_DM);
 			}
 			else
 			{
-				if (checkShowTextTime < 3 || GetGameMod() != MODE_BASE)
+				if (checkShowTextTime < 3 || g_gameMode != MODE_BASE)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-TDM ***");
 
 				SetGameMod(MODE_BASE);
@@ -841,14 +841,14 @@ void AutoLoadGameMode(void)
 
 	if (checkShowTextTime < 3)
 	{
-		if (GetGameMod() == MODE_BASE)
+		if (g_gameMode == MODE_BASE)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Base Mode ***");
 		else
 			ServerPrint("*** SyPB Auto Game Mode Setting: N/A ***");
 	}
 
 lastly:
-	if (GetGameMod() != MODE_BASE)
+	if (g_gameMode != MODE_BASE)
 		g_mapType |= MAP_DE;
 	else
 		g_exp.UpdateGlobalKnowledge(); // update experience data on round start
@@ -877,17 +877,13 @@ bool IsWeaponShootingThroughWall (int id)
 void SetGameMod(int gamemode)
 {
 	sypb_gamemod.SetInt(gamemode);
+
+	g_gameMode = gamemode;
 }
 
 int GetGameMod (void)
 {
-	static int gameMode = sypb_gamemod.GetInt();
-	static float nextGetTime = engine->GetTime() + 0.8f;
-
-	if (nextGetTime >= engine->GetTime ())
-		gameMode = sypb_gamemod.GetInt();
-
-	return gameMode;
+	return sypb_gamemod.GetInt();
 }
 
 int GetTeam (edict_t *ent)
@@ -917,9 +913,9 @@ int GetTeam (edict_t *ent)
 	}
 
 	// SyPB Pro P.42 - Small Change 
-	if (GetGameMod() == MODE_DM)
+	if (g_gameMode == MODE_DM)
 		player_team = client + 10;
-	else if (GetGameMod() == MODE_ZP)
+	else if (g_gameMode == MODE_ZP)
 	{
 		if (g_DelayTimer > engine->GetTime())
 			player_team = 2;
@@ -928,7 +924,7 @@ int GetTeam (edict_t *ent)
 		else
 			player_team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
 	}
-	else if (GetGameMod() == MODE_NOTEAM)
+	else if (g_gameMode == MODE_NOTEAM)
 		player_team = 2;
 	else 
 		player_team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
@@ -1103,7 +1099,7 @@ bool IsZombieEntity(edict_t *ent)
 		return (g_clients[playerId].isZombiePlayerAPI == 1) ? true : false;
 
 	// SyPB Pro P.12
-	if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH) // Zombie Mod
+	if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH) // Zombie Mod
 		return (GetTeam(ent) == TEAM_TERRORIST);
 
 	return sypb_knifemode.GetBool();

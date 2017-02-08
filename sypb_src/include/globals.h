@@ -70,6 +70,8 @@ extern int g_gameVersion;
 extern int g_fakeArgc;
 extern unsigned short g_killHistory;
 
+extern int g_gameMode;
+
 extern int g_normalWeaponPrefs[Const_NumWeapons];
 extern int g_rusherWeaponPrefs[Const_NumWeapons];
 extern int g_carefulWeaponPrefs[Const_NumWeapons];

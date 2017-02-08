@@ -50,7 +50,7 @@ int Bot::FindGoal(void)
 	Array <int> defensiveWpts;
 
 	// SyPB Pro P.28 - Game Mode
-	if (GetGameMod() == MODE_BASE)
+	if (g_gameMode == MODE_BASE)
 	{
 		switch (team)
 		{
@@ -66,7 +66,7 @@ int Bot::FindGoal(void)
 		}
 	}
 	// SyPB Pro P.30 - Zombie Mode Human Camp
-	else if (GetGameMod() == MODE_ZP)
+	else if (g_gameMode == MODE_ZP)
 	{
 		// SyPB Pro P.42 - Zombie Mode Camp improve
 		if (!IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
@@ -134,7 +134,7 @@ int Bot::FindGoal(void)
    defensive = static_cast <int> (m_fearLevel * 100);
 
    // SyPB Pro P.28 - Game Mode
-   if (GetGameMod() == MODE_BASE)
+   if (g_gameMode == MODE_BASE)
    {
 	   if (g_mapType & (MAP_AS | MAP_CS))
 	   {
@@ -198,7 +198,7 @@ int Bot::FindGoal(void)
 		   }
 	   }
    }
-   else if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH)
+   else if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
    {
 	   if (IsZombieEntity(GetEntity()))
 	   {
@@ -225,7 +225,7 @@ int Bot::FindGoal(void)
    backoffDesire = engine->RandomInt (0, 50) + defensive;
 
    if (UsesSniper () || ((g_mapType & MAP_DE) && team == TEAM_COUNTER && !g_bombPlanted) && 
-	   (GetGameMod () == MODE_BASE || GetGameMod () == MODE_DM))
+	   (g_gameMode == MODE_BASE || g_gameMode == MODE_DM))
       campDesire = static_cast <int> (engine->RandomFloat (1.5f, 2.5f) * static_cast <float> (campDesire));
 
    tacticChoice = backoffDesire;
@@ -1353,7 +1353,7 @@ void Bot::GetValidWaypoint(void)
 
 	if (needFindWaypont)
 	{
-		if (m_currentWaypointIndex != -1 && GetGameMod () == MODE_BASE)
+		if (m_currentWaypointIndex != -1 && g_gameMode == MODE_BASE)
 			g_exp.CollectValidDamage(m_currentWaypointIndex, GetTeam(GetEntity()));
 
 		DeleteSearchNodes();
@@ -1367,12 +1367,20 @@ void Bot::GetValidWaypoint(void)
 void Bot::ChangeBotEntityWaypoint(void)
 {
 	int i = ENTINDEX(GetEntity ()) - 1;
-	int waypointId = m_currentWaypointIndex;
+	if (g_clients[i].getWPTime == engine->GetTime())
+		return;
 
-	if (m_prevWptIndex[0] != -1)
-		waypointId = m_prevWptIndex[0];
+	if (m_prevWptIndex[0] == -1)
+	{
+		g_clients[i].wpIndex = m_currentWaypointIndex;
+		g_clients[i].wpIndex2 = -1;
+	}
+	else
+	{
+		g_clients[i].wpIndex = m_prevWptIndex[0];
+		g_clients[i].wpIndex2 = m_currentWaypointIndex;
+	}
 
-	g_clients[i].wpIndex = waypointId;
 	g_clients[i].getWpOrigin = GetEntityOrigin (GetEntity ());
 	g_clients[i].getWPTime = engine->GetTime();
 }
@@ -1749,7 +1757,7 @@ bool Bot::HeadTowardWaypoint (void)
 			   m_minSpeed = pev->maxspeed;
 
 			   // only if we in normal task and bomb is not planted
-			   if (GetGameMod() == MODE_BASE && taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER && 
+			   if (g_gameMode == MODE_BASE && taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER &&
 				   !(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && GetTeam(GetEntity()) == TEAM_TERRORIST))
 			   {
 				   m_campButtons = 0;
@@ -2447,7 +2455,7 @@ void Bot::FacePosition(void)
 	{
 		if (IsInViewCone(m_enemyOrigin))
 		{
-			if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || GetGameMod() != MODE_BASE))
+			if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || g_gameMode != MODE_BASE))
 				godAim = true;
 			else if (m_wantsToFire && (m_skill >= 70 || IsZombieEntity(m_enemy)))
 				godAim = true;

@@ -44,10 +44,10 @@ bool g_editNoclip = false;
 bool g_isFakeCommand = false;
 bool g_waypointOn = false;
 bool g_waypointsChanged = true;
-bool g_autoWaypoint = false;
 bool g_bLearnJumpWaypoint = false;
 bool g_leaderChoosen[2] = {false, false};
 
+bool g_autoWaypoint = false;
 bool g_sgdWaypoint = false;
 bool g_sautoWaypoint = false;
 int m_sautoRadius = 32;
@@ -71,6 +71,8 @@ int g_gameVersion = CSVER_CSTRIKE;
 int g_numWaypoints = 0;
 int g_mapType = 0;
 unsigned short g_killHistory = 0;
+
+int g_gameMode = MODE_BASE;
 
 int g_modelIndexLaser = 0;
 int g_modelIndexArrow = 0;

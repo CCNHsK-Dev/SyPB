@@ -160,7 +160,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 							m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(1.0f, 1.5f);
 					}
 				}
-				else if (GetGameMod() == MODE_DM)
+				else if (g_gameMode == MODE_DM)
 				{
 					if (!FNullEnt(m_enemy))
 						return false;
@@ -173,7 +173,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 							m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.7f, 1.3f);
 					}
 				}
-				else if (GetGameMod() == MODE_ZP)
+				else if (g_gameMode == MODE_ZP)
 				{
 					if (!FNullEnt (m_enemy))
 						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.5f, 1.5f);
@@ -272,7 +272,7 @@ void Bot::ZombieModeAi(void)
 				if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
 					continue;
 
-				if (GetGameMod() == MODE_ZH)
+				if (g_gameMode == MODE_ZH)
 					entity = g_clients[i].ent;
 				else
 				{
@@ -477,11 +477,11 @@ void Bot::AvoidEntity(void)
 
 		if (strcmp(STRING(entity->v.classname), "grenade") == 0)
 		{
-			if ((GetGameMod () == MODE_ZH || GetGameMod () == MODE_ZP) && IsZombieEntity(GetEntity()))
+			if ((g_gameMode == MODE_ZH || g_gameMode == MODE_ZP) && IsZombieEntity(GetEntity()))
 				continue;
 
 			if (strcmp(STRING(entity->v.model) + 9, "flashbang.mdl") == 0 &&
-				GetGameMod() != MODE_BASE && GetGameMod() != MODE_DM)
+				g_gameMode != MODE_BASE && g_gameMode != MODE_DM)
 				continue;
 
 			if (strcmp(STRING(entity->v.model) + 9, "hegrenade.mdl") == 0 && 
@@ -772,7 +772,7 @@ void Bot::FindItem(void)
 			}
 		}
 
-		if ((GetGameMod() == MODE_ZH || GetGameMod() == MODE_ZP) && IsZombieEntity(GetEntity()) 
+		if ((g_gameMode == MODE_ZH || g_gameMode == MODE_ZP) && IsZombieEntity(GetEntity())
 			&& pickupType != PICKTYPE_GETENTITY)
 			continue;
 
@@ -1109,7 +1109,7 @@ void Bot::RadioMessage (int message)
    // this function inserts the radio message into the message queue
    
    // SyPB Pro P.15
-   if (GetGameMod () == MODE_DM)
+   if (g_gameMode == MODE_DM)
    	   return;
 
    if (GetNearbyFriendsNearPosition (pev->origin, 9999) == 0)
@@ -1834,7 +1834,7 @@ void Bot::SetConditions (void)
    
    // SyPB Pro P.40 - Game mode setting
    if (FNullEnt (m_enemy) && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec && 
-	   (GetGameMod () == MODE_BASE || GetGameMod () == MODE_DM) && 
+	   (g_gameMode == MODE_BASE || g_gameMode == MODE_DM) &&
 	   (pev->origin - m_lastEnemyOrigin).GetLength() < 1600.0f)
    {
       TraceResult tr;
@@ -1965,11 +1965,11 @@ void Bot::SetConditions (void)
             desireLevel = 89;
 
 		 // SyPB Pro P.10
-		 if (GetGameMod () == MODE_DM)
+		 if (g_gameMode == MODE_DM)
 			 desireLevel *= 2;
-		 else if (GetGameMod () == MODE_ZP) // SyPB Pro P.26 - Zombie mode Ai
+		 else if (g_gameMode == MODE_ZP) // SyPB Pro P.26 - Zombie mode Ai
 			 desireLevel = 0;
-		 else if (GetGameMod () == MODE_ZH)
+		 else if (g_gameMode == MODE_ZH)
 			 desireLevel = 0;
 		 else 
 		 {
@@ -2452,9 +2452,9 @@ void Bot::CheckGrenadeThrow(void)
 	}
 
 	edict_t *targetEntity = null;
-	if (GetGameMod() == MODE_BASE)
+	if (g_gameMode == MODE_BASE)
 		targetEntity = m_lastEnemy;
-	else if (GetGameMod() == MODE_ZP || GetGameMod () == MODE_ZH)
+	else if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
 	{
 		if (IsZombieEntity(GetEntity()) && !FNullEnt(m_moveTargetEntity))
 			targetEntity = m_moveTargetEntity;
@@ -2527,7 +2527,7 @@ void Bot::CheckGrenadeThrow(void)
 				else
 					m_states &= ~STATE_THROWEXPLODE;
 			}
-			else if (GetGameMod () == MODE_BASE && grenadeToThrow == WEAPON_SMGRENADE)
+			else if (g_gameMode == MODE_BASE && grenadeToThrow == WEAPON_SMGRENADE)
 			{
 				// start smoke grenade throwing?
 				if ((m_states & STATE_SEEINGENEMY) && GetShootingConeDeviation(m_enemy, &pev->origin) >= 0.90)
@@ -2537,7 +2537,7 @@ void Bot::CheckGrenadeThrow(void)
 			}
 		}
 	}
-	else if (GetGameMod () == MODE_BASE && grenadeToThrow == WEAPON_FBGRENADE && 
+	else if (g_gameMode == MODE_BASE && grenadeToThrow == WEAPON_FBGRENADE &&
 		(GetEntityOrigin(targetEntity) - pev->origin).GetLength() < 800 && !(m_aimFlags & AIM_ENEMY) && engine->RandomInt(0, 100) < 60)
 	{
 		bool allowThrowing = true;
@@ -2735,8 +2735,8 @@ void Bot::CheckRadioCommands (void)
    float distance = (GetEntityOrigin (m_radioEntity) - pev->origin).GetLength ();
    
    // SyPB Pro P.15
-   if (GetGameMod () == MODE_DM || GetGameMod () == MODE_ZP || 
-	   (GetGameMod () == MODE_ZH && IsZombieEntity (GetEntity ())))
+   if (g_gameMode == MODE_DM || g_gameMode == MODE_ZP ||
+	   (g_gameMode == MODE_ZH && IsZombieEntity (GetEntity ())))
    {
    	   m_radioOrder = 0;
    	   return;
@@ -2758,7 +2758,7 @@ void Bot::CheckRadioCommands (void)
       {
          //if (FNullEnt (m_targetEntity) && FNullEnt (m_enemy) && engine->RandomInt (0, 100) < (m_personality == PERSONALITY_CAREFUL ? 80 : 50))
 		  if ((FNullEnt (m_targetEntity) && FNullEnt (m_enemy) && engine->RandomInt (0, 100) < (m_personality == PERSONALITY_CAREFUL ? 80 : 50)) || 
-			  (GetGameMod () == MODE_ZP) && engine->RandomInt (70, 90) != 80)  // SyPB Pro P.10
+			  (g_gameMode == MODE_ZP) && engine->RandomInt (70, 90) != 80)  // SyPB Pro P.10
          {
             int numFollowers = 0;
 
@@ -3306,7 +3306,7 @@ void Bot::SelectLeaderEachTeam (int team)
 float Bot::GetWalkSpeed(void)
 {
 	// SyPB Pro P.48 - Base improve
-	if (GetGameMod () == MODE_ZH || GetGameMod () == MODE_ZP || 
+	if (g_gameMode == MODE_ZH || g_gameMode == MODE_ZP ||
 		pev->maxspeed <= 180.f || m_currentTravelFlags & PATHFLAG_JUMP || 
 		pev->button & IN_JUMP || pev->oldbuttons & IN_JUMP ||
 		pev->flags & FL_DUCKING || pev->button & IN_DUCK || pev->oldbuttons & IN_DUCK || IsInWater())
@@ -3571,8 +3571,8 @@ void Bot::Think(void)
    if (!sypb_stopbots.GetBool() && botMovement && m_notKilled)
    {
 	   // SyPB Pro P.37 - Game Mode Ai
-	   if (GetGameMod() == MODE_BASE || GetGameMod() == MODE_DM || GetGameMod() == MODE_NOTEAM || 
-		   GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH)
+	   if (g_gameMode == MODE_BASE || g_gameMode == MODE_DM || g_gameMode == MODE_NOTEAM ||
+		   g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
 		   BotAI();
 	   else
 		   FunBotAI();
@@ -3734,7 +3734,7 @@ void Bot::RunTask (void)
             PushTask (TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime () + 1.0f, false);
 
          // reached waypoint is a camp waypoint
-         if ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP) && GetGameMod () == MODE_BASE )
+         if ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP) && g_gameMode == MODE_BASE )
          {
             // check if bot has got a primary weapon and hasn't camped before
             if (HasPrimaryWeapon () && m_timeCamping + 10.0f < engine->GetTime () && !HasHostage ())
@@ -3800,9 +3800,9 @@ void Bot::RunTask (void)
             }
          }
 		 // SyPB Pro P.30 - Zombie Mode Human Camp
-		 else if (GetGameMod() == MODE_ZP && !IsZombieEntity(GetEntity()))
+		 else if (g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()))
 			 ZmCampPointAction(1);
-         else if (GetGameMod () == MODE_BASE)
+         else if (g_gameMode == MODE_BASE)
          {
             // some goal waypoints are map dependant so check it out...
             if (g_mapType & MAP_CS)
@@ -3912,7 +3912,7 @@ void Bot::RunTask (void)
 			  m_moveSpeed = m_minSpeed;
 
 		  // SyPB Pro P.30 - Zombie Mode Human Camp
-		  if (GetGameMod() == MODE_ZP && !IsZombieEntity(GetEntity()) && 
+		  if (g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()) &&
 			  // SyPB Pro P.48 - Zombie Mode Human Camp Fixed
 			 !g_waypoint->m_zmHmPoints.IsEmpty())
 		  {
@@ -4114,7 +4114,7 @@ void Bot::RunTask (void)
          DeleteSearchNodes ();
 
 		 // SyPB Pro P.38 - Zombie Mode Camp improve
-		 if (GetGameMod() == MODE_ZP && !IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
+		 if (g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
 			 destIndex = FindGoal();
 		 else if (GetCurrentTask()->data != -1)
 			 destIndex = m_tasks->data;
@@ -4239,7 +4239,7 @@ void Bot::RunTask (void)
    // camping behaviour
    case TASK_CAMP:
 	   // SyPB Pro P.42 - Base Change 
-	   if (IsZombieEntity(GetEntity()) || (GetGameMod() == MODE_DM && pev->health > pev->max_health / 2))
+	   if (IsZombieEntity(GetEntity()) || (g_gameMode == MODE_DM && pev->health > pev->max_health / 2))
 	   {
 		   TaskComplete();
 		   break;
@@ -4363,7 +4363,7 @@ void Bot::RunTask (void)
    // hiding behaviour
    case TASK_HIDE:
 	   // SyPB Pro P.37 - small change
-	   if (IsZombieEntity(GetEntity()) || (GetGameMod () == MODE_DM && pev->health > pev->max_health/2))
+	   if (IsZombieEntity(GetEntity()) || (g_gameMode == MODE_DM && pev->health > pev->max_health/2))
 	   {
 		   TaskComplete();
 		   break;
@@ -4427,7 +4427,7 @@ void Bot::RunTask (void)
 	  {
 		  if (m_isReloading && (!FNullEnt(m_enemy) || !FNullEnt(m_lastEnemy)) && m_skill > 70)
 			  m_tasks->time += 2.0f;
-		  else if (GetGameMod () == MODE_DM && pev->health <= 20.0f && m_skill > 70)
+		  else if (g_gameMode == MODE_DM && pev->health <= 20.0f && m_skill > 70)
 			  m_tasks->time += 5.0f;
 		  else
 			  TaskComplete();
@@ -4651,7 +4651,7 @@ void Bot::RunTask (void)
          m_reloadState = RSTATE_PRIMARY;
 
 	  // SyPB Pro P.25 - follow Ai
-	  if (GetGameMod () == MODE_ZP || GetGameMod () == MODE_ZH || 
+	  if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH ||
 		  ((GetEntityOrigin (m_targetEntity) - pev->origin).GetLength () > 80))
 		  m_followWaitTime = 0.0f;
 	  else
@@ -5588,7 +5588,7 @@ void Bot::DebugModeMsg(void)
 				sprintf(weaponName, selectTab->weaponName);
 
 			char gamemodName[80];
-			switch (GetGameMod())
+			switch (g_gameMode)
 			{
 			case MODE_BASE:
 				sprintf(gamemodName, "Normal");
@@ -5764,7 +5764,7 @@ void Bot::BotAI (void)
    {
 	   m_checkKnifeSwitch = false;
 
-	   if (GetGameMod() == MODE_BASE)
+	   if (g_gameMode == MODE_BASE)
 	   {
 		   if (sypb_spraypaints.GetBool() && engine->RandomInt(1, 100) < 2)
 			   PushTask(TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime() + 1.0f, false);
@@ -5777,7 +5777,7 @@ void Bot::BotAI (void)
 
 
    // SyPB Pro P.30 - Zombie Ai
-   if ((GetGameMod () == MODE_ZH || GetGameMod () == MODE_ZP) &&
+   if ((g_gameMode == MODE_ZH || g_gameMode == MODE_ZP) &&
 	   IsZombieEntity(GetEntity()) && m_currentWeapon != WEAPON_KNIFE)
 	   SelectWeaponByName("weapon_knife");
 
@@ -5804,7 +5804,7 @@ void Bot::BotAI (void)
       }
 
       // select a leader bot for this team
-	  if (GetGameMod() == MODE_BASE)
+	  if (g_gameMode == MODE_BASE)
 		  SelectLeaderEachTeam (team);
 
       m_checkWeaponSwitch = false;
@@ -5841,14 +5841,14 @@ void Bot::BotAI (void)
 
    // SyPB Pro P.30 - Block Radio
    // if there's some radio message to respond, check it
-   if (m_radioOrder != 0 && GetGameMod () == MODE_BASE)
+   if (m_radioOrder != 0 && g_gameMode == MODE_BASE)
       CheckRadioCommands ();
 
    // do all sensing, calculate/filter all actions here
    SetConditions ();
 
    // SyPB Pro P.30 - Zombie Mode Ai
-   if (GetGameMod() == MODE_ZP || GetGameMod() == MODE_ZH)
+   if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
 	   ZombieModeAi();
 
    Vector src, dest;
@@ -5892,7 +5892,7 @@ void Bot::BotAI (void)
    if (!IsOnLadder() && GetCurrentTask()->taskID != TASK_CAMP && FNullEnt(m_moveTargetEntity) &&
 	   (((m_aimFlags & AIM_ENEMY) || (m_states & (STATE_SEEINGENEMY)) || !FNullEnt(m_enemy)) ||
 	   ((GetCurrentTask()->taskID == TASK_SEEKCOVER) && (m_isReloading || m_isVIP))) &&
-		   ((GetGameMod() == MODE_BASE && m_skill >= 75) || (GetGameMod() == MODE_DM && m_skill >= 60) ||
+		   ((g_gameMode == MODE_BASE && m_skill >= 75) || (g_gameMode == MODE_DM && m_skill >= 60) ||
 	   (IsZombieEntity(GetEntity())) || UsesSniper () || !IsValidPlayer (m_enemy)))
    {
 	   m_moveToGoal = false; // don't move to goal
@@ -6304,7 +6304,7 @@ void Bot::BotAI (void)
 bool Bot::HasHostage (void)
 {
 	// SyPB Pro P.42 - Game Mode support improve 
-	if (GetGameMod() != MODE_BASE)
+	if (g_gameMode != MODE_BASE)
 		return false;
 
    for (int i = 0; i < Const_MaxHostages; i++)
@@ -6821,7 +6821,7 @@ bool Bot::OutOfBombTimer (void)
 // SyPB Pro P.48 - React Sound improve
 void Bot::ReactOnSound (void)
 {
-	if (GetGameMod() != MODE_BASE)
+	if (g_gameMode != MODE_BASE)
 		return;
 
 	// SyPB Pro P.30 - AMXX API

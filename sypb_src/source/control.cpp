@@ -902,7 +902,7 @@ void BotControl::CheckTeamEconomics (int team)
    // buy primary weapons.
 
 	// SyPB Pro P.43 - Game Mode Support improve
-	if (GetGameMod() != MODE_BASE)
+	if (g_gameMode != MODE_BASE)
 	{
 		m_economicsGood[team] = true;
 		return;
