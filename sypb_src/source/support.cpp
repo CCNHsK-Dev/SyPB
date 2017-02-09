@@ -1236,8 +1236,7 @@ void CenterPrint (const char *format, ...)
       return;
    }
 
-   MESSAGE_BEGIN (MSG_BROADCAST, g_netMsg->GetId (NETMSG_TEXTMSG));
-      WRITE_BYTE (HUD_PRINTCENTER);
+   MESSAGE_BEGIN(MSG_BROADCAST, SVC_CENTERPRINT);
       WRITE_STRING (FormatBuffer ("%s\n", string));
    MESSAGE_END ();
 }
@@ -1260,6 +1259,7 @@ void ChartPrint (const char *format, ...)
 
    MESSAGE_BEGIN (MSG_BROADCAST, g_netMsg->GetId (NETMSG_TEXTMSG));
       WRITE_BYTE (HUD_PRINTTALK);
+	  WRITE_STRING("%s");
       WRITE_STRING (string);
    MESSAGE_END ();
 }

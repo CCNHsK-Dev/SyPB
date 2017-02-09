@@ -2604,6 +2604,7 @@ extern Vector GetEntityOrigin (entvars_t * pevBModel);
 #define VEC_DUCK_VIEW        Vector( 0.0f, 0.0f, 12.0f )
 
 #define SVC_TEMPENTITY      23
+#define SVC_CENTERPRINT     26
 #define SVC_INTERMISSION    30
 #define SVC_CDTRACK         32
 #define SVC_WEAPONANIM      35
