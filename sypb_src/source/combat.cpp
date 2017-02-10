@@ -846,7 +846,7 @@ WeaponSelectEnd:
 
 		m_zoomCheckTime = engine->GetTime();
 
-		if (!FNullEnt(enemy) && (pev->velocity.x != 0 || pev->velocity.y != 0 || pev->velocity.z != 0) && (pev->basevelocity.x != 0 || pev->basevelocity.y != 0 || pev->basevelocity.z != 0))
+		if (!FNullEnt(enemy) && pev->velocity.GetLength2D() > 2.0f && (pev->basevelocity.x != 0 || pev->basevelocity.y != 0 || pev->basevelocity.z != 0))
 		{
 			m_moveSpeed = 0.0f;
 			m_strafeSpeed = 0.0f;

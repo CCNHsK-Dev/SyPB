@@ -433,33 +433,33 @@ bool Bot::DoWaypointNav (void)
    else
       m_destOrigin = m_waypointOrigin + pev->view_ofs;
 
-   float waypointDistance = (pev->origin - m_waypointOrigin).GetLength ();
-
    // this waypoint has additional travel flags - care about them
    if (m_currentTravelFlags & PATHFLAG_JUMP)
    {
-      // bot is not jumped yet?
-      if (!m_jumpFinished)
-      {
-         // if bot's on the ground or on the ladder we're free to jump. actually setting the correct velocity is cheating.
-         // pressing the jump button gives the illusion of the bot actual jmping.
-         if (IsOnFloor () || IsOnLadder ())
-         {
-            //pev->velocity = m_desiredVelocity;
-			 // SyPB Pro P.49 - Jump improve  (use YaPB, Thank about it)
-			 if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
-				 pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
+	   // bot is not jumped yet?
+	   if (!m_jumpFinished)
+	   {
+		   // if bot's on the ground or on the ladder we're free to jump. actually setting the correct velocity is cheating.
+		   // pressing the jump button gives the illusion of the bot actual jmping.
+		   if (IsOnFloor() || IsOnLadder())
+		   {
+			   //pev->velocity = m_desiredVelocity;
+			   // SyPB Pro P.49 - Jump improve  (use YaPB, Thank about it)
+			   if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
+				   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
 
-			 pev->button |= IN_JUMP;
+			   pev->button |= IN_JUMP;
 
-			 m_jumpFinished = true;
-			 m_checkTerrain = false;
-			 m_desiredVelocity = nullvec;
-         }
-      }
-      else if (!sypb_knifemode.GetBool () && m_currentWeapon == WEAPON_KNIFE && IsOnFloor ())
-        SelectBestWeapon ();
+			   m_jumpFinished = true;
+			   m_checkTerrain = false;
+			   m_desiredVelocity = nullvec;
+		   }
+	   }
+	   else if (!sypb_knifemode.GetBool() && m_currentWeapon == WEAPON_KNIFE && IsOnFloor())
+		   SelectBestWeapon();
    }
+
+   float waypointDistance = (pev->origin - m_waypointOrigin).GetLength ();
 
    if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
    {
@@ -569,28 +569,15 @@ bool Bot::DoWaypointNav (void)
       }
    }
 
-   // needs precise placement - check if we get past the point
-   if (desiredDistance < 16.0f && waypointDistance < 30.0f)
-   {
-      Vector nextFrameOrigin = pev->origin + (pev->velocity * m_frameInterval);
-
-	  if ((nextFrameOrigin - m_waypointOrigin).GetLength() >= waypointDistance)
-		  desiredDistance = waypointDistance + 1.0f;
-   }
-
    // SyPB Pro P.49 - Waypoint improve
-   if (m_waypointOrigin.z <= pev->origin.z + 32.0f && 
-	   !(g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER))
+   // needs precise placement - check if we get past the point
+   if (desiredDistance < 16.0f && waypointDistance < 30.0f && (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() > waypointDistance)
+	   desiredDistance = waypointDistance + 1.0f;
+   else if ((m_waypointOrigin - pev->origin).GetLength2D() <= 6.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
    {
-	   float waypointDistance2D = (m_waypointOrigin - pev->origin).GetLength2D();
-	   Vector nextFrameOrigin = pev->origin + (pev->velocity * m_frameInterval);
-	   if (waypointDistance2D < 30.0f && waypointDistance2D + 8.0f < waypointDistance)
-	   {
-		   if ((nextFrameOrigin - m_waypointOrigin).GetLength2D() <= waypointDistance2D && 
-			   (m_navNode == null || 
-			   (m_navNode->next != null && g_waypoint->Reachable(GetEntity(), m_navNode->next->index))))
-			   desiredDistance = waypointDistance - 1.0f;
-	   }
+	   if (m_navNode == null || 
+		   (m_navNode->next != null && g_waypoint->Reachable(GetEntity(), m_navNode->next->index)))
+		   desiredDistance = waypointDistance + 1.0f;
    }
 
    // SyPB Pro P.42 - AMXX API
@@ -1285,10 +1272,11 @@ void Bot::SetWaypointOrigin(void)
 {
 	m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
 
-	if (g_waypoint->GetPath(m_currentWaypointIndex)->radius > 0)
+	float radius = g_waypoint->GetPath(m_currentWaypointIndex)->radius;
+	if (radius > 0)
 	{
 		MakeVectors(Vector(pev->angles.x, AngleNormalize(pev->angles.y + engine->RandomFloat(-90.0f, 90.0f)), 0.0f));
-		float radius = g_waypoint->GetPath(m_currentWaypointIndex)->radius;
+		int sPoint = -1;
 
 		if (&m_navNode[0] != null && m_navNode->next != null)
 		{
@@ -1302,7 +1290,6 @@ void Bot::SetWaypointOrigin(void)
 			int destIndex = m_navNode->next->index;
 
 			float sDistance = 9999.0f;
-			int sPoint = -1;
 			for (int i = 0; i < 5; i++)
 			{
 				// SyPB Pro P.42 - Small Waypoint OS improve
@@ -1317,13 +1304,20 @@ void Bot::SetWaypointOrigin(void)
 			}
 
 			if (sPoint != -1)
-			{
 				m_waypointOrigin = waypointOrigin[sPoint];
-				return;
-			}
 		}
 
-		m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * engine->RandomFloat(0, radius);
+		if (sPoint == -1)
+			m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * engine->RandomFloat(0, radius);
+	}
+
+	if (IsOnLadder())
+	{
+		TraceResult tr;
+		TraceLine(Vector(pev->origin.x, pev->origin.y, pev->absmin.z), m_waypointOrigin, true, true, GetEntity(), &tr);
+
+		if (tr.flFraction < 1.0f)
+			m_waypointOrigin = m_waypointOrigin + (pev->origin - m_waypointOrigin) * 0.5f + Vector(0.0f, 0.0f, 32.0f);
 	}
 }
 
@@ -1739,8 +1733,6 @@ bool Bot::HeadTowardWaypoint (void)
    if (m_navNode == null)
       return false;
 
-   TraceResult tr;
-
    m_navNode = m_navNode->next; // advance in list
    m_currentTravelFlags = 0; // reset travel flags (jumping etc)
 
@@ -1917,19 +1909,6 @@ bool Bot::HeadTowardWaypoint (void)
 
    SetWaypointOrigin();
 
-   if (IsOnLadder ())
-   {
-      TraceLine (Vector (pev->origin.x, pev->origin.y, pev->absmin.z), m_waypointOrigin, true, true, GetEntity (), &tr);
-
-	  // SyPB Pro P.36 - ladder improve
-	  if (tr.flFraction < 1.0f)
-	  {
-		  if (m_waypointOrigin.z >= pev->origin.z)
-			  m_waypointOrigin += tr.vecPlaneNormal;
-		  else
-			  m_waypointOrigin -= tr.vecPlaneNormal;
-	  }
-   }
    m_navTimeset = engine->GetTime ();
 
    return true;
