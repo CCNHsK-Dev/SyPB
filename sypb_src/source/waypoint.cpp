@@ -2479,7 +2479,7 @@ void Waypoint::SetGoalVisited (int index)
 
    if (!IsGoalVisited (index) && (m_paths[index]->flags & WAYPOINT_GOAL))
    {
-      int bombPoint = FindNearest (GetBombPosition ());
+      int bombPoint = GetBombPoint ();
 
       if (bombPoint != index)
          m_visitedGoals.Push (index);
@@ -2691,6 +2691,20 @@ void Waypoint::EraseFromHardDisk (void)
    Initialize (); // reintialize points
 }
 
+// SyPB Pro P.49 - Base improve
+int Waypoint::GetBombPoint(void)
+{
+	Vector bombOrigin = GetBombPosition();
+	static int bombPoint = -1;
+	if (bombOrigin == nullvec)
+		return bombPoint = -1;
+
+	if (bombPoint == -1)
+		bombPoint = FindNearest(bombOrigin);
+
+	return bombPoint;
+}
+
 void Waypoint::SetBombPosition (bool shouldReset)
 {
    // this function stores the bomb position as a vector
@@ -2699,6 +2713,7 @@ void Waypoint::SetBombPosition (bool shouldReset)
    {
       m_foundBombOrigin = nullvec;
       g_bombPlanted = false;
+	  GetBombPoint();
 
       return;
    }
@@ -2713,6 +2728,8 @@ void Waypoint::SetBombPosition (bool shouldReset)
          break;
       }
    }
+
+   GetBombPoint();
 }
 
 // SyPB Pro P.30 - SgdWP

@@ -2968,7 +2968,7 @@ void Bot::CheckRadioCommands (void)
          SelectWeaponByName ("weapon_knife");
 
          DeleteSearchNodes ();
-         MoveToVector (g_waypoint->GetBombPosition ());
+		 MoveToPoint(g_waypoint->GetBombPoint());
 
          RadioMessage (Radio_Affirmative);
       }
@@ -3170,7 +3170,7 @@ void Bot::CheckRadioCommands (void)
             }
             DeleteSearchNodes ();
 
-            int index = FindDefendWaypoint (GetEntityOrigin (m_radioEntity));
+            int index = FindDefendWaypoint (GetEntityOrigin (m_radioEntity), GetEntityWaypoint (m_radioEntity));
 
             // push camp task on to stack
             PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (30.0f, 60.0f), true);
@@ -3659,10 +3659,10 @@ void Bot::RunTask (void)
          }
          else if (!m_defendedBomb)
          {
-            int plantedBombWptIndex = g_waypoint->FindNearest (g_waypoint->GetBombPosition ());
+			 int plantedBombWptIndex = g_waypoint->GetBombPoint();
 
-            if (plantedBombWptIndex != -1 && m_currentWaypointIndex != plantedBombWptIndex)
-               GetCurrentTask ()->data = plantedBombWptIndex;
+			 if (plantedBombWptIndex != -1 && m_currentWaypointIndex != plantedBombWptIndex)
+				 GetCurrentTask()->data = plantedBombWptIndex;
          }
       }
 
@@ -3815,7 +3815,7 @@ void Bot::RunTask (void)
 				{
 					if (m_skill >= 80 || engine->RandomInt(0, 100) < m_skill)
 					{
-						int index = FindDefendWaypoint(g_waypoint->GetPath(m_currentWaypointIndex)->origin);
+						int index = FindDefendWaypoint(g_waypoint->GetPath(m_currentWaypointIndex)->origin, m_currentWaypointIndex);
 
 						PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0, 120.0f), true); // push camp task on to stack
 						PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0, 30.0f), true); // push move command
@@ -3869,7 +3869,7 @@ void Bot::RunTask (void)
                   {
                      m_timeCamping = engine->GetTime () + engine->RandomFloat (g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
 
-                     int index = FindDefendWaypoint (g_waypoint->GetPath (m_currentWaypointIndex)->origin);
+                     int index = FindDefendWaypoint (g_waypoint->GetPath (m_currentWaypointIndex)->origin, m_currentWaypointIndex);
 
                      PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (35.0f, 60.0f), true); // push camp task on to stack
                      PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime () + engine->RandomFloat (10.0f, 15.0f), true); // push move command
@@ -4512,7 +4512,7 @@ void Bot::RunTask (void)
 
          DeleteSearchNodes ();
 
-         int index = FindDefendWaypoint (pev->origin);
+         int index = FindDefendWaypoint (pev->origin, GetEntityWaypoint (GetEntity ()));
          float halfTimer = engine->GetTime () + ((engine->GetC4TimerTime () / 2) + (engine->GetC4TimerTime () / 4));
 
          // push camp task on to stack
@@ -6418,7 +6418,7 @@ void Bot::TakeBlinded (Vector fade, int alpha)
    }
 
    // SyPB Pro P.48 - Blind Action improve
-   m_blindCampPoint = FindDefendWaypoint(GetEntityOrigin(GetEntity()));
+   m_blindCampPoint = FindDefendWaypoint(GetEntityOrigin(GetEntity()), GetEntityWaypoint (GetEntity ()));
    if ((g_waypoint->GetPath(m_blindCampPoint)->origin - GetEntityOrigin(GetEntity())).GetLength() >= 512.0f)
 	   m_blindCampPoint = -1;
 
@@ -6640,12 +6640,12 @@ Vector Bot::CheckBombAudible (void)
    return nullvec;
 }
 
-void Bot::MoveToVector (Vector to)
+void Bot::MoveToPoint(int point)
 {
-   if (to == nullvec)
+   if (point >= -1 && point < g_numWaypoints)
       return;
 
-   FindPath (m_currentWaypointIndex, g_waypoint->FindNearest (to), 2);
+   FindPath (m_currentWaypointIndex, point, 2);
 }
 
 void Bot::RunPlayerMovement(void)

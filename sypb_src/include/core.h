@@ -848,7 +848,7 @@ private:
    edict_t *FindNearestButton (const char *className);
    edict_t *FindBreakable (void);
    int FindCoverWaypoint (float maxDistance);
-   int FindDefendWaypoint (Vector origin);
+   int FindDefendWaypoint (Vector origin, int posIndex = -1);
    int FindGoal (void);
    void FindItem (void);
 
@@ -1116,7 +1116,7 @@ public:
    void Kill (void);
    void Kick (void);
    void ResetDoubleJumpState (void);
-   void MoveToVector (Vector to);
+   void MoveToPoint (int point);
    int FindLoosedBomb (void);
 
    int FindHostage(void);
@@ -1367,6 +1367,7 @@ public:
    bool IsGoalVisited (int index);
    void SetGoalVisited (int index);
 
+   int GetBombPoint(void);
    Vector GetBombPosition (void) { return m_foundBombOrigin; }
    void SetBombPosition (bool shouldReset = false);
    String CheckSubfolderFile (void);

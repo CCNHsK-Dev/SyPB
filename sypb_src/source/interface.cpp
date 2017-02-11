@@ -3227,7 +3227,8 @@ void pfnAlertMessage (ALERT_TYPE alertType, char *format, ...)
          if (bot != null && GetTeam (bot->GetEntity ()) == TEAM_TERRORIST && IsAlive (bot->GetEntity ()))
          {
             bot->ResetTasks ();
-            bot->MoveToVector (g_waypoint->GetBombPosition ());
+            bot->MoveToPoint(g_waypoint->GetBombPoint ());
+			
          }
       }
    }

@@ -158,7 +158,7 @@ int Bot::FindGoal(void)
 				   const Vector &bombPos = g_waypoint->GetBombPosition();
 
 				   if (GetBombTimeleft() >= 10.0f && IsBombDefusing(bombPos))
-					   return m_chosenGoalIndex = FindDefendWaypoint(bombPos);
+					   return m_chosenGoalIndex = FindDefendWaypoint(bombPos, g_waypoint->GetBombPoint ());
 
 				   if (g_bombSayString)
 				   {
@@ -177,7 +177,7 @@ int Bot::FindGoal(void)
 
 			   // send some terrorists to guard planter bomb
 			   if (g_bombPlanted && GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB && GetBombTimeleft() >= 15.0f)
-				   return m_chosenGoalIndex = FindDefendWaypoint(g_waypoint->GetBombPosition());
+				   return m_chosenGoalIndex = FindDefendWaypoint(g_waypoint->GetBombPosition(), g_waypoint->GetBombPoint ());
 
 			   float leastPathDistance = 0.0f;
 			   int goalIndex = -1;
@@ -1456,7 +1456,7 @@ int Bot::ChooseBombWaypoint (void)
    return goal;
 }
 
-int Bot::FindDefendWaypoint (Vector origin)
+int Bot::FindDefendWaypoint (Vector origin, int posIndex)
 {
    // this function tries to find a good position which has a line of sight to a position,
    // provides enough cover point, and is far away from the defending position
@@ -1472,7 +1472,9 @@ int Bot::FindDefendWaypoint (Vector origin)
       minDistance[i] = 128;
    }
 
-   int posIndex = g_waypoint->FindNearest (origin);
+   if (posIndex == -1)
+	   posIndex = g_waypoint->FindNearest (origin);
+
    int srcIndex = GetEntityWaypoint(GetEntity());
 
    // some of points not found, return random one
@@ -1777,7 +1779,7 @@ bool Bot::HeadTowardWaypoint (void)
 					   if (m_baseAgressionLevel < static_cast <float> (kills))
 					   {
 						   PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + (m_fearLevel * (g_timeRoundMid - engine->GetTime()) * 0.5f), true); // push camp task on to stack
-						   PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint(g_waypoint->GetPath(waypoint)->origin), 0.0f, true);
+						   PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint(g_waypoint->GetPath(waypoint)->origin, waypoint), 0.0f, true);
 
 						   m_campButtons |= IN_DUCK;
 					   }
