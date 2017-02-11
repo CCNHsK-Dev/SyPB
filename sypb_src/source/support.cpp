@@ -909,7 +909,7 @@ int GetTeam (edict_t *ent)
 			}
 		}
 
-		return player_team;
+		return -1;
 	}
 
 	// SyPB Pro P.42 - Small Change 

@@ -522,60 +522,75 @@ Vector Bot::GetAimPosition(void)
 	return m_enemyOrigin = m_lastEnemyOrigin = enemyOrigin;
 }
 
+// SyPB Pro P.49 - Don't Fire Non-Attack Entity improve
 bool Bot::IsFriendInLineOfFire (float distance)
 {
-   // bot can't hurt teammates, if friendly fire is not enabled...
-   if (!engine->IsFriendlyFireOn () || g_gameMode == MODE_DM)
-      return false;
+	int i;
+	edict_t *entity = null;
+	bool needCheckFriendEntity = engine->IsFriendlyFireOn();
+	bool hasHostage = false;
+	if (!needCheckFriendEntity)
+	{
+		while (!FNullEnt(entity = FIND_ENTITY_BY_CLASSNAME(entity, "hostage_entity")))
+		{
+			if ((GetEntityOrigin(entity) - pev->origin).GetLength() <= distance)
+			{
+				hasHostage = true;
+				break;
+			}
+		}
+	}
 
-   MakeVectors (pev->v_angle);
+	if (!needCheckFriendEntity && !hasHostage)
+		return false;
 
-   TraceResult tr;
-   TraceLine (EyePosition (), EyePosition () + pev->v_angle.Normalize () * distance, false, false, GetEntity (), &tr);
+	TraceResult tr;
 
-   // SyPB Pro P.42 - The Bot cannot Team Damage improve
-   int i;
-   if (!FNullEnt(tr.pHit))
-   {
-	   if (IsAlive(tr.pHit) && GetTeam(GetEntity()) == GetTeam(tr.pHit))
-	   {
-		   if (IsValidPlayer(tr.pHit))
-			   return true;
+	TraceLine(EyePosition(), m_lookAt, false, true, GetEntity(), &tr);
+	if (!FNullEnt(tr.pHit) || tr.flFraction < 1.0f)
+	{
+		if (strcmp(STRING(tr.pHit->v.classname), "hostage_entity") == 0)
+			return true;
 
-		   int entityIndex = ENTINDEX(tr.pHit);
-		   for (i = 0; i < entityNum; i++)
-		   {
-			   if (g_entityId[i] == -1 || g_entityAction[i] != 1)
-				   continue;
+		if (needCheckFriendEntity && 
+			IsAlive (tr.pHit) && GetTeam(GetEntity()) == GetTeam(tr.pHit))
+		{
+			if (IsValidPlayer(tr.pHit))
+				return true;
 
-			   if (g_entityId[i] == entityIndex)
-				   return true;
-		   }
-	   }
-   }
+			for (i = 0; i < entityNum; i++)
+			{
+				if (g_entityId[i] == -1 || g_entityAction[i] != 1)
+					continue;
 
-   edict_t *entity = null;
-   for (i = 0; i < engine->GetMaxClients(); i++)
-   {
-	   entity = INDEXENT(i + 1);
+				if (g_entityId[i] == ENTINDEX(tr.pHit))
+					return true;
+			}
+		}
+	}
 
-	   if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) != GetTeam(GetEntity()) || GetEntity() == entity)
-		   continue;
+	for (i = 0; i < engine->GetMaxClients(); i++)
+	{
+		entity = INDEXENT(i + 1);
 
-	   float friendDistance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-	   float squareDistance = sqrtf(1089.0f + (friendDistance * friendDistance));
+		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) != GetTeam(GetEntity()) || GetEntity() == entity)
+			continue;
 
-	   // SyPB Pro P.41 - VS LOG
-	   if (friendDistance <= distance)
-	   {
-		   Vector entOrigin = GetEntityOrigin(entity);
-		   if (GetShootingConeDeviation(GetEntity(), &entOrigin) >
-			   ((friendDistance * friendDistance) / (squareDistance * squareDistance)))
-			   return true;
-	   }
-   }
+		float friendDistance = (GetEntityOrigin(entity) - pev->origin).GetLength();
+		float squareDistance = sqrtf(1089.0f + (friendDistance * friendDistance));
 
-   return false;
+		// SyPB Pro P.41 - VS LOG
+		if (friendDistance <= distance)
+		{
+			Vector entOrigin = GetEntityOrigin(entity);
+			if (GetShootingConeDeviation(GetEntity(), &entOrigin) >
+				((friendDistance * friendDistance) / (squareDistance * squareDistance)))
+				return true;
+		}
+	}
+
+	return false;
+
 }
 
 // SyPB Pro P.29 - new value for correct gun
@@ -710,8 +725,12 @@ void Bot::FireWeapon(void)
 	}
 
 	// or if friend in line of fire, stop this too but do not update shoot time
-	if (!FNullEnt(m_enemy) && IsFriendInLineOfFire(distance))
+	//if (!FNullEnt(m_enemy) && IsFriendInLineOfFire(distance))
+	if (IsFriendInLineOfFire(distance))
+	{
+		m_fightStyle = 1;
 		return;
+	}
 
 	FireDelay *delay = &g_fireDelay[0];
 	WeaponSelect *selectTab = &g_weaponSelect[0];

@@ -2628,7 +2628,7 @@ bool Bot::ReactOnEnemy(void)
 	m_isEnemyReachable = false;
 
 	float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
-	if (IsZombieEntity(GetEntity()) || enemyDistance <= 150.0f)
+	if (IsZombieEntity(GetEntity()) || enemyDistance <= 120.0f)
 	{
 		m_isEnemyReachable = true;
 		goto lastly;
@@ -2644,7 +2644,7 @@ bool Bot::ReactOnEnemy(void)
 	{
 		if (enemyIndex == m_zhCampPointIndex || enemyIndex == i)
 			m_isEnemyReachable = true;
-		else if (enemyDistance <= 240.0f)
+		else if (enemyDistance <= 200.0f)
 		{
 			for (int j = 0; j < Const_MaxPathIndex; j++)
 			{
@@ -2660,18 +2660,20 @@ bool Bot::ReactOnEnemy(void)
 		goto lastly;
 	}
 
-	float pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
+	float pathDist;// = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
 
 	if (IsZombieEntity(m_enemy))
 	{
 		if (m_navNode == null)
 			m_isEnemyReachable = true;
-		else if (pathDist <= 700.0f)
+		else
 		{
-			if ((m_navNode->index != i && 
-				g_waypoint->GetPathDistanceFloat(m_navNode->index, enemyIndex) < pathDist) ||
+			pathDist = g_waypoint->GetPathDistanceFloat(enemyIndex, i);
+
+			if (pathDist <= 600.0f && (m_navNode->index != i &&
+				g_waypoint->GetPathDistanceFloat(enemyIndex, m_navNode->index) < pathDist) ||
 				(m_navNode->next == null || 
-					g_waypoint->GetPathDistanceFloat(m_navNode->next->index, enemyIndex) < pathDist))
+					g_waypoint->GetPathDistanceFloat(enemyIndex, m_navNode->next->index) < pathDist))
 			{
 				m_isEnemyReachable = true;
 				goto lastly;
@@ -2700,6 +2702,7 @@ bool Bot::ReactOnEnemy(void)
 	}
 	else
 	{
+		pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
 		float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
 		if (pathDist - lineDist > 112.0f)
 			m_isEnemyReachable = false;
