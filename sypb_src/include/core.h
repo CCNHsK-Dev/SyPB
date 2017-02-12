@@ -816,6 +816,7 @@ private:
    void CheckBurstMode (float distance);
    
    int CheckMaxClip(int weaponId, int *weaponIndex);
+   void CheckTerrain(Vector directionNormal, float movedDistance);
    void CheckFall(void);
 
    void AvoidEntity (void);

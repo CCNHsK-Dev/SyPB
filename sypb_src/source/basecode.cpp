@@ -1832,6 +1832,7 @@ void Bot::SetConditions (void)
    else if (m_heardSoundTime < engine->GetTime ())
       m_states &= ~STATE_HEARENEMY;
    
+   /*TESTTEST
    // SyPB Pro P.40 - Game mode setting
    if (FNullEnt (m_enemy) && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec && 
 	   (g_gameMode == MODE_BASE || g_gameMode == MODE_DM) &&
@@ -1847,7 +1848,7 @@ void Bot::SetConditions (void)
          if (EntityIsVisible (m_lastEnemyOrigin))
             m_aimFlags |= AIM_LASTENEMY;
       }
-   }
+   } */
 
    CheckGrenadeThrow();
 
@@ -3369,6 +3370,8 @@ void Bot::ChooseAimDirection (void)
    if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
 	   GetValidWaypoint();
 
+   bool predictEnemy = false;
+
    // check if last enemy vector valid
    if (m_lastEnemyOrigin != nullvec)
    {
@@ -3387,6 +3390,8 @@ void Bot::ChooseAimDirection (void)
 
 			   flags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
 		   }
+		   else
+			   predictEnemy = true;
 	   }
    }
    else
@@ -3425,8 +3430,14 @@ void Bot::ChooseAimDirection (void)
    }
    else if (flags & AIM_PREDICTENEMY)
    {
-	   TraceLine(EyePosition(), m_lastEnemyOrigin, false, true, GetEntity(), &tr);
-	   if (((pev->origin - m_lastEnemyOrigin).GetLength() < 1600.0f || UsesSniper()) && (tr.flFraction >= 0.2f || tr.pHit != g_worldEdict))
+	   if (!predictEnemy && ((pev->origin - m_lastEnemyOrigin).GetLength() < 1600.0f || UsesSniper()))
+	   {
+		   TraceLine(EyePosition(), m_lastEnemyOrigin, false, true, GetEntity(), &tr);
+		   if ((tr.flFraction > 0.2f || tr.pHit != g_worldEdict))
+			   predictEnemy = true;
+	   }
+
+	   if (predictEnemy)
 	   {
 		   bool recalcPath = true;
 
@@ -3963,7 +3974,7 @@ void Bot::RunTask (void)
 
          m_entity = sprayOrigin;
 
-         if (m_tasks->time - 0.5 < engine->GetTime ())
+         if (m_tasks->time - 0.5f < engine->GetTime ())
          {
             // emit spraycan sound
             EMIT_SOUND_DYN2 (GetEntity (), CHAN_VOICE, "player/sprayer.wav", 1.0, ATTN_NORM, 0, 100);
@@ -5758,8 +5769,6 @@ void Bot::BotAI (void)
    // this function gets called each frame and is the core of all bot ai. from here all other subroutines are called
 
    float movedDistance = 2.0f; // length of different vector (distance bot moved)
-   TraceResult tr;
-
    int team = GetTeam (GetEntity ());
 
    // SyPB Pro P.43 - Base Mode Small improve
@@ -5854,8 +5863,6 @@ void Bot::BotAI (void)
    if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
 	   ZombieModeAi();
 
-   Vector src, dest;
-
    m_checkTerrain = true;
    m_moveToGoal = true;
    m_wantsToFire = false;
@@ -5883,7 +5890,7 @@ void Bot::BotAI (void)
    // SyPB Pro P.34 - Base Ai
    Vector directionOld = m_destOrigin - (pev->origin + pev->velocity * m_frameInterval);
    Vector directionNormal = directionOld.Normalize ();
-   Vector direction = directionNormal;
+   //Vector direction = directionNormal;
    directionNormal.z = 0.0f;
 
    m_moveAngles = directionOld.ToAngles ();
@@ -5945,284 +5952,7 @@ void Bot::BotAI (void)
    }
 
    CheckFall();
-
-   if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
-	   m_checkTerrain = false;
-
-   // SyPB Pro P.27 - new check terrain
-   if (m_checkTerrain)
-   {
-	   m_isStuck = false;
-	   CheckCloseAvoidance(directionNormal);
-
-	   // SyPB Pro P.42 - Bot Stuck improve
-	   if ((m_moveSpeed <= -10 || m_moveSpeed >= 10 || m_strafeSpeed >= 10 || m_strafeSpeed <= -10) &&
-		   m_lastCollTime < engine->GetTime())
-	   {
-		   // SyPB Pro P.38 - Get Stuck improve
-		   if (m_damageTime >= engine->GetTime() && IsZombieEntity(GetEntity()))
-		   {
-			   m_lastCollTime = m_damageTime + 0.01f;
-			   m_firstCollideTime = 0.0f;
-			   m_isStuck = false;
-		   }
-		   else
-		   {
-			   if (movedDistance < 2.0f && m_prevSpeed >= 20.0f)
-			   {
-				   m_prevTime = engine->GetTime();
-				   m_isStuck = true;
-
-				   if (m_firstCollideTime == 0.0f)
-					   m_firstCollideTime = engine->GetTime() + 0.2f;
-			   }
-			   else
-			   {
-				   // test if there's something ahead blocking the way
-				   if (!IsOnLadder() && CantMoveForward(directionNormal, &tr))
-				   {
-					   if (m_firstCollideTime == 0.0f)
-						   m_firstCollideTime = engine->GetTime() + 0.2f;
-
-					   else if (m_firstCollideTime <= engine->GetTime())
-						   m_isStuck = true;
-				   }
-				   else
-					   m_firstCollideTime = 0.0f;
-			   }
-		   }
-	   }
-
-	   if (!m_isStuck) // not stuck?
-	   {
-		   if (m_probeTime + 0.5f < engine->GetTime())
-			   ResetCollideState(); // reset collision memory if not being stuck for 0.5 secs
-		   else
-		   {
-			   // remember to keep pressing duck if it was necessary ago
-			   if (m_collideMoves[m_collStateIndex] == COSTATE_DUCK && IsOnFloor() || IsInWater())
-				   pev->button |= IN_DUCK;
-		   }
-	   }
-	   // SyPB Pro P.47 - Base improve
-	   else
-	   {
-		   // not yet decided what to do?
-		   if (m_collisionState == COSTATE_UNDECIDED)
-		   {
-			   int bits = 0;
-
-			   if (IsOnLadder())
-				   bits |= COPROBE_STRAFE;
-			   else if (IsInWater())
-				   bits |= (COPROBE_JUMP | COPROBE_STRAFE);
-			   else
-				   bits |= (COPROBE_STRAFE | (engine->RandomInt(0, 10) > 7 ? COPROBE_JUMP : 0));
-
-			   // collision check allowed if not flying through the air
-			   if (IsOnFloor() || IsOnLadder() || IsInWater())
-			   {
-				   int state[8];
-				   int i = 0;
-
-				   // first 4 entries hold the possible collision states
-				   state[i++] = COSTATE_STRAFELEFT;
-				   state[i++] = COSTATE_STRAFERIGHT;
-				   state[i++] = COSTATE_JUMP;
-				   state[i++] = COSTATE_DUCK;
-
-				   if (bits & COPROBE_STRAFE)
-				   {
-					   state[i] = 0;
-					   state[i + 1] = 0;
-
-					   // to start strafing, we have to first figure out if the target is on the left side or right side
-					   MakeVectors(m_moveAngles);
-
-					   Vector dirToPoint = (pev->origin - m_destOrigin).Normalize2D();
-					   Vector rightSide = g_pGlobals->v_right.Normalize2D();
-
-					   bool dirRight = false;
-					   bool dirLeft = false;
-					   bool blockedLeft = false;
-					   bool blockedRight = false;
-
-					   if ((dirToPoint | rightSide) > 0.0f)
-						   dirRight = true;
-					   else
-						   dirLeft = true;
-
-					   const Vector &testDir = m_moveSpeed > 0.0f ? g_pGlobals->v_forward : -g_pGlobals->v_forward;
-
-					   // now check which side is blocked
-					   src = pev->origin + g_pGlobals->v_right * 32.0f;
-					   dest = src + testDir * 32.0f;
-
-					   TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
-
-					   if (tr.flFraction != 1.0f)
-						   blockedRight = true;
-
-					   src = pev->origin - g_pGlobals->v_right * 32.0f;
-					   dest = src + testDir * 32.0f;
-
-					   TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
-
-					   if (tr.flFraction != 1.0f)
-						   blockedLeft = true;
-
-					   if (dirLeft)
-						   state[i] += 5;
-					   else
-						   state[i] -= 5;
-
-					   if (blockedLeft)
-						   state[i] -= 5;
-
-					   i++;
-
-					   if (dirRight)
-						   state[i] += 5;
-					   else
-						   state[i] -= 5;
-
-					   if (blockedRight)
-						   state[i] -= 5;
-				   }
-
-				   // now weight all possible states
-				   if (bits & COPROBE_JUMP)
-				   {
-					   state[i] = 0;
-
-					   if (CanJumpUp(directionNormal))
-						   state[i] += 10;
-
-					   if (m_destOrigin.z >= pev->origin.z + 18.0f)
-						   state[i] += 5;
-
-					   if (EntityIsVisible(m_destOrigin))
-					   {
-						   MakeVectors(m_moveAngles);
-
-						   src = EyePosition();
-						   src = src + g_pGlobals->v_right * 15.0f;
-
-						   TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
-
-						   if (tr.flFraction >= 1.0f)
-						   {
-							   src = EyePosition();
-							   src = src - g_pGlobals->v_right * 15.0f;
-
-							   TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
-
-							   if (tr.flFraction >= 1.0f)
-								   state[i] += 5;
-						   }
-					   }
-					   if (pev->flags & FL_DUCKING)
-						   src = pev->origin;
-					   else
-						   src = pev->origin + Vector(0.0f, 0.0f, -17.0f);
-
-					   dest = src + directionNormal * 30.0f;
-					   TraceLine(src, dest, true, true, GetEntity(), &tr);
-
-					   if (tr.flFraction != 1.0f)
-						   state[i] += 10;
-				   }
-				   else
-					   state[i] = 0;
-				   i++;
-				   state[i] = 0;
-				   i++;
-
-				   // weighted all possible moves, now sort them to start with most probable
-				   bool isSorting = false;
-
-				   do
-				   {
-					   isSorting = false;
-					   for (i = 0; i < 3; i++)
-					   {
-						   if (state[i + 3] < state[i + 3 + 1])
-						   {
-							   int temp = state[i];
-
-							   state[i] = state[i + 1];
-							   state[i + 1] = temp;
-
-							   temp = state[i + 3];
-
-							   state[i + 3] = state[i + 4];
-							   state[i + 4] = temp;
-
-							   isSorting = true;
-						   }
-					   }
-				   } while (isSorting);
-
-				   for (i = 0; i < 3; i++)
-					   m_collideMoves[i] = state[i];
-
-				   m_collideTime = engine->GetTime();
-				   m_probeTime = engine->GetTime() + 0.5f;
-				   m_collisionProbeBits = bits;
-				   m_collisionState = COSTATE_PROBING;
-				   m_collStateIndex = 0;
-			   }
-		   }
-
-		   if (m_collisionState == COSTATE_PROBING)
-		   {
-			   if (m_probeTime < engine->GetTime())
-			   {
-				   m_collStateIndex++;
-				   m_probeTime = engine->GetTime() + 0.5f;
-
-				   if (m_collStateIndex > 3)
-				   {
-					   m_navTimeset = engine->GetTime() - 5.0f;
-					   ResetCollideState();
-				   }
-			   }
-
-			   if (m_collStateIndex < 3)
-			   {
-				   switch (m_collideMoves[m_collStateIndex])
-				   {
-				   case COSTATE_JUMP:
-					   if (IsOnFloor() || IsInWater())
-					   {
-						   if (IsInWater() || !IsZombieEntity(GetEntity()) || m_damageTime < engine->GetTime() ||
-							   m_currentTravelFlags & PATHFLAG_JUMP || KnifeAttack())
-							   pev->button |= IN_JUMP;
-					   }
-					   break;
-
-				   case COSTATE_DUCK:
-					   if (IsOnFloor() || IsInWater())
-						   pev->button |= IN_DUCK;
-					   break;
-
-				   case COSTATE_STRAFELEFT:
-					   pev->button |= IN_MOVELEFT;
-					   SetStrafeSpeed(directionNormal, -pev->maxspeed);
-					   break;
-
-				   case COSTATE_STRAFERIGHT:
-					   pev->button |= IN_MOVERIGHT;
-					   SetStrafeSpeed(directionNormal, pev->maxspeed);
-					   break;
-				   }
-			   }
-		   }
-	   }
-	   
-   }
-   else
-	   m_isStuck = false;
+   CheckTerrain(directionNormal, movedDistance);
 
    // must avoid a grenade?
    if (m_needAvoidEntity != 0)

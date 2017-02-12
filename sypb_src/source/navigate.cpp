@@ -2408,6 +2408,290 @@ void Bot::CheckFall(void)
 				// SyPB Pro P.39 - Fall Ai improve
 				if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
 					m_enemyUpdateTime = engine->GetTime();
+
+				m_checkTerrain = false;
+			}
+		}
+	}
+}
+
+void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
+{
+	if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
+		m_checkTerrain = false;
+
+	m_isStuck = false;
+	if (!m_checkTerrain)
+		return;
+
+	// SyPB Pro P.49 - Base improve
+	if (!IsOnFloor() && !IsOnLadder() && !IsInWater())
+		return;
+
+	TraceResult tr;
+	Vector src, dest;
+
+	CheckCloseAvoidance(directionNormal);
+
+	// SyPB Pro P.42 - Bot Stuck improve
+	if ((m_moveSpeed <= -10 || m_moveSpeed >= 10 || m_strafeSpeed >= 10 || m_strafeSpeed <= -10) &&
+		m_lastCollTime < engine->GetTime())
+	{
+		// SyPB Pro P.38 - Get Stuck improve
+		if (m_damageTime >= engine->GetTime() && IsZombieEntity(GetEntity()))
+		{
+			m_lastCollTime = m_damageTime + 0.1f;
+			m_firstCollideTime = 0.0f;
+		}
+		else
+		{
+			if (movedDistance < 2.0f && m_prevSpeed >= 20.0f)
+			{
+				m_prevTime = engine->GetTime();
+				m_isStuck = true;
+
+				if (m_firstCollideTime == 0.0f)
+					m_firstCollideTime = engine->GetTime() + 0.2f;
+			}
+			else
+			{
+				// test if there's something ahead blocking the way
+				if (!IsOnLadder() && CantMoveForward(directionNormal, &tr))
+				{
+					if (m_firstCollideTime == 0.0f)
+						m_firstCollideTime = engine->GetTime() + 0.2f;
+
+					else if (m_firstCollideTime <= engine->GetTime())
+						m_isStuck = true;
+				}
+				else
+					m_firstCollideTime = 0.0f;
+			}
+		}
+	}
+
+	if (!m_isStuck) // not stuck?
+	{
+		if (m_probeTime + 0.5f < engine->GetTime())
+			ResetCollideState(); // reset collision memory if not being stuck for 0.5 secs
+		else
+		{
+			// remember to keep pressing duck if it was necessary ago
+			if (m_collideMoves[m_collStateIndex] == COSTATE_DUCK && IsOnFloor() || IsInWater())
+				pev->button |= IN_DUCK;
+		}
+
+		return;
+	}
+	// SyPB Pro P.47 - Base improve
+	// not yet decided what to do?
+	if (m_collisionState == COSTATE_UNDECIDED)
+	{
+		int bits = 0;
+
+		if (IsOnLadder())
+			bits |= COPROBE_STRAFE;
+		else if (IsInWater())
+			bits |= (COPROBE_JUMP | COPROBE_STRAFE);
+		else
+			bits |= (COPROBE_STRAFE | (engine->RandomInt(0, 10) > 7 ? COPROBE_JUMP : 0));
+
+		// collision check allowed if not flying through the air
+		if (IsOnFloor() || IsOnLadder() || IsInWater())
+		{
+			int state[8];
+			int i = 0;
+
+			// first 4 entries hold the possible collision states
+			state[i++] = COSTATE_STRAFELEFT;
+			state[i++] = COSTATE_STRAFERIGHT;
+			state[i++] = COSTATE_JUMP;
+			state[i++] = COSTATE_DUCK;
+
+			if (bits & COPROBE_STRAFE)
+			{
+				state[i] = 0;
+				state[i + 1] = 0;
+
+				// to start strafing, we have to first figure out if the target is on the left side or right side
+				MakeVectors(m_moveAngles);
+
+				Vector dirToPoint = (pev->origin - m_destOrigin).Normalize2D();
+				Vector rightSide = g_pGlobals->v_right.Normalize2D();
+
+				bool dirRight = false;
+				bool dirLeft = false;
+				bool blockedLeft = false;
+				bool blockedRight = false;
+
+				if ((dirToPoint | rightSide) > 0.0f)
+					dirRight = true;
+				else
+					dirLeft = true;
+
+				const Vector &testDir = m_moveSpeed > 0.0f ? g_pGlobals->v_forward : -g_pGlobals->v_forward;
+
+				// now check which side is blocked
+				src = pev->origin + g_pGlobals->v_right * 32.0f;
+				dest = src + testDir * 32.0f;
+
+				TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
+
+				if (tr.flFraction != 1.0f)
+					blockedRight = true;
+
+				src = pev->origin - g_pGlobals->v_right * 32.0f;
+				dest = src + testDir * 32.0f;
+
+				TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
+
+				if (tr.flFraction != 1.0f)
+					blockedLeft = true;
+
+				if (dirLeft)
+					state[i] += 5;
+				else
+					state[i] -= 5;
+
+				if (blockedLeft)
+					state[i] -= 5;
+
+				i++;
+
+				if (dirRight)
+					state[i] += 5;
+				else
+					state[i] -= 5;
+
+				if (blockedRight)
+					state[i] -= 5;
+			}
+
+			// now weight all possible states
+			if (bits & COPROBE_JUMP)
+			{
+				state[i] = 0;
+
+				if (CanJumpUp(directionNormal))
+					state[i] += 10;
+
+				if (m_destOrigin.z >= pev->origin.z + 18.0f)
+					state[i] += 5;
+
+				if (EntityIsVisible(m_destOrigin))
+				{
+					MakeVectors(m_moveAngles);
+
+					src = EyePosition();
+					src = src + g_pGlobals->v_right * 15.0f;
+
+					TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
+
+					if (tr.flFraction >= 1.0f)
+					{
+						src = EyePosition();
+						src = src - g_pGlobals->v_right * 15.0f;
+
+						TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
+
+						if (tr.flFraction >= 1.0f)
+							state[i] += 5;
+					}
+				}
+				if (pev->flags & FL_DUCKING)
+					src = pev->origin;
+				else
+					src = pev->origin + Vector(0.0f, 0.0f, -17.0f);
+
+				dest = src + directionNormal * 30.0f;
+				TraceLine(src, dest, true, true, GetEntity(), &tr);
+
+				if (tr.flFraction != 1.0f)
+					state[i] += 10;
+			}
+			else
+				state[i] = 0;
+			i++;
+			state[i] = 0;
+			i++;
+
+			// weighted all possible moves, now sort them to start with most probable
+			bool isSorting = false;
+
+			do
+			{
+				isSorting = false;
+				for (i = 0; i < 3; i++)
+				{
+					if (state[i + 3] < state[i + 3 + 1])
+					{
+						int temp = state[i];
+
+						state[i] = state[i + 1];
+						state[i + 1] = temp;
+
+						temp = state[i + 3];
+
+						state[i + 3] = state[i + 4];
+						state[i + 4] = temp;
+
+						isSorting = true;
+					}
+				}
+			} while (isSorting);
+
+			for (i = 0; i < 3; i++)
+				m_collideMoves[i] = state[i];
+
+			m_collideTime = engine->GetTime();
+			m_probeTime = engine->GetTime() + 0.5f;
+			m_collisionProbeBits = bits;
+			m_collisionState = COSTATE_PROBING;
+			m_collStateIndex = 0;
+		}
+	}
+
+	if (m_collisionState == COSTATE_PROBING)
+	{
+		if (m_probeTime < engine->GetTime())
+		{
+			m_collStateIndex++;
+			m_probeTime = engine->GetTime() + 0.5f;
+
+			if (m_collStateIndex > 3)
+			{
+				m_navTimeset = engine->GetTime() - 5.0f;
+				ResetCollideState();
+			}
+		}
+
+		if (m_collStateIndex < 3)
+		{
+			switch (m_collideMoves[m_collStateIndex])
+			{
+			case COSTATE_JUMP:
+				if (IsOnFloor() || IsInWater())
+				{
+					if (IsInWater() || !IsZombieEntity(GetEntity()) || m_damageTime < engine->GetTime() ||
+						m_currentTravelFlags & PATHFLAG_JUMP || KnifeAttack())
+						pev->button |= IN_JUMP;
+				}
+				break;
+
+			case COSTATE_DUCK:
+				if (IsOnFloor() || IsInWater())
+					pev->button |= IN_DUCK;
+				break;
+
+			case COSTATE_STRAFELEFT:
+				pev->button |= IN_MOVELEFT;
+				SetStrafeSpeed(directionNormal, -pev->maxspeed);
+				break;
+
+			case COSTATE_STRAFERIGHT:
+				pev->button |= IN_MOVERIGHT;
+				SetStrafeSpeed(directionNormal, pev->maxspeed);
+				break;
 			}
 		}
 	}
