@@ -54,6 +54,79 @@ int Bot::GetNearbyEnemiesNearPosition (Vector origin, int radius)
    return count;
 }
 
+void Bot::ResetCheckEnemy()
+{
+	edict_t *allEnemy[checkEnemyNum];
+	float allEnemyDistance[checkEnemyNum];
+
+	int team = GetTeam(GetEntity()), i;
+	edict_t *entity = null;
+	m_checkEnemyNum = 0;
+	for (i = 0; i < checkEnemyNum; i++)
+	{
+		allEnemy[i] = null;
+		allEnemyDistance[i] = 9999.9f;
+
+		m_checkEnemy[i] = null;
+		m_checkEnemyDistance[i] = 9999.9f;
+	}
+
+	for (i = 0; i < engine->GetMaxClients(); i++)
+	{
+		entity = INDEXENT(i + 1);
+		if (!IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
+			continue;
+
+		allEnemy[m_checkEnemyNum] = entity;
+		allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
+		m_checkEnemyNum++;
+	}
+
+	for (i = 0; i < entityNum; i++)
+	{
+		if (g_entityId[i] == -1 || g_entityAction[i] != 1 || team == g_entityTeam[i])
+			continue;
+
+		entity = INDEXENT(g_entityId[i]);
+		if (FNullEnt(entity) || !IsAlive(entity) || entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
+			continue;
+
+		allEnemy[m_checkEnemyNum] = entity;
+		allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
+		m_checkEnemyNum++;
+	}
+
+	for (i = 0; i < m_checkEnemyNum; i++)
+	{
+		for (int y = 0; y < checkEnemyNum; y++)
+		{
+			if (allEnemyDistance[i] > m_checkEnemyDistance[y])
+				continue;
+
+			if (allEnemyDistance[i] == m_checkEnemyDistance[y])
+			{
+				if ((pev->origin - GetEntityOrigin(allEnemy[i]).GetLength()) >
+					(pev->origin - GetEntityOrigin(m_checkEnemy[y]).GetLength()))
+					continue;
+			}
+
+			for (int z = m_checkEnemyNum - 1; z >= y; z--)
+			{
+				if (z == m_checkEnemyNum - 1 || m_checkEnemy[z] == null)
+					continue;
+
+				m_checkEnemy[z + 1] = m_checkEnemy[z];
+				m_checkEnemyDistance[z + 1] = m_checkEnemyDistance[z];
+			}
+
+			m_checkEnemy[y] = allEnemy[i];
+			m_checkEnemyDistance[y] = allEnemyDistance[i];
+
+			break;
+		}
+	}
+}
+
 // SyPB Pro P.42 - Find Enemy Ai improve
 float Bot::GetEntityDistance(edict_t *entity)
 {
@@ -109,30 +182,29 @@ bool Bot::LookupEnemy(void)
 	if (m_blindTime > engine->GetTime())
 		return false;
 
+	int team = GetTeam(GetEntity()), i;
+	bool isZombieBot = IsZombieEntity(GetEntity());
+	edict_t *entity = null, *targetEntity = null;
+	float enemy_distance = 9999.0f;
+	edict_t *oneTimeCheckEntity = null;
+
 	if (!FNullEnt(m_lastEnemy))
 	{
-		if (IsNotAttackLab(m_lastEnemy) || !IsAlive(m_lastEnemy) || (GetTeam(m_lastEnemy) == GetTeam(GetEntity())))
+		if (IsNotAttackLab(m_lastEnemy) || !IsAlive(m_lastEnemy) || (GetTeam(m_lastEnemy) == team))
 			SetLastEnemy(null);
 	}
 
 	if (!FNullEnt(m_lastVictim))
 	{
-		if (!IsValidPlayer(m_lastVictim) || !IsAlive(m_lastVictim) || (GetTeam(m_lastVictim) == GetTeam(GetEntity())))
+		if (!IsValidPlayer(m_lastVictim) || !IsAlive(m_lastVictim) || (GetTeam(m_lastVictim) == team))
 			m_lastVictim = null;
 	}
-
-	int team = GetTeam(GetEntity()), i;
-	bool isZombieBot = IsZombieEntity(GetEntity());
-	edict_t *entity = null, *targetEntity = null;
-	float enemy_distance = 9999.0f;
-
-	edict_t *oneTimeCheckEntity = null;
 
 	// SyPB Pro P.42 - AMXX API
 	if (m_enemyAPI != null)
 	{
 		if (m_blockCheckEnemyTime <= engine->GetTime() ||
-			!IsAlive(m_enemyAPI) || GetTeam(GetEntity()) == GetTeam(m_enemyAPI) || IsNotAttackLab(m_enemyAPI))
+			!IsAlive(m_enemyAPI) || team == GetTeam(m_enemyAPI) || IsNotAttackLab(m_enemyAPI))
 		{
 			m_enemyAPI = null;
 			m_blockCheckEnemyTime = engine->GetTime();
@@ -145,7 +217,7 @@ bool Bot::LookupEnemy(void)
 	{
 		// SyPB Pro P.42 - AMXX API
 		if ((!FNullEnt(m_enemyAPI) && m_enemyAPI != m_enemy) ||
-			GetTeam(GetEntity()) == GetTeam(m_enemy) || IsNotAttackLab(m_enemy) || !IsAlive(m_enemy))
+			team == GetTeam(m_enemy) || IsNotAttackLab(m_enemy) || !IsAlive(m_enemy))
 		{
 			// SyPB Pro P.41 - LookUp Enemy fixed
 			SetEnemy(null);
@@ -156,7 +228,6 @@ bool Bot::LookupEnemy(void)
 		// SyPB Pro P.40 - Trace Line improve
 		if ((m_enemyUpdateTime > engine->GetTime()))
 		{
-			// if (IsEnemyViewable(m_enemy, true, true))
 			// SyPB Pro P.48 - Non-See Enemy improve
 			if (IsEnemyViewable(m_enemy, true, true) || IsShootableThruObstacle(m_enemy))
 			{
@@ -174,7 +245,7 @@ bool Bot::LookupEnemy(void)
 	{
 		// SyPB Pro P.42 - AMXX API
 		if ((!FNullEnt(m_enemyAPI) && m_enemyAPI != m_moveTargetEntity) ||
-			GetTeam(GetEntity()) == GetTeam(m_moveTargetEntity) || !IsAlive(m_moveTargetEntity) ||
+			team == GetTeam(m_moveTargetEntity) || !IsAlive(m_moveTargetEntity) ||
 			GetEntityOrigin(m_moveTargetEntity) == nullvec)
 			SetMoveTarget(null);
 
@@ -200,78 +271,7 @@ bool Bot::LookupEnemy(void)
 	}
 	else
 	{
-		// SyPB Pro P.42 - Entity Action - Enemy
-		int allEnemy = 0;
-		for (i = 0; i < checkEnemyNum; i++)
-		{
-			m_allEnemyId[i] = -1;
-			m_allEnemyDistance[i] = 9999.9f;
-
-			m_enemyEntityId[i] = -1;
-			m_enemyEntityDistance[i] = 9999.9f;
-		}
-
-		for (i = 0; i < engine->GetMaxClients(); i++)
-		{
-			entity = INDEXENT(i + 1);
-
-			if (!IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
-				continue;
-
-			m_allEnemyId[allEnemy] = i + 1;
-			m_allEnemyDistance[allEnemy] = GetEntityDistance(entity);
-			allEnemy++;
-		}
-
-		for (i = 0; i < entityNum; i++)
-		{
-			if (g_entityId[i] == -1 || g_entityAction[i] != 1)
-				continue;
-
-			if (GetTeam(GetEntity()) == g_entityTeam[i])
-				continue;
-
-			entity = INDEXENT(g_entityId[i]);
-			if (FNullEnt(entity) || !IsAlive(entity))
-				continue;
-
-			if (entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
-				continue;
-
-			m_allEnemyId[allEnemy] = g_entityId[i];
-			m_allEnemyDistance[allEnemy] = GetEntityDistance(entity);
-			allEnemy++;
-		}
-
-		for (i = 0; i < allEnemy; i++)
-		{
-			for (int y = 0; y < checkEnemyNum; y++)
-			{
-				if (m_allEnemyDistance[i] > m_enemyEntityDistance[y])
-					continue;
-
-				if (m_allEnemyDistance[i] == m_enemyEntityDistance[y])
-				{
-					if ((pev->origin - GetEntityOrigin(INDEXENT(m_allEnemyId[i])).GetLength()) >
-						(pev->origin - GetEntityOrigin(INDEXENT(m_enemyEntityId[y])).GetLength()))
-						continue;
-				}
-
-				for (int z = allEnemy - 1; z >= y; z--)
-				{
-					if (z == allEnemy - 1 || m_enemyEntityId[z] == -1)
-						continue;
-
-					m_enemyEntityId[z + 1] = m_enemyEntityId[z];
-					m_enemyEntityDistance[z + 1] = m_enemyEntityDistance[z];
-				}
-
-				m_enemyEntityId[y] = m_allEnemyId[i];
-				m_enemyEntityDistance[y] = m_allEnemyDistance[i];
-
-				break;
-			}
-		}
+		ResetCheckEnemy();
 
 		// SyPB Pro P.42 - Look up enemy improve
 		bool allCheck = false;
@@ -283,12 +283,12 @@ bool Bot::LookupEnemy(void)
 				allCheck = true;
 		}
 
-		for (i = 0; i < checkEnemyNum; i++)
+		for (i = 0; i < m_checkEnemyNum; i++)
 		{
-			if (m_enemyEntityId[i] == -1)
+			if (m_checkEnemy[i] == null)
 				continue;
 
-			entity = INDEXENT(m_enemyEntityId[i]);
+			entity = m_checkEnemy[i];
 			if (entity == oneTimeCheckEntity)
 				continue;
 
@@ -303,7 +303,7 @@ bool Bot::LookupEnemy(void)
 
 			if (IsEnemyViewable(entity, true, allCheck, true))
 			{
-				enemy_distance = m_enemyEntityDistance[i];
+				enemy_distance = m_checkEnemyDistance[i];
 				targetEntity = entity;
 				oneTimeCheckEntity = entity;
 

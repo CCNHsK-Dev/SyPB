@@ -930,6 +930,8 @@ private:
    void SelectWeaponbyNumber (int num);
    int GetHighestWeapon (void);
 
+   void ResetCheckEnemy(void);
+
    float GetEntityDistance(edict_t *entity);
 
    bool IsEnemyProtectedByShield (edict_t *enemy);
@@ -1063,12 +1065,10 @@ public:
    int m_ammoInClip[Const_MaxWeapons]; // ammo in clip for each weapons
    int m_ammo[MAX_AMMO_SLOTS]; // total ammo amounts
 
-   // SyPB Pro P.42 - Entity Action 
-   int m_allEnemyId[checkEnemyNum];
-   float m_allEnemyDistance[checkEnemyNum];
-
-   int m_enemyEntityId[checkEnemyNum];
-   float m_enemyEntityDistance[checkEnemyNum];
+   // SyPB Pro P.49 - Check Enemy improve
+   int m_checkEnemyNum;
+   edict_t *m_checkEnemy[checkEnemyNum];
+   float m_checkEnemyDistance[checkEnemyNum];
 
    Bot (edict_t *bot, int skill, int personality, int team, int member);
   ~Bot (void);
