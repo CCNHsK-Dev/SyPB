@@ -122,6 +122,7 @@ bool Bot::LookupEnemy(void)
 	}
 
 	int team = GetTeam(GetEntity()), i;
+	bool isZombieBot = IsZombieEntity(GetEntity());
 	edict_t *entity = null, *targetEntity = null;
 	float enemy_distance = 9999.0f;
 
@@ -274,7 +275,7 @@ bool Bot::LookupEnemy(void)
 
 		// SyPB Pro P.42 - Look up enemy improve
 		bool allCheck = false;
-		if ((IsZombieEntity(GetEntity()) ||
+		if ((isZombieBot ||
 			(m_currentWaypointIndex == WEAPON_KNIFE && targetEntity == m_moveTargetEntity)) &&
 			FNullEnt(m_enemy) && !FNullEnt(m_moveTargetEntity))
 		{
@@ -354,7 +355,7 @@ bool Bot::LookupEnemy(void)
 	// SyPB Pro P.48 - Shootable Thru Obstacle improve
 	if (!FNullEnt(m_enemy) && FNullEnt(targetEntity))
 	{
-		if (IsZombieEntity(GetEntity()) || 
+		if (isZombieBot ||
 			(m_currentWaypointIndex == WEAPON_KNIFE && targetEntity == m_moveTargetEntity))
 		{
 			g_botsCanPause = false;
@@ -373,7 +374,7 @@ bool Bot::LookupEnemy(void)
 	if (!FNullEnt(targetEntity))
 	{
 		// SyPB Pro P.34 - Zombie Ai
-		if (IsZombieEntity(GetEntity()) || m_currentWeapon == WEAPON_KNIFE)
+		if (isZombieBot || m_currentWeapon == WEAPON_KNIFE)
 		{
 			// SyPB Pro P.38 - Zombie Ai
 			bool moveTotarget = true;
@@ -470,7 +471,7 @@ bool Bot::LookupEnemy(void)
 		SetLastEnemy(m_enemy);
 		m_seeEnemyTime = engine->GetTime();
 
-		if (!IsZombieEntity(GetEntity()))
+		if (!isZombieBot)
 			m_enemyUpdateTime = engine->GetTime() + 0.6f;
 
 		return true;

@@ -713,7 +713,7 @@ void AutoLoadGameMode(void)
 			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
 			{
 				if (bteGameModAi[i] == 2 && i != 5)
-					g_DelayTimer = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
+					g_gameStartTime = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
 
 				if (checkShowTextTime < 3 || g_gameMode != bteGameModAi[i])
 					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
@@ -769,7 +769,7 @@ void AutoLoadGameMode(void)
 				SetGameMod(MODE_ZP);
 
 				// SyPB Pro P.34 - ZP TIME FIXED
-				g_DelayTimer = engine->GetTime() + delayTime;
+				g_gameStartTime = engine->GetTime() + delayTime;
 
 				goto lastly;
 			}
@@ -917,7 +917,7 @@ int GetTeam (edict_t *ent)
 		player_team = client + 10;
 	else if (g_gameMode == MODE_ZP)
 	{
-		if (g_DelayTimer > engine->GetTime())
+		if (g_gameStartTime > engine->GetTime())
 			player_team = 2;
 		else if (g_roundEnded)
 			player_team = TEAM_TERRORIST;

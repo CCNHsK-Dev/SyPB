@@ -62,7 +62,7 @@ extern float g_timeNextBombUpdate;
 extern float g_timeRoundStart;
 extern float g_lastRadioTime[2];
 
-extern float g_DelayTimer;
+extern float g_gameStartTime;
 
 extern int g_mapType;
 extern int g_numWaypoints;

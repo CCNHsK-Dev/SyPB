@@ -1844,6 +1844,8 @@ bool Bot::HeadTowardWaypoint (void)
 			 // SyPB Pro P.48 - Jump improve 
 			 if (willJump && !(m_states & STATE_SEEINGENEMY) && FNullEnt (m_lastEnemy) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading &&
 				 (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || pev->maxspeed <= 210))
+				 // SyPB Pro P.49 - Jump Fixed
+				 SelectWeaponByName("weapon_knife");
 
 			// SyPB Pro P.42 - Ladder improve
 			if (!IsAntiBlock(GetEntity()) && !IsOnLadder () &&

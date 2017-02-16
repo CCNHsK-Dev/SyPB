@@ -61,7 +61,7 @@ float g_timeBombPlanted = 0.0f;
 float g_lastRadioTime[2] = {0.0f, 0.0f};
 float g_autoPathDistance = 250.0f;
 
-float g_DelayTimer = 0.0f;
+float g_gameStartTime = 0.0f;
 
 int g_lastRadio[2];
 int g_storeAddbotVars[4];

@@ -1734,6 +1734,7 @@ void Bot::SetConditions (void)
    // action after applying all of the Filters
 
    int team = GetTeam (GetEntity ());
+   bool isZombieBot = IsZombieEntity(GetEntity());
    m_aimFlags = 0;
 
    // slowly increase/decrease dynamic emotions back to their base level
@@ -1934,7 +1935,7 @@ void Bot::SetConditions (void)
          ratio = timeHeard * 0.1f;
       }
       
-      if (IsZombieEntity (GetEntity ()))
+      if (isZombieBot)
       	  ratio = 0;
       else 
       {
@@ -1949,8 +1950,8 @@ void Bot::SetConditions (void)
       }
       
 	  // SyPB Pro P.38 - Small Change
-	  if (distance > 500.0f || (!IsZombieEntity(GetEntity()) &&
-		  ((!FNullEnt(m_enemy) && IsZombieEntity(m_enemy)) || (!FNullEnt(m_lastEnemy) && IsZombieEntity(m_lastEnemy)))))
+	  if (distance > 500.0f || (!isZombieBot) &&
+		  ((!FNullEnt(m_enemy) && IsZombieEntity(m_enemy)) || (!FNullEnt(m_lastEnemy) && IsZombieEntity(m_lastEnemy))))
 		  g_taskFilters[TASK_SEEKCOVER].desire = retreatLevel * ratio;
       
       // if half of the round is over, allow hunting
@@ -3637,6 +3638,7 @@ void Bot::RunTask (void)
    // this is core function that handle task execution
 
    int team = GetTeam (GetEntity ());
+   bool isZombieBot = IsZombieEntity(GetEntity());
    int destIndex, i;
 
    Vector src, destination;
@@ -3814,7 +3816,7 @@ void Bot::RunTask (void)
             }
          }
 		 // SyPB Pro P.30 - Zombie Mode Human Camp
-		 else if (g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()))
+		 else if (g_gameMode == MODE_ZP && !isZombieBot)
 			 ZmCampPointAction(1);
          else if (g_gameMode == MODE_BASE)
          {
@@ -3926,7 +3928,7 @@ void Bot::RunTask (void)
 			  m_moveSpeed = m_minSpeed;
 
 		  // SyPB Pro P.30 - Zombie Mode Human Camp
-		  if (g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()) &&
+		  if (g_gameMode == MODE_ZP && !isZombieBot &&
 			  // SyPB Pro P.48 - Zombie Mode Human Camp Fixed
 			 !g_waypoint->m_zmHmPoints.IsEmpty())
 		  {
@@ -3944,7 +3946,7 @@ void Bot::RunTask (void)
       if (engine->IsFootstepsOn () && m_skill > 80 && !(m_aimFlags & AIM_ENEMY) && 
 		  (m_heardSoundTime + 13.0f >= engine->GetTime () || (m_states & (STATE_HEARENEMY))) && 
 		  GetNearbyEnemiesNearPosition (pev->origin, 1024) >= 1 && !(m_currentTravelFlags & PATHFLAG_JUMP) && 
-		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && !g_bombPlanted && !IsZombieEntity (GetEntity ()))
+		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && !g_bombPlanted && !isZombieBot)
          m_moveSpeed = GetWalkSpeed ();
 
       // bot hasn't seen anything in a long time and is asking his teammates to report in
@@ -4128,7 +4130,7 @@ void Bot::RunTask (void)
          DeleteSearchNodes ();
 
 		 // SyPB Pro P.38 - Zombie Mode Camp improve
-		 if (g_gameMode == MODE_ZP && !IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
+		 if (g_gameMode == MODE_ZP && !isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
 			 destIndex = FindGoal();
 		 else if (GetCurrentTask()->data != -1)
 			 destIndex = m_tasks->data;
@@ -4253,7 +4255,7 @@ void Bot::RunTask (void)
    // camping behaviour
    case TASK_CAMP:
 	   // SyPB Pro P.42 - Base Change 
-	   if (IsZombieEntity(GetEntity()) || (g_gameMode == MODE_DM && pev->health > pev->max_health / 2))
+	   if (isZombieBot || (g_gameMode == MODE_DM && pev->health > pev->max_health / 2))
 	   {
 		   TaskComplete();
 		   break;
@@ -4377,7 +4379,7 @@ void Bot::RunTask (void)
    // hiding behaviour
    case TASK_HIDE:
 	   // SyPB Pro P.37 - small change
-	   if (IsZombieEntity(GetEntity()) || (g_gameMode == MODE_DM && pev->health > pev->max_health/2))
+	   if (isZombieBot || (g_gameMode == MODE_DM && pev->health > pev->max_health/2))
 	   {
 		   TaskComplete();
 		   break;
@@ -4743,7 +4745,7 @@ void Bot::RunTask (void)
 	   }
 
 	   // SyPB Pro P.48 - More Mode Support improve 
-	   if (!IsZombieEntity(GetEntity()) && m_currentWeapon == WEAPON_KNIFE)
+	   if (!isZombieBot && m_currentWeapon == WEAPON_KNIFE)
 		   SelectBestWeapon();
 
 	   m_aimFlags |= AIM_NAVPOINT;
@@ -5166,7 +5168,7 @@ void Bot::RunTask (void)
 		  KnifeAttack();
 		  m_checkTerrain = true;
 		  
-		  if (!IsZombieEntity(GetEntity()))
+		  if (!isZombieBot)
 			  SelectBestWeapon();
 	  }
 	  m_wantsToFire = true;
@@ -5770,14 +5772,15 @@ void Bot::BotAI (void)
 
    float movedDistance = 2.0f; // length of different vector (distance bot moved)
    int team = GetTeam (GetEntity ());
+   bool isZombieBot = IsZombieEntity(GetEntity());
 
    // SyPB Pro P.43 - Base Mode Small improve
-   if (m_checkKnifeSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat(4.0f, 6.5f) < engine->GetTime())
+   if (g_gameMode == MODE_BASE)
    {
-	   m_checkKnifeSwitch = false;
-
-	   if (g_gameMode == MODE_BASE)
+	   if (m_checkKnifeSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat(4.0f, 6.5f) < engine->GetTime())
 	   {
+		   m_checkKnifeSwitch = false;
+
 		   if (sypb_spraypaints.GetBool() && engine->RandomInt(1, 100) < 2)
 			   PushTask(TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime() + 1.0f, false);
 
@@ -5786,12 +5789,19 @@ void Bot::BotAI (void)
 			   SelectWeaponByName("weapon_knife");
 	   }
    }
-
-
-   // SyPB Pro P.30 - Zombie Ai
-   if ((g_gameMode == MODE_ZH || g_gameMode == MODE_ZP) &&
-	   IsZombieEntity(GetEntity()) && m_currentWeapon != WEAPON_KNIFE)
-	   SelectWeaponByName("weapon_knife");
+   // SyPB Pro P.49 - Zombie Mode improve
+   else if ((g_gameMode == MODE_ZH || g_gameMode == MODE_ZP))
+   {
+	   if (isZombieBot && m_currentWeapon != WEAPON_KNIFE)
+		   SelectWeaponByName("weapon_knife");
+	   else if (!isZombieBot)
+	   {
+		   if (g_gameStartTime - 2.0f > engine->GetTime())
+			   SelectWeaponByName("weapon_knife");
+		   else if (g_gameStartTime > engine->GetTime())
+			   SelectBestWeapon();
+	   }
+   }
 
    // check if we already switched weapon mode
    if (m_checkWeaponSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat (2.0f, 3.5f) < engine->GetTime ())
@@ -5903,7 +5913,7 @@ void Bot::BotAI (void)
 	   (((m_aimFlags & AIM_ENEMY) || (m_states & (STATE_SEEINGENEMY)) || !FNullEnt(m_enemy)) ||
 	   ((GetCurrentTask()->taskID == TASK_SEEKCOVER) && (m_isReloading || m_isVIP))) &&
 		   ((g_gameMode == MODE_BASE && m_skill >= 75) || (g_gameMode == MODE_DM && m_skill >= 60) ||
-	   (IsZombieEntity(GetEntity())) || UsesSniper () || !IsValidPlayer (m_enemy)))
+			   isZombieBot || UsesSniper () || !IsValidPlayer (m_enemy)))
    {
 	   m_moveToGoal = false; // don't move to goal
 	   m_navTimeset = engine->GetTime();
