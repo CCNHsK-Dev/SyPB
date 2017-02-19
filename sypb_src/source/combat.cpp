@@ -56,16 +56,13 @@ int Bot::GetNearbyEnemiesNearPosition (Vector origin, int radius)
 
 void Bot::ResetCheckEnemy()
 {
-	edict_t *allEnemy[checkEnemyNum];
-	float allEnemyDistance[checkEnemyNum];
-
 	int team = GetTeam(GetEntity()), i;
 	edict_t *entity = null;
 	m_checkEnemyNum = 0;
 	for (i = 0; i < checkEnemyNum; i++)
 	{
-		allEnemy[i] = null;
-		allEnemyDistance[i] = 9999.9f;
+		m_allEnemy[i] = null;
+		m_allEnemyDistance[i] = 9999.9f;
 
 		m_checkEnemy[i] = null;
 		m_checkEnemyDistance[i] = 9999.9f;
@@ -77,8 +74,8 @@ void Bot::ResetCheckEnemy()
 		if (!IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
 			continue;
 
-		allEnemy[m_checkEnemyNum] = entity;
-		allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
+		m_allEnemy[m_checkEnemyNum] = entity;
+		m_allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
 		m_checkEnemyNum++;
 	}
 
@@ -91,8 +88,8 @@ void Bot::ResetCheckEnemy()
 		if (FNullEnt(entity) || !IsAlive(entity) || entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
 			continue;
 
-		allEnemy[m_checkEnemyNum] = entity;
-		allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
+		m_allEnemy[m_checkEnemyNum] = entity;
+		m_allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
 		m_checkEnemyNum++;
 	}
 
@@ -100,12 +97,12 @@ void Bot::ResetCheckEnemy()
 	{
 		for (int y = 0; y < checkEnemyNum; y++)
 		{
-			if (allEnemyDistance[i] > m_checkEnemyDistance[y])
+			if (m_allEnemyDistance[i] > m_checkEnemyDistance[y])
 				continue;
 
-			if (allEnemyDistance[i] == m_checkEnemyDistance[y])
+			if (m_allEnemyDistance[i] == m_checkEnemyDistance[y])
 			{
-				if ((pev->origin - GetEntityOrigin(allEnemy[i]).GetLength()) >
+				if ((pev->origin - GetEntityOrigin(m_allEnemy[i]).GetLength()) >
 					(pev->origin - GetEntityOrigin(m_checkEnemy[y]).GetLength()))
 					continue;
 			}
@@ -119,8 +116,8 @@ void Bot::ResetCheckEnemy()
 				m_checkEnemyDistance[z + 1] = m_checkEnemyDistance[z];
 			}
 
-			m_checkEnemy[y] = allEnemy[i];
-			m_checkEnemyDistance[y] = allEnemyDistance[i];
+			m_checkEnemy[y] = m_allEnemy[i];
+			m_checkEnemyDistance[y] = m_allEnemyDistance[i];
 
 			break;
 		}
@@ -192,12 +189,6 @@ bool Bot::LookupEnemy(void)
 	{
 		if (IsNotAttackLab(m_lastEnemy) || !IsAlive(m_lastEnemy) || (GetTeam(m_lastEnemy) == team))
 			SetLastEnemy(null);
-	}
-
-	if (!FNullEnt(m_lastVictim))
-	{
-		if (!IsValidPlayer(m_lastVictim) || !IsAlive(m_lastVictim) || (GetTeam(m_lastVictim) == team))
-			m_lastVictim = null;
 	}
 
 	// SyPB Pro P.42 - AMXX API
@@ -348,7 +339,7 @@ bool Bot::LookupEnemy(void)
 	if (!FNullEnt(targetEntity))  // Last Checking
 	{
 		enemy_distance = GetEntityDistance(targetEntity);
-		if (oneTimeCheckEntity != targetEntity && !IsEnemyViewable(targetEntity, true, true))
+		if (!IsEnemyViewable(targetEntity, true, true))
 			targetEntity = null;
 	}
 

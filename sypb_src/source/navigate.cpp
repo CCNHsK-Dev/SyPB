@@ -2286,53 +2286,63 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 
 int Bot::GetCampAimingWaypoint(void)
 {
-   // Find a good WP to look at when camping
+	// Find a good WP to look at when camping
 
-   int count = 0, indeces[3];
-   float distTab[3];
-   uint16 visibility[3];
+	int count = 0, indeces[3];
+	float distTab[3];
+	uint16 visibility[3];
 
-   int currentWaypoint = GetEntityWaypoint(GetEntity());
-   if (currentWaypoint == -1)
-	   return engine->RandomInt(0, g_numWaypoints - 1);
+	if (m_currentWaypointIndex == -1)
+		return engine->RandomInt(0, g_numWaypoints - 1);
 
-   for (int i = 0; i < g_numWaypoints; i++)
-   {
-      if (currentWaypoint == i || !g_waypoint->IsVisible (currentWaypoint, i))
-         continue;
+	for (int i = 0; i < g_numWaypoints; i++)
+	{
+		if (m_currentWaypointIndex == i || !g_waypoint->IsVisible(m_currentWaypointIndex, i))
+			continue;
 
-      if (count < 3)
-      {
-         indeces[count] = i;
+		if (count < 3)
+		{
+			indeces[count] = i;
 
-         distTab[count] = (pev->origin - g_waypoint->GetPath (i)->origin).GetLengthSquared ();
-         visibility[count] = g_waypoint->GetPath (i)->vis.crouch + g_waypoint->GetPath (i)->vis.stand;
+			distTab[count] = (pev->origin - g_waypoint->GetPath(i)->origin).GetLengthSquared();
+			visibility[count] = g_waypoint->GetPath(i)->vis.crouch + g_waypoint->GetPath(i)->vis.stand;
 
-         count++;
-      }
-      else
-      {
-         float distance = (pev->origin - g_waypoint->GetPath (i)->origin).GetLengthSquared ();
-         uint16 visBits  = g_waypoint->GetPath (i)->vis.crouch + g_waypoint->GetPath (i)->vis.stand;
+			count++;
+		}
+		else
+		{
+			float distance = (pev->origin - g_waypoint->GetPath(i)->origin).GetLengthSquared();
+			uint16 visBits = g_waypoint->GetPath(i)->vis.crouch + g_waypoint->GetPath(i)->vis.stand;
 
-         for (int j = 0; j < 3; j++)
-         {
-            if (visBits >= visibility[j] && distance > distTab[j])
-            {
-               indeces[j] = i;
+			for (int j = 0; j < 3; j++)
+			{
+				if (visBits >= visibility[j] && distance > distTab[j])
+				{
+					indeces[j] = i;
 
-               distTab[j] = distance;
-               visibility[j] = visBits;
+					distTab[j] = distance;
+					visibility[j] = visBits;
 
-               break;
-            }
-         }
-      }
-   }
-   count--;
+					break;
+				}
+			}
+		}
+	}
+	count--;
 
-   if (count >= 0)
-      return indeces[engine->RandomInt (0, count)];
+	if (count >= 0)
+		return indeces[engine->RandomInt(0, count)];
+
+	// SyPB Pro P.49 - Camp Look At improve
+	Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+	for (int i = 0; i < Const_MaxPathIndex; i++)
+	{
+		if (path->index[i] == -1)
+			continue;
+
+		if (engine->RandomInt (0, 1) == 1)
+			return path->index[i];
+	}
 
    return engine->RandomInt (0, g_numWaypoints - 1);
 }

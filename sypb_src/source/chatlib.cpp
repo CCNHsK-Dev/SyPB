@@ -332,13 +332,7 @@ void Bot::PrepareChatMessage (char *text)
                   strcat (m_tempStrings, "Counter-Strike");
             }
          }
-         else if (*pattern == 'v')
-         {
-            talkEntity = m_lastVictim;
 
-            if (!FNullEnt (talkEntity))
-               strcat (m_tempStrings, HumanizeName (const_cast <char *> (GetEntityName(talkEntity))));
-         }
          pattern++;
          textStart = pattern;
       }

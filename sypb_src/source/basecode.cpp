@@ -102,6 +102,8 @@ bool Bot::IsInViewCone (Vector origin)
 // SyPB Pro P.41 - Look up enemy improve
 bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *bodyPart)
 {
+	edict_t *entity = ENT(targetEntity);
+
 	TraceResult tr;
 	*bodyPart = 0;
 
@@ -110,20 +112,20 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 	if (pev->flags & FL_DUCKING)
 		botHead = botHead + (VEC_HULL_MIN - VEC_DUCK_HULL_MIN);
 
-	TraceLine(botHead, GetEntityOrigin(ENT(targetEntity)), true, true, GetEntity(), &tr);
-	if (tr.pHit == ENT(targetEntity) || tr.flFraction >= 1.0f)
+	TraceLine(botHead, GetEntityOrigin(entity), true, true, GetEntity(), &tr);
+	if (tr.pHit == entity || tr.flFraction >= 1.0f)
 	{
 		*bodyPart |= VISIBILITY_BODY;
 		*origin = tr.vecEndPos;
 	}
 
-	if (!IsValidPlayer(ENT(targetEntity)))
+	if (!IsValidPlayer(entity))
 		return (*bodyPart != 0);
 
 	// SyPB Pro P.42 - Get Head Origin 
-	Vector headOrigin = GetPlayerHeadOrigin(ENT(targetEntity));
+	Vector headOrigin = GetPlayerHeadOrigin(entity);
 	TraceLine(botHead, headOrigin, true, true, GetEntity(), &tr);
-	if (tr.pHit == ENT(targetEntity) || tr.flFraction >= 1.0f)
+	if (tr.pHit == entity || tr.flFraction >= 1.0f)
 	{
 		*bodyPart |= VISIBILITY_HEAD;
 		*origin = headOrigin;
@@ -368,9 +370,10 @@ void Bot::ZmCampPointAction(int mode)
 				movePoint++;
 				if (GetCurrentTask()->data == navid->index)
 				{
-					if ((g_waypoint->GetPath(navid->index)->origin - pev->origin).GetLength2D() <= 250.0f &&
-						g_waypoint->GetPath(navid->index)->origin.z + 40.0f <= pev->origin.z &&
-						g_waypoint->GetPath(navid->index)->origin.z - 25.0f >= pev->origin.z &&
+					Vector pointOrigin = g_waypoint->GetPath(navid->index)->origin;
+					if ((pointOrigin - pev->origin).GetLength2D() <= 250.0f &&
+						pointOrigin.z + 40.0f <= pev->origin.z &&
+						pointOrigin.z - 25.0f >= pev->origin.z &&
 						IsWaypointUsed(navid->index))
 					{
 						campAction = (movePoint * 1.8f);
@@ -433,16 +436,15 @@ void Bot::AvoidEntity(void)
 
 	edict_t *entity = null;
 	int i, allEntity = 0;
-	int avoidEntityId[checkEntityNum];
 	for (i = 0; i < checkEntityNum; i++)
-		avoidEntityId[i] = -1;
+		m_allAvoidEntity[i] = null;
 
 	while (!FNullEnt(entity = FIND_ENTITY_BY_CLASSNAME(entity, "grenade")))
 	{
 		if (strcmp(STRING(entity->v.model) + 9, "smokegrenade.mdl") == 0)
 			continue;
 
-		avoidEntityId[allEntity] = ENTINDEX(entity);
+		m_allAvoidEntity[allEntity] = entity;
 		allEntity++;
 
 		if (allEntity >= checkEntityNum)
@@ -464,16 +466,16 @@ void Bot::AvoidEntity(void)
 		if (FNullEnt(entity) || entity->v.effects & EF_NODRAW)
 			continue;
 
-		avoidEntityId[allEntity] = g_entityId[i];
+		m_allAvoidEntity[allEntity] = entity;
 		allEntity++;
 	}
 
 	for (i = 0; i < allEntity; i++)
 	{
-		if (avoidEntityId[i] == -1)
+		if (m_allAvoidEntity[i] == null)
 			continue;
 
-		entity = INDEXENT(avoidEntityId[i]);
+		entity = m_allAvoidEntity[i];
 
 		if (strcmp(STRING(entity->v.classname), "grenade") == 0)
 		{
@@ -725,6 +727,7 @@ void Bot::FindItem(void)
 		}
 	}
 
+	int team = GetTeam(GetEntity());
 	edict_t *pickupItem = null;
 	m_pickupItem = null;
 	m_pickupType = PICKTYPE_NONE;
@@ -751,7 +754,7 @@ void Bot::FindItem(void)
 			pickupType = PICKTYPE_WEAPON;
 		else if (strncmp("weapon_shield", STRING(ent->v.classname), 13) == 0 && !m_isUsingGrenade)
 			pickupType = PICKTYPE_SHIELDGUN;
-		else if (strncmp("item_thighpack", STRING(ent->v.classname), 14) == 0 && GetTeam(GetEntity()) == TEAM_COUNTER && !m_hasDefuser)
+		else if (strncmp("item_thighpack", STRING(ent->v.classname), 14) == 0 && team == TEAM_COUNTER && !m_hasDefuser)
 			pickupType = PICKTYPE_DEFUSEKIT;
 		else if (strncmp("grenade", STRING(ent->v.classname), 7) == 0 && strcmp(STRING(ent->v.model) + 9, "c4.mdl") == 0)
 			pickupType = PICKTYPE_PLANTEDC4;
@@ -762,7 +765,7 @@ void Bot::FindItem(void)
 				if (g_entityId[i] == -1 || g_entityAction[i] != 3)
 					continue;
 
-				if (GetTeam(GetEntity()) != g_entityTeam[i] && g_entityTeam[i] != 2)
+				if (team != g_entityTeam[i] && g_entityTeam[i] != 2)
 					continue;
 
 				if (ent != INDEXENT(g_entityId[i]))
@@ -853,9 +856,9 @@ void Bot::FindItem(void)
 			if ((pev->weapons & (1 << WEAPON_ELITE)) || HasShield() || m_isVIP || (HasPrimaryWeapon() && !RateGroundWeapon(ent)))
 				allowPickup = false;
 		}
-		else if (GetTeam(GetEntity()) != TEAM_TERRORIST && GetTeam(GetEntity()) != TEAM_COUNTER)
+		else if (team != TEAM_TERRORIST && team != TEAM_COUNTER)
 			allowPickup = false;
-		else if (GetTeam(GetEntity()) == TEAM_TERRORIST)
+		else if (team == TEAM_TERRORIST)
 		{
 			if (pickupType == PICKTYPE_DROPPEDC4)
 			{
@@ -910,7 +913,7 @@ void Bot::FindItem(void)
 				}
 			}
 		}
-		else if (GetTeam(GetEntity()) == TEAM_COUNTER)
+		else if (team == TEAM_COUNTER)
 		{
 			if (pickupType == PICKTYPE_HOSTAGE)
 			{
@@ -1777,42 +1780,6 @@ void Bot::SetConditions (void)
 	   SetEnemy(null);
    }
 
-   // SyPB Pro P.42 - Small improve
-   if (m_lastVictim != null && (!IsAlive(m_lastVictim) || !IsValidPlayer(m_lastVictim)))
-	   m_lastVictim = null;
-
-   // did bot just kill an enemy?
-   if (!FNullEnt (m_lastVictim))
-   {
-      if (GetTeam (m_lastVictim) != team)
-      {
-         // add some aggression because we just killed somebody
-         m_agressionLevel += 0.1f;
-
-         if (m_agressionLevel > 1.0f)
-            m_agressionLevel = 1.0f;
-
-         if (engine->RandomInt (1, 100) > 50)
-            ChatMessage (CHAT_KILL);
-
-         if (engine->RandomInt (1, 100) < 10)
-            RadioMessage (Radio_EnemyDown);
-
-         // if no more enemies found AND bomb planted, switch to knife to get to bombplace faster
-         if (GetTeam (GetEntity ()) == TEAM_COUNTER && m_currentWeapon != WEAPON_KNIFE && GetNearbyEnemiesNearPosition (pev->origin, 9999) == 0 && g_bombPlanted)
-         {
-            SelectWeaponByName ("weapon_knife");
-
-            // order team to regroup
-            RadioMessage (Radio_RegroupTeam);
-         }
-      }
-	  else
-         ChatMessage (CHAT_TEAMKILL, true);
-
-      m_lastVictim = null;
-   }
-
    // check if our current enemy is still valid
    if (!FNullEnt(m_lastEnemy))
    {
@@ -1833,24 +1800,6 @@ void Bot::SetConditions (void)
    else if (m_heardSoundTime < engine->GetTime ())
       m_states &= ~STATE_HEARENEMY;
    
-   /*TESTTEST
-   // SyPB Pro P.40 - Game mode setting
-   if (FNullEnt (m_enemy) && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec && 
-	   (g_gameMode == MODE_BASE || g_gameMode == MODE_DM) &&
-	   (pev->origin - m_lastEnemyOrigin).GetLength() < 1600.0f)
-   {
-      TraceResult tr;
-      TraceLine (EyePosition (), m_lastEnemyOrigin, true, GetEntity (), &tr);
-
-      if ((tr.flFraction >= 0.2f || tr.pHit != g_worldEdict))
-      {
-         m_aimFlags |= AIM_PREDICTENEMY;
-
-         if (EntityIsVisible (m_lastEnemyOrigin))
-            m_aimFlags |= AIM_LASTENEMY;
-      }
-   } */
-
    CheckGrenadeThrow();
 
    // check if there are items needing to be used/collected
@@ -1977,9 +1926,9 @@ void Bot::SetConditions (void)
 		 {
 			 if (g_mapType & MAP_DE)
 			 {
-				 if ((g_bombPlanted && GetTeam (GetEntity ()) == TEAM_COUNTER) || (!g_bombPlanted && GetTeam (GetEntity ()) == TEAM_TERRORIST))
+				 if ((g_bombPlanted && team == TEAM_COUNTER) || (!g_bombPlanted && team == TEAM_TERRORIST))
 					 desireLevel *= 1.5;
-				 if ((g_bombPlanted && GetTeam (GetEntity ()) == TEAM_TERRORIST) || (!g_bombPlanted && GetTeam (GetEntity ()) == TEAM_COUNTER))
+				 if ((g_bombPlanted && team == TEAM_TERRORIST) || (!g_bombPlanted && team == TEAM_COUNTER))
 					 desireLevel *= 0.5;
 			 }
 		 }
@@ -3647,6 +3596,8 @@ void Bot::RunTask (void)
    bool exceptionCaught = false;
    float fullDefuseTime, timeToBlowUp, defuseRemainingTime;
 
+   Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+
    switch (GetCurrentTask ()->taskID)
    {
    // normal task
@@ -3683,7 +3634,7 @@ void Bot::RunTask (void)
       if (sypb_debuggoal.GetInt () != -1 && sypb_debuggoal.GetInt() >= 0 && sypb_debuggoal.GetInt() < g_numWaypoints)
       {
          // check if we reached it
-         if (((g_waypoint->GetPath (m_currentWaypointIndex)->origin - pev->origin).SkipZ ()).GetLengthSquared () < 16 && GetCurrentTask ()->data == sypb_debuggoal.GetInt ())
+         if (((path->origin - pev->origin).SkipZ ()).GetLengthSquared () < 16 && GetCurrentTask ()->data == sypb_debuggoal.GetInt ())
          {
             m_moveSpeed = 0.0f;
             m_strafeSpeed = 0.0f;
@@ -3736,7 +3687,7 @@ void Bot::RunTask (void)
          m_tasks->data = -1;
       }
 
-      if (!g_bombPlanted && m_currentWaypointIndex != -1 && (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_GOAL) && engine->RandomInt (0, 100) < 80 && GetNearbyEnemiesNearPosition (pev->origin, 650) == 0)
+      if (!g_bombPlanted && m_currentWaypointIndex != -1 && (path->flags & WAYPOINT_GOAL) && engine->RandomInt (0, 100) < 80 && GetNearbyEnemiesNearPosition (pev->origin, 650) == 0)
          RadioMessage (Radio_SectorClear);
 
       // reached the destination (goal) waypoint?
@@ -3750,7 +3701,7 @@ void Bot::RunTask (void)
             PushTask (TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime () + 1.0f, false);
 
          // reached waypoint is a camp waypoint
-         if ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP) && g_gameMode == MODE_BASE )
+         if ((path->flags & WAYPOINT_CAMP) && g_gameMode == MODE_BASE )
          {
             // check if bot has got a primary weapon and hasn't camped before
             if (HasPrimaryWeapon () && m_timeCamping + 10.0f < engine->GetTime () && !HasHostage ())
@@ -3760,12 +3711,12 @@ void Bot::RunTask (void)
 			   // Check if it's not allowed for this team to camp here
 			   if (team == TEAM_TERRORIST)
 			   {
-				   if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_COUNTER)
+				   if (path->flags & WAYPOINT_COUNTER)
 					   campingAllowed = false;
 			   }
 			   else
 			   {
-				   if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_TERRORIST)
+				   if (path->flags & WAYPOINT_TERRORIST)
 					   campingAllowed = false;
 			   }
 
@@ -3780,7 +3731,7 @@ void Bot::RunTask (void)
                if (campingAllowed)
                {
                   // crouched camping here?
-                  if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CROUCH)
+                  if (path->flags & WAYPOINT_CROUCH)
                      m_campButtons = IN_DUCK;
                   else
                      m_campButtons = 0;
@@ -3795,8 +3746,8 @@ void Bot::RunTask (void)
                   m_timeCamping = engine->GetTime () + engine->RandomFloat (g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
                   PushTask (TASK_CAMP, TASKPRI_CAMP, -1, m_timeCamping, true);
 
-                  src.x = g_waypoint->GetPath (m_currentWaypointIndex)->campStartX;
-                  src.y = g_waypoint->GetPath (m_currentWaypointIndex)->campStartY;
+                  src.x = path->campStartX;
+                  src.y = path->campStartY;
                   src.z = 0;
 
                   m_camp = src;
@@ -3828,7 +3779,7 @@ void Bot::RunTask (void)
 				{
 					if (m_skill >= 80 || engine->RandomInt(0, 100) < m_skill)
 					{
-						int index = FindDefendWaypoint(g_waypoint->GetPath(m_currentWaypointIndex)->origin, m_currentWaypointIndex);
+						int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
 
 						PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0, 120.0f), true); // push camp task on to stack
 						PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0, 30.0f), true); // push move command
@@ -3844,7 +3795,7 @@ void Bot::RunTask (void)
 					if (HasHostage())
 					{
 						// and reached a Rescue Point?
-						if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_RESCUE)
+						if (path->flags & WAYPOINT_RESCUE)
 						{
 							for (i = 0; i < Const_MaxHostages; i++)
 								//m_hostages[i] = null; // clear array of hostage pointers
@@ -3861,7 +3812,7 @@ void Bot::RunTask (void)
 				}
             }
 			
-            if ((g_mapType & MAP_DE) && ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_GOAL) || m_inBombZone) && FNullEnt (m_enemy))
+            if ((g_mapType & MAP_DE) && ((path->flags & WAYPOINT_GOAL) || m_inBombZone) && FNullEnt (m_enemy))
             {
                // is it a terrorist carrying the bomb?
                if (pev->weapons & (1 << WEAPON_C4))
@@ -3882,7 +3833,7 @@ void Bot::RunTask (void)
                   {
                      m_timeCamping = engine->GetTime () + engine->RandomFloat (g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
 
-                     int index = FindDefendWaypoint (g_waypoint->GetPath (m_currentWaypointIndex)->origin, m_currentWaypointIndex);
+                     int index = FindDefendWaypoint (path->origin, m_currentWaypointIndex);
 
                      PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (35.0f, 60.0f), true); // push camp task on to stack
                      PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime () + engine->RandomFloat (10.0f, 15.0f), true); // push move command
@@ -4053,7 +4004,7 @@ void Bot::RunTask (void)
          {
             if (m_currentWaypointIndex != -1)
             {
-               if (g_waypoint->GetPath (m_currentWaypointIndex)->radius < 32 && !IsOnLadder () && !IsInWater () && m_seeEnemyTime + 4.0f > engine->GetTime () && m_skill < 80)
+               if (path->radius < 32 && !IsOnLadder () && !IsInWater () && m_seeEnemyTime + 4.0f > engine->GetTime () && m_skill < 80)
                   pev->button |= IN_DUCK;
             }
 
@@ -4092,10 +4043,10 @@ void Bot::RunTask (void)
          m_campDirection = 0;
 
          // chosen waypoint is a camp waypoint?
-         if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP)
+         if (path->flags & WAYPOINT_CAMP)
          {
             // use the existing camp wpt prefs
-            if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CROUCH)
+            if (path->flags & WAYPOINT_CROUCH)
                m_campButtons = IN_DUCK;
             else
                m_campButtons = 0;
@@ -4103,17 +4054,17 @@ void Bot::RunTask (void)
          else
          {
             // choose a crouch or stand pos
-            if (g_waypoint->GetPath (m_currentWaypointIndex)->vis.crouch <= g_waypoint->GetPath (m_currentWaypointIndex)->vis.stand)
+            if (g_waypoint->GetPath (m_currentWaypointIndex)->vis.crouch <= path->vis.stand)
                m_campButtons = IN_DUCK;
             else
                m_campButtons = 0;
 
             // enter look direction from previously calculated positions
-            g_waypoint->GetPath (m_currentWaypointIndex)->campStartX = destination.x;
-            g_waypoint->GetPath (m_currentWaypointIndex)->campStartY = destination.y;
+			path->campStartX = destination.x;
+			path->campStartY = destination.y;
 
-            g_waypoint->GetPath (m_currentWaypointIndex)->campStartX = destination.x;
-            g_waypoint->GetPath (m_currentWaypointIndex)->campEndY = destination.y;
+            path->campStartX = destination.x;
+			path->campEndY = destination.y;
          }
 
          if ((m_reloadState == RSTATE_NONE) && (GetAmmoInClip () < 8) && (GetAmmo () != 0))
@@ -4298,21 +4249,21 @@ void Bot::RunTask (void)
       {
          m_nextCampDirTime = engine->GetTime () + engine->RandomFloat (2.0f, 5.0f);
 
-         if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP)
+         if (path->flags & WAYPOINT_CAMP)
          {
             destination.z = 0;
 
             // switch from 1 direction to the other
             if (m_campDirection < 1)
             {
-               destination.x = g_waypoint->GetPath (m_currentWaypointIndex)->campStartX;
-               destination.y = g_waypoint->GetPath (m_currentWaypointIndex)->campStartY;
+               destination.x = path->campStartX;
+               destination.y = path->campStartY;
                m_campDirection ^= 1;
             }
             else
             {
-               destination.x = g_waypoint->GetPath (m_currentWaypointIndex)->campEndX;
-               destination.y = g_waypoint->GetPath (m_currentWaypointIndex)->campEndY;
+               destination.x = path->campEndX;
+               destination.y = path->campEndY;
                m_campDirection ^= 1;
             }
 
@@ -4409,7 +4360,7 @@ void Bot::RunTask (void)
       // if we see an enemy and aren't at a good camping point leave the spot
       if ((m_states & STATE_SEEINGENEMY) || m_inBombZone)
       {
-         if (!(g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP))
+         if (!(path->flags & WAYPOINT_CAMP))
          {
             TaskComplete ();
 
@@ -4506,7 +4457,7 @@ void Bot::RunTask (void)
             m_checkTerrain = false;
             m_navTimeset = engine->GetTime ();
 
-            if (g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CROUCH)
+            if (path->flags & WAYPOINT_CROUCH)
                pev->button |= (IN_ATTACK | IN_DUCK);
             else
                pev->button |= IN_ATTACK;
@@ -5267,7 +5218,7 @@ void Bot::RunTask (void)
 			// SyPB Pro P.42 - Waypoint improve
 			if (m_currentWaypointIndex != -1)
 			{
-				if (itemDistance > g_waypoint->GetPath(m_currentWaypointIndex)->radius)
+				if (itemDistance > path->radius)
 				{
 					SetEntityWaypoint(GetEntity());
 					m_currentWaypointIndex = -1;
@@ -5300,7 +5251,7 @@ void Bot::RunTask (void)
 				// SyPB Pro P.42 - Waypoint improve
 				if (m_currentWaypointIndex != -1)
 				{
-					if (itemDistance > g_waypoint->GetPath(m_currentWaypointIndex)->radius)
+					if (itemDistance > path->radius)
 					{
 						SetEntityWaypoint(GetEntity());
 						m_currentWaypointIndex = -1;

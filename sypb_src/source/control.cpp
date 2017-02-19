@@ -1169,7 +1169,6 @@ void Bot::NewRound (void)
    m_checkFall = false;
 
    SetEnemy(null);
-   m_lastVictim = null;
    SetLastEnemy(null);
    SetMoveTarget(null);
    m_trackingEdict = null;

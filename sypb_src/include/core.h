@@ -1051,7 +1051,6 @@ public:
    float m_backCheckEnemyTime; // SyPB Pro P.37 - Aim OS
 
    edict_t *m_lastEnemy; // pointer to last enemy entity
-   edict_t *m_lastVictim; // pointer to killed entity
    edict_t *m_trackingEdict; // pointer to last tracked player when camping/hiding
    float m_timeNextTracking; // time waypoint index for tracking player is recalculated
 
@@ -1065,7 +1064,10 @@ public:
    int m_ammoInClip[Const_MaxWeapons]; // ammo in clip for each weapons
    int m_ammo[MAX_AMMO_SLOTS]; // total ammo amounts
 
-   // SyPB Pro P.49 - Check Enemy improve
+   // SyPB Pro P.49 - Check Enemy & Entity improve
+   edict_t *m_allAvoidEntity[checkEntityNum];
+   edict_t *m_allEnemy[checkEnemyNum];
+   float m_allEnemyDistance[checkEnemyNum];
    int m_checkEnemyNum;
    edict_t *m_checkEnemy[checkEnemyNum];
    float m_checkEnemyDistance[checkEnemyNum];
