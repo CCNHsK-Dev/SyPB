@@ -1119,10 +1119,46 @@ bool IsValidPlayer (edict_t *ent)
 
 bool IsValidBot (edict_t *ent)
 {
-   if (g_botManager->GetBot (ent) != null || (!FNullEnt (ent) && (ent->v.flags & FL_FAKECLIENT)))
+   if ((!FNullEnt (ent) && (ent->v.flags & FL_FAKECLIENT)) || g_botManager->GetBot(ent) != null)
       return true;
 
    return false;
+}
+
+// SyPB Pro P.40 - Is Anti Block
+bool IsAntiBlock(edict_t *entity)
+{
+	if (entity->v.solid == SOLID_NOT)
+		return true;
+
+	return false;
+}
+
+bool IsNotAttackLab(edict_t *entity, Vector attackOrigin)
+{
+	if (FNullEnt(entity))
+		return true;
+
+	// SyPB Pro P.48 - Base improve
+	if (entity->v.takedamage == DAMAGE_NO)
+		return true;
+
+	// SyPB Pro P.29 - New Invisible get
+	if (entity->v.rendermode == kRenderTransAlpha)
+	{
+		float renderamt = entity->v.renderamt;
+
+		if (renderamt <= 30)
+			return true;
+
+		if (renderamt > 160)
+			return false;
+
+		float enemy_distance = (GetEntityOrigin(entity) - attackOrigin).GetLength();
+		return (renderamt <= (enemy_distance / 5));
+	}
+
+	return false;
 }
 
 bool IsDedicatedServer (void)

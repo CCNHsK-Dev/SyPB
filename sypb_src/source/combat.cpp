@@ -187,7 +187,7 @@ bool Bot::LookupEnemy(void)
 
 	if (!FNullEnt(m_lastEnemy))
 	{
-		if (IsNotAttackLab(m_lastEnemy) || !IsAlive(m_lastEnemy) || (GetTeam(m_lastEnemy) == team))
+		if (!IsAlive(m_lastEnemy) || (team == GetTeam(m_lastEnemy)) || IsNotAttackLab(m_lastEnemy, pev->origin))
 			SetLastEnemy(null);
 	}
 
@@ -195,7 +195,7 @@ bool Bot::LookupEnemy(void)
 	if (m_enemyAPI != null)
 	{
 		if (m_blockCheckEnemyTime <= engine->GetTime() ||
-			!IsAlive(m_enemyAPI) || team == GetTeam(m_enemyAPI) || IsNotAttackLab(m_enemyAPI))
+			!IsAlive(m_enemyAPI) || team == GetTeam(m_enemyAPI) || IsNotAttackLab(m_enemyAPI, pev->origin))
 		{
 			m_enemyAPI = null;
 			m_blockCheckEnemyTime = engine->GetTime();
@@ -208,7 +208,7 @@ bool Bot::LookupEnemy(void)
 	{
 		// SyPB Pro P.42 - AMXX API
 		if ((!FNullEnt(m_enemyAPI) && m_enemyAPI != m_enemy) ||
-			team == GetTeam(m_enemy) || IsNotAttackLab(m_enemy) || !IsAlive(m_enemy))
+			!IsAlive(m_enemy) || team == GetTeam(m_enemy) || IsNotAttackLab(m_enemy, pev->origin))
 		{
 			// SyPB Pro P.41 - LookUp Enemy fixed
 			SetEnemy(null);

@@ -140,7 +140,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 	if (FNullEnt(entity) || !IsAlive (entity))
 		return false;
 
-	if (IsNotAttackLab(entity))
+	if (IsNotAttackLab(entity, pev->origin))
 		return false;
 
 	if (!allCheck)
@@ -1783,9 +1783,9 @@ void Bot::SetConditions (void)
    // check if our current enemy is still valid
    if (!FNullEnt(m_lastEnemy))
    {
-	   //if (!IsAlive (m_lastEnemy) && m_shootAtDeadTime < engine->GetTime ())
 		// SyPB Pro P.26 - DM Mod Protect Time
-	   if (IsNotAttackLab(m_lastEnemy) || (!IsAlive(m_lastEnemy) && m_shootAtDeadTime < engine->GetTime()))
+	   if ((!IsAlive(m_lastEnemy) && m_shootAtDeadTime < engine->GetTime()) || 
+		   IsNotAttackLab(m_lastEnemy, pev->origin))
 		   SetLastEnemy(null);
    }
    else
@@ -3267,42 +3267,6 @@ float Bot::GetWalkSpeed(void)
 		return pev->maxspeed;
 
 	return static_cast <float> ((static_cast <int> (pev->maxspeed) * 0.5f) + (static_cast <int> (pev->maxspeed) / 50)) - 18;
-}
-
-// SyPB Pro P.40 - Is Anti Block
-bool Bot::IsAntiBlock(edict_t *entity)
-{
-	if (entity->v.solid == SOLID_NOT)
-		return true;
-
-	return false;
-}
-
-bool Bot::IsNotAttackLab(edict_t *entity)
-{
-	if (FNullEnt(entity))
-		return true;
-
-	// SyPB Pro P.48 - Base improve
-	if (entity->v.takedamage == DAMAGE_NO)
-		return true;
-
-	// SyPB Pro P.29 - New Invisible get
-	if (entity->v.rendermode == kRenderTransAlpha)
-	{
-		float renderamt = entity->v.renderamt;
-
-		if (renderamt <= 30)
-			return true;
-
-		if (renderamt > 160)
-			return false;
-
-		float enemy_distance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-		return (renderamt <= (enemy_distance/5));
-	}
-
-	return false;
 }
 
 

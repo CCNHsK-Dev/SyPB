@@ -864,9 +864,6 @@ private:
    bool IsBombDefusing (Vector bombOrigin);
    bool IsWaypointUsed (int index);
    
-   bool IsNotAttackLab (edict_t *entity);
-   bool IsAntiBlock(edict_t *entity);
-
    inline bool IsOnLadder (void) { return pev->movetype == MOVETYPE_FLY; }
    inline bool IsOnFloor (void) { return (pev->flags & (FL_ONGROUND | FL_PARTIALGROUND)) != 0; }
    inline bool IsInWater (void) { return pev->waterlevel >= 2; }
@@ -909,7 +906,6 @@ private:
 
    int CheckGrenades (void);
    void CommandTeam (void);
-   //void AttachToUser (void);
    void CombatFight (void);
    bool IsWeaponBadInDistance (int weaponIndex, float distance);
    bool DoFirePause(float distance);//, FireDelay *fireDelay);
@@ -1409,6 +1405,9 @@ extern bool IsValidBot (edict_t *ent);
 extern bool IsValidPlayer (edict_t *ent);
 extern bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant = false);
 extern bool FindNearestPlayer (void **holder, edict_t *to, float searchDistance = 4096.0, bool sameTeam = false, bool needBot = false, bool needAlive = false, bool needDrawn = false);
+
+extern bool IsNotAttackLab(edict_t *entity, Vector attackOrigin);
+extern bool IsAntiBlock(edict_t *entity);
 
 extern const char *GetEntityName(edict_t *entity);
 
