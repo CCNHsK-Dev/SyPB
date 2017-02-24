@@ -3793,12 +3793,6 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 		return -1;
 	}
 
-	if (action == -1)
-	{
-		index = -1;
-		team = -1;
-	}
-
 	for (i = 0; i < entityNum; i++)
 	{
 		if (g_entityId[i] == index)
@@ -3808,7 +3802,10 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 			else
 				API_TestMSG("Amxx_SetEntityAction Checking - Del Id:%d - Done", index);
 
-			SetEntityActionData(i, index, team, action);
+			if (action != -1)
+				SetEntityActionData(i, index, team, action);
+			else
+				SetEntityActionData(i);
 
 			return 1;
 		}

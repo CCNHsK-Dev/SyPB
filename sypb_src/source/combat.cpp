@@ -413,9 +413,7 @@ bool Bot::LookupEnemy(void)
 
 			if (moveTotarget)
 			{
-				// SyPB Pro P.35 - Fixed
-				if (IsOnAttackDistance(targetEntity, 80.0f))
-					KnifeAttack();
+				KnifeAttack();
 
 				if (targetEntity != m_moveTargetEntity)
 				{
@@ -800,7 +798,7 @@ WeaponSelectEnd:
 	{
 		m_reloadState = RSTATE_PRIMARY;
 		m_reloadCheckTime = engine->GetTime() + 1.5f;
-		return;
+		//return;
 	}
 
 	if (m_currentWeapon != selectId)
@@ -959,19 +957,17 @@ WeaponSelectEnd:
 	}
 }
 
-// SyPB Pro P.32 - Knife Attack Ai
+// SyPB Pro P.49 - Knife Attack Ai
 bool Bot::KnifeAttack(float attackDistance)
 {
-	// SyPB Pro P.40 - Knife Attack Ai
 	edict_t *entity = null;
 	float distance = 9999.0f;
-	if (!FNullEnt(m_enemy))
+	if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
 	{
-		entity = m_enemy;
-		distance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
+		entity = FNullEnt (m_enemy) ? m_moveTargetEntity : m_enemy;
+		distance = (pev->origin - GetEntityOrigin(entity)).GetLength();
 	}
-
-	if (!FNullEnt(m_breakableEntity))
+	else if (!FNullEnt(m_breakableEntity))
 	{
 		if (m_breakable == nullvec)
 			m_breakable = GetEntityOrigin(m_breakableEntity);
@@ -986,34 +982,33 @@ bool Bot::KnifeAttack(float attackDistance)
 	if (FNullEnt(entity))
 		return false;
 
-	float kad1 = (m_knifeDistance1API <= 0) ? 64.0f : m_knifeDistance1API;; // Knife Attack Distance (API)
-	float kad2 = (m_knifeDistance2API <= 0) ? 64.0f : m_knifeDistance2API;
-
-	// SyPB Pro P.40 - Touch Entity Attack Action
-	if (attackDistance != 0.0f)
-		kad1 = attackDistance;
-
-	// SyPB Pro P.42 - Knife Attack Ai improve
 	int kaMode = 0;
-	if (IsOnAttackDistance(entity, kad1))
-		kaMode = 1;
-	if (IsOnAttackDistance(entity, kad2))
-		kaMode += 2;
+	if (attackDistance != 0.0f)
+	{
+		if (IsOnAttackDistance(entity, attackDistance))
+			kaMode = 3;
+	}
+	else
+	{
+		float kad1 = (m_knifeDistance1API <= 0) ? 96.0f : m_knifeDistance1API;
+		float kad2 = (m_knifeDistance2API <= 0) ? 96.0f : m_knifeDistance2API;
+
+		if (IsOnAttackDistance(entity, kad1))
+			kaMode = 1;
+		if (IsOnAttackDistance(entity, kad2))
+			kaMode += 2;
+	}
 
 	if (kaMode > 0)
 	{
 		float distanceSkipZ = (pev->origin - GetEntityOrigin(entity)).GetLength2D();
-		//if (distanceSkipZ < distance && pev->origin.z > GetEntityOrigin(entity).z)
-		// pev->button |= IN_DUCK;
 
 		// SyPB Pro P.35 - Knife Attack Change
 		if (pev->origin.z > GetEntityOrigin(entity).z && distanceSkipZ < 64.0f)
 		{
 			pev->button |= IN_DUCK;
-			// SyPB Pro P.40 - Knife Attack Change
 			m_campButtons |= IN_DUCK; 
 
-			// SyPB Pro P.48 - Knife Attack Change
 			pev->button &= ~IN_JUMP;
 		}
 		else
@@ -1027,8 +1022,6 @@ bool Bot::KnifeAttack(float attackDistance)
 
 		if (IsZombieEntity(GetEntity()))
 		{
-			//if (kaMode == 1)
-			// SyPB Pro P.46 - Zombie Attack Fixed
 			if (kaMode != 2)
 				pev->button |= IN_ATTACK;
 			else
@@ -1112,16 +1105,7 @@ void Bot::FocusEnemy (void)
    float distance = (m_lookAt - EyePosition()).GetLength2D();  // how far away is the enemy scum?
 
    if (distance < 128)
-   {
-      if (m_currentWeapon == WEAPON_KNIFE)
-      {
-		  // SyPB Pro P.42 - Knife Attack improve
-		  if (IsOnAttackDistance(m_enemy, (m_knifeDistance1API <= 0) ? 64.0f : m_knifeDistance1API))
-			  m_wantsToFire = true;
-      }
-      else
-         m_wantsToFire = true;
-   }
+	   m_wantsToFire = true;
    else
    {
 	   if (m_currentWeapon == WEAPON_KNIFE)

@@ -1163,7 +1163,7 @@ void Bot::CheckMessageQueue (void)
       m_nextBuyTime = engine->GetTime () + engine->RandomFloat (0.3f, 0.8f);
 
       // if fun-mode no need to buy
-      if (sypb_knifemode.GetBool ())
+      if (IsZombieEntity (GetEntity ()))
       {
          m_buyState = 6;
          SelectWeaponByName ("weapon_knife");
@@ -2563,7 +2563,7 @@ bool Bot::EnemyIsThreat (void)
 	   return false;
 
    // SyPB Pro P.43 - Enemy Ai small improve 
-   if (IsOnAttackDistance(m_enemy, 256) ||
+   if (IsOnAttackDistance(m_enemy, 256.0f) ||
 	   (m_currentWaypointIndex != WEAPON_KNIFE && IsInViewCone(GetEntityOrigin(m_enemy))))
 	   return true;
 

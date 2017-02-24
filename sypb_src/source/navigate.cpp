@@ -2685,7 +2685,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				if (IsOnFloor() || IsInWater())
 				{
 					if (IsInWater() || !IsZombieEntity(GetEntity()) || m_damageTime < engine->GetTime() ||
-						m_currentTravelFlags & PATHFLAG_JUMP || KnifeAttack())
+						m_currentTravelFlags & PATHFLAG_JUMP)
 						pev->button |= IN_JUMP;
 				}
 				break;
