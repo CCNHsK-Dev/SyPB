@@ -380,6 +380,13 @@ enum GameMode
 	MODE_BASE = 0
 };
 
+enum FightStyle
+{
+	FIGHT_NONE,
+	FIGHT_STRAFE,
+	FIGHT_STAY
+};
+
 // bot known file headers
 const char FH_WAYPOINT[] = "PODWAY!";
 const char FH_VISTABLE[] = "PODVIS!";
@@ -764,7 +771,7 @@ private:
    bool m_isUsingGrenade; // bot currently using grenade??
 
    uint8_t m_combatStrafeDir; // direction to strafe
-   uint8_t m_fightStyle; // combat style to use
+   FightStyle m_fightStyle; // combat style to use
    float m_lastFightStyleCheck; // time checked style
    float m_strafeSetTime; // time strafe direction was set
 

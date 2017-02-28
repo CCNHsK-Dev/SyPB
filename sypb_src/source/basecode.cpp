@@ -1391,7 +1391,7 @@ void Bot::PerformWeaponPurchase (void)
 	case 0:
 		if ((!HasShield () && !HasPrimaryWeapon ()) && (g_botManager->EconomicsValid (team) || IsMorePowerfulWeaponCanBeBought ()))
 		{
-			int gunMoney = 0, playerMoney = m_moneyAmount;
+			int gunMoney = 0;
 			int likeGunId[2] = {0, 0};
 			int loadTime = 0;
 
@@ -1423,12 +1423,12 @@ void Bot::PerformWeaponPurchase (void)
 
 				gunMoney = selectedWeapon->price;
 
-				if (playerMoney <= gunMoney)
+				if (m_moneyAmount <= gunMoney)
 					continue;
 
 				int gunMode = BuyWeaponMode (selectedWeapon->id);
 
-				if (playerMoney < gunMoney + (gunMode * 100))
+				if (m_moneyAmount < gunMoney + (gunMode * 100))
 					continue;
 
 				if (likeGunId[0] == 0)
@@ -2612,17 +2612,17 @@ bool Bot::ReactOnEnemy(void)
 		goto lastly;
 	}
 
-	float pathDist;// = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
+	float pathDist;
 
 	if (IsZombieEntity(m_enemy))
 	{
 		if (m_navNode == null)
-			m_isEnemyReachable = true;
+			m_isEnemyReachable = (enemyDistance <= 700.0f);
 		else
 		{
 			pathDist = g_waypoint->GetPathDistanceFloat(enemyIndex, i);
 
-			if (pathDist <= 600.0f && (m_navNode->index != i &&
+			if (pathDist <= 500.0f && (m_navNode->index != i &&
 				g_waypoint->GetPathDistanceFloat(enemyIndex, m_navNode->index) < pathDist) ||
 				(m_navNode->next == null || 
 					g_waypoint->GetPathDistanceFloat(enemyIndex, m_navNode->next->index) < pathDist))

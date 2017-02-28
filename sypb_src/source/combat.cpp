@@ -718,7 +718,8 @@ void Bot::FireWeapon(void)
 	//if (!FNullEnt(m_enemy) && IsFriendInLineOfFire(distance))
 	if (IsFriendInLineOfFire(distance))
 	{
-		m_fightStyle = 1;
+		m_fightStyle = FIGHT_STRAFE;
+		m_lastFightStyleCheck = engine->GetTime();
 		return;
 	}
 
@@ -1169,14 +1170,21 @@ void Bot::CombatFight(void)
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH ||
-			IsZombieEntity (m_enemy) || m_currentWeapon == WEAPON_KNIFE)
+		bool NPCEnemy = !IsValidPlayer(m_enemy);
+		bool enemyIsZombie = IsZombieEntity(m_enemy);
+
+		if (m_currentWeapon == WEAPON_KNIFE || NPCEnemy || enemyIsZombie)
 		{
 			float baseDistance = 600.0f;
-			bool viewCone = IsValidPlayer(m_enemy) ? (::IsInViewCone(pev->origin, m_enemy)) : true;
+			bool viewCone = NPCEnemy ? (::IsInViewCone(pev->origin, m_enemy)) : true;
 
 			if (m_currentWeapon == WEAPON_KNIFE)
-				baseDistance = viewCone ? 450.0f : -1.0f;
+			{
+				if (enemyIsZombie && (g_gameMode == MODE_ZH || g_gameMode == MODE_ZP))
+					baseDistance = viewCone ? 450.0f : -1.0f;
+				else 
+					baseDistance = -1.0f;
+			}
 			else if (m_currentWeapon == WEAPON_XM1014 || m_currentWeapon == WEAPON_M3)
 				baseDistance = viewCone ? 350.0f : 220.0f;
 			else if (UsesSniper())
@@ -1184,17 +1192,17 @@ void Bot::CombatFight(void)
 			else
 				baseDistance = viewCone ? 400.0f : 300.0f;
 
-			if (viewCone)
-			{
-				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 350);
-				if (haveEnemy >= 6)
-					baseDistance += 120.0f;
-				else if (haveEnemy >= 3)
-					baseDistance += 70.0f;
-			}
-
 			if (baseDistance != -1.0f)
 			{
+				if (viewCone && !NPCEnemy)
+				{
+					int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 350);
+					if (haveEnemy >= 6)
+						baseDistance += 120.0f;
+					else if (haveEnemy >= 3)
+						baseDistance += 70.0f;
+				}
+
 				// SyPB Pro P.38 - Zomibe Mode Attack Ai small improve
 				if (m_reloadState != RSTATE_NONE)
 					baseDistance *= 1.5f;
@@ -1210,28 +1218,25 @@ void Bot::CombatFight(void)
 					else if (m_ammoInClip[weaponIndex] < (maxClip * 0.6))
 						baseDistance *= 1.2f;
 				}
-			}
 
-			if (baseDistance < 0.0f)
-				m_moveSpeed = (baseDistance == -1.0f) ? pev->maxspeed : -pev->maxspeed;
-			else
-			{
 				if (distance <= baseDistance)
 					m_moveSpeed = -pev->maxspeed;
 				else if (distance >= (baseDistance + 100.0f))
 				{
 					m_moveSpeed = 0.0f;
-					m_fightStyle = 0;
+					m_fightStyle = FIGHT_STAY;
+					m_lastFightStyleCheck = engine->GetTime();
 				}
+			}
+			else
+			{
+				m_fightStyle = FIGHT_NONE;
+				m_lastFightStyleCheck = engine->GetTime();
+				m_moveSpeed = pev->maxspeed;
 			}
 		}
 		else if (g_gameMode == MODE_DM)
-		{
-			if (m_currentWeapon == WEAPON_KNIFE)
-				m_moveSpeed = pev->maxspeed;
-			else
-				m_moveSpeed = 0.0f;
-		}
+			m_moveSpeed = 0.0f;
 		else
 		{
 			int approach;
@@ -1240,8 +1245,6 @@ void Bot::CombatFight(void)
 				approach = 49;
 			else if (m_isReloading || m_isVIP) // if reloading or vip back off
 				approach = 29;
-			else if (m_currentWeapon == WEAPON_KNIFE) // knife?
-				approach = 100;
 			else
 			{
 				approach = static_cast <int> (pev->health * m_agressionLevel);
@@ -1269,7 +1272,7 @@ void Bot::CombatFight(void)
 				m_moveSpeed = pev->maxspeed;
 
 			// SyPB Pro P.35 - Base mode Weapon Ai Improve
-			if (distance < 96 && m_currentWeapon != WEAPON_KNIFE && !UsesSniper ())
+			if (distance < 96 && !UsesSniper ())
 			{
 				pev->button |= IN_DUCK;
 				m_moveSpeed = -pev->maxspeed;
@@ -1278,7 +1281,7 @@ void Bot::CombatFight(void)
 
 		if (UsesSniper())
 		{
-			m_fightStyle = 1;
+			m_fightStyle = FIGHT_STAY;
 			m_lastFightStyleCheck = engine->GetTime();
 		}
 		else if (UsesRifle() || UsesSubmachineGun())
@@ -1287,21 +1290,21 @@ void Bot::CombatFight(void)
 			{
 				int rand = engine->RandomInt(1, 100);
 
-				if (distance < 450)
-					m_fightStyle = 0;
-				else if (distance < 1024)
+				if (distance < 450.0f)
+					m_fightStyle = FIGHT_STRAFE;
+				else if (distance < 1024.0f)
 				{
 					if (rand < (UsesSubmachineGun() ? 50 : 30))
-						m_fightStyle = 0;
+						m_fightStyle = FIGHT_STRAFE;
 					else
-						m_fightStyle = 1;
+						m_fightStyle = FIGHT_STAY;
 				}
 				else
 				{
 					if (rand < (UsesSubmachineGun() ? 80 : 93))
-						m_fightStyle = 1;
+						m_fightStyle = FIGHT_STAY;
 					else
-						m_fightStyle = 0;
+						m_fightStyle = FIGHT_STRAFE;
 				}
 				m_lastFightStyleCheck = engine->GetTime();
 			}
@@ -1311,18 +1314,18 @@ void Bot::CombatFight(void)
 			if (m_lastFightStyleCheck + 3.0f < engine->GetTime())
 			{
 				if (engine->RandomInt(0, 100) < 65)
-					m_fightStyle = 1;
+					m_fightStyle = FIGHT_STRAFE;
 				else
-					m_fightStyle = 0;
+					m_fightStyle = FIGHT_STAY;
 
 				m_lastFightStyleCheck = engine->GetTime();
 			}
 		}
 
 		// SyPB Pro P.42 - Attack Move Ai improve 
-		if ((pev->button & IN_RELOAD) || (m_isReloading) || (m_skill >= 70 && m_fightStyle && 
-			( (!IsZombieEntity (m_enemy) && distance < (UsesSniper () ? 150.0f : 800.0f)) ||
-				(IsZombieEntity (m_enemy) && distance < (UsesSniper() ? 300.0f : 500.0f)))))
+		if (((pev->button & IN_RELOAD) || m_isReloading) || (m_skill >= 70 && m_fightStyle == FIGHT_STRAFE &&
+			((!enemyIsZombie && distance < (UsesSniper() ? 150.0f : 800.0f)) ||
+				(enemyIsZombie && distance < (UsesSniper() ? 300.0f : 500.0f)))))
 		{
 			if (m_strafeSetTime < engine->GetTime())
 			{
@@ -1367,21 +1370,12 @@ void Bot::CombatFight(void)
 			if (m_skill > 80 && (m_jumpTime + 5.0f < engine->GetTime() && IsOnFloor() && engine->RandomInt(0, 1000) < (m_isReloading ? 8 : 2) && pev->velocity.GetLength2D() > 150.0f))
 				pev->button |= IN_JUMP;
 		}
-		else if ((g_gameMode != MODE_ZP && m_fightStyle) || (m_fightStyle && m_moveSpeed == 0.0f))
+		else if (m_fightStyle == FIGHT_STAY && m_moveSpeed == 0.0f && engine->RandomInt(1, 100) < 10)
 		{
-			bool shouldDuck = true; // should duck
-
-			// check the enemy height
-			float enemyHalfHeight = ((m_enemy->v.flags & FL_DUCKING) == FL_DUCKING ? 36.0f : 72.0f) / 2.0f;
-
-			// check center/feet
-			if (!IsVisible(GetEntityOrigin(m_enemy), GetEntity()) && !IsVisible(GetEntityOrigin(m_enemy) + Vector(0.0f, 0.0f, -enemyHalfHeight), GetEntity()))
-				shouldDuck = false;
-
 			int nearestToEnemyPoint = GetEntityWaypoint(m_enemy);
-
-			if (shouldDuck && GetCurrentTask()->taskID != TASK_SEEKCOVER && GetCurrentTask()->taskID != TASK_HUNTENEMY && (m_visibility & VISIBILITY_BODY) && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
-				m_duckTime = engine->GetTime() + m_frameInterval * 3.5f;
+			if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)) && m_tasks->taskID != TASK_SEEKCOVER && 
+				m_tasks->taskID != TASK_HUNTENEMY && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
+				m_duckTime = engine->GetTime() + 0.5f;
 
 			m_moveSpeed = 0.0f;
 			m_strafeSpeed = 0.0f;
@@ -1398,10 +1392,13 @@ void Bot::CombatFight(void)
 	}
 
 	// SyPB Pro P.49 - Base improve
-	if (m_moveSpeed > 0.0f)
-		m_moveSpeed = GetWalkSpeed();
-	else if (m_moveSpeed < 0.0f)
-		m_moveSpeed = -GetWalkSpeed();
+	if (m_currentWeapon != WEAPON_KNIFE)
+	{
+		if (m_moveSpeed > 0.0f)
+			m_moveSpeed = GetWalkSpeed();
+		else if (m_moveSpeed < 0.0f)
+			m_moveSpeed = -GetWalkSpeed();
+	}
 
 	if (m_isReloading)
 	{
