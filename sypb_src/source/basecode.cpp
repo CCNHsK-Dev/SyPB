@@ -1863,31 +1863,32 @@ void Bot::SetConditions (void)
       g_taskFilters[TASK_FIGHTENEMY].desire = 0;
 
    // calculate desires to seek cover or hunt
-   if (IsValidPlayer (m_lastEnemy) && m_lastEnemyOrigin != nullvec && !((g_mapType & MAP_DE) && g_bombPlanted) && !(pev->weapons & (1 << WEAPON_C4)) && (m_loosedBombWptIndex == -1 && GetTeam (GetEntity ()) == TEAM_TERRORIST))
+   if (IsValidPlayer (m_lastEnemy) && m_lastEnemyOrigin != nullvec && !((g_mapType & MAP_DE) && g_bombPlanted) && !(pev->weapons & (1 << WEAPON_C4)) && (m_loosedBombWptIndex == -1 && team == TEAM_TERRORIST))
    {
       float distance = (m_lastEnemyOrigin - pev->origin).GetLength ();
       
       // SyPB Pro P.16
-      float timeSeen = m_seeEnemyTime - engine->GetTime ();
-      float timeHeard = m_heardSoundTime - engine->GetTime ();
       float ratio = 0.0f;
       float retreatLevel = (100.0f - pev->health) * tempFear;
-      
-      if (timeSeen > timeHeard)
-      {
-         timeSeen += 10.0f;
-         ratio = timeSeen * 0.1f;
-      }
-      else
-      {
-         timeHeard += 10.0f;
-         ratio = timeHeard * 0.1f;
-      }
-      
+            
       if (isZombieBot)
       	  ratio = 0;
       else 
       {
+		  float timeSeen = m_seeEnemyTime - engine->GetTime();
+		  float timeHeard = m_heardSoundTime - engine->GetTime();
+
+		  if (timeSeen > timeHeard)
+		  {
+			  timeSeen += 10.0f;
+			  ratio = timeSeen * 0.1f;
+		  }
+		  else
+		  {
+			  timeHeard += 10.0f;
+			  ratio = timeHeard * 0.1f;
+		  }
+
       	  if (!FNullEnt (m_enemy) && IsZombieEntity (m_enemy))
       	  	  ratio *= 10;
       	  else if (!FNullEnt (m_lastEnemy) && IsZombieEntity (m_lastEnemy))
@@ -1909,19 +1910,19 @@ void Bot::SetConditions (void)
 		  m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != g_waypoint->FindNearest(m_lastEnemyOrigin))
       {
          desireLevel = 4096.0f - ((1.0f - tempAgression) * distance);
-         desireLevel = (100 * desireLevel) / 4096.0f;
+         desireLevel = (100.0f * desireLevel) / 4096.0f;
          desireLevel -= retreatLevel;
 
-         if (desireLevel > 89)
-            desireLevel = 89;
+         if (desireLevel > 89.0f)
+            desireLevel = 89.0f;
 
 		 // SyPB Pro P.10
 		 if (g_gameMode == MODE_DM)
 			 desireLevel *= 2;
 		 else if (g_gameMode == MODE_ZP) // SyPB Pro P.26 - Zombie mode Ai
-			 desireLevel = 0;
+			 desireLevel = 0.0f;
 		 else if (g_gameMode == MODE_ZH)
-			 desireLevel = 0;
+			 desireLevel = 0.0f;
 		 else 
 		 {
 			 if (g_mapType & MAP_DE)
@@ -1936,12 +1937,12 @@ void Bot::SetConditions (void)
          g_taskFilters[TASK_HUNTENEMY].desire = desireLevel;
       }
       else
-         g_taskFilters[TASK_HUNTENEMY].desire = 0;
+         g_taskFilters[TASK_HUNTENEMY].desire = 0.0f;
    }
    else
    {
-      g_taskFilters[TASK_SEEKCOVER].desire = 0;
-      g_taskFilters[TASK_HUNTENEMY].desire = 0;
+      g_taskFilters[TASK_SEEKCOVER].desire = 0.0f;
+      g_taskFilters[TASK_HUNTENEMY].desire = 0.0f;
    }
 
    // blinded behaviour
@@ -1962,17 +1963,17 @@ void Bot::SetConditions (void)
    // utility i wrote so there could still be some weird behaviors, it's
    // hard to check them all out.
 
-   m_oldCombatDesire = HysteresisDesire (g_taskFilters[TASK_FIGHTENEMY].desire, 40.0, 90.0, m_oldCombatDesire);
+   m_oldCombatDesire = HysteresisDesire (g_taskFilters[TASK_FIGHTENEMY].desire, 40.0f, 90.0f, m_oldCombatDesire);
    g_taskFilters[TASK_FIGHTENEMY].desire = m_oldCombatDesire;
 
    Task *taskOffensive = &g_taskFilters[TASK_FIGHTENEMY];
    Task *taskPickup = &g_taskFilters[TASK_PICKUPITEM];
 
    // calc survive (cover/hide)
-   Task *taskSurvive = ThresholdDesire (&g_taskFilters[TASK_SEEKCOVER], 40.0, 0.0f);
+   Task *taskSurvive = ThresholdDesire (&g_taskFilters[TASK_SEEKCOVER], 40.0f, 0.0f);
    taskSurvive = SubsumeDesire (&g_taskFilters[TASK_HIDE], taskSurvive);
 
-   Task *def = ThresholdDesire (&g_taskFilters[TASK_HUNTENEMY], 60.0, 0.0f); // don't allow hunting if desire's 60<
+   Task *def = ThresholdDesire (&g_taskFilters[TASK_HUNTENEMY], 60.0f, 0.0f); // don't allow hunting if desire's 60<
    taskOffensive = SubsumeDesire (taskOffensive, taskPickup); // if offensive task, don't allow picking up stuff
 
    Task *taskSub = MaxDesire (taskOffensive, def); // default normal & careful tasks against offensive actions

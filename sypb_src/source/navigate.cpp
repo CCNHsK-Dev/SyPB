@@ -2730,11 +2730,11 @@ void Bot::FacePosition(void)
 	// SyPB Pro P.40 - Aim OS improve
 	if (!FNullEnt(m_enemy))
 	{
-		if (IsInViewCone(m_enemyOrigin))
+		if (m_wantsToFire && IsInViewCone(m_enemyOrigin))
 		{
 			if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || g_gameMode != MODE_BASE))
 				godAim = true;
-			else if (m_wantsToFire && (m_skill >= 70 || IsZombieEntity(m_enemy)))
+			else if (m_skill >= 70 || IsZombieEntity(m_enemy))
 				godAim = true;
 			else if (IsZombieEntity(GetEntity()))
 				godAim = true;

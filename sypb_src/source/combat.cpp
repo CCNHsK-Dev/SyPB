@@ -1143,6 +1143,12 @@ void Bot::CombatFight(void)
 
 	m_destOrigin = GetEntityOrigin(m_enemy);
 
+	// SyPB Pro P.47 - Attack Ai improve
+	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) &&
+		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
+		(pev->velocity.GetLength() < 2.0f))
+		pev->button |= IN_DUCK;
+
 	// SyPB Pro P.30 - Zombie Mod
 	if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH) // SyPB Pro P.37 - small change
 	{
@@ -1158,24 +1164,6 @@ void Bot::CombatFight(void)
 		}
 	}
 
-	// SyPB Pro P.47 - Attack Ai improve
-	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) &&
-		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
-		(pev->velocity.GetLength() < 2.0f))
-		pev->button |= IN_DUCK;
-
-	// SyPB Pro P.48 - Attack Ai improve
-	if (!IsValidPlayer(m_enemy))
-	{
-		m_prevGoalIndex = -1;
-		m_moveToGoal = false;
-		m_navTimeset = engine->GetTime();
-
-		m_moveSpeed = (m_currentWeapon == WEAPON_KNIFE) ? pev->maxspeed : 0.0f;
-		m_strafeSpeed = 0.0f;
-		return;
-	}
-
 	Vector enemyOrigin = GetEntityOrigin(m_enemy);
 	float distance = (pev->origin - enemyOrigin).GetLength();
 
@@ -1185,7 +1173,7 @@ void Bot::CombatFight(void)
 			IsZombieEntity (m_enemy) || m_currentWeapon == WEAPON_KNIFE)
 		{
 			float baseDistance = 600.0f;
-			bool viewCone = ::IsInViewCone(pev->origin, m_enemy);
+			bool viewCone = IsValidPlayer(m_enemy) ? (::IsInViewCone(pev->origin, m_enemy)) : true;
 
 			if (m_currentWeapon == WEAPON_KNIFE)
 				baseDistance = viewCone ? 450.0f : -1.0f;
