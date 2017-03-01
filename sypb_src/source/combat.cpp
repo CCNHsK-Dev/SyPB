@@ -1373,8 +1373,8 @@ void Bot::CombatFight(void)
 		else if (m_fightStyle == FIGHT_STAY && m_moveSpeed == 0.0f && engine->RandomInt(1, 100) < 10)
 		{
 			int nearestToEnemyPoint = GetEntityWaypoint(m_enemy);
-			if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)) && m_tasks->taskID != TASK_SEEKCOVER && 
-				m_tasks->taskID != TASK_HUNTENEMY && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
+			if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)) && GetCurrentTask()->taskID != TASK_SEEKCOVER &&
+				GetCurrentTask()->taskID != TASK_HUNTENEMY && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
 				m_duckTime = engine->GetTime() + 0.5f;
 
 			m_moveSpeed = 0.0f;

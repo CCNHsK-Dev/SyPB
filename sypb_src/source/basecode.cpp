@@ -2744,7 +2744,7 @@ void Bot::CheckRadioCommands (void)
                BotTask taskID = GetCurrentTask ()->taskID;
 
                if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
-                  m_tasks->time = engine->GetTime ();
+				   GetCurrentTask()->time = engine->GetTime ();
 
                PushTask (TASK_FOLLOWUSER, TASKPRI_FOLLOWUSER, -1, 0.0, true);
             }
@@ -2806,7 +2806,7 @@ void Bot::CheckRadioCommands (void)
             BotTask taskID = GetCurrentTask ()->taskID;
 
             if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
-               m_tasks->time = engine->GetTime ();
+				GetCurrentTask()->time = engine->GetTime ();
 
             m_position = GetEntityOrigin (m_radioEntity);
             DeleteSearchNodes ();
@@ -2839,7 +2839,7 @@ void Bot::CheckRadioCommands (void)
          BotTask taskID = GetCurrentTask ()->taskID;
 
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
-            m_tasks->time = engine->GetTime ();
+			 GetCurrentTask()->time = engine->GetTime ();
 
          m_moveToC4 = true;
          m_position = GetEntityOrigin (m_radioEntity);
@@ -2877,7 +2877,7 @@ void Bot::CheckRadioCommands (void)
 
             RadioMessage (Radio_Affirmative);
             // don't pause/camp anymore
-            m_tasks->time = engine->GetTime ();
+			GetCurrentTask()->time = engine->GetTime ();
 
             m_targetEntity = null;
             MakeVectors (m_radioEntity->v.v_angle);
@@ -2935,7 +2935,7 @@ void Bot::CheckRadioCommands (void)
          BotTask taskID = GetCurrentTask ()->taskID;
 
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
-            m_tasks->time = engine->GetTime ();
+			 GetCurrentTask()->time = engine->GetTime ();
 
          m_targetEntity = null;
 
@@ -2971,14 +2971,14 @@ void Bot::CheckRadioCommands (void)
             m_agressionLevel = 0.0f;
 
          if (GetCurrentTask ()->taskID == TASK_CAMP)
-            m_tasks->time += engine->RandomFloat (10.0f, 15.0f);
+			 GetCurrentTask()->time += engine->RandomFloat (10.0f, 15.0f);
          else
          {
             // don't pause/camp anymore
             BotTask taskID = GetCurrentTask ()->taskID;
 
             if (taskID == TASK_PAUSE)
-               m_tasks->time = engine->GetTime ();
+				GetCurrentTask()->time = engine->GetTime ();
 
             m_targetEntity = null;
             m_seeEnemyTime = engine->GetTime ();
@@ -3070,9 +3070,9 @@ void Bot::CheckRadioCommands (void)
             if (GetCurrentTask ()->taskID == TASK_NORMAL)
             {
                // Is he approaching this goal?
-               if (m_tasks->data == bombPoint)
+               if (GetCurrentTask()->data == bombPoint)
                {
-                  m_tasks->data = -1;
+				   GetCurrentTask()->data = -1;
                   RadioMessage (Radio_Affirmative);
                }
             }
@@ -3086,14 +3086,14 @@ void Bot::CheckRadioCommands (void)
          RadioMessage (Radio_Affirmative);
 
          if (GetCurrentTask ()->taskID == TASK_CAMP)
-            m_tasks->time = engine->GetTime () + engine->RandomFloat (30.0f, 60.0f);
+			 GetCurrentTask()->time = engine->GetTime () + engine->RandomFloat (30.0f, 60.0f);
          else
          {
             // don't pause anymore
             BotTask taskID = GetCurrentTask ()->taskID;
 
             if (taskID == TASK_PAUSE)
-               m_tasks->time = engine->GetTime ();
+				GetCurrentTask()->time = engine->GetTime ();
 
             m_targetEntity = null;
             m_seeEnemyTime = engine->GetTime ();
@@ -3613,7 +3613,7 @@ void Bot::RunTask (void)
          if (GetCurrentTask ()->data != sypb_debuggoal.GetInt ())
          {
             DeleteSearchNodes ();
-            m_tasks->data = sypb_debuggoal.GetInt ();
+			GetCurrentTask()->data = sypb_debuggoal.GetInt ();
          }
       }
 
@@ -3623,7 +3623,7 @@ void Bot::RunTask (void)
 		  if (GetCurrentTask()->data != m_waypointGoalAPI)
 		  {
 			  DeleteSearchNodes();
-			  m_tasks->data = m_waypointGoalAPI;
+			  GetCurrentTask()->data = m_waypointGoalAPI;
 		  }
 	  }
       
@@ -3646,10 +3646,10 @@ void Bot::RunTask (void)
          m_reloadState = RSTATE_PRIMARY;
 
       // if bomb planted and it's a CT calculate new path to bomb point if he's not already heading for
-      if (g_bombPlanted && team == TEAM_COUNTER && GetCurrentTask ()->data != -1 && !(g_waypoint->GetPath (m_tasks->data)->flags & WAYPOINT_GOAL) && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && (g_waypoint->GetPath (m_tasks->data)->origin - g_waypoint->GetBombPosition ()).GetLength () > 128.0f)
+      if (g_bombPlanted && team == TEAM_COUNTER && GetCurrentTask ()->data != -1 && !(g_waypoint->GetPath (GetCurrentTask()->data)->flags & WAYPOINT_GOAL) && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && (g_waypoint->GetPath (GetCurrentTask()->data)->origin - g_waypoint->GetBombPosition ()).GetLength () > 128.0f)
       {
          DeleteSearchNodes ();
-         m_tasks->data = -1;
+		 GetCurrentTask()->data = -1;
       }
 
       if (!g_bombPlanted && m_currentWaypointIndex != -1 && (path->flags & WAYPOINT_GOAL) && engine->RandomInt (0, 100) < 80 && GetNearbyEnemiesNearPosition (pev->origin, 650) == 0)
@@ -3820,14 +3820,14 @@ void Bot::RunTask (void)
 
          // did we already decide about a goal before?
          if (GetCurrentTask ()->data != -1 && !(pev->weapons & (1 << WEAPON_C4)))
-            destIndex = m_tasks->data;
+            destIndex = GetCurrentTask()->data;
          else
             destIndex = FindGoal ();
 
          m_prevGoalIndex = destIndex;
 
          // remember index
-         m_tasks->data = destIndex;
+		 GetCurrentTask()->data = destIndex;
 
          // do pathfinding if it's not the current waypoint
          if (destIndex != m_currentWaypointIndex)
@@ -3879,7 +3879,7 @@ void Bot::RunTask (void)
       m_aimFlags |= AIM_ENTITY;
 
       // bot didn't spray this round?
-      if (m_timeLogoSpray <= engine->GetTime () && m_tasks->time > engine->GetTime ())
+      if (m_timeLogoSpray <= engine->GetTime () && GetCurrentTask()->time > engine->GetTime ())
       {
          MakeVectors (pev->v_angle);
          Vector sprayOrigin = EyePosition () + (g_pGlobals->v_forward * 128);
@@ -3892,7 +3892,7 @@ void Bot::RunTask (void)
 
          m_entity = sprayOrigin;
 
-         if (m_tasks->time - 0.5f < engine->GetTime ())
+         if (GetCurrentTask()->time - 0.5f < engine->GetTime ())
          {
             // emit spraycan sound
             EMIT_SOUND_DYN2 (GetEntity (), CHAN_VOICE, "player/sprayer.wav", 1.0, ATTN_NORM, 0, 100);
@@ -3949,13 +3949,13 @@ void Bot::RunTask (void)
 
          // is there a remembered index?
 		 if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
-			 destIndex = m_tasks->data;
+			 destIndex = GetCurrentTask()->data;
 		 else // no. we need to find a new one
 			 destIndex = GetEntityWaypoint(m_lastEnemy);
 
          // remember index
          m_prevGoalIndex = destIndex;
-         m_tasks->data = destIndex;
+		 GetCurrentTask()->data = destIndex;
 
          if (destIndex != m_currentWaypointIndex)
             FindPath (m_currentWaypointIndex, destIndex, m_pathType);
@@ -4049,7 +4049,7 @@ void Bot::RunTask (void)
 		 if (g_gameMode == MODE_ZP && !isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
 			 destIndex = FindGoal();
 		 else if (GetCurrentTask()->data != -1)
-			 destIndex = m_tasks->data;
+			 destIndex = GetCurrentTask()->data;
 		 else
 			 destIndex = FindCoverWaypoint(1024.0f);
 
@@ -4058,7 +4058,7 @@ void Bot::RunTask (void)
 
          m_campDirection = 0;
          m_prevGoalIndex = destIndex;
-         m_tasks->data = destIndex;
+		 GetCurrentTask()->data = destIndex;
 
          if (destIndex != m_currentWaypointIndex)
             FindPath (m_currentWaypointIndex, destIndex, 2);
@@ -4080,7 +4080,7 @@ void Bot::RunTask (void)
 
 		 // SyPB Pro P.43 - Waypoint improve
 		 m_prevGoalIndex = -1;
-		 m_tasks->data = -1;
+		 GetCurrentTask()->data = -1;
 
 		 SetEntityWaypoint(GetEntity());
 		 GetValidWaypoint();
@@ -4122,7 +4122,7 @@ void Bot::RunTask (void)
          pev->button |= m_campButtons;
 
       // stop camping if time over or gets hurt by something else than bullets
-      if (m_tasks->time < engine->GetTime () || m_lastDamageType > 0)
+      if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
          TaskComplete ();
       break;
 
@@ -4287,7 +4287,7 @@ void Bot::RunTask (void)
       pev->button |= m_campButtons;
 
       // stop camping if time over or gets hurt by something else than bullets
-      if (m_tasks->time < engine->GetTime () || m_lastDamageType > 0)
+      if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
          TaskComplete ();
 
       break;
@@ -4355,12 +4355,12 @@ void Bot::RunTask (void)
       m_navTimeset = engine->GetTime ();
 
 	  // SyPB Pro P.37 - Base Mode improve
-	  if (m_lastDamageType > 0 || m_tasks->time < engine->GetTime())
+	  if (m_lastDamageType > 0 || GetCurrentTask()->time < engine->GetTime())
 	  {
 		  if (m_isReloading && (!FNullEnt(m_enemy) || !FNullEnt(m_lastEnemy)) && m_skill > 70)
-			  m_tasks->time += 2.0f;
+			  GetCurrentTask()->time += 2.0f;
 		  else if (g_gameMode == MODE_DM && pev->health <= 20.0f && m_skill > 70)
-			  m_tasks->time += 5.0f;
+			  GetCurrentTask()->time += 5.0f;
 		  else
 			  TaskComplete();
 	  }
@@ -4389,14 +4389,14 @@ void Bot::RunTask (void)
          DeleteSearchNodes ();
 
          if (GetCurrentTask ()->data != -1 && GetCurrentTask ()->data < g_numWaypoints)
-            destIndex = m_tasks->data;
+            destIndex = GetCurrentTask()->data;
          else
             destIndex = g_waypoint->FindNearest (m_position);
 
          if (destIndex >= 0 && destIndex < g_numWaypoints)
          {
             m_prevGoalIndex = destIndex;
-            m_tasks->data = destIndex;
+			GetCurrentTask()->data = destIndex;
 
             FindPath (m_currentWaypointIndex, destIndex, m_pathType);
          }
@@ -4636,7 +4636,7 @@ void Bot::RunTask (void)
          if (destIndex >= 0 && destIndex < g_numWaypoints && destIndex != m_currentWaypointIndex)
          {
             m_prevGoalIndex = destIndex;
-            m_tasks->data = destIndex;
+			GetCurrentTask()->data = destIndex;
 
             // always take the shortest path
             FindShortestPath (m_currentWaypointIndex, destIndex);
@@ -4702,7 +4702,7 @@ void Bot::RunTask (void)
 			   DeleteSearchNodes();
 
 			   m_prevGoalIndex = destIndex;
-			   m_tasks->data = destIndex;
+			   GetCurrentTask()->data = destIndex;
 
 			   //FindShortestPath(m_currentWaypointIndex, destIndex);
 
@@ -4906,7 +4906,7 @@ void Bot::RunTask (void)
 
       m_grenade = (src - EyePosition ()).Normalize ();
 
-      if (m_tasks->time < engine->GetTime () + 0.5)
+      if (GetCurrentTask()->time < engine->GetTime () + 0.5)
       {
          m_aimFlags &= ~AIM_GRENADE;
          m_states &= ~STATE_THROWSMOKE;
@@ -4920,10 +4920,10 @@ void Bot::RunTask (void)
          if (pev->weapons & (1 << WEAPON_SMGRENADE))
          {
             SelectWeaponByName ("weapon_smokegrenade");
-            m_tasks->time = engine->GetTime () + Const_GrenadeTimer;
+			GetCurrentTask()->time = engine->GetTime () + Const_GrenadeTimer;
          }
          else
-            m_tasks->time = engine->GetTime () + 0.1f;
+			 GetCurrentTask()->time = engine->GetTime () + 0.1f;
       }
       else if (!(pev->oldbuttons & IN_ATTACK))
          pev->button |= IN_ATTACK;
@@ -4936,7 +4936,7 @@ void Bot::RunTask (void)
 
    // bot helps human player (or other bot) to get somewhere
    case TASK_DOUBLEJUMP:
-      if (FNullEnt (m_doubleJumpEntity) || !IsAlive (m_doubleJumpEntity) || (m_aimFlags & AIM_ENEMY) || (m_travelStartIndex != -1 && m_tasks->time + (g_waypoint->GetTravelTime (pev->maxspeed, g_waypoint->GetPath (m_travelStartIndex)->origin, m_doubleJumpOrigin) + 11.0f) < engine->GetTime ()))
+      if (FNullEnt (m_doubleJumpEntity) || !IsAlive (m_doubleJumpEntity) || (m_aimFlags & AIM_ENEMY) || (m_travelStartIndex != -1 && GetCurrentTask()->time + (g_waypoint->GetTravelTime (pev->maxspeed, g_waypoint->GetPath (m_travelStartIndex)->origin, m_doubleJumpOrigin) + 11.0f) < engine->GetTime ()))
       {
          ResetDoubleJumpState ();
          break;
@@ -4964,7 +4964,7 @@ void Bot::RunTask (void)
             if (m_doubleJumpEntity->v.button & IN_JUMP)
             {
                m_duckForJump = engine->GetTime () + engine->RandomFloat (3.0f, 5.0f);
-               m_tasks->time = engine->GetTime ();
+			   GetCurrentTask()->time = engine->GetTime ();
             }
          }
          break;
@@ -4988,7 +4988,7 @@ void Bot::RunTask (void)
          if (destIndex >= 0 && destIndex < g_numWaypoints)
          {
             m_prevGoalIndex = destIndex;
-            m_tasks->data = destIndex;
+			GetCurrentTask()->data = destIndex;
             m_travelStartIndex = m_currentWaypointIndex;
 
             // Always take the shortest path
@@ -5047,7 +5047,7 @@ void Bot::RunTask (void)
 			   destIndex = g_waypoint->FindFarest(pev->origin, safeRadius);
 
 		   m_prevGoalIndex = destIndex;
-		   m_tasks->data = destIndex;
+		   GetCurrentTask()->data = destIndex;
 		   FindShortestPath(m_currentWaypointIndex, destIndex);
 	   }
 
@@ -5354,13 +5354,13 @@ void Bot::DebugModeMsg(void)
 
 	static int index, goal, taskID;
 
-	if (m_tasks != null)
+	if (GetCurrentTask() != null)
 	{
-		if (taskID != m_tasks->taskID || index != m_currentWaypointIndex || goal != m_tasks->data || timeDebugUpdate < engine->GetTime())
+		if (taskID != GetCurrentTask()->taskID || index != m_currentWaypointIndex || goal != GetCurrentTask()->data || timeDebugUpdate < engine->GetTime())
 		{
-			taskID = m_tasks->taskID;
+			taskID = GetCurrentTask()->taskID;
 			index = m_currentWaypointIndex;
-			goal = m_tasks->data;
+			goal = GetCurrentTask()->data;
 
 			char taskName[80];
 
@@ -5582,7 +5582,7 @@ void Bot::DebugModeMsg(void)
 				botType, m_moneyAmount, IsZombieEntity(GetEntity()) ? "Zombie" : "Normal",
 				enemyName, pickName,
 
-				m_currentWaypointIndex, m_prevGoalIndex, m_tasks->data,
+				m_currentWaypointIndex, m_prevGoalIndex, GetCurrentTask()->data,
 				navIndex[0], navIndex[1],
 				g_clients[client].wpIndex, g_clients[client].wpIndex2,
 				m_moveSpeed, m_strafeSpeed,

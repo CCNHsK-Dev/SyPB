@@ -600,20 +600,20 @@ bool Bot::DoWaypointNav (void)
       else if (m_navNode == null)
          return false;
 
-      if ((g_mapType & MAP_DE) && g_bombPlanted && GetTeam (GetEntity ()) == TEAM_COUNTER && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && m_tasks->data != -1)
+      if ((g_mapType & MAP_DE) && g_bombPlanted && GetTeam (GetEntity ()) == TEAM_COUNTER && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->data != -1)
       {
          Vector bombOrigin = CheckBombAudible ();
 
          // bot within 'hearable' bomb tick noises?
          if (bombOrigin != nullvec)
          {
-            float distance = (bombOrigin - g_waypoint->GetPath (m_tasks->data)->origin).GetLength ();
+            float distance = (bombOrigin - g_waypoint->GetPath (GetCurrentTask()->data)->origin).GetLength ();
 
             if (distance > 512.0f)
-               g_waypoint->SetGoalVisited (m_tasks->data); // doesn't hear so not a good goal
+               g_waypoint->SetGoalVisited (GetCurrentTask()->data); // doesn't hear so not a good goal
          }
          else
-            g_waypoint->SetGoalVisited (m_tasks->data); // doesn't hear so not a good goal
+            g_waypoint->SetGoalVisited (GetCurrentTask ()->data); // doesn't hear so not a good goal
       }
 
       HeadTowardWaypoint (); // do the actual movement checking
