@@ -50,7 +50,7 @@ extern bool g_leaderChoosen[2];
 
 extern bool g_sgdWaypoint;
 extern bool g_sautoWaypoint;
-extern int m_sautoRadius;
+extern int g_sautoRadius;
 
 extern float g_autoPathDistance;
 extern float g_timeBombPlanted;
@@ -71,6 +71,7 @@ extern int g_fakeArgc;
 extern unsigned short g_killHistory;
 
 extern int g_gameMode;
+extern int g_debugMode;
 
 extern int g_normalWeaponPrefs[Const_NumWeapons];
 extern int g_rusherWeaponPrefs[Const_NumWeapons];

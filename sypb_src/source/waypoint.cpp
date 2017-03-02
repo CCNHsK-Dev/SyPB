@@ -191,13 +191,14 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 		if (distance > minDistance)
 			continue;
 
+		/*  TESTTEST
 		// SyPB Pro P.43 - Find Waypoint improve
 		Vector dest = m_paths[i]->origin;
 		float distance2D = (dest - origin).GetLength2D();
 		if (((dest.z > origin.z + 62.0f || dest.z < origin.z - 100.0f) &&
-			!(m_paths[i]->flags & WAYPOINT_LADDER)) && distance2D <= 130.0f)
-			continue;
-
+			!(m_paths[i]->flags & WAYPOINT_LADDER)) && distance2D <= 30.0f)
+			continue; */
+			 
 		for (int y = 0; y < checkPoint; y++)
 		{
 			if (distance >= wpDistance[y])
@@ -270,7 +271,7 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 			if (wpIndex[i] < 0 || wpIndex[i] >= g_numWaypoints)
 				continue;
 
-			if (!Reachable(entity, wpIndex[i]))
+			if (wpDistance[i] > g_waypoint->GetPath (wpIndex[i])->radius && !Reachable(entity, wpIndex[i]))
 				continue;
 
 			if (findWaypointPoint == (int *)-2)
@@ -830,8 +831,8 @@ void Waypoint::SetRadius(int radius)
 	// SyPB Pro P.37 - SgdWP
 	if (g_sautoWaypoint)
 	{
-		m_sautoRadius = radius;
-		ChartPrint("[SgdWP Auto] Waypoint Radius is: %d ", m_sautoRadius);
+		g_sautoRadius = radius;
+		ChartPrint("[SgdWP Auto] Waypoint Radius is: %d ", g_sautoRadius);
 	}
 
 	if (index != -1)
@@ -1722,7 +1723,7 @@ void Waypoint::Think(void)
 				if (m_ladderPoint && !(g_hostEntity->v.movetype == MOVETYPE_FLY))
 				{
 					Add(0);
-					SetRadius(m_sautoRadius);
+					SetRadius(g_sautoRadius);
 					m_ladderPoint = false;
 				}
 
@@ -1732,9 +1733,9 @@ void Waypoint::Think(void)
 					if (m_fallPosition.z > (GetEntityOrigin(g_hostEntity).z + 150.0f))
 					{
 						Add(102, m_fallPosition);
-						SetRadius(m_sautoRadius);
+						SetRadius(g_sautoRadius);
 						Add(103);
-						SetRadius(m_sautoRadius);
+						SetRadius(g_sautoRadius);
 					}
 
 					m_fallPoint = false;
@@ -1778,7 +1779,7 @@ void Waypoint::Think(void)
 					if (nearestDistance >= newWaypointDistance)
 					{
 						Add(0);
-						SetRadius(m_sautoRadius);
+						SetRadius(g_sautoRadius);
 					}
 				}
 

@@ -25,6 +25,8 @@
 #include <core.h>
 
 // console vars
+ConVar sypb_debug("sypb_debug", "0");
+
 ConVar sypb_password ("sypb_password", "", VARTYPE_PASSWORD);
 ConVar sypb_password_key ("sypb_password_key", "_sypb_wp");
 
@@ -1685,8 +1687,6 @@ void ClientCommand(edict_t *ent)
 			{
 				DisplayMenuToClient(ent, null); // reset menu display
 
-				extern ConVar sypb_debug;
-
 				switch (selection)
 				{
 				case 1:
@@ -1702,7 +1702,10 @@ void ClientCommand(edict_t *ent)
 					break;
 
 				case 4:
-					sypb_debug.SetInt(sypb_debug.GetInt() ^ 1);
+					if (g_debugMode == DEBUG_NONE)
+						sypb_debug.SetInt(DEBUG_PLAYER);
+					else
+						sypb_debug.SetInt(DEBUG_NONE);
 					break;
 
 				case 5:
@@ -2593,7 +2596,14 @@ void StartFrame (void)
 		}
 	}
 
-	g_gameMode = GetGameMod();
+	g_gameMode = sypb_gamemod.GetInt();
+	if (g_gameMode < MODE_BASE || g_gameMode >= MODE_NONE)
+		SetGameMod(MODE_BASE);
+
+	g_debugMode = sypb_debug.GetInt();
+	if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)
+		sypb_debug.SetInt(DEBUG_NONE);
+
 	LoadEntityData();
 	int i;
 
@@ -3304,6 +3314,7 @@ export int GetEntityAPI2 (DLL_FUNCTIONS *functionTable, int * /*interfaceVersion
 
    functionTable->pfnGameInit = GameDLLInit;
    functionTable->pfnSpawn = Spawn;
+   functionTable->pfnTouch = Touch;
    functionTable->pfnClientConnect = ClientConnect;
    functionTable->pfnClientDisconnect = ClientDisconnect;
    functionTable->pfnClientUserInfoChanged = ClientUserInfoChanged;
@@ -3312,7 +3323,6 @@ export int GetEntityAPI2 (DLL_FUNCTIONS *functionTable, int * /*interfaceVersion
    functionTable->pfnServerDeactivate = ServerDeactivate;
    functionTable->pfnKeyValue = KeyValue;
    functionTable->pfnStartFrame = StartFrame;
-   functionTable->pfnTouch = Touch;
 
    return true;
 }
@@ -3414,7 +3424,7 @@ export int Server_GetBlendingInterface (int version, void **ppinterface, void *p
    return (*g_serverBlendingAPI) (version, ppinterface, pstudio, rotationmatrix, bonetransform);
 }
 
-export int Meta_Query (char *ifvers, plugin_info_t **pPlugInfo, mutil_funcs_t *pMetaUtilFuncs)
+export int Meta_Query (char * /*ifvers*/, plugin_info_t **pPlugInfo, mutil_funcs_t *pMetaUtilFuncs)
 {
    // this function is the first function ever called by metamod in the plugin DLL. Its purpose
    // is for metamod to retrieve basic information about the plugin, such as its meta-interface
@@ -3424,52 +3434,14 @@ export int Meta_Query (char *ifvers, plugin_info_t **pPlugInfo, mutil_funcs_t *p
    gpMetaUtilFuncs = pMetaUtilFuncs;
    *pPlugInfo = &Plugin_info;
 
-   // check for interface version compatibility
-   if (strcmp (ifvers, Plugin_info.ifvers) != 0)
-   {
-      int metaMajor = 0, metaMinor = 0, pluginMajor = 0, pluginMinor = 0;
-
-      LOG_CONSOLE (PLID, "%s: meta-interface version mismatch (metamod: %s, %s: %s)", Plugin_info.name, ifvers, Plugin_info.name, Plugin_info.ifvers);
-      LOG_MESSAGE (PLID, "%s: meta-interface version mismatch (metamod: %s, %s: %s)", Plugin_info.name, ifvers, Plugin_info.name, Plugin_info.ifvers);
-
-      // if plugin has later interface version, it's incompatible (update metamod)
-      sscanf (ifvers, "%d:%d", &metaMajor, &metaMinor);
-      sscanf (META_INTERFACE_VERSION, "%d:%d", &pluginMajor, &pluginMinor);
-
-      if (pluginMajor > metaMajor || (pluginMajor == metaMajor && pluginMinor > metaMinor))
-      {
-         LOG_CONSOLE (PLID, "metamod version is too old for this plugin; update metamod");
-         LOG_MMERROR (PLID, "metamod version is too old for this plugin; update metamod");
-
-         return false;
-      }
-
-      // if plugin has older major interface version, it's incompatible (update plugin)
-      else if (pluginMajor < metaMajor)
-      {
-         LOG_CONSOLE (PLID, "metamod version is incompatible with this plugin; please find a newer version of this plugin");
-         LOG_MMERROR (PLID, "metamod version is incompatible with this plugin; please find a newer version of this plugin");
-
-         return false;
-      }
-   }
    return true; // tell metamod this plugin looks safe
 }
 
-export int Meta_Attach (PLUG_LOADTIME now, metamod_funcs_t *functionTable, meta_globals_t *pMGlobals, gamedll_funcs_t *pGamedllFuncs)
+export int Meta_Attach (PLUG_LOADTIME /*now*/, metamod_funcs_t *functionTable, meta_globals_t *pMGlobals, gamedll_funcs_t *pGamedllFuncs)
 {
    // this function is called when metamod attempts to load the plugin. Since it's the place
    // where we can tell if the plugin will be allowed to run or not, we wait until here to make
    // our initialization stuff, like registering CVARs and dedicated server commands.
-
-   // are we allowed to load this plugin now ?
-   if (now > Plugin_info.loadable)
-   {
-      LOG_CONSOLE (PLID, "%s: plugin NOT attaching (can't load plugin right now)", Plugin_info.name);
-      LOG_MMERROR (PLID, "%s: plugin NOT attaching (can't load plugin right now)", Plugin_info.name);
-
-      return false; // returning false prevents metamod from attaching this plugin
-   }
 
    // keep track of the pointers to engine function tables metamod gives us
    gpMetaGlobals = pMGlobals;
@@ -3479,20 +3451,13 @@ export int Meta_Attach (PLUG_LOADTIME now, metamod_funcs_t *functionTable, meta_
    return true; // returning true enables metamod to attach this plugin
 }
 
-export int Meta_Detach (PLUG_LOADTIME now, PL_UNLOAD_REASON reason)
+export int Meta_Detach (PLUG_LOADTIME /*now*/, PL_UNLOAD_REASON /*reason*/)
 {
    // this function is called when metamod unloads the plugin. A basic check is made in order
    // to prevent unloading the plugin if its processing should not be interrupted.
 
-   // is metamod allowed to unload the plugin?
-   if (now > Plugin_info.unloadable && reason != PNL_CMD_FORCED)
-   {
-      LOG_CONSOLE (PLID, "%s: plugin not detaching (can't unload plugin right now)", Plugin_info.name);
-      LOG_MMERROR (PLID, "%s: plugin not detaching (can't unload plugin right now)", Plugin_info.name);
-
-      return false; // returning false prevents metamod from unloading this plugin
-   }
    g_botManager->RemoveAll (); // kick all bots off this server
+   FreeLibraryMemory();
 
    return true;
 }
@@ -3988,10 +3953,7 @@ export int SwNPC_GetEntityWaypointIndex(edict_t *entity)
 
 export void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEntity)
 {
-	if (FNullEnt(targetEntity))
-		SetEntityWaypoint(getEntity);
-	else
-		SetEntityWaypoint(getEntity, GetEntityWaypoint(targetEntity));
+	SetEntityWaypoint(getEntity, GetEntityWaypoint(targetEntity));
 }
 // SwNPC API End
 

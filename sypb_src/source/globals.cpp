@@ -50,7 +50,7 @@ bool g_leaderChoosen[2] = {false, false};
 bool g_autoWaypoint = false;
 bool g_sgdWaypoint = false;
 bool g_sautoWaypoint = false;
-int m_sautoRadius = 32;
+int g_sautoRadius = 32;
 
 float g_lastChatTime = 0.0f;
 float g_timeRoundStart = 0.0f;
@@ -72,6 +72,7 @@ int g_numWaypoints = 0;
 int g_mapType = 0;
 unsigned short g_killHistory = 0;
 
+int g_debugMode = DEBUG_NONE;
 int g_gameMode = MODE_BASE;
 
 int g_modelIndexLaser = 0;

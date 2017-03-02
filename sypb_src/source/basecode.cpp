@@ -25,7 +25,6 @@
 #include <core.h>
 
 // console variables
-ConVar sypb_debug ("sypb_debug", "0");
 ConVar sypb_debuggoal("sypb_debuggoal", "-1");
 ConVar sypb_gamemod("sypb_gamemod", "0");
 
@@ -3508,7 +3507,7 @@ void Bot::Think(void)
 	   
 	   MoveAction();
 	   
-	   DebugModeMsg();
+	   BotDebugModeMsg();
    }
 }
 
@@ -5339,11 +5338,10 @@ void Bot::RunTask (void)
 }
 
 // SyPB Pro P.30 - debug
-void Bot::DebugModeMsg(void)
+void Bot::BotDebugModeMsg(void)
 {
 	// SyPB Pro P.48 - Debug Msg
-	int debugMode = sypb_debug.GetInt();
-	if (FNullEnt(g_hostEntity) || debugMode <= 0 || debugMode == 2)
+	if (FNullEnt(g_hostEntity) || IsAlive (g_hostEntity) || g_debugMode == DEBUG_NONE || g_debugMode == DEBUG_SWNPC)
 		return;
 
 	static float timeDebugUpdate = 0.0f;

@@ -881,11 +881,6 @@ void SetGameMod(int gamemode)
 	g_gameMode = gamemode;
 }
 
-int GetGameMod (void)
-{
-	return sypb_gamemod.GetInt();
-}
-
 int GetTeam (edict_t *ent)
 {
 	// SyPB Pro P.1
@@ -967,28 +962,17 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 
 	bool needCheckNewWaypoint = false;
 	float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
-	if ((isPlayer && g_clients[i].wpIndex == -1) || (!isPlayer && g_entityWpIndex[i] == -1))
+	int wpIndex = isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
+	Vector getWpOrigin = isPlayer ? g_clients[i].getWpOrigin : g_entityGetWpOrigin[i];
+
+	if (wpIndex == -1)
 		needCheckNewWaypoint = true;
-	else if ((!isPlayer && g_entityGetWpTime[i] == engine->GetTime()) || 
-		(isPlayer && g_clients[i].getWPTime == engine->GetTime() && mode == -1))
+	else if (traceCheckTime == engine->GetTime () && (!isPlayer || mode == -1))
 		needCheckNewWaypoint = false;
 	else if (mode != -1)
 		needCheckNewWaypoint = true;
 	else
 	{
-		Vector getWpOrigin = nullvec;
-		int wpIndex = -1;
-		if (isPlayer)
-		{
-			getWpOrigin = g_clients[i].getWpOrigin;
-			wpIndex = g_clients[i].wpIndex;
-		}
-		else
-		{
-			getWpOrigin = g_entityGetWpOrigin[i];
-			wpIndex = g_entityWpIndex[i];
-		}
-
 		if (getWpOrigin != nullvec && wpIndex >= 0 && wpIndex < g_numWaypoints)
 		{
 			float distance = (getWpOrigin - origin).GetLength();
@@ -1025,7 +1009,6 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		return g_entityWpIndex[i];
 	}
 
-	int wpIndex = -1;
 	int wpIndex2 = -1;
 
 	if (mode == -1 || g_botManager->GetBot(ent) == null)
@@ -1521,7 +1504,6 @@ void PlaySound (edict_t *ent, const char *name)
    return;
 }
 
-
 void AddLogEntry (int logLevel, const char *format, ...)
 {
    // this function logs a message to the message log file root directory.
@@ -1618,6 +1600,30 @@ void MOD_AddLogEntry(int mod, char *format)
 		fp.Print("SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
 	fp.Print("----------------------------- \n");
 	fp.Close();
+}
+
+// SyPB Pro P.49 - Debugs Msg
+void DebugModeMsg(void)
+{
+	if (!IsAlive(g_hostEntity) || g_debugMode != DEBUG_PLAYER)
+		return;
+
+	int client = ENTINDEX(g_hostEntity) - 1;
+	Vector src = nullvec;
+
+	if (g_clients[client].wpIndex != -1)
+	{
+		src = g_waypoint->GetPath(g_clients[client].wpIndex)->origin;
+		engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
+			Color(255, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
+	}
+
+	if (g_clients[client].wpIndex2 != -1)
+	{
+		src = g_waypoint->GetPath(g_clients[client].wpIndex2)->origin;
+		engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
+			Color(0, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
+	}
 }
 
 char *Localizer::TranslateInput (const char *input)

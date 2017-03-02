@@ -349,6 +349,8 @@ void BotControl::Think(void)
 
 		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
+
+	DebugModeMsg();
 }
 
 void BotControl::AddBot (const String &name, int skill, int personality, int team, int member)

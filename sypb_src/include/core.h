@@ -373,11 +373,20 @@ enum PathConnection
 // SyPB Support Game Mode
 enum GameMode
 {
+	MODE_BASE = 0,
 	MODE_DM = 1,
 	MODE_ZP = 2,
 	MODE_NOTEAM = 3,
-	MODE_ZH = 4, 
-	MODE_BASE = 0
+	MODE_ZH = 4,
+	MODE_NONE
+};
+
+enum DebugMode
+{
+	DEBUG_NONE = 0,
+	DEBUG_PLAYER = 1,
+	DEBUG_SWNPC = 2,
+	DEBUG_ALL
 };
 
 enum FightStyle
@@ -808,7 +817,7 @@ private:
    void SwitchChatterIcon (bool show);
    void BotAI (void);
    void FunBotAI(void);
-   void DebugModeMsg(void);
+   void BotDebugModeMsg(void);
    void MoveAction(void);
    bool IsMorePowerfulWeaponCanBeBought (void);
    void PerformWeaponPurchase (void);
@@ -1391,7 +1400,6 @@ public:
 // prototypes of bot functions...
 extern int GetWeaponReturn (bool isString, const char *weaponAlias, int weaponID = -1);
 extern int GetTeam (edict_t *ent);
-extern int GetGameMod (void);
 extern bool IsZombieEntity (edict_t *ent);
 
 extern void SetGameMod(int gamemode);
@@ -1413,30 +1421,26 @@ extern bool IsValidPlayer (edict_t *ent);
 extern bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant = false);
 extern bool FindNearestPlayer (void **holder, edict_t *to, float searchDistance = 4096.0, bool sameTeam = false, bool needBot = false, bool needAlive = false, bool needDrawn = false);
 
-extern bool IsNotAttackLab(edict_t *entity, Vector attackOrigin);
-extern bool IsAntiBlock(edict_t *entity);
+extern void AutoLoadGameMode(void);
 
 extern const char *GetEntityName(edict_t *entity);
-
 extern const char *GetMapName (void);
 extern const char *GetWaypointDir (void);
 extern const char *GetModName (void);
 extern const char *GetField (const char *string, int fieldId, bool endLine = false);
 
-//extern uint16 GenerateBuildNumber (void);
 extern Vector GetEntityOrigin (edict_t *ent);
-
 extern Vector GetTopOrigin(edict_t *ent);
 extern Vector GetBottomOrigin(edict_t *ent);
 extern Vector GetPlayerHeadOrigin(edict_t *ent);
 
+extern void DebugModeMsg(void);
 extern void FreeLibraryMemory (void);
 extern void RoundInit (void);
 extern void FakeClientCommand (edict_t *fakeClient, const char *format, ...);
 extern void strtrim (char *string);
 extern void CreatePath (char *path);
 extern void ServerCommand (const char *format, ...);
-extern void RegisterBotVariable (int variableID, const char *initialValue, int flags = FCVAR_EXTDLL | FCVAR_SERVER);
 extern void RegisterCommand (char *command, void funcPtr (void));
 extern void CheckWelcomeMessage (void);
 extern void DetectCSVersion (void);
@@ -1448,13 +1452,13 @@ extern void CenterPrint (const char *format, ...);
 extern void ClientPrint (edict_t *ent, int dest, const char *format, ...);
 extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
 
-extern void AutoLoadGameMode(void);
+extern bool IsNotAttackLab(edict_t *entity, Vector attackOrigin);
+extern bool IsAntiBlock(edict_t *entity);
 
 extern void SetEntityActionData(int i, int index = -1, int team = -1, int action = -1);
 extern void API_TestMSG(const char *format, ...);
 
 extern void AddLogEntry (int logLevel, const char *format, ...);
-
 extern void MOD_AddLogEntry(int mode, char *format);
 
 extern void DisplayMenuToClient (edict_t *ent, MenuText *menu);
