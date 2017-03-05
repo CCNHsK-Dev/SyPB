@@ -1074,7 +1074,6 @@ Bot::~Bot (void)
 {
    // this is bot destructor
 
-   // SwitchChatterIcon (false); // crash on CTRL+C'ing win32 console hlds
    DeleteSearchNodes ();
    ResetTasks ();
 

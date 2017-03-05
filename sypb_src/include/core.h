@@ -279,12 +279,12 @@ enum NetMsg
    NETMSG_SCREENFADE = 11,
    NETMSG_HLTV = 12,
    NETMSG_TEXTMSG = 13,
-   NETMSG_SCOREINFO = 14,
-   NETMSG_BARTIME = 15,
-   NETMSG_SENDAUDIO = 17,
-   NETMSG_SAYTEXT = 18,
-   NETMSG_BOTVOICE = 19,
-   NETMSG_NUM = 21
+   //NETMSG_SCOREINFO = 14,
+   NETMSG_BARTIME = 14,
+   //NETMSG_SENDAUDIO = 17,
+   NETMSG_SAYTEXT = 15,
+   //NETMSG_BOTVOICE = 19,
+   NETMSG_NUM = 16
 };
 
 // sensing states
@@ -814,7 +814,6 @@ private:
    Vector m_moveAnglesForRunMove;
    float m_moveSpeedForRunMove, m_strafeSpeedForRunMove;
 
-   void SwitchChatterIcon (bool show);
    void BotAI (void);
    void FunBotAI(void);
    void BotDebugModeMsg(void);

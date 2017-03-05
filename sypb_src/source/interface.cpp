@@ -2862,13 +2862,11 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       g_netMsg->SetId (NETMSG_SCREENFADE, GET_USER_MSG_ID (PLID, "ScreenFade", null));
       g_netMsg->SetId (NETMSG_HLTV, GET_USER_MSG_ID (PLID, "HLTV", null));
       g_netMsg->SetId (NETMSG_TEXTMSG, GET_USER_MSG_ID (PLID, "TextMsg", null));
-      g_netMsg->SetId (NETMSG_SCOREINFO, GET_USER_MSG_ID (PLID, "ScoreInfo", null));
+
       g_netMsg->SetId (NETMSG_BARTIME, GET_USER_MSG_ID (PLID, "BarTime", null));
-      g_netMsg->SetId (NETMSG_SENDAUDIO, GET_USER_MSG_ID (PLID, "SendAudio", null));
+
       g_netMsg->SetId (NETMSG_SAYTEXT, GET_USER_MSG_ID (PLID, "SayText", null));
 
-      if (g_gameVersion != CSVER_VERYOLD)
-         g_netMsg->SetId (NETMSG_BOTVOICE, GET_USER_MSG_ID (PLID, "BotVoice", null));
    }
    g_netMsg->Reset ();
 
@@ -3202,18 +3200,10 @@ int pfnRegUserMsg(const char *name, int size)
       g_netMsg->SetId (NETMSG_HLTV, message);
    else if (strcmp (name, "TextMsg") == 0)
       g_netMsg->SetId (NETMSG_TEXTMSG, message);
-   //else if (strcmp (name, "ScoreInfo") == 0)
-      //g_netMsg->SetId (NETMSG_SCOREINFO, message);
    else if (strcmp (name, "BarTime") == 0)
       g_netMsg->SetId (NETMSG_BARTIME, message);
-   else if (strcmp (name, "SendAudio") == 0)
-      g_netMsg->SetId (NETMSG_SENDAUDIO, message);
    else if (strcmp (name, "SayText") == 0)
       g_netMsg->SetId (NETMSG_SAYTEXT, message);
-   else if (strcmp (name, "BotVoice") == 0)
-      g_netMsg->SetId (NETMSG_BOTVOICE, message);
-   else if (strcmp(name, "ResetHUD") == 0)
-	   g_netMsg->SetId(NETMSG_BOTVOICE, message);
 
    return message;
 }

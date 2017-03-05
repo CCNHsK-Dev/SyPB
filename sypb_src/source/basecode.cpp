@@ -341,23 +341,15 @@ void Bot::ZmCampPointAction(int mode)
 	if (g_waypoint->m_zmHmPoints.IsEmpty())
 		return;
 
-	float campAction = 0.0f;
-	int campPointWaypointIndex = -1;
+	float campAction = -1.0f;
+	int campPointWaypointIndex = GetCurrentTask()->data;
 
-	if (g_waypoint->IsZBCampPoint(m_currentWaypointIndex))
+	if (mode == 1 && g_waypoint->IsZBCampPoint(m_currentWaypointIndex))
 	{
-		if (mode == 1)
-		{
-			campAction = 1.0f;
-			campPointWaypointIndex = m_currentWaypointIndex;
-		}
-		else
-		{
-			campAction = 1.6f;
-			campPointWaypointIndex = m_currentWaypointIndex;
-		}
+		campAction = 0.0f;
+		campPointWaypointIndex = m_currentWaypointIndex;
 	}
-	else if (mode == 0 && GetCurrentTask()->data != -1 && g_waypoint->IsZBCampPoint(GetCurrentTask()->data))
+	else if (g_waypoint->IsZBCampPoint(campPointWaypointIndex))
 	{
 		if (&m_navNode[0] != null)
 		{
@@ -367,7 +359,7 @@ void Bot::ZmCampPointAction(int mode)
 			while (navid != null && movePoint <= 2)
 			{
 				movePoint++;
-				if (GetCurrentTask()->data == navid->index)
+				if (campPointWaypointIndex == navid->index)
 				{
 					Vector pointOrigin = g_waypoint->GetPath(navid->index)->origin;
 					if ((pointOrigin - pev->origin).GetLength2D() <= 250.0f &&
@@ -375,8 +367,7 @@ void Bot::ZmCampPointAction(int mode)
 						pointOrigin.z - 25.0f >= pev->origin.z &&
 						IsWaypointUsed(navid->index))
 					{
-						campAction = (movePoint * 1.8f);
-						campPointWaypointIndex = GetCurrentTask()->data;
+						campAction = (movePoint * 1.6f);
 						break;
 					}
 				}
@@ -384,35 +375,16 @@ void Bot::ZmCampPointAction(int mode)
 			}
 		}
 	}
-	// -----
 
-	if (campAction == 0.0f || campPointWaypointIndex == -1)
+	if (campAction == -1.0f || campPointWaypointIndex == -1)
 		m_checkCampPointTime = 0.0f;
-	else if (m_checkCampPointTime == 0.0f && campAction != 1.0f)
+	else if (m_checkCampPointTime == 0.0f && campAction != 0.0f)
 		m_checkCampPointTime = engine->GetTime() + campAction;
-	else if ((m_checkCampPointTime  < engine->GetTime()) || campAction == 1.0f)
+	else if (m_checkCampPointTime < engine->GetTime() || campAction == 0.0f)
 	{
 		m_zhCampPointIndex = campPointWaypointIndex;
 
-		m_campButtons = 0;
-		SelectBestWeapon();
-		MakeVectors(pev->v_angle);
-
-		m_timeCamping = engine->GetTime() + 120.0f;
-		PushTask(TASK_CAMP, TASKPRI_CAMP, -1, m_timeCamping, true);
-
-		m_camp.x = g_waypoint->GetPath(campPointWaypointIndex)->campStartX;
-		m_camp.y = g_waypoint->GetPath(campPointWaypointIndex)->campStartY;
-		m_camp.z = 0;
-
-		m_aimFlags |= AIM_CAMP;
-		m_campDirection = 0;
-
-		m_moveToGoal = false;
-		m_checkTerrain = false;
-
-		m_moveSpeed = 0.0f;
-		m_strafeSpeed = 0.0f;
+		PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + 120.0f, true);
 
 		m_checkCampPointTime = 0.0f;
 	}
@@ -1084,28 +1056,6 @@ void Bot::GetCampDirection (Vector *dest)
    }
 }
 
-void Bot::SwitchChatterIcon (bool show)
-{
-   // this function depending on show boolen, shows/remove chatter, icon, on the head of bot.
-
-   if (g_gameVersion == CSVER_VERYOLD)
-      return;
-
-   for (int i = 0; i < engine->GetMaxClients (); i++)
-   {
-      edict_t *ent = INDEXENT (i);
-
-      if (!IsValidPlayer (ent) || IsValidBot (ent) || GetTeam (ent) != GetTeam (GetEntity ()))
-         continue;
-
-      MESSAGE_BEGIN (MSG_ONE, g_netMsg->GetId (NETMSG_BOTVOICE), null, ent); // begin message
-         WRITE_BYTE (show); // switch on/off
-         WRITE_BYTE (GetIndex ());
-      MESSAGE_END ();
-
-   }
-}
-
 void Bot::RadioMessage (int message)
 {
    // this function inserts the radio message into the message queue
@@ -1207,7 +1157,6 @@ void Bot::CheckMessageQueue (void)
      // if last bot radio command (global) happened just a second ago, delay response
 	   // SyPB Pro P.42 - Fixed 
 	   if ((team == 0 || team == 1) && (g_lastRadioTime[team] + 1.0f < engine->GetTime()))
-	   //if (g_lastRadioTime[team] + 1.0f < engine->GetTime())
 	   {
 		   // if same message like previous just do a yes/no
 		   if (m_radioSelect != Radio_Affirmative && m_radioSelect != Radio_Negative)
@@ -3476,13 +3425,6 @@ void Bot::Think(void)
 	   GetCurrentTask()->taskID != TASK_DEFUSEBOMB))
       botMovement = true;
 
-   // SyPB Pro P.42 - Fixed
-   int team = GetTeam(GetEntity());
-
-   // remove voice icon
-   if ((team != 0 && team != 1) || g_lastRadioTime[team] + engine->RandomFloat (0.8f, 2.1f) < engine->GetTime ())
-      SwitchChatterIcon (false); // hide icon
-
    static float secondThinkTimer = 0.0f;
 
    // check is it time to execute think (called once per second (not frame))
@@ -3842,20 +3784,8 @@ void Bot::RunTask (void)
 		  if (!(pev->flags & FL_DUCKING) && m_minSpeed != pev->maxspeed)
 			  m_moveSpeed = m_minSpeed;
 
-		  // SyPB Pro P.30 - Zombie Mode Human Camp
-		  if (g_gameMode == MODE_ZP && !isZombieBot &&
-			  // SyPB Pro P.48 - Zombie Mode Human Camp Fixed
-			 !g_waypoint->m_zmHmPoints.IsEmpty())
-		  {
+		  if (g_gameMode == MODE_ZP && !isZombieBot)
 			  ZmCampPointAction();
-
-			  // SyPB Pro P.47 - Zombie Mode Human Camp improve
-			  if (GetCurrentTask()->data != -1 && !(g_waypoint->IsZBCampPoint(GetCurrentTask()->data)))
-			  {
-				  m_prevGoalIndex = -1;
-				  GetCurrentTask()->data = -1;
-			  }
-		  }
       }
 
       if (engine->IsFootstepsOn () && m_skill > 80 && !(m_aimFlags & AIM_ENEMY) && 
