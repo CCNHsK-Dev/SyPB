@@ -334,22 +334,28 @@ void Bot::ZombieModeAi(void)
 	}
 }
 
-// SyPB Pro P.38 - Zombie Mode Camp Action
+
+
 void Bot::ZmCampPointAction(int mode)
 {
 	// SyPB Pro P.47 - Zombie Mode Human Camp Action
 	if (g_waypoint->m_zmHmPoints.IsEmpty())
 		return;
 
-	float campAction = -1.0f;
-	int campPointWaypointIndex = GetCurrentTask()->data;
+	float campAction = 0.0f;
+	int campPointWaypointIndex = -1;
 
-	if (mode == 1 && g_waypoint->IsZBCampPoint(m_currentWaypointIndex))
+	if (g_waypoint->IsZBCampPoint(m_currentWaypointIndex))
 	{
-		campAction = 0.0f;
 		campPointWaypointIndex = m_currentWaypointIndex;
+
+		if (mode == 1)
+			campAction = 1.0f;
+		else
+			campAction = 1.6f;
 	}
-	else if (g_waypoint->IsZBCampPoint(campPointWaypointIndex))
+
+	else if (mode == 0 && GetCurrentTask()->data != -1 && g_waypoint->IsZBCampPoint(GetCurrentTask()->data))
 	{
 		if (&m_navNode[0] != null)
 		{
@@ -359,15 +365,14 @@ void Bot::ZmCampPointAction(int mode)
 			while (navid != null && movePoint <= 2)
 			{
 				movePoint++;
-				if (campPointWaypointIndex == navid->index)
+
+				if (GetCurrentTask()->data == navid->index)
 				{
 					Vector pointOrigin = g_waypoint->GetPath(navid->index)->origin;
-					if ((pointOrigin - pev->origin).GetLength2D() <= 250.0f &&
-						pointOrigin.z + 40.0f <= pev->origin.z &&
-						pointOrigin.z - 25.0f >= pev->origin.z &&
-						IsWaypointUsed(navid->index))
+					if ((pointOrigin - pev->origin).GetLength2D() <= 200.0f && IsWaypointUsed(navid->index))
 					{
-						campAction = (movePoint * 1.6f);
+						campAction = (movePoint * 1.8f);
+						campPointWaypointIndex = navid->index;
 						break;
 					}
 				}
@@ -376,11 +381,11 @@ void Bot::ZmCampPointAction(int mode)
 		}
 	}
 
-	if (campAction == -1.0f || campPointWaypointIndex == -1)
+	if (campAction == 0.0f || campPointWaypointIndex == -1)
 		m_checkCampPointTime = 0.0f;
-	else if (m_checkCampPointTime == 0.0f && campAction != 0.0f)
+	else if (m_checkCampPointTime == 0.0f && campAction != 1.0f)
 		m_checkCampPointTime = engine->GetTime() + campAction;
-	else if (m_checkCampPointTime < engine->GetTime() || campAction == 0.0f)
+	else if (m_checkCampPointTime  < engine->GetTime() || campAction == 1.0f)
 	{
 		m_zhCampPointIndex = campPointWaypointIndex;
 
@@ -4121,7 +4126,7 @@ void Bot::RunTask (void)
 	  if (m_zhCampPointIndex != -1)
 	  {
 		  if ((g_waypoint->GetPath(m_zhCampPointIndex)->origin - pev->origin).GetLength2D() > 250.0f || 
-			  (g_waypoint->GetPath(m_zhCampPointIndex)->origin.z - 18.0f > pev->origin.z))
+			  (g_waypoint->GetPath(m_zhCampPointIndex)->origin.z - 64.0f > pev->origin.z))
 		  {
 			  m_zhCampPointIndex = -1;
 			  TaskComplete();

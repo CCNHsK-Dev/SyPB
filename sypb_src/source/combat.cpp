@@ -131,7 +131,7 @@ float Bot::GetEntityDistance(edict_t *entity)
 		return 9999.9f;
 
 	float distance = (pev->origin - GetEntityOrigin(entity)).GetLength();
-	if (distance <= 120.0f)
+	if (distance <= 180.0f)
 		return distance;
 
 	int srcIndex, destIndex;
@@ -164,9 +164,6 @@ float Bot::GetEntityDistance(edict_t *entity)
 	}
 
 	float wpDistance = g_waypoint->GetPathDistanceFloat(srcIndex, destIndex);
-	if (wpDistance < distance)
-		return distance;
-
 	return wpDistance;
 }
 
