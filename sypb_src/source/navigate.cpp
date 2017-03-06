@@ -1257,7 +1257,6 @@ int Bot::FindWaypoint (void)
 			waypointIndex = waypointIndex1;
 	}
 
-	m_collideTime = engine->GetTime();
 	ChangeWptIndex(waypointIndex);
 
 	return waypointIndex;
@@ -2651,9 +2650,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 			for (i = 0; i < 3; i++)
 				m_collideMoves[i] = state[i];
 
-			m_collideTime = engine->GetTime();
 			m_probeTime = engine->GetTime() + 0.5f;
-			m_collisionProbeBits = bits;
 			m_collisionState = COSTATE_PROBING;
 			m_collStateIndex = 0;
 		}

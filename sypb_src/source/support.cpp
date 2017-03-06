@@ -1347,9 +1347,9 @@ const char *GetEntityName(edict_t *entity)
 	if (FNullEnt(entity))
 		strcpy(entityName, "NULL");
 	else if (IsValidPlayer(entity))
-		strcpy(entityName, (char *) STRING(entity->v.netname));
+		strncpy(entityName, const_cast <const char *> (g_pGlobals->pStringBase + static_cast <int> (entity->v.netname)), sizeof(entityName) - 1);
 	else
-		strcpy(entityName, (char *) STRING(entity->v.classname));
+		strncpy(entityName, const_cast <const char *> (g_pGlobals->pStringBase + static_cast <int> (entity->v.classname)), sizeof(entityName) - 1);
 
 	return &entityName[0];
 }

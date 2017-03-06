@@ -191,14 +191,6 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 		if (distance > minDistance)
 			continue;
 
-		/*  TESTTEST
-		// SyPB Pro P.43 - Find Waypoint improve
-		Vector dest = m_paths[i]->origin;
-		float distance2D = (dest - origin).GetLength2D();
-		if (((dest.z > origin.z + 62.0f || dest.z < origin.z - 100.0f) &&
-			!(m_paths[i]->flags & WAYPOINT_LADDER)) && distance2D <= 30.0f)
-			continue; */
-			 
 		for (int y = 0; y < checkPoint; y++)
 		{
 			if (distance >= wpDistance[y])

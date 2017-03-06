@@ -1011,7 +1011,6 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 	m_logotypeIndex = engine->RandomInt(0, 5);
 
 	// initialize msec value
-	m_msecNum = m_msecDel = 0.0f;
 	m_msecInterval = engine->GetTime();
 	m_msecVal = static_cast <uint8_t> (g_pGlobals->frametime * 1000.0f);
 	m_msecBuiltin = engine->RandomInt(1, 4);
@@ -1110,7 +1109,6 @@ void Bot::NewRound (void)
    m_chosenGoalIndex = -1;
    m_loosedBombWptIndex = -1;
 
-   m_moveToC4 = false;
    m_duckDefuse = false;
    m_duckDefuseCheckTime = 0.0f;
 
@@ -1239,10 +1237,7 @@ void Bot::NewRound (void)
       m_currentWeapon = 0;
    }
 
-   m_knifeAttackTime = engine->GetTime () + engine->RandomFloat (1.3f, 2.6f);
    m_nextBuyTime = engine->GetTime () + engine->RandomFloat (0.6f, 1.2f);
-   
-   m_GetNewEnemyTimer = engine->GetTime ();
 
    m_buyPending = false;
    m_inBombZone = false;
@@ -1357,8 +1352,8 @@ void Bot::Kick (void)
 
 	pev->flags &= ~FL_FAKECLIENT;
 
+	CenterPrint("SyPB '%s' kicked", GetEntityName(GetEntity()));
 	ServerCommand("kick \"%s\"", GetEntityName(GetEntity()));
-	CenterPrint("Bot '%s' kicked", GetEntityName(GetEntity()));
 
 	if (g_botManager->GetBotsNum() - 1 < sypb_quota.GetInt())
 		sypb_quota.SetInt(g_botManager->GetBotsNum() - 1);

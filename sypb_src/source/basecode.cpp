@@ -1895,7 +1895,10 @@ void Bot::SetConditions (void)
    if (m_blindTime > engine->GetTime ())
       g_taskFilters[TASK_BLINDED].desire = TASKPRI_BLINDED;
    else
-      g_taskFilters[TASK_BLINDED].desire = 0.0f;
+   {
+	   g_taskFilters[TASK_BLINDED].desire = 0.0f;
+	   m_blindCampPoint = -1;
+   }
 
    // now we've initialized all the desires go through the hard work
    // of filtering all actions against each other to pick the most
@@ -2770,8 +2773,7 @@ void Bot::CheckRadioCommands (void)
       break;
 
    case Radio_NeedBackup:
-      if (distance < 2048.0f || !m_moveToC4 || 
-		  (FNullEnt(m_enemy) && EntityIsVisible(GetEntityOrigin(m_radioEntity))))
+      if (distance < 2048.0f || (FNullEnt(m_enemy) && EntityIsVisible(GetEntityOrigin(m_radioEntity))))
       {
          m_fearLevel -= 0.1f;
 
@@ -2787,7 +2789,6 @@ void Bot::CheckRadioCommands (void)
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 			 GetCurrentTask()->time = engine->GetTime ();
 
-         m_moveToC4 = true;
          m_position = GetEntityOrigin (m_radioEntity);
 
          DeleteSearchNodes ();
@@ -3506,18 +3507,6 @@ void Bot::RunTask (void)
 		  {
 			  DeleteSearchNodes();
 			  GetCurrentTask()->data = m_waypointGoalAPI;
-		  }
-	  }
-      
-	  // SyPB Pro P.9
-	  // New knife attack skill
-	  if (m_currentWeapon == WEAPON_KNIFE && !FNullEnt(m_enemy) && IsAlive(m_enemy) && !HasShield())
-	  {
-		  // SyPB Pro P.32 - Base Knife Attack
-		  if (m_knifeAttackTime < engine->GetTime())
-		  {
-			  KnifeAttack();
-			  m_knifeAttackTime = engine->GetTime() + engine->RandomFloat(2.6f, 3.8f);
 		  }
 	  }
 
@@ -5850,10 +5839,8 @@ bool Bot::HasHostage (void)
 
 void Bot::ResetCollideState (void)
 {
-   m_collideTime = 0.0f;
    m_probeTime = 0.0f;
 
-   m_collisionProbeBits = 0;
    m_collisionState = COSTATE_UNDECIDED;
    m_collStateIndex = 0;
 
@@ -5917,18 +5904,15 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 	}
 }
 
-void Bot::TakeBlinded (Vector fade, int alpha)
+void Bot::TakeBlinded (int alpha)
 {
-   // this function gets called by network message handler, when screenfade message get's send
-   // it's used to make bot blind froumd the grenade.
-
-   if (fade.x != 255 || fade.y != 255 || fade.z != 255 || alpha <= 170) // SyPB Pro P.37 - small change for flash
-      return;
-
    SetEnemy(null);
 
    m_maxViewDistance = engine->RandomFloat (10.0f, 20.0f);
    m_blindTime = engine->GetTime () + static_cast <float> (alpha - 200) / 16.0f;
+
+   if (m_blindTime < engine->GetTime())
+	   return;
 
    if (m_skill < 80)
    {
@@ -5940,9 +5924,12 @@ void Bot::TakeBlinded (Vector fade, int alpha)
    }
 
    // SyPB Pro P.48 - Blind Action improve
-   m_blindCampPoint = FindDefendWaypoint(GetEntityOrigin(GetEntity()), GetEntityWaypoint (GetEntity ()));
-   if ((g_waypoint->GetPath(m_blindCampPoint)->origin - GetEntityOrigin(GetEntity())).GetLength() >= 512.0f)
-	   m_blindCampPoint = -1;
+   if (m_blindCampPoint == -1)
+   {
+	   m_blindCampPoint = FindDefendWaypoint(GetEntityOrigin(GetEntity()), GetEntityWaypoint(GetEntity()));
+	   if ((g_waypoint->GetPath(m_blindCampPoint)->origin - GetEntityOrigin(GetEntity())).GetLength() >= 512.0f)
+		   m_blindCampPoint = -1;
+   }
 
    if (m_blindCampPoint != -1)
 	   return;
@@ -6190,20 +6177,10 @@ void Bot::RunPlayerMovement(void)
 	m_msecVal = static_cast <uint8_t> ((engine->GetTime() - m_msecInterval) * 1000.0f);
 	m_msecInterval = engine->GetTime();
 
-	// SyPB Pro P.48 - Run Player Move
-	/*
-	// SyPB Pro P.45 - Run Player Move
-	if (m_msecVal < 1)
-		m_msecVal = 1;
-
-	if (m_msecVal > 100)
-		m_msecVal = 100; */
-
 	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), 
 		m_moveAnglesForRunMove, m_moveSpeedForRunMove, m_strafeSpeedForRunMove, 0.0f, 
 		static_cast <unsigned short> (pev->button), 
 		0, 
-		// static_cast <uint8> (pev->impulse),
 		static_cast <uint8_t> (m_msecVal));
 }
 

@@ -674,7 +674,6 @@ private:
 
    bool m_isLeader; // bot is leader of his team
    bool m_checkTerrain; // check for terrain
-   bool m_moveToC4; // ct is moving to bomb
 
    // SyPB Pro P.37 - Fall Ai
    bool m_checkFall; // check bot fall
@@ -701,18 +700,15 @@ private:
    float m_timeDoorOpen; // time to next door open check
    float m_lastChatTime; // time bot last chatted
    float m_timeLogoSpray; // time bot last spray logo
-   float m_knifeAttackTime; // time to rush with knife (at the beginning of the round)
    bool m_defendedBomb; // defend action issued
 
    // SyPB Pro P.24 - Move Target
    float m_damageTime;
 
    float m_askCheckTime; // time to ask team
-   float m_collideTime; // time last collision
    float m_firstCollideTime; // time of first collision
    float m_probeTime; // time of probing different moves
    float m_lastCollTime; // time until next collision check
-   int m_collisionProbeBits; // bits of possible collision moves
    int m_collideMoves[3]; // sorted array of movements
    int m_collStateIndex; // index into collide moves
    CollisionState m_collisionState; // collision State
@@ -761,14 +757,9 @@ private:
 
    bool m_duckDefuse; // should or not bot duck to defuse bomb
    float m_duckDefuseCheckTime; // time to check for ducking for defuse
-   
-   float m_GetNewEnemyTimer; // SyPB AIM
 
    int m_msecBuiltin; // random msec method for this bot
-   //uint8_t m_msecVal; // calculated msec value
    float m_msecVal;
-   float m_msecDel; // used for msec calculation
-   float m_msecNum; // also used for mseccalculation
    float m_msecInterval; // used for leon hartwig's method for msec calculation
 
    float m_frameInterval; // bot's frame interval
@@ -817,6 +808,16 @@ private:
 
    Vector m_moveAnglesForRunMove;
    float m_moveSpeedForRunMove, m_strafeSpeedForRunMove;
+
+   float m_backCheckEnemyTime; // SyPB Pro P.37 - Aim OS
+
+   // SyPB Pro P.49 - Check Enemy & Entity improve
+   edict_t *m_allAvoidEntity[checkEntityNum];
+   edict_t *m_allEnemy[checkEnemyNum];
+   float m_allEnemyDistance[checkEnemyNum];
+   int m_checkEnemyNum;
+   edict_t *m_checkEnemy[checkEnemyNum];
+   float m_checkEnemyDistance[checkEnemyNum];
 
    void BotAI (void);
    void FunBotAI(void);
@@ -1063,8 +1064,6 @@ public:
    float m_idealReactionTime; // time of base reaction
    float m_actualReactionTime; // time of current reaction time
 
-   float m_backCheckEnemyTime; // SyPB Pro P.37 - Aim OS
-
    edict_t *m_lastEnemy; // pointer to last enemy entity
    edict_t *m_trackingEdict; // pointer to last tracked player when camping/hiding
    float m_timeNextTracking; // time waypoint index for tracking player is recalculated
@@ -1078,14 +1077,6 @@ public:
    int m_currentWeapon; // one current weapon for each bot
    int m_ammoInClip[Const_MaxWeapons]; // ammo in clip for each weapons
    int m_ammo[MAX_AMMO_SLOTS]; // total ammo amounts
-
-   // SyPB Pro P.49 - Check Enemy & Entity improve
-   edict_t *m_allAvoidEntity[checkEntityNum];
-   edict_t *m_allEnemy[checkEnemyNum];
-   float m_allEnemyDistance[checkEnemyNum];
-   int m_checkEnemyNum;
-   edict_t *m_checkEnemy[checkEnemyNum];
-   float m_checkEnemyDistance[checkEnemyNum];
 
    Bot (edict_t *bot, int skill, int personality, int team, int member);
   ~Bot (void);
@@ -1121,7 +1112,7 @@ public:
    void RemoveCertainTask (BotTask taskID);
    void ResetTasks (void);
    void TakeDamage (edict_t *inflictor, int damage, int armor, int bits);
-   void TakeBlinded (Vector fade, int alpha);
+   void TakeBlinded (int alpha);
    void PushTask (BotTask taskID, float desire, int data, float time, bool canContinue);
    void DiscardWeaponForUser (edict_t *user, bool discardC4);
 

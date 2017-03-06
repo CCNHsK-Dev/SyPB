@@ -299,8 +299,9 @@ void NetworkMsg::Execute (void *p)
          break;
 
       case 6:
-         m_bot->TakeBlinded (Vector (r, g, b), PTR_TO_BYTE (p));
-         break;
+		  if (m_bot != nullptr && r >= 255 && g >= 255 && b >= 255 && PTR_TO_BYTE(p) > 170)
+			  m_bot->TakeBlinded(PTR_TO_BYTE(p));
+		  break;
       }
       break;
 
