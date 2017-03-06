@@ -663,6 +663,10 @@ private:
    unsigned int m_states; // sensing bitstates
    Task *m_tasks; // pointer to active tasks/schedules
 
+   // SyPB Pro P.49 - Base improve
+   int m_team;
+   bool m_isZombieBot;
+
    float m_moveSpeed; // current speed forward/backward
    float m_strafeSpeed; // current speed sideways
    float m_minSpeed; // minimum speed in normal mode
@@ -1401,7 +1405,8 @@ extern int GetWeaponReturn (bool isString, const char *weaponAlias, int weaponID
 extern int GetTeam (edict_t *ent);
 extern bool IsZombieEntity (edict_t *ent);
 
-extern void SetGameMod(int gamemode);
+extern void SetGameMode(int gamemode);
+extern bool IsZombieMode(void);
 
 extern int GetEntityWaypoint(edict_t *ent);
 extern int SetEntityWaypoint(edict_t *ent, int mode = -1);

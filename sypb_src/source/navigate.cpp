@@ -32,9 +32,6 @@ int Bot::FindGoal(void)
 	if (m_waypointGoalAPI != -1)
 		return m_chosenGoalIndex = m_waypointGoalAPI;
 
-	// chooses a destination (goal) waypoint for a bot
-	int team = GetTeam(GetEntity());
-
 	// path finding behavior depending on map type
 	int tactic;
 	int offensive;
@@ -52,7 +49,7 @@ int Bot::FindGoal(void)
 	// SyPB Pro P.28 - Game Mode
 	if (g_gameMode == MODE_BASE)
 	{
-		switch (team)
+		switch (m_team)
 		{
 		case TEAM_TERRORIST:
 			offensiveWpts = g_waypoint->m_ctPoints;
@@ -69,9 +66,9 @@ int Bot::FindGoal(void)
 	else if (g_gameMode == MODE_ZP)
 	{
 		// SyPB Pro P.42 - Zombie Mode Camp improve
-		if (!IsZombieEntity(GetEntity()) && !g_waypoint->m_zmHmPoints.IsEmpty())
+		if (!m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
 			offensiveWpts = g_waypoint->m_zmHmPoints;
-		else if (IsZombieEntity(GetEntity()) && FNullEnt (m_moveTargetEntity) && FNullEnt (m_enemy))
+		else if (m_isZombieBot && FNullEnt (m_moveTargetEntity) && FNullEnt (m_enemy))
 		{
 			// SyPB Pro P.43 - Zombie improve
 			int checkPoint[3];
@@ -122,7 +119,7 @@ int Bot::FindGoal(void)
       tactic = 3;
       goto TacticChoosen;
    }
-   else if (HasHostage () && team == TEAM_COUNTER)
+   else if (HasHostage () && m_team == TEAM_COUNTER)
    {
       tactic = 2;
       offensiveWpts = g_waypoint->m_rescuePoints;
@@ -138,12 +135,12 @@ int Bot::FindGoal(void)
    {
 	   if (g_mapType & (MAP_AS | MAP_CS))
 	   {
-		   if (team == TEAM_TERRORIST)
+		   if (m_team == TEAM_TERRORIST)
 		   {
 			   defensive += 30;
 			   offensive -= 30;
 		   }
-		   else if (team == TEAM_COUNTER)
+		   else if (m_team == TEAM_COUNTER)
 		   {
 			   defensive -= 30;
 			   offensive += 30;
@@ -151,7 +148,7 @@ int Bot::FindGoal(void)
 	   }
 	   else if ((g_mapType & MAP_DE))
 	   {
-		   if (team == TEAM_COUNTER)
+		   if (m_team == TEAM_COUNTER)
 		   {
 			   if (g_bombPlanted && GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB && g_waypoint->GetBombPosition() != nullvec)
 			   {
@@ -170,7 +167,7 @@ int Bot::FindGoal(void)
 			   defensive += 30;
 			   offensive -= 30;
 		   }
-		   else if (team == TEAM_TERRORIST)
+		   else if (m_team == TEAM_TERRORIST)
 		   {
 			   defensive -= 30;
 			   offensive += 30;
@@ -198,9 +195,9 @@ int Bot::FindGoal(void)
 		   }
 	   }
    }
-   else if (g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
+   else if (IsZombieMode ())
    {
-	   if (IsZombieEntity(GetEntity()))
+	   if (m_isZombieBot)
 	   {
 		   defensive += 30;
 		   offensive -= 30;
@@ -224,7 +221,7 @@ int Bot::FindGoal(void)
    campDesire = engine->RandomInt (0, 70) + defensive;
    backoffDesire = engine->RandomInt (0, 50) + defensive;
 
-   if (UsesSniper () || ((g_mapType & MAP_DE) && team == TEAM_COUNTER && !g_bombPlanted) && 
+   if (UsesSniper () || ((g_mapType & MAP_DE) && m_team == TEAM_COUNTER && !g_bombPlanted) &&
 	   (g_gameMode == MODE_BASE || g_gameMode == MODE_DM))
       campDesire = static_cast <int> (engine->RandomFloat (1.5f, 2.5f) * static_cast <float> (campDesire));
 
@@ -378,7 +375,7 @@ TacticChoosen:
          if (goalChoices[i + 1] < 0)
             break;
 
-         if (g_exp.GetValue (m_currentWaypointIndex, goalChoices[i], team) < g_exp.GetValue (m_currentWaypointIndex, goalChoices[i + 1], team))
+         if (g_exp.GetValue (m_currentWaypointIndex, goalChoices[i], m_team) < g_exp.GetValue (m_currentWaypointIndex, goalChoices[i + 1], m_team))
          {
             goalChoices[i + 1] = goalChoices[i];
             goalChoices[i] = goalChoices[i + 1];
@@ -518,7 +515,7 @@ bool Bot::DoWaypointNav (void)
 
 			   if (m_doorOpenAttempt > 2 && !FNullEnt(ent = FIND_ENTITY_IN_SPHERE(ent, pev->origin, 512.0f)))
 			   {
-				   if (IsValidPlayer(ent) && IsAlive(ent) && GetTeam (GetEntity ()) != GetTeam(ent) && 
+				   if (IsValidPlayer(ent) && IsAlive(ent) && m_team != GetTeam(ent) &&
 					   IsShootableThruObstacle (ent))
 				   {
 					   m_seeEnemyTime = engine->GetTime() - 0.5f;
@@ -531,7 +528,7 @@ bool Bot::DoWaypointNav (void)
 					   m_lastEnemyOrigin = ent->v.origin;
 
 				   }
-				   else if (IsValidPlayer(ent) && IsAlive(ent) && GetTeam(GetEntity()) == GetTeam(ent))
+				   else if (IsValidPlayer(ent) && IsAlive(ent) && m_team == GetTeam(ent))
 				   {
 					   DeleteSearchNodes();
 					   ResetTasks();
@@ -600,7 +597,7 @@ bool Bot::DoWaypointNav (void)
       else if (m_navNode == null)
          return false;
 
-      if ((g_mapType & MAP_DE) && g_bombPlanted && GetTeam (GetEntity ()) == TEAM_COUNTER && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->data != -1)
+      if ((g_mapType & MAP_DE) && g_bombPlanted && m_team == TEAM_COUNTER && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->data != -1)
       {
          Vector bombOrigin = CheckBombAudible ();
 
@@ -945,10 +942,9 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
    const float (*hcalc) (int, int) = null;
 
    float offset = 1.0f;
-   int team = GetTeam (GetEntity ());
 
    // SyPB Pro P.42 - Zombie Waypoint improve
-   if (IsZombieEntity(GetEntity()))
+   if (m_isZombieBot)
    {
 	   gcalc = GF_CostZB;
 	   hcalc = HF_ZB;
@@ -968,7 +964,7 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
    }
 
    // put start node into open list
-   astar[srcIndex].g = gcalc (srcIndex, -1, team, offset);
+   astar[srcIndex].g = gcalc (srcIndex, -1, m_team, offset);
    astar[srcIndex].f = astar[srcIndex].g + hcalc (srcIndex, destIndex);
    astar[srcIndex].state = OPEN;
 
@@ -1019,7 +1015,7 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
             continue;
 
          // calculate the F value as F = G + H
-         float g = astar[currentIndex].g + gcalc (self, currentIndex, team, offset);
+         float g = astar[currentIndex].g + gcalc (self, currentIndex, m_team, offset);
          float h = hcalc (srcIndex, destIndex);
          float f = g + h;
 
@@ -1348,7 +1344,7 @@ void Bot::GetValidWaypoint(void)
 	if (needFindWaypont)
 	{
 		if (m_currentWaypointIndex != -1 && g_gameMode == MODE_BASE)
-			g_exp.CollectValidDamage(m_currentWaypointIndex, GetTeam(GetEntity()));
+			g_exp.CollectValidDamage(m_currentWaypointIndex, m_team);
 
 		DeleteSearchNodes();
 		FindWaypoint();
@@ -1517,7 +1513,7 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
    {
       if (waypointIndex[i] != -1)
       {
-         int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], GetTeam (GetEntity ())) * 100 / MAX_EXPERIENCE_VALUE;
+         int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], m_team) * 100 / MAX_EXPERIENCE_VALUE;
 
          minDistance[i] = (experience * 100) / 8192;
          minDistance[i] += experience;
@@ -1646,7 +1642,7 @@ int Bot::FindCoverWaypoint (float maxDistance)
    {
       if (waypointIndex[i] != -1)
       {
-         int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], GetTeam (GetEntity ())) * 100 / MAX_EXPERIENCE_VALUE;
+         int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], m_team) * 100 / MAX_EXPERIENCE_VALUE;
 
          minDistance[i] = (experience * 100) / 8192;
          minDistance[i] += experience;
@@ -1752,12 +1748,12 @@ bool Bot::HeadTowardWaypoint (void)
 
 			   // only if we in normal task and bomb is not planted
 			   if (g_gameMode == MODE_BASE && taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER &&
-				   !(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && GetTeam(GetEntity()) == TEAM_TERRORIST))
+				   !(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && m_team == TEAM_TERRORIST))
 			   {
 				   m_campButtons = 0;
 
 				   int waypoint = m_navNode->next->index;
-				   int kills = g_exp.GetDamage(waypoint, waypoint, GetTeam(GetEntity()));
+				   int kills = g_exp.GetDamage(waypoint, waypoint, m_team);
 
 				   // if damage done higher than one
 				   if (kills > 1 && g_timeRoundMid > engine->GetTime() && g_killHistory > 0)
@@ -2240,7 +2236,7 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 	for (int i = 0; i < engine->GetMaxClients (); i++)
 	{
 		if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || 
-			g_clients[i].ent == GetEntity() || GetTeam (GetEntity ()) != GetTeam (g_clients[i].ent))
+			g_clients[i].ent == GetEntity() || m_team != GetTeam (g_clients[i].ent))
 			continue;
 
 		float distance = (g_clients[i].ent->v.origin - pev->origin).GetLength();
@@ -2450,7 +2446,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		m_lastCollTime < engine->GetTime())
 	{
 		// SyPB Pro P.38 - Get Stuck improve
-		if (m_damageTime >= engine->GetTime() && IsZombieEntity(GetEntity()))
+		if (m_damageTime >= engine->GetTime() && m_isZombieBot)
 		{
 			m_lastCollTime = m_damageTime + 0.1f;
 			m_firstCollideTime = 0.0f;
@@ -2684,7 +2680,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 			case COSTATE_JUMP:
 				if (IsOnFloor() || IsInWater())
 				{
-					if (IsInWater() || !IsZombieEntity(GetEntity()) || m_damageTime < engine->GetTime() ||
+					if (IsInWater() || !m_isZombieBot || m_damageTime < engine->GetTime() ||
 						m_currentTravelFlags & PATHFLAG_JUMP)
 						pev->button |= IN_JUMP;
 				}
@@ -2736,7 +2732,7 @@ void Bot::FacePosition(void)
 				godAim = true;
 			else if (m_skill >= 70 || IsZombieEntity(m_enemy))
 				godAim = true;
-			else if (IsZombieEntity(GetEntity()))
+			else if (m_isZombieBot)
 				godAim = true;
 		}
 	}
@@ -2875,7 +2871,7 @@ void Bot::SetStrafeSpeed (Vector moveDir, float strafeSpeed)
 // SyPB Pro P.28 - CT CS Ai
 int Bot::FindHostage(void)
 {
-	if ((GetTeam(GetEntity()) != TEAM_COUNTER) || !(g_mapType & MAP_CS))
+	if ((m_team != TEAM_COUNTER) || !(g_mapType & MAP_CS))
 		return -1;
 
 	edict_t *ent = null;
@@ -2908,7 +2904,7 @@ int Bot::FindLoosedBomb (void)
 {
    // this function tries to find droped c4 on the defuse scenario map  and returns nearest to it waypoint
 
-   if ((GetTeam (GetEntity ()) != TEAM_TERRORIST) || !(g_mapType & MAP_DE))
+   if ((m_team != TEAM_TERRORIST) || !(g_mapType & MAP_DE))
       return -1; // don't search for bomb if the player is CT, or it's not defusing bomb
 
    edict_t *bombEntity = null; // temporaly pointer to bomb

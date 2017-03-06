@@ -2598,7 +2598,7 @@ void StartFrame (void)
 
 	g_gameMode = sypb_gamemod.GetInt();
 	if (g_gameMode < MODE_BASE || g_gameMode >= MODE_NONE)
-		SetGameMod(MODE_BASE);
+		SetGameMode(MODE_BASE);
 
 	g_debugMode = sypb_debug.GetInt();
 	if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)

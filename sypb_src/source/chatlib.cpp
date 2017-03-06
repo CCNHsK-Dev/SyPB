@@ -235,12 +235,11 @@ void Bot::PrepareChatMessage (char *text)
          // teammate alive?
          else if (*pattern == 't')
          {
-            int team = GetTeam (GetEntity ());
             int i;
 
             for (i = 0; i < engine->GetMaxClients (); i++)
             {
-               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team != team) || (g_clients[i].ent == GetEntity ()))
+               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
                   continue;
 
                break;
@@ -248,7 +247,7 @@ void Bot::PrepareChatMessage (char *text)
 
             if (i < engine->GetMaxClients ())
             {
-               if (!FNullEnt (pev->dmg_inflictor) && (GetTeam (GetEntity ()) == GetTeam (pev->dmg_inflictor)))
+               if (!FNullEnt (pev->dmg_inflictor) && (m_team == GetTeam (pev->dmg_inflictor)))
                   talkEntity = pev->dmg_inflictor;
                else
                   talkEntity = g_clients[i].ent;
@@ -260,7 +259,7 @@ void Bot::PrepareChatMessage (char *text)
             {
                for (i = 0; i < engine->GetMaxClients (); i++)
                {
-                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != team) || (g_clients[i].ent == GetEntity ()))
+                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
                      continue;
 
                   break;
@@ -277,12 +276,11 @@ void Bot::PrepareChatMessage (char *text)
          }
          else if (*pattern == 'e')
          {
-            int team = GetTeam (GetEntity ());
             int i;
 
             for (i = 0; i < engine->GetMaxClients (); i++)
             {
-               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team == team) || (g_clients[i].ent == GetEntity ()))
+               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team == m_team) || (g_clients[i].ent == GetEntity ()))
                   continue;
                break;
             }
@@ -298,7 +296,7 @@ void Bot::PrepareChatMessage (char *text)
             {
                for (i = 0; i < engine->GetMaxClients (); i++)
                {
-                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team == team) || (g_clients[i].ent == GetEntity ()))
+                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team == m_team) || (g_clients[i].ent == GetEntity ()))
                      continue;
                   break;
                }
@@ -482,11 +480,9 @@ void Bot::TeamSayText (const char *text)
    char tempMessage[256];
    char botTeam[80];
 
-   int teamID = GetTeam (GetEntity ());
-
-   if (teamID == TEAM_TERRORIST)
+   if (m_team == TEAM_TERRORIST)
       strcpy (botTeam, "(Terrorist)");
-   else if (teamID == TEAM_COUNTER)
+   else if (m_team == TEAM_COUNTER)
       strcpy (botTeam, "(Counter-Terrorist)");
 
    strcpy (botName, GetEntityName(GetEntity ()));
@@ -494,7 +490,7 @@ void Bot::TeamSayText (const char *text)
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
-      if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != teamID) || (g_clients[i].ent == GetEntity ()))
+      if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
          continue;
 
       if (isAlive)
