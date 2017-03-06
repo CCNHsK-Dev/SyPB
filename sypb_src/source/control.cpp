@@ -1102,7 +1102,7 @@ void Bot::NewRound (void)
 
    m_waypointOrigin = nullvec;
    m_destOrigin = nullvec;
-   //m_currentWaypointIndex = -1;
+   m_currentWaypointIndex = -1;
    m_currentTravelFlags = 0;
    m_desiredVelocity = nullvec;
    m_prevGoalIndex = -1;
@@ -1112,8 +1112,7 @@ void Bot::NewRound (void)
    m_duckDefuse = false;
    m_duckDefuseCheckTime = 0.0f;
 
-   m_prevWptIndex[0] = -1;
-   m_prevWptIndex[1] = -1;
+   m_prevWptIndex = -1;
 
    m_navTimeset = engine->GetTime ();
 

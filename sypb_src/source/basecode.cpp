@@ -2543,9 +2543,9 @@ bool Bot::ReactOnEnemy(void)
 
 	if (m_zhCampPointIndex != -1)
 	{
-		if (enemyIndex == m_zhCampPointIndex || enemyIndex == i)
+		if (enemyIndex == m_zhCampPointIndex)
 			m_isEnemyReachable = true;
-		else if (enemyDistance <= 200.0f)
+		else if (enemyDistance <= 240.0f)
 		{
 			for (int j = 0; j < Const_MaxPathIndex; j++)
 			{
@@ -5512,9 +5512,9 @@ void Bot::BotDebugModeMsg(void)
 			}
 		}
 
-		if (m_prevWptIndex[0] != -1)
+		if (m_prevWptIndex != -1)
 		{
-			src = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
+			src = g_waypoint->GetPath(m_prevWptIndex)->origin;
 			engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
 				Color(255, 0, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
 		}
@@ -5785,8 +5785,8 @@ void Bot::BotAI (void)
 	   {
 		   // SyPB Pro P.40 - Jump improve
 		   Vector point1Origin, point2Origin;
-		   if (m_prevWptIndex[0] != -1)
-			   point1Origin = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
+		   if (m_prevWptIndex != -1)
+			   point1Origin = g_waypoint->GetPath(m_prevWptIndex)->origin;
 		   else if (IsOnFloor())
 			   point1Origin = pev->origin;
 
@@ -6248,9 +6248,9 @@ float Bot::GetEstimatedReachTime (void)
 	float estimatedTime = 5.0f; // time to reach next waypoint
 
 	// calculate 'real' time that we need to get from one waypoint to another
-	if (m_currentWaypointIndex >= 0 && m_currentWaypointIndex < g_numWaypoints && m_prevWptIndex[0] >= 0 && m_prevWptIndex[0] < g_numWaypoints)
+	if (m_currentWaypointIndex >= 0 && m_currentWaypointIndex < g_numWaypoints && m_prevWptIndex >= 0 && m_prevWptIndex < g_numWaypoints)
 	{
-		float distance = (g_waypoint->GetPath(m_prevWptIndex[0])->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength();
+		float distance = (g_waypoint->GetPath(m_prevWptIndex)->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength();
 
 		// caclulate estimated time
 		if (pev->maxspeed <= 0.0f)

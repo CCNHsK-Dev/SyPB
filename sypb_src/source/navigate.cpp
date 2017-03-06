@@ -581,6 +581,8 @@ bool Bot::DoWaypointNav (void)
    if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
 	   m_waypointGoalAPI = -1;
 
+   ChangeBotEntityWaypoint(m_prevWptIndex, m_currentWaypointIndex);
+
    if (waypointDistance < desiredDistance)
    {
       // Did we reach a destination Waypoint?
@@ -1353,24 +1355,26 @@ void Bot::GetValidWaypoint(void)
 }
 
 // SyPB Pro P.49 - Base Waypoint improve
-void Bot::ChangeBotEntityWaypoint(void)
+void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, bool howardNew)
 {
 	int i = ENTINDEX(GetEntity ()) - 1;
+	int newWaypointIndex = preWaypointIndex;
+	if (howardNew)
+		goto lastly;
+
 	if (g_clients[i].getWPTime == engine->GetTime())
 		return;
 
-	if (m_prevWptIndex[0] == -1)
-	{
-		g_clients[i].wpIndex = m_currentWaypointIndex;
-		g_clients[i].wpIndex2 = -1;
-	}
-	else
-	{
-		g_clients[i].wpIndex = m_prevWptIndex[0];
-		g_clients[i].wpIndex2 = m_currentWaypointIndex;
-	}
+	if (preWaypointIndex == -1 || nextWaypointIndex == -1)
+		return;
 
-	g_clients[i].getWpOrigin = GetEntityOrigin (GetEntity ());
+	if ((g_waypoint->GetPath(nextWaypointIndex)->origin - pev->origin).GetLength() <=
+		(g_waypoint->GetPath(preWaypointIndex)->origin - pev->origin).GetLength())
+		newWaypointIndex = nextWaypointIndex;
+
+lastly:
+	g_clients[i].wpIndex = newWaypointIndex;
+	g_clients[i].getWpOrigin = GetEntityOrigin(GetEntity());
 	g_clients[i].getWPTime = engine->GetTime();
 }
 
@@ -1385,15 +1389,9 @@ void Bot::ChangeWptIndex (int waypointIndex)
 	}
 
 	if (badPrevWpt == true)
-	{
-		m_prevWptIndex[1] = -1;
-		m_prevWptIndex[0] = -1;
-	}
+		m_prevWptIndex = -1;
 	else
-	{
-		m_prevWptIndex[1] = m_prevWptIndex[0];
-		m_prevWptIndex[0] = m_currentWaypointIndex;
-	}
+		m_prevWptIndex = m_currentWaypointIndex;
 
    m_currentWaypointIndex = waypointIndex;
    m_navTimeset = engine->GetTime ();
@@ -1720,7 +1718,7 @@ bool Bot::GetBestNextWaypoint (void)
    return false;
 }
 
-bool Bot::HeadTowardWaypoint (void)
+void Bot::HeadTowardWaypoint (void)
 {
    // advances in our pathfinding list and sets the appropiate destination origins for this bot
 
@@ -1728,7 +1726,7 @@ bool Bot::HeadTowardWaypoint (void)
 
    // no waypoints from pathfinding?
    if (m_navNode == null)
-      return false;
+      return;
 
    m_navNode = m_navNode->next; // advance in list
    m_currentTravelFlags = 0; // reset travel flags (jumping etc)
@@ -1736,7 +1734,7 @@ bool Bot::HeadTowardWaypoint (void)
    // we're not at the end of the list?
    if (m_navNode != null)
    {
-	   if (m_navNode->next != null)// && !(g_waypoint->GetPath(m_navNode->next->index)->flags & WAYPOINT_LADDER))
+	   if (m_navNode->next != null)
 	   {
 		   if (m_navNodeStart != m_navNode)
 		   {
@@ -1895,14 +1893,14 @@ bool Bot::HeadTowardWaypoint (void)
 				if (waitTime != -1.0f)
 				{
 					PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + waitTime, false);
-					return false;
+					return;
 				}
 			}
          }
 
          ChangeWptIndex (destIndex);
 		 // SyPB Pro P.49 - Base Waypoint improve
-		 ChangeBotEntityWaypoint();
+		 ChangeBotEntityWaypoint(m_prevWptIndex, -1, true);
       }
    }
 
@@ -1910,7 +1908,7 @@ bool Bot::HeadTowardWaypoint (void)
 
    m_navTimeset = engine->GetTime ();
 
-   return true;
+   return;
 }
 
 bool Bot::CantMoveForward (Vector normal, TraceResult *tr)
@@ -2361,8 +2359,8 @@ void Bot::CheckFall(void)
 			}
 			else
 			{
-				if (m_prevWptIndex[0] != -1)
-					m_checkFallPoint[0] = g_waypoint->GetPath(m_prevWptIndex[0])->origin;
+				if (m_prevWptIndex != -1)
+					m_checkFallPoint[0] = g_waypoint->GetPath(m_prevWptIndex)->origin;
 				else
 					m_checkFallPoint[0] = pev->origin;
 

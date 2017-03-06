@@ -720,7 +720,7 @@ private:
 
    int m_currentWaypointIndex; // current waypoint index
    int m_travelStartIndex; // travel start index to double jump action
-   int m_prevWptIndex[2]; // previous waypoint indices from waypoint find
+   int m_prevWptIndex; // previous waypoint indices from waypoint find
    int m_waypointFlags; // current waypoint flags
    int m_loosedBombWptIndex; // nearest to loosed bomb waypoint
 
@@ -878,7 +878,7 @@ private:
    void GetCampDirection (Vector *dest);
    int GetMessageQueue (void);
    bool GoalIsValid (void);
-   bool HeadTowardWaypoint (void);
+   void HeadTowardWaypoint (void);
    float InFieldOfView (Vector dest);
 
    bool IsBombDefusing (Vector bombOrigin);
@@ -912,7 +912,7 @@ private:
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
    void ChangeWptIndex (int waypointIndex);
-   void ChangeBotEntityWaypoint (void);
+   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex, bool howardNew = false);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);
