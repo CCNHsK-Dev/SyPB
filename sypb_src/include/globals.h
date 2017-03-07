@@ -96,6 +96,9 @@ extern int g_entityWpIndex[entityNum];
 extern Vector g_entityGetWpOrigin[entityNum];
 extern float g_entityGetWpTime[entityNum];
 
+extern edict_t *g_hostages[Const_MaxHostages];
+extern int g_hostagesWpIndex[Const_MaxHostages];
+
 extern Array <Array <String> > g_chatFactory;
 extern Array <NameItem> g_botNames;
 extern Array <KwChat> g_replyFactory;

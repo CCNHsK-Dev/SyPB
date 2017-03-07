@@ -2869,9 +2869,7 @@ int Bot::FindHostage(void)
 	if ((m_team != TEAM_COUNTER) || !(g_mapType & MAP_CS))
 		return -1;
 
-	edict_t *ent = null;
-
-	while (!FNullEnt(ent = FIND_ENTITY_BY_CLASSNAME(ent, "hostage_entity")))
+	for (int hostages = 0; hostages < Const_MaxHostages; hostages++)
 	{
 		bool canF = true;
 		for (int i = 0; i < engine->GetMaxClients(); i++)
@@ -2881,15 +2879,14 @@ int Bot::FindHostage(void)
 			{
 				for (int j = 0; j < Const_MaxHostages; j++)
 				{
-					if (bot->m_hostages[j] == ent)
+					if (bot->m_hostages[j] == g_hostages[hostages])
 						canF = false;
 				}
 			}
 		}
 
-		int nearestIndex = g_waypoint->FindNearest(GetEntityOrigin(ent));
-		if ((nearestIndex >= 0) && (nearestIndex < g_numWaypoints) && canF)
-			return nearestIndex;
+		if ((g_hostagesWpIndex[hostages] >= 0) && (g_hostagesWpIndex[hostages] < g_numWaypoints) && canF)
+			return g_hostagesWpIndex[hostages];
 	}
 
 	return -1;

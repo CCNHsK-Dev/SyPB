@@ -3634,13 +3634,9 @@ void Bot::RunTask (void)
 						if (path->flags & WAYPOINT_RESCUE)
 						{
 							for (i = 0; i < Const_MaxHostages; i++)
-								//m_hostages[i] = null; // clear array of hostage pointers
 							{
-								// SyPB Pro P.38 - Base improve 
-								if (FNullEnt(m_hostages[i]))
-									continue;
-
-								if (g_waypoint->GetPath(g_waypoint->FindNearest(GetEntityOrigin(m_hostages[i])))->flags & WAYPOINT_RESCUE)
+								// SyPB Pro P.49 - Base improve 
+								if (!IsAlive (m_hostages[i]) || m_hostages[i]->v.effects & EF_NODRAW)
 									m_hostages[i] = null;
 							}
 						}

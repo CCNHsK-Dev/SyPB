@@ -90,6 +90,8 @@ Vector g_entityGetWpOrigin[entityNum];
 float g_entityGetWpTime[entityNum];
 //******
 
+edict_t *g_hostages[Const_MaxHostages];
+int g_hostagesWpIndex[Const_MaxHostages];
 
 Array <Array <String> > g_chatFactory;
 Array <NameItem> g_botNames;

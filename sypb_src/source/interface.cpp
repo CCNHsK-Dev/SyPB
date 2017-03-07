@@ -2502,7 +2502,7 @@ void KeyValue (edict_t *ent, KeyValueData *data)
 // SyPB Pro P.48 - Entity Base improve
 void LoadEntityData(void)
 {
-	edict_t *entity;
+	edict_t *entity = null;
 	int i;
 
 	// SyPB Pro P.43 - Entity Action 
@@ -2569,6 +2569,26 @@ void LoadEntityData(void)
 		g_clients[i].getWPTime = 0.0f;
 
 		g_clients[i].isZombiePlayerAPI = -1;
+	}
+
+	static float checkHostagesTime = engine->GetTime();
+	if (checkHostagesTime <= engine->GetTime())
+	{
+		for (i = 0; i < Const_MaxHostages; i++)
+			g_hostages[i] = null;
+
+		i = 0;
+		while (!FNullEnt(entity = FIND_ENTITY_BY_CLASSNAME(entity, "hostage_entity")))
+		{
+			if (entity->v.effects & EF_NODRAW || i >= Const_MaxHostages)
+				continue;
+
+			g_hostages[i] = entity;
+			g_hostagesWpIndex[i] = g_waypoint->FindNearest(GetEntityOrigin(entity));
+			i++;
+		}
+
+		checkHostagesTime = engine->GetTime() + engine->RandomFloat(1.2f, 2.0f);
 	}
 }
 
