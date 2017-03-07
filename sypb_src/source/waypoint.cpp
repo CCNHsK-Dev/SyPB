@@ -2682,10 +2682,10 @@ void Waypoint::EraseFromHardDisk (void)
       if (TryFileOpen (deleteList[i]))
       {
          unlink (deleteList[i]);
-         AddLogEntry (LOG_DEFAULT, "File %s, has been deleted from the hard disk", deleteList[i]);
+         AddLogEntry (LOG_DEFAULT, "File %s, has been deleted from the hard disk", &deleteList[i][0]);
       }
       else
-         AddLogEntry (LOG_ERROR, "Unable to open %s", deleteList[i]);
+         AddLogEntry (LOG_ERROR, "Unable to open %s", &deleteList[i][0]);
    }
    Initialize (); // reintialize points
 }
