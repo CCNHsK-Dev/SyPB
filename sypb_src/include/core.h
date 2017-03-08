@@ -957,7 +957,7 @@ private:
    float GetEstimatedReachTime (void);
 
    int GetCampAimingWaypoint(void);
-   int GetAimingWaypoint (Vector targetOriginPos);
+   int GetAimingWaypoint (int targetWpIndex);
    void FindShortestPath (int srcIndex, int destIndex);
    void FindPath (int srcIndex, int destIndex, uint8_t pathType = 0);
    void SecondThink (void);
@@ -1038,16 +1038,17 @@ public:
    int m_prevGoalIndex; // holds destination goal waypoint
    int m_chosenGoalIndex; // used for experience, same as above
    float m_goalValue; // ranking value for this waypoint
+   int m_positionIndex; // position to move to in move to position task
 
    Vector m_waypointOrigin; // origin of waypoint
    Vector m_destOrigin; // origin of move destination
-   Vector m_position; // position to move to in move to position task
    Vector m_doubleJumpOrigin; // origin of double jump
    Vector m_lastBombPosition; // origin of last remembered bomb position
 
    float m_viewDistance; // current view distance
    float m_maxViewDistance; // maximum view distance
    Vector m_lastEnemyOrigin; // vector to last enemy origin
+   int m_lastEnemyWpIndex;
    SayText m_sayTextBuffer; // holds the index & the actual message of the last unprocessed text message of a player
    BurstMode m_weaponBurstMode; // bot using burst mode? (famas/glock18, but also silencer mode)
 
@@ -1318,7 +1319,7 @@ public:
    void FindInRadius (Vector origin, float radius, int *holdTab, int *count);
    void FindInRadius (Array <int> &queueID, float radius, Vector origin);
 
-   void ChangeZBCampPoint(Vector origin);
+   void ChangeZBCampPoint(int pointID);
    bool IsZBCampPoint(int pointID);
 
    void Add (int flags, Vector waypointOrigin = nullvec);

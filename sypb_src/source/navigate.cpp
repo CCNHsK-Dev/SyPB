@@ -503,6 +503,15 @@ bool Bot::DoWaypointNav (void)
 	   // SyPB Pro P.49 - Door improve (use YaPB, Thank about it)
 	   if (!FNullEnt(tr.pHit) && strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
 	   {
+		   edict_t *button = FindNearestButton(STRING(tr.pHit->v.classname));
+		   if (!FNullEnt(button))
+		   {
+			   m_pickupItem = button;
+			   m_pickupType = PICKTYPE_BUTTON;
+
+			   m_navTimeset = engine->GetTime();
+		   }
+
 		   // if bot hits the door, then it opens, so wait a bit to let it open safely
 		   if (pev->velocity.GetLength2D() < 2 && m_timeDoorOpen < engine->GetTime())
 		   {
@@ -523,9 +532,8 @@ bool Bot::DoWaypointNav (void)
 					   m_states |= STATE_SEEINGENEMY;
 					   m_aimFlags |= AIM_ENEMY;
 
-					   m_lastEnemy = ent;
 					   m_enemy = ent;
-					   m_lastEnemyOrigin = ent->v.origin;
+					   SetLastEnemy(ent);
 
 				   }
 				   else if (IsValidPlayer(ent) && IsAlive(ent) && m_team == GetTeam(ent))
@@ -1124,11 +1132,13 @@ void Bot::SetLastEnemy(edict_t *entity)
 	{
 		m_lastEnemy = null;
 		m_lastEnemyOrigin = nullvec;
+		m_lastEnemyWpIndex = -1;
 		return;
 	}
 
 	m_lastEnemy = entity;
 	m_lastEnemyOrigin = GetEntityOrigin(entity);
+	m_lastEnemyWpIndex = GetEntityWaypoint(entity);
 }
 
 // SyPB Pro P.40 - Move Target
@@ -1176,7 +1186,7 @@ void Bot::SetMoveTarget (edict_t *entity)
 	PushTask(TASK_MOVETOTARGET, TASKPRI_MOVETOTARGET, -1, 0.0, true);
 }
 
-int Bot::GetAimingWaypoint (Vector targetOriginPos)
+int Bot::GetAimingWaypoint (int targetWpIndex)
 {
    // return the most distant waypoint which is seen from the Bot to the Target and is within count
 
@@ -1185,7 +1195,7 @@ int Bot::GetAimingWaypoint (Vector targetOriginPos)
 		GetValidWaypoint();
 
    int srcIndex = m_currentWaypointIndex;
-   int destIndex = g_waypoint->FindNearest (targetOriginPos);
+   int destIndex = targetWpIndex;
    int bestIndex = srcIndex;
 
    PathNode *node = new PathNode;

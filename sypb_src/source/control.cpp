@@ -1188,7 +1188,7 @@ void Bot::NewRound (void)
    m_doorOpenAttempt = 0;
    m_aimFlags = 0;
 
-   m_position = nullvec;
+   m_positionIndex = -1;
 
    m_idealReactionTime = g_skillTab[m_skill / 20].minSurpriseTime;
    m_actualReactionTime = g_skillTab[m_skill / 20].minSurpriseTime;

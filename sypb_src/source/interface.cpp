@@ -2410,7 +2410,7 @@ void ClientCommand(edict_t *ent)
 			// SyPB Pro P.41 - Change the ZM Camp Point
 			if (radioCommand == Radio_HoldPosition && !IsValidBot(ent) &&
 				g_gameMode == MODE_ZP && !IsZombieEntity(ent))
-				g_waypoint->ChangeZBCampPoint(GetEntityOrigin (ent));
+				g_waypoint->ChangeZBCampPoint(GetEntityWaypoint (ent));
 
 			// SyPB Pro P.42 - Fixed 
 			if (g_clients[clientIndex].team == 0 || g_clients[clientIndex].team == 1)

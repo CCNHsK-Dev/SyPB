@@ -113,7 +113,7 @@ int Waypoint::FindFarest (Vector origin, float maxDistance)
 }
 
 // SyPB Pro P.41 - Zombie Mode Camp Improve
-void Waypoint::ChangeZBCampPoint(Vector origin)
+void Waypoint::ChangeZBCampPoint(int pointID)
 {
 	// SyPB Pro P.39 - Zombie Mode Camp improve
 	int point[2] = { -1, -1 };
@@ -142,9 +142,8 @@ void Waypoint::ChangeZBCampPoint(Vector origin)
 	if (point[0] != -1)
 		m_zmHmPoints.Push(point[0]);
 
-	int newPoint = FindNearest(origin);
-	if (newPoint >= 0 && newPoint < g_numWaypoints && newPoint != point[0] && newPoint != point[1])
-		m_zmHmPoints.Push(newPoint);
+	if (pointID >= 0 && pointID < g_numWaypoints && pointID != point[0] && pointID != point[1])
+		m_zmHmPoints.Push(pointID);
 
 	ChartPrint("[SyPB] This is testing function **** ");
 }

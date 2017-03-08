@@ -1858,7 +1858,7 @@ void Bot::SetConditions (void)
       // if half of the round is over, allow hunting
       // FIXME: it probably should be also team/map dependant
       if (FNullEnt (m_enemy) && (g_timeRoundMid < engine->GetTime ()) && !m_isUsingGrenade && 
-		  m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != g_waypoint->FindNearest(m_lastEnemyOrigin))
+		  m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
       {
          desireLevel = 4096.0f - ((1.0f - tempAgression) * distance);
          desireLevel = (100.0f * desireLevel) / 4096.0f;
@@ -2762,7 +2762,7 @@ void Bot::CheckRadioCommands (void)
             if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 				GetCurrentTask()->time = engine->GetTime ();
 
-            m_position = GetEntityOrigin (m_radioEntity);
+			m_positionIndex = GetEntityWaypoint (m_radioEntity);
             DeleteSearchNodes ();
 
             PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, -1, 0.0, true);
@@ -2794,7 +2794,7 @@ void Bot::CheckRadioCommands (void)
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 			 GetCurrentTask()->time = engine->GetTime ();
 
-         m_position = GetEntityOrigin (m_radioEntity);
+		 m_positionIndex = GetEntityWaypoint (m_radioEntity);
 
          DeleteSearchNodes ();
 
@@ -2834,7 +2834,7 @@ void Bot::CheckRadioCommands (void)
             m_targetEntity = null;
             MakeVectors (m_radioEntity->v.v_angle);
 
-            m_position = GetEntityOrigin (m_radioEntity) + g_pGlobals->v_forward * engine->RandomFloat (1024.0f, 2048.0f);
+            m_positionIndex = g_waypoint->FindNearest (GetEntityOrigin (m_radioEntity) + g_pGlobals->v_forward * engine->RandomFloat (1024.0f, 2048.0f));
 
             DeleteSearchNodes ();
             PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, -1, 0.0f, true);
@@ -2892,7 +2892,7 @@ void Bot::CheckRadioCommands (void)
          m_targetEntity = null;
 
          MakeVectors (m_radioEntity->v.v_angle);
-         m_position = GetEntityOrigin (m_radioEntity) + g_pGlobals->v_forward * engine->RandomFloat (1024.0f, 2048.0f);
+		 m_positionIndex = g_waypoint->FindNearest(GetEntityOrigin(m_radioEntity) + g_pGlobals->v_forward * engine->RandomFloat(1024.0f, 2048.0f));
 
          DeleteSearchNodes ();
          PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, -1, 0.0f, true);
@@ -3253,7 +3253,7 @@ void Bot::ChooseAimDirection (void)
 	  if (m_seeEnemyTime + 2.0f - m_actualReactionTime + m_baseAgressionLevel > engine->GetTime())
 	  {
 		  if ((pev->origin - m_lastEnemyOrigin).GetLength() >= 1600.0f)
-			  m_lastEnemyOrigin = nullvec;
+			  SetLastEnemy(null);
 		  else if (!UsesSniper() && LastEnemyShootable())
 			  m_wantsToFire = true;
 	  }
@@ -3267,7 +3267,7 @@ void Bot::ChooseAimDirection (void)
 
 	   if (recalcPath)
 	   {
-		   m_lookAt = g_waypoint->GetPath(GetAimingWaypoint(m_lastEnemyOrigin))->origin;
+		   m_lookAt = g_waypoint->GetPath(GetAimingWaypoint (m_lastEnemyWpIndex))->origin;
 		   m_camp = m_lookAt;
 
 		   m_timeNextTracking = engine->GetTime() + 1.0f;
@@ -4242,16 +4242,16 @@ void Bot::RunTask (void)
          TaskComplete (); // we're done
 
          m_prevGoalIndex = -1;
-         m_position = nullvec;
+		 m_positionIndex = -1;
       }
       else if (!GoalIsValid ()) // didn't choose goal waypoint yet?
       {
          DeleteSearchNodes ();
 
-         if (GetCurrentTask ()->data != -1 && GetCurrentTask ()->data < g_numWaypoints)
-            destIndex = GetCurrentTask()->data;
-         else
-            destIndex = g_waypoint->FindNearest (m_position);
+		 if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
+			 destIndex = GetCurrentTask()->data;
+		 else
+			 destIndex = m_positionIndex;
 
          if (destIndex >= 0 && destIndex < g_numWaypoints)
          {
@@ -6386,7 +6386,7 @@ void Bot::ReactOnSound (void)
 				if (m_states & STATE_SEEINGENEMY)
 					return;
 
-				m_lastEnemyOrigin = GetEntityOrigin(player);
+				SetLastEnemy(player);
 			}
 			else
 			{
