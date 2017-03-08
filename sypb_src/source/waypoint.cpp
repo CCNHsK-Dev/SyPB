@@ -2691,6 +2691,27 @@ void Waypoint::EraseFromHardDisk (void)
 }
 
 // SyPB Pro P.49 - Base improve
+int Waypoint::FindLoosedBomb(void)
+{
+	static int loosedBombPoint = -1;
+	static edict_t *bombEntity = null;
+
+	if (!FNullEnt(bombEntity) && strcmp(STRING(bombEntity->v.model) + 9, "backpack.mdl") == 0)
+		return loosedBombPoint;
+
+	loosedBombPoint = -1;
+	while (!FNullEnt(bombEntity = FIND_ENTITY_BY_CLASSNAME(bombEntity, "weaponbox")))
+	{
+		if (strcmp(STRING(bombEntity->v.model) + 9, "backpack.mdl") == 0)
+		{
+			loosedBombPoint = g_waypoint->FindNearest(GetEntityOrigin(bombEntity));
+			break;
+		}
+	}
+
+	return loosedBombPoint;
+}
+
 int Waypoint::GetBombPoint(void)
 {
 	Vector bombOrigin = GetBombPosition();

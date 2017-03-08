@@ -869,7 +869,7 @@ private:
    edict_t *FindNearestButton (const char *className);
    edict_t *FindBreakable (void);
    int FindCoverWaypoint (float maxDistance);
-   int FindDefendWaypoint (Vector origin, int posIndex = -1);
+   int FindDefendWaypoint (Vector origin, int posIndex);
    int FindGoal (void);
    void FindItem (void);
 
@@ -1126,7 +1126,6 @@ public:
    void Kick (void);
    void ResetDoubleJumpState (void);
    void MoveToPoint (int point);
-   int FindLoosedBomb (void);
 
    int FindHostage(void);
 
@@ -1376,6 +1375,7 @@ public:
    bool IsGoalVisited (int index);
    void SetGoalVisited (int index);
 
+   int FindLoosedBomb(void);
    int GetBombPoint(void);
    Vector GetBombPosition (void) { return m_foundBombOrigin; }
    void SetBombPosition (bool shouldReset = false);

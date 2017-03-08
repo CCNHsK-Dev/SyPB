@@ -2892,31 +2892,6 @@ int Bot::FindHostage(void)
 	return -1;
 }
 
-int Bot::FindLoosedBomb (void)
-{
-   // this function tries to find droped c4 on the defuse scenario map  and returns nearest to it waypoint
-
-   if ((m_team != TEAM_TERRORIST) || !(g_mapType & MAP_DE))
-      return -1; // don't search for bomb if the player is CT, or it's not defusing bomb
-
-   edict_t *bombEntity = null; // temporaly pointer to bomb
-
-   // search the bomb on the map
-   while (!FNullEnt (bombEntity = FIND_ENTITY_BY_CLASSNAME (bombEntity, "weaponbox")))
-   {
-      if (strcmp (STRING (bombEntity->v.model) + 9, "backpack.mdl") == 0)
-      {
-         int nearestIndex = g_waypoint->FindNearest (GetEntityOrigin (bombEntity));
-
-         if ((nearestIndex >= 0) && (nearestIndex < g_numWaypoints))
-            return nearestIndex;
-
-         break;
-      }
-   }
-   return -1;
-}
-
 bool Bot::IsWaypointUsed (int index)
 {
    if (index < 0 || index >= g_numWaypoints)

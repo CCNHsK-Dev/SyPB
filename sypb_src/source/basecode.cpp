@@ -723,8 +723,6 @@ void Bot::FindItem(void)
 			pickupType = PICKTYPE_HOSTAGE;
 		else if (strncmp("weaponbox", STRING(ent->v.classname), 9) == 0 && strcmp(STRING(ent->v.model) + 9, "backpack.mdl") == 0)
 			pickupType = PICKTYPE_DROPPEDC4;
-		else if (strncmp("weaponbox", STRING(ent->v.classname), 9) == 0 && strcmp(STRING(ent->v.model) + 9, "backpack.mdl") == 0 && !m_isUsingGrenade)
-			pickupType = PICKTYPE_DROPPEDC4;
 		else if ((strncmp("weaponbox", STRING(ent->v.classname), 9) == 0 || strncmp("armoury_entity", STRING(ent->v.classname), 14) == 0 || strncmp("csdm", STRING(ent->v.classname), 4) == 0) && !m_isUsingGrenade)
 			pickupType = PICKTYPE_WEAPON;
 		else if (strncmp("weapon_shield", STRING(ent->v.classname), 13) == 0 && !m_isUsingGrenade)
@@ -846,7 +844,14 @@ void Bot::FindItem(void)
 
 				if (m_skill > 80 && engine->RandomInt(0, 100) < 50 && GetCurrentTask()->taskID != TASK_MOVETOPOSITION && GetCurrentTask()->taskID != TASK_CAMP)
 				{
-					int index = FindDefendWaypoint(entityOrigin);
+					int hostagesWpIndex = -1;
+					for (int hostages = 0; hostages < Const_MaxHostages; hostages++)
+					{
+						if (g_hostages[hostages] == ent)
+							hostagesWpIndex = g_hostagesWpIndex[hostages];
+					}
+
+					int index = FindDefendWaypoint(entityOrigin, hostagesWpIndex);
 
 					PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0f, 120.0f), true); // push camp task on to stack
 					PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(3.0f, 6.0f), true); // push move command
@@ -867,7 +872,7 @@ void Bot::FindItem(void)
 				{
 					m_defendedBomb = true;
 
-					int index = FindDefendWaypoint(entityOrigin);
+					int index = FindDefendWaypoint(entityOrigin, g_waypoint->GetBombPoint());
 					float timeMidBlowup = g_timeBombPlanted + ((engine->GetC4TimerTime() / 2) + engine->GetC4TimerTime() / 4) - g_waypoint->GetTravelTime(pev->maxspeed, pev->origin, g_waypoint->GetPath(index)->origin);
 
 					if (timeMidBlowup > engine->GetTime())
@@ -917,7 +922,7 @@ void Bot::FindItem(void)
 
 				if (m_skill > 80 && engine->RandomInt(0, 100) < 90)
 				{
-					int index = FindDefendWaypoint(entityOrigin);
+					int index = FindDefendWaypoint(entityOrigin, g_waypoint->FindLoosedBomb ());
 
 					PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0f, 120.0f), true); // push camp task on to stack
 					PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0f, 30.0f), true); // push move command
@@ -943,7 +948,7 @@ void Bot::FindItem(void)
 				{
 					m_defendedBomb = true;
 
-					int index = FindDefendWaypoint(entityOrigin);
+					int index = FindDefendWaypoint(entityOrigin, g_waypoint->GetBombPoint());
 					float timeBlowup = g_timeBombPlanted + engine->GetC4TimerTime() - g_waypoint->GetTravelTime(pev->maxspeed, pev->origin, g_waypoint->GetPath(index)->origin);
 
 					RemoveCertainTask(TASK_MOVETOPOSITION); // remove any move tasks
@@ -3464,7 +3469,7 @@ void Bot::RunTask (void)
       {
          if (!g_bombPlanted)
          {
-            m_loosedBombWptIndex = FindLoosedBomb ();
+            m_loosedBombWptIndex = g_waypoint->FindLoosedBomb ();
 
             if (m_loosedBombWptIndex != -1 && m_currentWaypointIndex != m_loosedBombWptIndex && engine->RandomInt (0, 100) < (GetNearbyFriendsNearPosition (g_waypoint->GetPath (m_loosedBombWptIndex)->origin, 650) >= 1 ? 40 : 90))
                GetCurrentTask ()->data = m_loosedBombWptIndex;
