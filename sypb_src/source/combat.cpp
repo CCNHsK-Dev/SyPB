@@ -766,9 +766,10 @@ void Bot::FireWeapon(void)
 					// available ammo found, reload weapon
 					if (m_reloadState == RSTATE_NONE || m_reloadCheckTime > engine->GetTime() || GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB)
 					{
+						m_preReloadAmmo = m_ammoInClip[id];
 						m_isReloading = true;
 						m_reloadState = RSTATE_PRIMARY;
-						m_reloadCheckTime = engine->GetTime();
+						m_reloadCheckTime = engine->GetTime() + 3.0f;
 						m_fearLevel = 1.0f; // SyPB Pro P.7
 
 						RadioMessage(Radio_NeedBackup);
@@ -789,13 +790,11 @@ WeaponSelectEnd:
 		m_reloadCheckTime = engine->GetTime() + 3.0f;
 	}
 
-	// SyPB Pro P.42 - Zombie Mode Human Knife
-	if (m_currentWeapon == WEAPON_KNIFE && selectId != WEAPON_KNIFE && 
-		g_gameMode == MODE_ZP && !m_isZombieBot)
+	// SyPB Pro P.49 - Zombie Mode Human Knife
+	if (IsZombieMode() && !m_isZombieBot && m_currentWeapon == WEAPON_KNIFE && selectId != WEAPON_KNIFE)
 	{
 		m_reloadState = RSTATE_PRIMARY;
-		m_reloadCheckTime = engine->GetTime() + 1.5f;
-		//return;
+		m_reloadCheckTime = engine->GetTime();
 	}
 
 	if (m_currentWeapon != selectId)
@@ -1704,6 +1703,15 @@ bool Bot::IsGroupOfEnemies (Vector location, int numEnemies, int radius)
 
 void Bot::CheckReload (void)
 {
+	// SyPB Pro P.49 - Reload Weapon Ai improve
+	if (m_isReloading)
+	{
+		if (m_preReloadAmmo == m_ammoInClip[m_currentWeapon] && m_preReloadAmmo != -1)
+			return;
+
+		m_reloadCheckTime = engine->GetTime();
+	}
+
    // check the reload state
    if (GetCurrentTask ()->taskID == TASK_ESCAPEFROMBOMB || GetCurrentTask ()->taskID == TASK_PLANTBOMB || GetCurrentTask ()->taskID == TASK_DEFUSEBOMB || GetCurrentTask ()->taskID == TASK_PICKUPITEM || GetCurrentTask ()->taskID == TASK_THROWFBGRENADE || GetCurrentTask ()->taskID == TASK_THROWSMGRENADE || m_isUsingGrenade)
    {
@@ -1718,6 +1726,10 @@ void Bot::CheckReload (void)
 	   return;
    }
 
+   if (m_reloadCheckTime < engine->GetTime())
+	   return;
+
+   m_preReloadAmmo = -1;
    m_isReloading = false;    // update reloading status
    m_reloadCheckTime = engine->GetTime () + 3.0f;
 
@@ -1756,6 +1768,7 @@ void Bot::CheckReload (void)
 		   if ((pev->oldbuttons & IN_RELOAD) == RSTATE_NONE)
 			   pev->button |= IN_RELOAD; // press reload button
 
+		   m_preReloadAmmo = m_ammoInClip[m_currentWeapon];
 		   m_isReloading = true;
 	   }
 	   else

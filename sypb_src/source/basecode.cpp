@@ -1870,9 +1870,7 @@ void Bot::SetConditions (void)
 		 // SyPB Pro P.10
 		 if (g_gameMode == MODE_DM)
 			 desireLevel *= 2;
-		 else if (g_gameMode == MODE_ZP) // SyPB Pro P.26 - Zombie mode Ai
-			 desireLevel = 0.0f;
-		 else if (g_gameMode == MODE_ZH)
+		 else if (IsZombieMode ())
 			 desireLevel = 0.0f;
 		 else 
 		 {
@@ -3842,7 +3840,7 @@ void Bot::RunTask (void)
    // bot seeks cover from enemy
    case TASK_SEEKCOVER:
       m_aimFlags |= AIM_NAVPOINT;
-
+	  
       if (FNullEnt (m_lastEnemy) || !IsAlive (m_lastEnemy))
       {
          TaskComplete ();
@@ -5664,8 +5662,7 @@ void Bot::BotAI (void)
       FireWeapon (); // if bot didn't fire a bullet try again next frame
 
    // check for reloading
-   if (m_reloadCheckTime <= engine->GetTime ())
-      CheckReload ();
+   CheckReload ();
 
    // set the reaction time (surprise momentum) different each frame according to skill
    m_idealReactionTime = engine->RandomFloat (g_skillTab[m_skill / 20].minSurpriseTime, g_skillTab[m_skill / 20].maxSurpriseTime);

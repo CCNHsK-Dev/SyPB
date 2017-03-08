@@ -734,6 +734,7 @@ private:
    Vector m_throw; // origin of waypoint to throw grenades
 
    Vector m_enemyOrigin; // target origin chosen for shooting
+   Vector m_moveTargetOrigin;
    Vector m_grenade; // calculated vector for grenades
    Vector m_entity; // origin of entities like buttons etc.
    Vector m_camp; // aiming vector when camping.
@@ -748,12 +749,12 @@ private:
    edict_t *m_targetEntity; // the entity that the bot is trying to reach
    edict_t *m_hostages[Const_MaxHostages]; // pointer to used hostage entities
    
-   Vector m_moveTargetOrigin;
-
    bool m_isStuck; // bot is stuck
+
    bool m_isReloading; // bot is reloading a gun
    int m_reloadState; // current reload state
-   int m_voicePitch; // bot voice pitch
+   float m_reloadCheckTime; // time to check reloading
+   int m_preReloadAmmo;
 
    bool m_duckDefuse; // should or not bot duck to defuse bomb
    float m_duckDefuseCheckTime; // time to check for ducking for defuse
@@ -765,7 +766,6 @@ private:
    float m_frameInterval; // bot's frame interval
    float m_lastThinkTime; // time bot last thinked
 
-   float m_reloadCheckTime; // time to check reloading
    float m_zoomCheckTime; // time to check zoom again
    float m_shieldCheckTime; // time to check shiled drawing again
    float m_grenadeCheckTime; // time to check grenade usage
@@ -1478,11 +1478,9 @@ inline bool IsNullString (const char *input)
 extern ConVar sypb_knifemode;
 extern ConVar sypb_gamemod;
 
-#include <callbacks.h>
-#include <globals.h>
-#include <compress.h>
-#include <resource.h>
 
+#include <globals.h>
+#include <resource.h>
 
 #include <Experience.h>
 
