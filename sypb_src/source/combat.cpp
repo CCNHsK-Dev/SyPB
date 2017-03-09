@@ -751,7 +751,7 @@ void Bot::FireWeapon(void)
 	// if no available weapon...
 	if (chosenWeaponIndex == 0)
 	{
-		// SyPB Pro P.49 - Reload Weapon Action improve 
+		// SyPB Pro P.49 - Reload Weapon Ai improve 
 		selectIndex = 0;
 		int primaryId = -1;
 		int secondaryId = -1;
@@ -1784,12 +1784,7 @@ void Bot::CheckReload (void)
 		   g_weaponDefs[weaponIndex].ammo1 < 32 && m_ammo[g_weaponDefs[weaponIndex].ammo1] > 0)
 	   {
 		   if (m_currentWeapon != weaponIndex)
-		   {
 			   SelectWeaponByName(g_weaponDefs[weaponIndex].className);
-
-			   if (g_hostEntity->v.iuser2 == ENTINDEX(GetEntity()))
-				   ChartPrint("NNNNNNNNNNNNN");
-		   }
 
 		   pev->button &= ~IN_ATTACK;
 

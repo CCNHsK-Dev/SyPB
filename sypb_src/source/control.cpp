@@ -329,9 +329,6 @@ void BotControl::Think(void)
 
 		if (runThink)
 		{
-			// SyPB Pro P.43 - Bot think improve
-			//m_bots[i]->m_thinkTimer = engine->GetTime() + (1.0f / 24.9f);
-
 			// SyPB Pro P.48 - Bot think improve
 			m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat (0.90f, 1.05f));
 
@@ -343,9 +340,6 @@ void BotControl::Think(void)
 		}
 		else if (!sypb_stopbots.GetBool())
 			m_bots[i]->FacePosition();
-
-		//m_bots[i]->pev->angles.ClampAngles();
-		//m_bots[i]->pev->v_angle.ClampAngles();
 
 		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
@@ -1019,7 +1013,7 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 	m_sayTextBuffer.chatDelay = engine->RandomFloat(3.8f, 10.0f);
 	m_sayTextBuffer.chatProbability = engine->RandomInt(1, 100);
 
-	m_notKilled = false;
+	m_isAlive = false;
 	m_skill = skill;
 	m_weaponBurstMode = BURST_DISABLED;
 
@@ -1226,7 +1220,7 @@ void Bot::NewRound (void)
    m_zhCampPointIndex = -1;
    m_checkCampPointTime = 0.0f;
 
-   if (!m_notKilled) // if bot died, clear all weapon stuff and force buying again
+   if (!m_isAlive) // if bot died, clear all weapon stuff and force buying again
    {
       memset (&m_ammoInClip, 0, sizeof (m_ammoInClip));
       memset (&m_ammo, 0, sizeof (m_ammo));
@@ -1258,6 +1252,7 @@ void Bot::NewRound (void)
    m_spawnTime = engine->GetTime ();
    m_lastChatTime = engine->GetTime ();
    pev->v_angle.y = pev->ideal_yaw;
+   pev->button = 0;
 
    m_timeCamping = 0;
    m_campDirection = 0;
@@ -1273,15 +1268,6 @@ void Bot::NewRound (void)
 
    m_actMessageIndex = 0;
    m_pushMessageIndex = 0;
-
-   // SyPB Pro P.43 - Waypoint improve
-   m_prevGoalIndex = -1;
-   GetCurrentTask()->data = -1;
-
-   SetEntityWaypoint(GetEntity(), -2);
-   m_currentWaypointIndex = -1;
-   GetValidWaypoint();
-   // --------------
 
    // SyPB Pro P.30 - AMXX API
    m_weaponClipAPI = 0;
@@ -1303,9 +1289,14 @@ void Bot::NewRound (void)
    m_waypointGoalAPI = -1;
    m_blockWeaponPickAPI = false;
 
+   // SyPB Pro P.49 - Waypoint improve
+   SetEntityWaypoint(GetEntity(), -2);
+
    // and put buying into its message queue
    PushMessageQueue (CMENU_BUY);
    PushTask (TASK_NORMAL, TASKPRI_NORMAL, -1, 0.0, true);
+
+   m_thinkTimer = 0.0f;
 }
 
 void Bot::Kill (void)

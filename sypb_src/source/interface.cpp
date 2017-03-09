@@ -63,7 +63,7 @@ void SyPBVersionMSG(edict_t *entity = null)
 	char versionData[1024];
 	sprintf(versionData, 
 		"------------------------------------------------\n"
-		"%s %s%s\n"
+		"%s %s %s\n"
 		"Build: %u.%u.%u.%u\n"
 		"Support API Version:%.2f\n"
 		"Support SwNPC Version:%.2f\n"
@@ -2878,7 +2878,6 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       g_netMsg->SetId (NETMSG_DAMAGE, GET_USER_MSG_ID (PLID, "Damage", null));
       g_netMsg->SetId (NETMSG_MONEY, GET_USER_MSG_ID (PLID, "Money", null));
       g_netMsg->SetId (NETMSG_STATUSICON, GET_USER_MSG_ID (PLID, "StatusIcon", null));
-      g_netMsg->SetId (NETMSG_DEATH, GET_USER_MSG_ID (PLID, "DeathMsg", null));
       g_netMsg->SetId (NETMSG_SCREENFADE, GET_USER_MSG_ID (PLID, "ScreenFade", null));
       g_netMsg->SetId (NETMSG_HLTV, GET_USER_MSG_ID (PLID, "HLTV", null));
       g_netMsg->SetId (NETMSG_TEXTMSG, GET_USER_MSG_ID (PLID, "TextMsg", null));
@@ -2924,8 +2923,6 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
    {
       g_netMsg->Reset ();
 
-      //g_netMsg->HandleMessageIfRequired (msgType, NETMSG_SCOREINFO);
-      g_netMsg->HandleMessageIfRequired (msgType, NETMSG_DEATH);
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_TEXTMSG);
 	  
       if (msgType == SVC_INTERMISSION)
@@ -2935,7 +2932,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
             Bot *bot = g_botManager->GetBot (i);
 
             if (bot != null)
-               bot->m_notKilled = false;
+               bot->m_isAlive = false;
          }
       }
    }
@@ -3212,8 +3209,6 @@ int pfnRegUserMsg(const char *name, int size)
       g_netMsg->SetId (NETMSG_MONEY, message);
    else if (strcmp (name, "StatusIcon") == 0)
       g_netMsg->SetId (NETMSG_STATUSICON, message);
-   else if (strcmp (name, "DeathMsg") == 0)
-      g_netMsg->SetId (NETMSG_DEATH, message);
    else if (strcmp (name, "ScreenFade") == 0)
       g_netMsg->SetId (NETMSG_SCREENFADE, message);
    else if (strcmp (name, "HLTV") == 0)

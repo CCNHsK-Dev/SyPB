@@ -246,34 +246,6 @@ void NetworkMsg::Execute (void *p)
 	   }
 	   break;
 
-   case NETMSG_DEATH: // this message sends on death
-      switch (m_state)
-      {
-      case 0:
-         killerIndex = PTR_TO_INT (p);
-         break;
-
-      case 1:
-         victimIndex = PTR_TO_INT (p);
-         break;
-
-      case 2:
-		  // SyPB Pro P.45 - Death Msg improve 
-		  edict_t *victim = INDEXENT(victimIndex);
-		  if (FNullEnt(victim) || !IsValidPlayer(victim))
-			  break;
-
-		  Bot *victimer = g_botManager->GetBot(victim);
-		  if (victimer != null)
-		  {
-			  victimer->GetCurrentTask()->data = -1;
-			  victimer->DeleteSearchNodes();
-		  }
-
-		  break;
-      }
-      break;
-
    case NETMSG_SCREENFADE: // this message gets sent when the Screen fades (Flashbang)
       switch (m_state)
       {

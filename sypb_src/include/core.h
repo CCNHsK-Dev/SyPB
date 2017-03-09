@@ -275,16 +275,12 @@ enum NetMsg
    NETMSG_DAMAGE = 7,
    NETMSG_MONEY = 8,
    NETMSG_STATUSICON = 9,
-   NETMSG_DEATH = 10,
-   NETMSG_SCREENFADE = 11,
-   NETMSG_HLTV = 12,
-   NETMSG_TEXTMSG = 13,
-   //NETMSG_SCOREINFO = 14,
-   NETMSG_BARTIME = 14,
-   //NETMSG_SENDAUDIO = 17,
-   NETMSG_SAYTEXT = 15,
-   //NETMSG_BOTVOICE = 19,
-   NETMSG_NUM = 16
+   NETMSG_SCREENFADE = 10,
+   NETMSG_HLTV = 11,
+   NETMSG_TEXTMSG = 12,
+   NETMSG_BARTIME = 13,
+   NETMSG_SAYTEXT = 14,
+   NETMSG_NUM = 15
 };
 
 // sensing states
@@ -992,11 +988,11 @@ public:
    float m_spawnTime; // time this bot spawned
    float m_timeTeamOrder; // time of last radio command
 
+   bool m_isAlive; // has the player been killed or has he just respawned
    bool m_isVIP; // bot is vip?
    bool m_bIsDefendingTeam; // bot in defending team on this map
 
    int m_startAction; // team/class selection state
-   bool m_notKilled; // has the player been killed or has he just respawned
    bool m_notStarted; // team/class not chosen yet
 
    int m_voteMap; // number of map to vote for

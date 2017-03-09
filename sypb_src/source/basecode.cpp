@@ -60,7 +60,7 @@ void Bot::PushMessageQueue (int message)
 
          if (otherBot != null && otherBot->pev != pev)
          {
-            if (IsAlive (GetEntity ()) == IsAlive (otherBot->GetEntity ()))
+            if (m_isAlive && IsAlive (otherBot->GetEntity ()))
             {
                otherBot->m_sayTextBuffer.entityIndex = entityIndex;
                strcpy (otherBot->m_sayTextBuffer.sayText, m_tempStrings);
@@ -3299,6 +3299,7 @@ void Bot::Think(void)
    pev->button = 0;
    pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
 
+   m_isAlive = IsAlive(GetEntity());
    m_team = GetTeam(GetEntity());
    m_isZombieBot = IsZombieEntity(GetEntity());
 
@@ -3307,7 +3308,6 @@ void Bot::Think(void)
    m_moveAngles = nullvec;
 
    m_canChooseAimDirection = true;
-   m_notKilled = IsAlive (GetEntity ());
 
    m_frameInterval = engine->GetTime () - m_lastThinkTime;
    m_lastThinkTime = engine->GetTime ();
@@ -3321,7 +3321,7 @@ void Bot::Think(void)
 
    if (m_notStarted) // if the bot hasn't selected stuff to start the game yet, go do that...
       StartGame (); // select team & class
-   else if (!m_notKilled)
+   else if (!m_isAlive)
    {
 	   if (m_voteMap != 0) // host wants the bots to vote for a map?
 	   {
@@ -3385,7 +3385,7 @@ void Bot::Think(void)
    CheckMessageQueue (); // check for pending messages
 
    // SyPB Pro P.30 - Start Think 
-   if (!sypb_stopbots.GetBool() && botMovement && m_notKilled)
+   if (!sypb_stopbots.GetBool() && botMovement && m_isAlive)
    {
 	   // SyPB Pro P.37 - Game Mode Ai
 	   if (g_gameMode == MODE_BASE || g_gameMode == MODE_DM || g_gameMode == MODE_NOTEAM ||
@@ -3577,7 +3577,7 @@ void Bot::RunTask (void)
 
                   SelectBestWeapon ();
 
-                  if (!(m_states & (STATE_SEEINGENEMY | STATE_HEARENEMY)) && !m_reloadState)
+                  if (!(m_states & (STATE_SEEINGENEMY | STATE_HEARENEMY)) && m_reloadState == RSTATE_NONE)
                      m_reloadState = RSTATE_PRIMARY;
 
                   MakeVectors (pev->v_angle);
@@ -4076,6 +4076,13 @@ void Bot::RunTask (void)
       m_strafeSpeed = 0.0f;
 
       GetValidWaypoint ();
+
+	  // SyPB Pro P.49 - Reload Weapon Ai improve 
+	  if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity) && FNullEnt(m_lastEnemy))
+	  {
+		  if (m_reloadState == RSTATE_NONE && GetAmmo() != 0)
+			  m_reloadState = RSTATE_PRIMARY;
+	  }
 
       if (m_nextCampDirTime < engine->GetTime ())
       {
@@ -5699,7 +5706,7 @@ void Bot::BotAI (void)
    }
 
    // SyPB Pro P.49 - Miss C4 Action improve
-   if (g_bombPlanted && m_notKilled && OutOfBombTimer ())
+   if (g_bombPlanted && m_isAlive && OutOfBombTimer ())
    {
 	   if ((g_waypoint->GetPath(m_currentWaypointIndex)->origin - g_waypoint->GetBombPosition()).GetLength() < 1024.0f)
 	   {

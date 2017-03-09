@@ -447,19 +447,17 @@ void Bot::SayText (const char *text)
    char tempMessage[256];
    strcpy (botName, GetEntityName(GetEntity ()));
 
-   bool isAlive = IsAlive (GetEntity ());
-
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
       if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].ent == GetEntity ()))
          continue;
 
-      if (isAlive)
+      if (m_isAlive)
          sprintf (tempMessage, "%c%s :  %s\n", 0x02, botName, text);
       else
          sprintf (tempMessage, "%c*DEAD* %c%s%c :  %s\n", 0x01, 0x03, botName, 0x01, text);
 
-      if ((g_clients[i].flags & CFLAG_ALIVE && isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && !isAlive))
+      if ((g_clients[i].flags & CFLAG_ALIVE && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && !m_isAlive))
       {
          MESSAGE_BEGIN (MSG_ONE, g_netMsg->GetId (NETMSG_SAYTEXT), null, g_clients[i].ent);
             WRITE_BYTE (GetIndex ());
@@ -486,19 +484,18 @@ void Bot::TeamSayText (const char *text)
       strcpy (botTeam, "(Counter-Terrorist)");
 
    strcpy (botName, GetEntityName(GetEntity ()));
-   bool isAlive = IsAlive (GetEntity ());
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
       if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
          continue;
 
-      if (isAlive)
+      if (m_isAlive)
          sprintf (tempMessage, "%c%s %c%s%c :  %s\n", 0x01, botTeam, 0x03, botName, 0x01, text);
       else
          sprintf (tempMessage, "%c*DEAD*%s %c%s%c :  %s\n", 0x01, botTeam, 0x03, botName, 0x01, text);
 
-      if ((g_clients[i].flags & CFLAG_ALIVE && isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && !isAlive))
+      if ((g_clients[i].flags & CFLAG_ALIVE && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && !m_isAlive))
       {
          MESSAGE_BEGIN (MSG_ONE, g_netMsg->GetId (NETMSG_SAYTEXT), null, g_clients[i].ent);
              WRITE_BYTE (GetIndex ());
