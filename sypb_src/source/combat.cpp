@@ -751,35 +751,59 @@ void Bot::FireWeapon(void)
 	// if no available weapon...
 	if (chosenWeaponIndex == 0)
 	{
+		// SyPB Pro P.49 - Reload Weapon Action improve 
 		selectIndex = 0;
+		int primaryId = -1;
+		int secondaryId = -1;
 
-		// loop through all the weapons until terminator is found...
 		while (selectTab[selectIndex].id)
 		{
 			int id = selectTab[selectIndex].id;
 
-			// is the bot carrying this weapon?
 			if (weapons & (1 << id))
 			{
-				if (g_weaponDefs[id].ammo1 != -1 && m_ammo[g_weaponDefs[id].ammo1] >= selectTab[selectIndex].minPrimaryAmmo)
-				{
-					// available ammo found, reload weapon
-					if (m_reloadState == RSTATE_NONE || m_reloadCheckTime > engine->GetTime() || GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB)
-					{
-						m_preReloadAmmo = m_ammoInClip[id];
-						m_isReloading = true;
-						m_reloadState = RSTATE_PRIMARY;
-						m_reloadCheckTime = engine->GetTime() + 3.0f;
-						m_fearLevel = 1.0f; // SyPB Pro P.7
-
-						RadioMessage(Radio_NeedBackup);
-					}
-					return;
-				}
+				if ((1 << id) & WeaponBits_Secondary)
+					secondaryId = selectIndex;
+				else
+					primaryId = selectIndex;
 			}
 			selectIndex++;
 		}
-		selectId = WEAPON_KNIFE; // no available ammo, use knife!
+
+		if (m_currentWeapon == selectTab[primaryId].id || secondaryId == -1)
+			selectIndex = primaryId;
+		else if (primaryId == -1)
+			selectIndex = secondaryId;
+		else
+		{
+			if (g_weaponDefs[selectTab[primaryId].id].ammo1 != -1 &&
+				m_ammo[g_weaponDefs[selectTab[primaryId].id].ammo1] >= selectTab[primaryId].minPrimaryAmmo)
+				selectIndex = primaryId;
+			else
+				selectIndex = secondaryId;
+		}
+
+		int id = selectTab[selectIndex].id;
+		if (g_weaponDefs[id].ammo1 != -1 && m_ammo[g_weaponDefs[id].ammo1] >= selectTab[selectIndex].minPrimaryAmmo)
+		{
+			if (m_reloadState == RSTATE_NONE || m_reloadCheckTime > engine->GetTime() || GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB)
+			{
+				if (m_currentWeapon != id)
+				{
+					SelectWeaponByName(g_weaponDefs[id].className);
+					return;
+				}
+
+				m_preReloadAmmo = m_ammoInClip[id];
+				m_isReloading = true;
+				m_fearLevel = 1.0f; // SyPB Pro P.7
+
+				RadioMessage(Radio_NeedBackup);
+			}
+			return;
+		}
+
+		selectId = WEAPON_KNIFE;
 	}
 
 WeaponSelectEnd:
@@ -1589,11 +1613,7 @@ void Bot::SelectBestWeapon(void)
 	if (weaponID == m_currentWeapon)
 		return;
 
-	//if (m_currentWeapon != weaponID)
 	SelectWeaponByName(selectTab[selectIndex].weaponName);
-
-	m_isReloading = false;
-	m_reloadState = RSTATE_NONE;
 }
 
 void Bot::SelectPistol (void)
@@ -1709,7 +1729,10 @@ void Bot::CheckReload (void)
 		if (m_preReloadAmmo == m_ammoInClip[m_currentWeapon] && m_preReloadAmmo != -1)
 			return;
 
-		m_reloadCheckTime = engine->GetTime();
+		if (!FNullEnt(m_enemy) || !FNullEnt (m_lastEnemy))
+			m_reloadCheckTime = engine->GetTime() + 3.0f;
+		else
+			m_reloadCheckTime = engine->GetTime();
 	}
 
    // check the reload state
@@ -1726,7 +1749,7 @@ void Bot::CheckReload (void)
 	   return;
    }
 
-   if (m_reloadCheckTime < engine->GetTime())
+   if (m_reloadCheckTime > engine->GetTime())
 	   return;
 
    m_preReloadAmmo = -1;
@@ -1761,7 +1784,12 @@ void Bot::CheckReload (void)
 		   g_weaponDefs[weaponIndex].ammo1 < 32 && m_ammo[g_weaponDefs[weaponIndex].ammo1] > 0)
 	   {
 		   if (m_currentWeapon != weaponIndex)
+		   {
 			   SelectWeaponByName(g_weaponDefs[weaponIndex].className);
+
+			   if (g_hostEntity->v.iuser2 == ENTINDEX(GetEntity()))
+				   ChartPrint("NNNNNNNNNNNNN");
+		   }
 
 		   pev->button &= ~IN_ATTACK;
 

@@ -1820,7 +1820,7 @@ void Bot::SetConditions (void)
       
       // SyPB Pro P.16
       float ratio = 0.0f;
-      float retreatLevel = (100.0f - pev->health) * tempFear;
+      float retreatLevel = (pev->max_health - pev->health) * tempFear;
             
       if (m_isZombieBot)
       	  ratio = 0;
@@ -3768,7 +3768,7 @@ void Bot::RunTask (void)
       m_checkTerrain = false;
 
       m_navTimeset = engine->GetTime ();
-      m_moveSpeed = 0;
+      m_moveSpeed = 0.0f;
       m_strafeSpeed = 0.0f;
 
       break;
@@ -3846,6 +3846,15 @@ void Bot::RunTask (void)
          TaskComplete ();
          m_prevGoalIndex = -1;
       }
+	  // SyPB Pro P.49 - Reload Weapon Ai improve
+	  else if (m_isReloading)
+	  {
+		  m_moveSpeed = 0.0f;
+		  m_strafeSpeed = 0.0f;
+
+		  m_moveToGoal = false;
+		  m_checkTerrain = false;
+	  }
       else if (DoWaypointNav ()) // reached final cover waypoint?
       {
          // yep. activate hide behaviour
@@ -3893,8 +3902,8 @@ void Bot::RunTask (void)
          if ((m_reloadState == RSTATE_NONE) && (GetAmmoInClip () < 8) && (GetAmmo () != 0))
             m_reloadState = RSTATE_PRIMARY;
 
-         m_moveSpeed = 0;
-         m_strafeSpeed = 0;
+         m_moveSpeed = 0.0f;
+         m_strafeSpeed = 0.0f;
 
          m_moveToGoal = false;
          m_checkTerrain = true;
@@ -4063,7 +4072,7 @@ void Bot::RunTask (void)
       m_idealReactionTime = (engine->RandomFloat (g_skillTab[m_skill / 20].minSurpriseTime, g_skillTab[m_skill / 20].maxSurpriseTime)) / 2;
       m_navTimeset = engine->GetTime ();
 
-      m_moveSpeed = 0;
+      m_moveSpeed = 0.0f;
       m_strafeSpeed = 0.0f;
 
       GetValidWaypoint ();
@@ -4167,7 +4176,7 @@ void Bot::RunTask (void)
       m_idealReactionTime = (engine->RandomFloat (g_skillTab[m_skill / 20].minSurpriseTime, g_skillTab[m_skill / 20].maxSurpriseTime)) / 2;
 
       m_navTimeset = engine->GetTime ();
-      m_moveSpeed = 0;
+      m_moveSpeed = 0.0f;
       m_strafeSpeed = 0.0f;
 
       GetValidWaypoint ();
@@ -4285,8 +4294,8 @@ void Bot::RunTask (void)
             else
                pev->button |= IN_ATTACK;
 
-            m_moveSpeed = 0;
-            m_strafeSpeed = 0;
+            m_moveSpeed = 0.0f;
+            m_strafeSpeed = 0.0f;
          }
       }
       else // done with planting
@@ -4388,8 +4397,6 @@ void Bot::RunTask (void)
 				   if (friendsN > 2 && GetNearbyEnemiesNearPosition(pev->origin, 768) < friendsN)
 				   {
 					   SelectWeaponByName("weapon_knife");
-					   m_isReloading = false;
-					   m_reloadState = RSTATE_NONE;
 				   }
 			   }
 

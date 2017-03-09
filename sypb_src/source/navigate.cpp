@@ -1062,6 +1062,24 @@ void Bot::DeleteSearchNodes (void)
    m_chosenGoalIndex = -1;
 }
 
+void Bot::CheckWeaponData(int state, int weaponId, int clip)
+{
+	if (weaponId != m_currentWeapon)
+	{
+		if (weaponId <= 31 && state != 0)
+		{
+			m_currentWeapon = weaponId;
+			m_isReloading = false;
+			m_preReloadAmmo = -1;
+			m_reloadState = RSTATE_NONE;
+		}
+	}
+	if (m_ammoInClip[weaponId] > clip)
+		m_timeLastFired = engine->GetTime(); // remember the last bullet time
+
+	m_ammoInClip[weaponId] = clip;
+}
+
 // SyPB Pro P.38 - Breakable improve 
 void Bot::CheckTouchEntity(edict_t *entity)
 {

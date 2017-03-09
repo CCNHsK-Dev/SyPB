@@ -1198,6 +1198,7 @@ void Bot::NewRound (void)
 
    m_isReloading = false;
    m_reloadState = RSTATE_NONE;
+   m_preReloadAmmo = -1;
 
    m_reloadCheckTime = 0.0f;
    m_shootTime = engine->GetTime ();

@@ -1109,6 +1109,7 @@ public:
    Task *GetCurrentTask (void);
 
    void CheckTouchEntity(edict_t *entity);
+   void CheckWeaponData(int state, int weaponId, int clip);
 
    void RemoveCertainTask (BotTask taskID);
    void ResetTasks (void);

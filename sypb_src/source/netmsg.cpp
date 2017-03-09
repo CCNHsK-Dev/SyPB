@@ -155,17 +155,8 @@ void NetworkMsg::Execute (void *p)
       case 2:
          clip = PTR_TO_INT (p); // ammo currently in the clip for this weapon
 
-         if (id <= 31)
-         {
-            if (state != 0)
-               m_bot->m_currentWeapon = id;
+		 m_bot->CheckWeaponData(state, id, clip);
 
-            // ammo amount decreased ? must have fired a bullet...
-            if (id == m_bot->m_currentWeapon && m_bot->m_ammoInClip[id] > clip)
-				m_bot->m_timeLastFired = engine->GetTime (); // remember the last bullet time
-
-            m_bot->m_ammoInClip[id] = clip;
-         }
          break;
       }
       break;
