@@ -62,6 +62,7 @@ extern float g_timeNextBombUpdate;
 extern float g_timeRoundStart;
 extern float g_lastRadioTime[2];
 
+extern float g_secondTime;
 extern float g_gameStartTime;
 
 extern int g_mapType;
@@ -88,6 +89,7 @@ extern int g_modelIndexArrow;
 extern char g_fakeArgv[256];
 
 // SyPB Pro P.42 - Entity Action
+extern float g_checkEntityDataTime;
 extern const int entityNum = 256;
 extern int g_entityId[entityNum];
 extern int g_entityTeam[entityNum];
@@ -95,7 +97,6 @@ extern int g_entityAction[entityNum];
 extern int g_entityWpIndex[entityNum];
 extern Vector g_entityGetWpOrigin[entityNum];
 extern float g_entityGetWpTime[entityNum];
-
 extern edict_t *g_hostages[Const_MaxHostages];
 extern int g_hostagesWpIndex[Const_MaxHostages];
 

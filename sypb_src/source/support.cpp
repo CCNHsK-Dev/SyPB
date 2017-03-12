@@ -657,7 +657,7 @@ void RoundInit (void)
 }
 
 // SyPB Pro P.43 - Game Mode Setting
-void AutoLoadGameMode(void)
+void AutoLoadGameMode(bool reset)
 {
 	// SyPB Pro P.47 - Game Mode Check
 	if (!g_isMetamod)
@@ -665,6 +665,12 @@ void AutoLoadGameMode(void)
 
 	// SyPB Pro P.45 - Game Mode Check Num
 	static int checkShowTextTime = 0;
+	if (reset)
+	{
+		checkShowTextTime = 0;
+		return;
+	}
+
 	checkShowTextTime++;
 
 	// CS:BTE Support 
@@ -715,7 +721,7 @@ void AutoLoadGameMode(void)
 				if (bteGameModAi[i] == 2 && i != 5)
 					g_gameStartTime = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
 
-				if (checkShowTextTime < 3 || g_gameMode != bteGameModAi[i])
+				if (g_gameMode != bteGameModAi[i])
 					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
 
 				if (i == 3 || i == 9)
@@ -763,7 +769,7 @@ void AutoLoadGameMode(void)
 
 			if (delayTime > 0)
 			{
-				if (checkShowTextTime < 3 || g_gameMode != MODE_ZP)
+				if (g_gameMode != MODE_ZP)
 					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (ZP) ***");
 
 				SetGameMode(MODE_ZP);
@@ -780,21 +786,8 @@ void AutoLoadGameMode(void)
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
 	if (TryFileOpen(Plugin_INI))
 	{
-		if (CVAR_GET_FLOAT("HsK_Deathmatch_Plugin_load_SyPB") == 1 || 
-			CVAR_GET_FLOAT("DMKD_DMMODE") == 1)
-		{
-			if (checkShowTextTime < 3 || g_gameMode != MODE_DM)
-				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-DM ***");
-
-			SetGameMode(MODE_DM);
-		}
-		else
-		{
-			if (checkShowTextTime < 3 || g_gameMode != MODE_BASE)
-				ServerPrint("*** SyPB Auto Game Mode Setting: DM:KD-TDM ***");
-
-			SetGameMode(MODE_BASE);
-		}
+		if (checkShowTextTime < 3)
+			ServerPrint("*** SyPB Auto Game Mode Setting: DeathMatch: Kill Duty Auto Setting ***");
 
 		goto lastly;
 	}
@@ -803,7 +796,7 @@ void AutoLoadGameMode(void)
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
 	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
 	{
-		if (checkShowTextTime < 3 || g_gameMode != MODE_ZH)
+		if (g_gameMode != MODE_ZH)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
 
 		SetGameMode(MODE_ZH);
@@ -815,8 +808,11 @@ void AutoLoadGameMode(void)
 	}
 
 	// SyPB Pro P.47 - CSDM Mode Check
-	static cvar_t* dmActive = g_engfuncs.pfnCVarGetPointer("csdm_active");
-	static cvar_t* freeForAll = g_engfuncs.pfnCVarGetPointer("mp_freeforall");
+	static cvar_t* dmActive;
+	static cvar_t* freeForAll;
+
+	dmActive = g_engfuncs.pfnCVarGetPointer("csdm_active");
+	freeForAll = g_engfuncs.pfnCVarGetPointer("mp_freeforall");
 
 	if (dmActive && freeForAll)
 	{
@@ -824,19 +820,21 @@ void AutoLoadGameMode(void)
 		{
 			if (freeForAll->value > 0.0f)
 			{
-				if (checkShowTextTime < 3 || g_gameMode != MODE_DM)
+				if (g_gameMode != MODE_DM)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-DM ***");
 
 				SetGameMode(MODE_DM);
 			}
 			else
 			{
-				if (checkShowTextTime < 3 || g_gameMode != MODE_BASE)
+				if (g_gameMode != MODE_BASE)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-TDM ***");
 
 				SetGameMode(MODE_BASE);
 			}
 		}
+
+		goto lastly;
 	}
 
 	if (checkShowTextTime < 3)
@@ -876,6 +874,7 @@ bool IsWeaponShootingThroughWall (int id)
 
 void SetGameMode(int gamemode)
 {
+	extern ConVar sypb_gamemod;
 	sypb_gamemod.SetInt(gamemode);
 
 	g_gameMode = gamemode;
@@ -1612,6 +1611,12 @@ void DebugModeMsg(void)
 {
 	if (!IsAlive(g_hostEntity) || g_debugMode != DEBUG_PLAYER)
 		return;
+
+	static float timeDebugUpdate = 0.0f;
+	if (timeDebugUpdate > engine->GetTime())
+		return;
+
+	timeDebugUpdate = engine->GetTime() + 1.0f;
 
 	int client = ENTINDEX(g_hostEntity) - 1;
 	Vector src = nullvec;

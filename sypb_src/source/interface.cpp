@@ -36,6 +36,8 @@ ConVar sypb_version ("sypb_version", PRODUCT_VERSION, VARTYPE_READONLY);
 ConVar sypb_lockzbot("sypb_lockzbot", "1");
 ConVar sypb_showwp("sypb_showwp", "0");
 
+ConVar sypb_gamemod("sypb_gamemod", "0");
+
 // SyPB Pro P.47 - SyPB Version MSG
 void SyPBVersionMSG(edict_t *entity = null)
 {
@@ -1102,6 +1104,10 @@ int Spawn (edict_t *ent)
       g_modelIndexArrow = PRECACHE_MODEL ("sprites/arrow1.spr");
       g_roundEnded = true;
 
+	  g_checkEntityDataTime = 0.0f;
+	  g_secondTime = 0.0f;
+
+	  AutoLoadGameMode(true);
       RoundInit ();
 
       g_mapType = null; // reset map type as worldspawn is the first entity spawned
@@ -2505,23 +2511,6 @@ void LoadEntityData(void)
 	edict_t *entity = null;
 	int i;
 
-	// SyPB Pro P.43 - Entity Action 
-	for (i = 0; i < entityNum; i++)
-	{
-		if (g_entityId[i] == -1)
-			continue;
-
-		entity = INDEXENT(g_entityId[i]);
-		if (FNullEnt(entity) || !IsAlive(entity))
-		{
-			SetEntityActionData(i);
-			continue;
-		}
-
-		if (g_entityGetWpTime[i] + 1.5f < engine->GetTime() || g_entityWpIndex[i] == -1)
-			SetEntityWaypoint(entity);
-	}
-
 	for (i = 0; i < engine->GetMaxClients(); i++)
 	{
 		entity = INDEXENT(i + 1);
@@ -2571,9 +2560,26 @@ void LoadEntityData(void)
 		g_clients[i].isZombiePlayerAPI = -1;
 	}
 
-	static float checkHostagesTime = engine->GetTime();
-	if (checkHostagesTime <= engine->GetTime())
+	// SyPB Pro P.43 - Entity Action 
+	if (g_checkEntityDataTime <= engine->GetTime())
 	{
+		g_checkEntityDataTime = engine->GetTime() + 1.0f;
+		for (i = 0; i < entityNum; i++)
+		{
+			if (g_entityId[i] == -1)
+				continue;
+
+			entity = INDEXENT(g_entityId[i]);
+			if (FNullEnt(entity) || !IsAlive(entity))
+			{
+				SetEntityActionData(i);
+				continue;
+			}
+
+			if (g_entityGetWpTime[i] + 1.5f < engine->GetTime() || g_entityWpIndex[i] == -1)
+				SetEntityWaypoint(entity);
+		}
+
 		for (i = 0; i < Const_MaxHostages; i++)
 			g_hostages[i] = null;
 
@@ -2587,8 +2593,6 @@ void LoadEntityData(void)
 			g_hostagesWpIndex[i] = g_waypoint->FindNearest(GetEntityOrigin(entity));
 			i++;
 		}
-
-		checkHostagesTime = engine->GetTime() + engine->RandomFloat(1.2f, 2.0f);
 	}
 }
 
@@ -2601,28 +2605,6 @@ void StartFrame (void)
    // for the bots by the MOD side, remember). Also here we have control on the bot population,
    // for example if a new player joins the server, we should disconnect a bot, and if the
    // player population decreases, we should fill the server with other bots.
-
-   // SyPB Pro P.37 - Lock Add Zbot
-	if (sypb_lockzbot.GetBool())
-	{
-		if (CVAR_GET_FLOAT("bot_quota") > 0)
-		{
-			CVAR_SET_FLOAT("bot_quota", 0);
-
-			// SyPB Pro P.39 - Add Msg
-			ServerPrint("sypb_lockzbot is on, you cannot add ZBot");
-			ServerPrint("You can input sypb_lockzbot unlock add Zbot");
-			ServerPrint("But, If you have use AMXX plug-in, I think this is not good choose");
-		}
-	}
-
-	g_gameMode = sypb_gamemod.GetInt();
-	if (g_gameMode < MODE_BASE || g_gameMode >= MODE_NONE)
-		SetGameMode(MODE_BASE);
-
-	g_debugMode = sypb_debug.GetInt();
-	if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)
-		sypb_debug.SetInt(DEBUG_NONE);
 
 	LoadEntityData();
 	int i;
@@ -2656,9 +2638,38 @@ void StartFrame (void)
 		CheckWelcomeMessage();
 	}
 
-	static float secondTimer = 0.0f;
-	if (secondTimer < engine->GetTime())
+	if (g_secondTime < engine->GetTime())
 	{
+		g_secondTime = engine->GetTime() + 1.0f;
+
+		g_gameMode = sypb_gamemod.GetInt();
+		if (g_gameMode < MODE_BASE || g_gameMode >= MODE_NONE)
+			SetGameMode(MODE_BASE);
+
+		g_debugMode = sypb_debug.GetInt();
+		if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)
+			sypb_debug.SetInt(DEBUG_NONE);
+
+		extern ConVar sypb_dangerfactor;
+		if (sypb_dangerfactor.GetFloat() >= 4096.0f)
+			sypb_dangerfactor.SetFloat(4096.0f);
+
+		if (g_bombPlanted)
+			g_waypoint->SetBombPosition();
+
+		if (sypb_lockzbot.GetBool())
+		{
+			if (CVAR_GET_FLOAT("bot_quota") > 0)
+			{
+				CVAR_SET_FLOAT("bot_quota", 0);
+
+				// SyPB Pro P.39 - Add Msg
+				ServerPrint("sypb_lockzbot is on, you cannot add ZBot");
+				ServerPrint("You can input sypb_lockzbot unlock add Zbot");
+				ServerPrint("But, If you have use AMXX plug-in, I think this is not good choose");
+			}
+		}
+
 		for (i = 0; i < engine->GetMaxClients(); i++)
 		{
 			edict_t *player = INDEXENT(i + 1);
@@ -2689,16 +2700,6 @@ void StartFrame (void)
 				}
 			}
 		}
-
-		extern ConVar sypb_dangerfactor;
-
-		if (sypb_dangerfactor.GetFloat() >= 4096.0f)
-			sypb_dangerfactor.SetFloat(4096.0f);
-
-		secondTimer = engine->GetTime() + 2.0f;
-
-		if (g_bombPlanted)
-			g_waypoint->SetBombPosition();
 	}
 
 	// keep bot number up to date

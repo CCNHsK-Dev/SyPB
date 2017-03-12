@@ -26,8 +26,6 @@
 
 // console variables
 ConVar sypb_debuggoal("sypb_debuggoal", "-1");
-ConVar sypb_gamemod("sypb_gamemod", "0");
-
 ConVar sypb_followuser ("sypb_followuser", "3");
 ConVar sypb_knifemode ("sypb_knifemode", "0");
 ConVar sypb_walkallow ("sypb_walkallow", "1");
@@ -3372,15 +3370,13 @@ void Bot::Think(void)
 	   GetCurrentTask()->taskID != TASK_DEFUSEBOMB))
       botMovement = true;
 
-   static float secondThinkTimer = 0.0f;
-
    // check is it time to execute think (called once per second (not frame))
-   if (secondThinkTimer < engine->GetTime ())
+   if (m_secondThinkTimer < engine->GetTime ())
    {
       SecondThink ();
 
       // update timer to one second
-      secondThinkTimer = engine->GetTime () + 1.05f;
+	  m_secondThinkTimer = engine->GetTime () + 1.05f;
    }
    CheckMessageQueue (); // check for pending messages
 
@@ -6446,10 +6442,8 @@ void Bot::EquipInBuyzone (int iBuyCount)
 {
    // this function is gets called when bot enters a buyzone, to allow bot to buy some stuff
 
-   static float lastEquipTime = 0.0f;
-
    // if bot is in buy zone, try to buy ammo for this weapon...
-   if (lastEquipTime + 15.0f < engine->GetTime () && m_inBuyZone && g_timeRoundStart + engine->RandomFloat (10.0f, 20.0f) + engine->GetBuyTime () < engine->GetTime () && !g_bombPlanted && m_moneyAmount > 1500)
+   if (m_lastEquipTime + 15.0f < engine->GetTime () && m_inBuyZone && g_timeRoundStart + engine->RandomFloat (10.0f, 20.0f) + engine->GetBuyTime () < engine->GetTime () && !g_bombPlanted && m_moneyAmount > 1500)
    {
       m_buyingFinished = false;
       m_buyState = iBuyCount;
@@ -6458,7 +6452,7 @@ void Bot::EquipInBuyzone (int iBuyCount)
       PushMessageQueue (CMENU_BUY);
 
       m_nextBuyTime = engine->GetTime ();
-      lastEquipTime = engine->GetTime ();
+	  m_lastEquipTime = engine->GetTime ();
    }
 }
 

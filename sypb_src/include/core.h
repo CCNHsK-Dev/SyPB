@@ -761,6 +761,7 @@ private:
 
    float m_frameInterval; // bot's frame interval
    float m_lastThinkTime; // time bot last thinked
+   float m_secondThinkTimer;
 
    float m_zoomCheckTime; // time to check zoom again
    float m_shieldCheckTime; // time to check shiled drawing again
@@ -1001,6 +1002,7 @@ public:
    bool m_inBombZone; // bot in the bomb zone or not
    int m_buyState; // current Count in Buying
    float m_nextBuyTime; // next buy time
+   float m_lastEquipTime;
 
    bool m_inBuyZone; // bot currently in buy zone
    bool m_inVIPZone; // bot in the vip satefy zone
@@ -1414,7 +1416,7 @@ extern bool IsValidPlayer (edict_t *ent);
 extern bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant = false);
 extern bool FindNearestPlayer (void **holder, edict_t *to, float searchDistance = 4096.0, bool sameTeam = false, bool needBot = false, bool needAlive = false, bool needDrawn = false);
 
-extern void AutoLoadGameMode(void);
+extern void AutoLoadGameMode(bool reset = false);
 
 extern const char *GetEntityName(edict_t *entity);
 extern const char *GetMapName (void);
@@ -1473,8 +1475,6 @@ inline bool IsNullString (const char *input)
 
 // very global convars
 extern ConVar sypb_knifemode;
-extern ConVar sypb_gamemod;
-
 
 #include <globals.h>
 #include <resource.h>

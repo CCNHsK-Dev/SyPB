@@ -61,6 +61,7 @@ float g_timeBombPlanted = 0.0f;
 float g_lastRadioTime[2] = {0.0f, 0.0f};
 float g_autoPathDistance = 250.0f;
 
+float g_secondTime = 0.0f;
 float g_gameStartTime = 0.0f;
 
 int g_lastRadio[2];
@@ -80,16 +81,13 @@ int g_modelIndexArrow = 0;
 char g_fakeArgv[256];
 
 // SyPB Pro P.42 - Entity Action
-// Entity Data
+float g_checkEntityDataTime = 0.0f;
 int g_entityId[entityNum];
 int g_entityTeam[entityNum];
 int g_entityAction[entityNum];
-
 int g_entityWpIndex[entityNum];
 Vector g_entityGetWpOrigin[entityNum];
 float g_entityGetWpTime[entityNum];
-//******
-
 edict_t *g_hostages[Const_MaxHostages];
 int g_hostagesWpIndex[Const_MaxHostages];
 

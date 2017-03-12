@@ -330,7 +330,7 @@ void BotControl::Think(void)
 		if (runThink)
 		{
 			// SyPB Pro P.48 - Bot think improve
-			m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat (0.90f, 1.05f));
+			m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat (0.9f, 1.0f));
 
 			m_bots[i]->Think();
 
@@ -526,53 +526,55 @@ int BotControl::AddBotAPI(const String &name, int skill, int team)
 	return resultOfCall;  // SyPB Pro P.34 - AMXX API
 }
 
-void BotControl::MaintainBotQuota (void)
+void BotControl::MaintainBotQuota(void)
 {
-   // this function keeps number of bots up to date, and don't allow to maintain bot creation
-   // while creation process in process.
+	// this function keeps number of bots up to date, and don't allow to maintain bot creation
+	// while creation process in process.
 
-   if (!m_creationTab.IsEmpty () && m_maintainTime < engine->GetTime ())
-   {
-      CreateItem last = m_creationTab.Pop ();
+	// SyPB Pro P.43 - Base improve and New Cvar Setting
+	if (m_maintainTime < engine->GetTime())
+		g_botManager->CheckBotNum();
 
-      int resultOfCall = CreateBot (last.name, last.skill, last.personality, last.team, last.member);
+	if (m_maintainTime < engine->GetTime() && !m_creationTab.IsEmpty())
+	{
+		CreateItem last = m_creationTab.Pop();
 
-	  // check the result of creation
-	  if (resultOfCall == -1)
-	  {
-		  m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
-		  sypb_quota.SetInt(0); // reset quota
+		int resultOfCall = CreateBot(last.name, last.skill, last.personality, last.team, last.member);
 
-		  // SyPB Pro P.23 - SgdWP
-		  ChartPrint("[SyPB] You can input [sypb sgdwp on] make the new waypoints!!");
-	  }
-	  else if (resultOfCall == -2)
-	  {
-		  m_creationTab.RemoveAll(); // maximum players reached, so set quota to maximum players
-		  sypb_quota.SetInt(GetBotsNum());
-	  }
+		// check the result of creation
+		if (resultOfCall == -1)
+		{
+			m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
+			sypb_quota.SetInt(0); // reset quota
 
-	  m_maintainTime = engine->GetTime() + 0.15f;
-   }
+								  // SyPB Pro P.23 - SgdWP
+			ChartPrint("[SyPB] You can input [sypb sgdwp on] make the new waypoints!!");
+		}
+		else if (resultOfCall == -2)
+		{
+			m_creationTab.RemoveAll(); // maximum players reached, so set quota to maximum players
+			sypb_quota.SetInt(GetBotsNum());
+		}
 
-   // SyPB Pro P.43 - Base improve and New Cvar Setting
-   g_botManager->CheckBotNum();
-   if (m_maintainTime < engine->GetTime())
-   {
-	   int botNumber = GetBotsNum();
+		m_maintainTime = engine->GetTime() + 0.15f;
+	}
 
-	   if (botNumber > sypb_quota.GetInt())
-		   RemoveRandom();
-	   else if (botNumber < sypb_quota.GetInt() && botNumber < engine->GetMaxClients())
-		   AddRandom();
+	if (m_maintainTime < engine->GetTime())
+	{
+		int botNumber = GetBotsNum();
 
-	   if (sypb_quota.GetInt() > engine->GetMaxClients())
-		   sypb_quota.SetInt(engine->GetMaxClients());
-	   else if (sypb_quota.GetInt() < 0)
-		   sypb_quota.SetInt(0);
+		if (botNumber > sypb_quota.GetInt())
+			RemoveRandom();
+		else if (botNumber < sypb_quota.GetInt() && botNumber < engine->GetMaxClients())
+			AddRandom();
 
-	   m_maintainTime = engine->GetTime() + 0.18f;
-   }
+		if (sypb_quota.GetInt() > engine->GetMaxClients())
+			sypb_quota.SetInt(engine->GetMaxClients());
+		else if (sypb_quota.GetInt() < 0)
+			sypb_quota.SetInt(0);
+
+		m_maintainTime = engine->GetTime() + 0.18f;
+	}
 }
 
 void BotControl::InitQuota (void)
@@ -1214,6 +1216,7 @@ void Bot::NewRound (void)
    m_sayTextBuffer.sayText[0] = 0x0;
 
    m_buyState = 0;
+   m_lastEquipTime = 0.0f;
 
    // SyPB Pro P.47 - Base improve
    m_damageTime = 0.0f;
@@ -1297,6 +1300,7 @@ void Bot::NewRound (void)
    PushTask (TASK_NORMAL, TASKPRI_NORMAL, -1, 0.0, true);
 
    m_thinkTimer = 0.0f;
+   m_secondThinkTimer = 0.0f;
 }
 
 void Bot::Kill (void)
