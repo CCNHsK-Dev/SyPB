@@ -729,7 +729,6 @@ private:
 
    float m_timeWaypointMove; // last time bot followed waypoints
    bool m_wantsToFire; // bot needs consider firing
-   float m_shootAtDeadTime; // time to shoot at dying players
    edict_t *m_avoidEntity; // pointer to grenade entity to avoid
    char m_needAvoidEntity; // which direction to strafe away
 

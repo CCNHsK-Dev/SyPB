@@ -1733,7 +1733,7 @@ void Bot::SetConditions (void)
    if (!FNullEnt(m_lastEnemy))
    {
 		// SyPB Pro P.26 - DM Mod Protect Time
-	   if (m_enemy != m_lastEnemy ||  (!IsAlive(m_lastEnemy) && m_shootAtDeadTime < engine->GetTime()) || 
+	   if ((IsAlive (m_enemy) && m_enemy != m_lastEnemy) ||  !IsAlive(m_lastEnemy) ||
 		   IsNotAttackLab(m_lastEnemy, pev->origin))
 		   SetLastEnemy(null);
    }
@@ -3720,9 +3720,10 @@ void Bot::RunTask (void)
       }
 
       if (engine->IsFootstepsOn () && m_skill > 80 && !(m_aimFlags & AIM_ENEMY) && 
-		  (m_heardSoundTime + 13.0f >= engine->GetTime () || (m_states & (STATE_HEARENEMY))) && 
-		  GetNearbyEnemiesNearPosition (pev->origin, 1024) >= 1 && !(m_currentTravelFlags & PATHFLAG_JUMP) && 
-		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && !g_bombPlanted && !m_isZombieBot)
+		  !g_bombPlanted && !m_isZombieBot && !(m_currentTravelFlags & PATHFLAG_JUMP) &&
+		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && 
+		  (m_heardSoundTime + 8.0f >= engine->GetTime () || (m_states & (STATE_HEARENEMY))) && 
+		  GetNearbyEnemiesNearPosition (pev->origin, 1024) >= 1)
          m_moveSpeed = GetWalkSpeed ();
 
       // bot hasn't seen anything in a long time and is asking his teammates to report in

@@ -1168,7 +1168,6 @@ void Bot::NewRound (void)
    m_buttonPushTime = 0.0f;
    m_enemyUpdateTime = 0.0f;
    m_seeEnemyTime = 0.0f;
-   m_shootAtDeadTime = 0.0f;
    m_oldCombatDesire = 0.0f;
 
    m_backCheckEnemyTime = 0.0f;
@@ -1263,7 +1262,7 @@ void Bot::NewRound (void)
    m_campButtons = 0;
 
    m_soundUpdateTime = 0.0f;
-   m_heardSoundTime = engine->GetTime ();
+   m_heardSoundTime = engine->GetTime () - 8.0f;
 
    // clear its message queue
    for (i = 0; i < 32; i++)
