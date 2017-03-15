@@ -1733,7 +1733,7 @@ void Bot::SetConditions (void)
    if (!FNullEnt(m_lastEnemy))
    {
 		// SyPB Pro P.26 - DM Mod Protect Time
-	   if ((!IsAlive(m_lastEnemy) && m_shootAtDeadTime < engine->GetTime()) || 
+	   if (m_enemy != m_lastEnemy ||  (!IsAlive(m_lastEnemy) && m_shootAtDeadTime < engine->GetTime()) || 
 		   IsNotAttackLab(m_lastEnemy, pev->origin))
 		   SetLastEnemy(null);
    }
@@ -1749,6 +1749,14 @@ void Bot::SetConditions (void)
    else if (m_heardSoundTime < engine->GetTime ())
       m_states &= ~STATE_HEARENEMY;
    
+   if (FNullEnt(m_enemy) && !FNullEnt(m_lastEnemy) && m_lastEnemyOrigin != nullvec)
+   {
+	   m_aimFlags |= AIM_PREDICTENEMY;
+
+	   if (EntityIsVisible(m_lastEnemyOrigin))
+		   m_aimFlags |= AIM_LASTENEMY;
+   }
+
    CheckGrenadeThrow();
 
    // check if there are items needing to be used/collected
@@ -3248,9 +3256,7 @@ void Bot::ChooseAimDirection (void)
 	  // SyPB Pro P.48 - Shootable Thru Obstacle improve
 	  if (m_seeEnemyTime + 2.0f - m_actualReactionTime + m_baseAgressionLevel > engine->GetTime())
 	  {
-		  if ((pev->origin - m_lastEnemyOrigin).GetLength() >= 1600.0f)
-			  SetLastEnemy(null);
-		  else if (!UsesSniper() && LastEnemyShootable())
+		  if (!UsesSniper() && LastEnemyShootable())
 			  m_wantsToFire = true;
 	  }
    }
@@ -3263,7 +3269,7 @@ void Bot::ChooseAimDirection (void)
 
 	   if (recalcPath)
 	   {
-		   m_lookAt = g_waypoint->GetPath(GetAimingWaypoint (m_lastEnemyWpIndex))->origin;
+		   m_lookAt = g_waypoint->GetPath(GetAimingWaypoint(m_lastEnemyWpIndex))->origin;
 		   m_camp = m_lookAt;
 
 		   m_timeNextTracking = engine->GetTime() + 1.0f;
@@ -6377,7 +6383,7 @@ void Bot::ReactOnSound (void)
 		if (!(m_states & STATE_SEEINGENEMY) && IsOnFloor() && m_currentWeapon != WEAPON_C4 && m_currentWeapon != WEAPON_HEGRENADE && m_currentWeapon != WEAPON_SMGRENADE && m_currentWeapon != WEAPON_FBGRENADE && !sypb_knifemode.GetBool())
 			SelectBestWeapon();
 
-		m_heardSoundTime = engine->GetTime() + 5.0f;
+		m_heardSoundTime = engine->GetTime();
 		m_states |= STATE_HEARENEMY;
 
 		m_aimFlags |= AIM_LASTENEMY;
@@ -6399,19 +6405,17 @@ void Bot::ReactOnSound (void)
 			{
 				// if bot had an enemy but the heard one is nearer, take it instead
 				float distance = (m_lastEnemyOrigin - pev->origin).GetLength();
-				if (distance <= (GetEntityOrigin(player) - pev->origin).GetLength() || m_seeEnemyTime + 2.0f >= engine->GetTime())
+				if (distance <= (GetEntityOrigin(player) - pev->origin).GetLength() && m_seeEnemyTime + 2.0f < engine->GetTime())
 					return;
 
 				SetLastEnemy(player);
-				return;
 			}
 		}
 
 		// check if heard enemy can be seen
-		// SyPB Pro P.30 - small change
-		if (m_lastEnemy == player && m_seeEnemyTime + 4.0f > engine->GetTime() && m_skill >= 60 &&
-			(engine->RandomInt(1, 100) < g_skillTab[m_skill / 20].heardShootThruProb) &&
-			IsShootableThruObstacle(player))
+		// SyPB Pro P.49 - Base improve
+		if (FNullEnt(m_enemy) && m_lastEnemy == player && m_seeEnemyTime + 3.0f > engine->GetTime() &&
+			m_skill >= 60 && IsShootableThruObstacle(player))
 		{
 			SetEnemy(player);
 			SetLastEnemy(player);
@@ -6422,18 +6426,20 @@ void Bot::ReactOnSound (void)
 	}
 }
 
-// SyPB Pro P.47 - Breakable improve
+// SyPB Pro P.49 - Breakable improve
 bool Bot::IsShootableBreakable(edict_t *ent)
 {
 	if (FNullEnt(ent))
 		return false;
+	
+	if (ent->v.takedamage == DAMAGE_NO || ent->v.flags & FL_WORLDBRUSH || 
+		ent->v.effects & EF_NODRAW || 
+		ent->v.health < 0.0f || ent->v.health >= 12000.0f)
+		return false;
 
 	if (FClassnameIs(ent, "func_breakable") ||
 		(FClassnameIs(ent, "func_pushable") && (ent->v.spawnflags & SF_PUSH_BREAKABLE)))
-	{
-		if (ent->v.takedamage != DAMAGE_NO && ent->v.impulse <= 0 && !(ent->v.flags & FL_WORLDBRUSH) && !(ent->v.spawnflags & SF_BREAK_TRIGGER_ONLY))
-			return (ent->v.movetype == MOVETYPE_PUSH || ent->v.movetype == MOVETYPE_PUSHSTEP);
-	}
+		return !(ent->v.spawnflags & SF_BREAK_TRIGGER_ONLY);
 
 	return false;
 }

@@ -500,6 +500,8 @@ bool Bot::DoWaypointNav (void)
 	   TraceResult tr;
 	   TraceLine(pev->origin, m_waypointOrigin, true, GetEntity(), &tr);
 
+	   m_aimFlags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
+
 	   // SyPB Pro P.49 - Door improve (use YaPB, Thank about it)
 	   if (!FNullEnt(tr.pHit) && strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
 	   {
@@ -532,7 +534,7 @@ bool Bot::DoWaypointNav (void)
 					   m_states |= STATE_SEEINGENEMY;
 					   m_aimFlags |= AIM_ENEMY;
 
-					   m_enemy = ent;
+					   SetEnemy(ent);
 					   SetLastEnemy(ent);
 
 				   }
@@ -1146,7 +1148,9 @@ void Bot::SetEnemy(edict_t *entity)
 // SyPB Pro P.42 - NPC Fixed
 void Bot::SetLastEnemy(edict_t *entity)
 {
-	if (FNullEnt (entity) || !IsValidPlayer(entity) || !IsAlive (entity))
+	if (FNullEnt (entity) || !IsValidPlayer(entity) || !IsAlive (entity) || 
+		// SyPB Pro P.49 - AMXX API improve
+		((!FNullEnt(m_enemyAPI) && m_enemyAPI != entity)))
 	{
 		m_lastEnemy = null;
 		m_lastEnemyOrigin = nullvec;

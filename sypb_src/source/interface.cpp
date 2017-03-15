@@ -937,26 +937,6 @@ void InitConfig (void)
                   g_skillTab[parserState].maxSurpriseTime = splitted[i];
                   break;
 
-               case 2:
-                  g_skillTab[parserState].minTurnSpeed = splitted[i];
-                  break;
-
-               case 3:
-                  g_skillTab[parserState].maxTurnSpeed = splitted[i];
-                  break;
-
-               case 4:
-                  g_skillTab[parserState].headshotFrequency = splitted[i];
-                  break;
-
-               case 5:
-                  g_skillTab[parserState].heardShootThruProb = splitted[i];
-                  break;
-
-               case 6:
-                  g_skillTab[parserState].seenShootThruProb = splitted[i];
-                  break;
-
                case 7:
                   g_skillTab[parserState].recoilAmount = splitted[i];
                   break;

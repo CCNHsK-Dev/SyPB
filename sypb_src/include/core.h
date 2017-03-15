@@ -523,14 +523,6 @@ struct SkillDef
    float maxSurpriseTime; // surprise delay (maximum)
    float campStartDelay; // delay befor start camping
    float campEndDelay; // delay before end camping
-   float minTurnSpeed; // initial minimum turnspeed
-   float maxTurnSpeed; // initial maximum turnspeed
-   float aimOffs_X; // X/Y/Z maximum offsets
-   float aimOffs_Y; // X/Y/Z maximum offsets
-   float aimOffs_Z; // X/Y/Z maximum offsets
-   int headshotFrequency; // precent to aiming to player head
-   int heardShootThruProb; // precent to shooting throug wall when seen something
-   int seenShootThruProb; // precent to shooting throug wall when heard something
    int recoilAmount; // amount of recoil when the bot should pause shooting
 };
 
