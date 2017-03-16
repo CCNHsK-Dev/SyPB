@@ -440,7 +440,6 @@ bool Bot::DoWaypointNav (void)
 		   // pressing the jump button gives the illusion of the bot actual jmping.
 		   if (IsOnFloor() || IsOnLadder())
 		   {
-			   //pev->velocity = m_desiredVelocity;
 			   // SyPB Pro P.49 - Jump improve  (use YaPB, Thank about it)
 			   if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
 				   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
@@ -450,10 +449,11 @@ bool Bot::DoWaypointNav (void)
 			   m_jumpFinished = true;
 			   m_checkTerrain = false;
 			   m_desiredVelocity = nullvec;
+
+			   if (m_currentWeapon == WEAPON_KNIFE)
+				   SelectBestWeapon();
 		   }
 	   }
-	   else if (!sypb_knifemode.GetBool() && m_currentWeapon == WEAPON_KNIFE && IsOnFloor())
-		   SelectBestWeapon();
    }
 
    float waypointDistance = (pev->origin - m_waypointOrigin).GetLength ();
@@ -1831,7 +1831,7 @@ void Bot::HeadTowardWaypoint (void)
 
 			 for (int i = 0; i < Const_MaxPathIndex; i++)
 			 {
-				 if (path->index[i] == m_navNode->index)
+				 if (path->index[i] == destIndex)
 				 {
 					 m_currentTravelFlags = path->connectionFlags[i];
 					 m_desiredVelocity = path->connectionVelocity[i];
@@ -1853,12 +1853,12 @@ void Bot::HeadTowardWaypoint (void)
 			 {
 				 for (int i = 0; i < Const_MaxPathIndex; i++)
 				 {
-					 if (g_waypoint->GetPath(m_navNode->index)->index[i] == m_navNode->next->index && (g_waypoint->GetPath(m_navNode->index)->connectionFlags[i] & PATHFLAG_JUMP))
+					 if (g_waypoint->GetPath(destIndex)->index[i] == m_navNode->next->index && (g_waypoint->GetPath(destIndex)->connectionFlags[i] & PATHFLAG_JUMP))
 					 {
-						 src = g_waypoint->GetPath(m_navNode->index)->origin;
+						 src = g_waypoint->GetPath(destIndex)->origin;
 						 destination = g_waypoint->GetPath(m_navNode->next->index)->origin;
 
-						 jumpDistance = (g_waypoint->GetPath(m_navNode->index)->origin - g_waypoint->GetPath(m_navNode->next->index)->origin).GetLength();
+						 jumpDistance = (g_waypoint->GetPath(destIndex)->origin - g_waypoint->GetPath(m_navNode->next->index)->origin).GetLength();
 						 willJump = true;
 
 						 break;

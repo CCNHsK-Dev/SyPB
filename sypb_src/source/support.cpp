@@ -969,7 +969,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	int wpIndex = isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
 	Vector getWpOrigin = isPlayer ? g_clients[i].getWpOrigin : g_entityGetWpOrigin[i];
 
-	if (wpIndex == -1)
+	if (wpIndex == -1 || getWpOrigin == nullvec)
 		needCheckNewWaypoint = true;
 	else if (traceCheckTime == engine->GetTime () && (!isPlayer || mode == -1))
 		needCheckNewWaypoint = false;
@@ -977,41 +977,32 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		needCheckNewWaypoint = true;
 	else
 	{
-		if (getWpOrigin != nullvec && wpIndex >= 0 && wpIndex < g_numWaypoints)
+		float distance = (getWpOrigin - origin).GetLength();
+		if (distance >= 300.0f)
+			needCheckNewWaypoint = true;
+		else if (distance >= 32.0f)
 		{
-			float distance = (getWpOrigin - origin).GetLength();
-			if (distance >= 300.0f )
-				needCheckNewWaypoint = true;
-			else if (distance >= 32.0f)
-			{
-				Vector wpOrigin = g_waypoint->GetPath(wpIndex)->origin;
-				distance = (wpOrigin - origin).GetLength();
+			distance = (g_waypoint->GetPath(wpIndex)->origin - origin).GetLength();
+			float wpRadius = g_waypoint->GetPath(wpIndex)->radius;
+			if (wpRadius < 32.0f)
+				wpRadius += 18.0f;
 
-				if (distance > g_waypoint->GetPath(wpIndex)->radius + 32.0f)
+			if (distance > wpRadius && traceCheckTime + 1.2f <= engine->GetTime())
+				needCheckNewWaypoint = true;
+			else if (traceCheckTime + 3.0f <= engine->GetTime())
+			{
+				if (!g_waypoint->Reachable(ent, wpIndex))
 					needCheckNewWaypoint = true;
+				else if (isPlayer)
+					g_clients[i].getWPTime = engine->GetTime();
 				else
-				{
-					if (traceCheckTime + 5.0f <= engine->GetTime() || 
-						(traceCheckTime + 1.5f <= engine->GetTime() && !g_waypoint->Reachable(ent, wpIndex)))
-						needCheckNewWaypoint = true;
-				} 
+					g_entityGetWpTime[i] = engine->GetTime();
 			}
 		}
-		else
-			needCheckNewWaypoint = true;
 	}
 
 	if (!needCheckNewWaypoint)
-	{
-		if (isPlayer)
-		{
-			g_clients[i].getWPTime = engine->GetTime();
-			return g_clients[i].wpIndex;
-		}
-
-		g_entityGetWpTime[i] = engine->GetTime();
-		return g_entityWpIndex[i];
-	}
+		return isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
 
 	int wpIndex2 = -1;
 

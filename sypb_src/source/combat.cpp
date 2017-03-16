@@ -433,6 +433,7 @@ bool Bot::LookupEnemy(void)
 		if (targetEntity == m_enemy)
 		{
 			m_seeEnemyTime = engine->GetTime();
+			m_backCheckEnemyTime = 0.0f;
 
 			m_actualReactionTime = 0.0f;
 			SetLastEnemy(targetEntity);
@@ -455,6 +456,7 @@ bool Bot::LookupEnemy(void)
 		SetEnemy(targetEntity);
 		SetLastEnemy(m_enemy);
 		m_seeEnemyTime = engine->GetTime();
+		m_backCheckEnemyTime = 0.0f;
 
 		if (!m_isZombieBot)
 			m_enemyUpdateTime = engine->GetTime() + 0.6f;

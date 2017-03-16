@@ -208,16 +208,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 		m_visibility = visibility;
 	}
 
-	if (seeEntity)
-	{
-		m_backCheckEnemyTime = 0.0f;
-		m_seeEnemyTime = engine->GetTime();
-
-		SetLastEnemy(entity);
-		return true;
-	}
-
-	return false;
+	return seeEntity;
 }
 
 bool Bot::ItemIsVisible (Vector destination, char *itemName)//, bool bomb)
@@ -444,12 +435,14 @@ void Bot::AvoidEntity(void)
 		allEntity++;
 	}
 
+	Vector entityOrigin = nullvec;
 	for (i = 0; i < allEntity; i++)
 	{
 		if (m_allAvoidEntity[i] == null)
 			continue;
 
 		entity = m_allAvoidEntity[i];
+		entityOrigin = GetEntityOrigin(entity);
 
 		if (strcmp(STRING(entity->v.classname), "grenade") == 0)
 		{
@@ -465,15 +458,15 @@ void Bot::AvoidEntity(void)
 				continue;
 		}
 
-		if (InFieldOfView(GetEntityOrigin(entity) - EyePosition()) > pev->fov * 0.5f &&
-			!EntityIsVisible(GetEntityOrigin(entity)))
+		if (InFieldOfView(entityOrigin - EyePosition()) > pev->fov * 0.5f &&
+			!EntityIsVisible(entityOrigin))
 			continue;
 
 		if (strcmp(STRING(entity->v.model) + 9, "flashbang.mdl") == 0)
 		{
 			if (m_skill >= 70)
 			{
-				Vector position = (GetEntityOrigin(entity) - EyePosition()).ToAngles();
+				Vector position = (entityOrigin - EyePosition()).ToAngles();
 				pev->v_angle.y = AngleNormalize(position.y + 180.0f);
 				m_canChooseAimDirection = false;
 				return;
@@ -484,8 +477,8 @@ void Bot::AvoidEntity(void)
 
 		if ((entity->v.flags & FL_ONGROUND) == 0)
 		{
-			float distance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-			Vector entityNewOrigin = (GetEntityOrigin(entity) + entity->v.velocity * m_frameInterval);
+			float distance = (entityOrigin - pev->origin).GetLength();
+			Vector entityNewOrigin = (entityOrigin + entity->v.velocity * m_frameInterval);
 			float distanceMoved = (entityNewOrigin - pev->origin).GetLength();
 
 			if (distanceMoved >= distance || distance > 500.0f)
@@ -494,14 +487,14 @@ void Bot::AvoidEntity(void)
 			if (&m_navNode[0] != null && m_navNode->next != null)
 			{
 				Vector newOrigin = g_waypoint->GetPath(m_navNode->next->index)->origin;
-				if ((GetEntityOrigin(entity) - newOrigin).GetLength() > distance &&
+				if ((entityOrigin - newOrigin).GetLength() > distance &&
 					((entityNewOrigin + entity->v.velocity * m_frameInterval) - newOrigin).GetLength() > distanceMoved)
 					continue;
 			}
 
 			MakeVectors(pev->v_angle);
 
-			Vector dirToPoint = (pev->origin - GetEntityOrigin(entity)).Normalize2D();
+			Vector dirToPoint = (pev->origin - entityOrigin).Normalize2D();
 			Vector rightSide = g_pGlobals->v_right.Normalize2D();
 
 			if ((dirToPoint | rightSide) > 0)
@@ -1721,6 +1714,7 @@ void Bot::SetConditions (void)
    if (LookupEnemy())
    {
 	   m_states |= STATE_SEEINGENEMY;
+	   SetLastEnemy(m_enemy);
 	   SetMoveTarget(null);
    }
    else
@@ -2379,12 +2373,13 @@ void Bot::CheckGrenadeThrow(void)
 		return;
 	}
 
+	Vector targetOrigin = GetEntityOrigin(targetEntity);
 	if ((grenadeToThrow == WEAPON_HEGRENADE || grenadeToThrow == WEAPON_SMGRENADE) && engine->RandomInt(0, 100) < 45 && !(m_states & (STATE_SEEINGENEMY | STATE_THROWEXPLODE | STATE_THROWFLASH | STATE_THROWSMOKE)))
 	{
-		float distance = (GetEntityOrigin(targetEntity) - pev->origin).GetLength();
+		float distance = (targetOrigin - pev->origin).GetLength();
 
 		// is enemy to high to throw
-		if ((GetEntityOrigin(targetEntity).z > (pev->origin.z + 650.0f)) || !(targetEntity->v.flags & (FL_ONGROUND | FL_DUCKING)))
+		if ((targetOrigin.z > (pev->origin.z + 650.0f)) || !(targetEntity->v.flags & (FL_ONGROUND | FL_DUCKING)))
 			distance = FLT_MAX; // just some crazy value
 
 		// enemy is within a good throwing distance ?
@@ -2396,12 +2391,12 @@ void Bot::CheckGrenadeThrow(void)
 				bool allowThrowing = true;
 
 				// check for teammates
-				if (GetNearbyFriendsNearPosition(GetEntityOrigin(targetEntity), 256) > 0)
+				if (GetNearbyFriendsNearPosition(targetOrigin, 256) > 0)
 					allowThrowing = false;
 
 				if (allowThrowing && m_seeEnemyTime + 2.0 < engine->GetTime ())
 				{
-					Vector enemyPredict = ((targetEntity->v.velocity * 0.5).SkipZ() + GetEntityOrigin(targetEntity));
+					Vector enemyPredict = ((targetEntity->v.velocity * 0.5).SkipZ() + targetOrigin);
 					int searchTab[4], count = 4;
 
 					float searchRadius = targetEntity->v.velocity.GetLength2D();
@@ -2448,12 +2443,12 @@ void Bot::CheckGrenadeThrow(void)
 		}
 	}
 	else if (g_gameMode == MODE_BASE && grenadeToThrow == WEAPON_FBGRENADE &&
-		(GetEntityOrigin(targetEntity) - pev->origin).GetLength() < 800 && !(m_aimFlags & AIM_ENEMY) && engine->RandomInt(0, 100) < 60)
+		(targetOrigin - pev->origin).GetLength() < 800 && !(m_aimFlags & AIM_ENEMY) && engine->RandomInt(0, 100) < 60)
 	{
 		bool allowThrowing = true;
 		Array <int> inRadius;
 
-		g_waypoint->FindInRadius(inRadius, 256, GetEntityOrigin(targetEntity) + (targetEntity->v.velocity * 0.5).SkipZ());
+		g_waypoint->FindInRadius(inRadius, 256, targetOrigin + (targetEntity->v.velocity * 0.5).SkipZ());
 
 		ITERATE_ARRAY(inRadius, i)
 		{
@@ -2644,9 +2639,6 @@ bool Bot::LastEnemyShootable (void)
 void Bot::CheckRadioCommands (void)
 {
    // this function handling radio and reactings to it
-
-   float distance = (GetEntityOrigin (m_radioEntity) - pev->origin).GetLength ();
-   
    // SyPB Pro P.15
    if (g_gameMode == MODE_DM || g_gameMode == MODE_ZP ||
 	   (g_gameMode == MODE_ZH && m_isZombieBot))
@@ -2661,6 +2653,8 @@ void Bot::CheckRadioCommands (void)
       m_radioOrder = 0;
       return;
    }
+
+   float distance = (GetEntityOrigin(m_radioEntity) - pev->origin).GetLength();
 
    switch (m_radioOrder)
    {
@@ -5467,25 +5461,25 @@ void Bot::BotDebugModeMsg(void)
 			WRITE_BYTE(1);
 			WRITE_SHORT(FixedSigned16(-1, 1 << 13));
 			WRITE_SHORT(FixedSigned16(0, 1 << 13));
-			WRITE_BYTE(0);
-			WRITE_BYTE(m_team == TEAM_COUNTER ? 0 : 255);
-			WRITE_BYTE(100);
-			WRITE_BYTE(m_team != TEAM_COUNTER ? 0 : 255);
-			WRITE_BYTE(0);
-			WRITE_BYTE(255);
-			WRITE_BYTE(255);
-			WRITE_BYTE(255);
-			WRITE_BYTE(0);
-			WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-			WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-			WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
-			WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
-			MESSAGE_END();
+WRITE_BYTE(0);
+WRITE_BYTE(m_team == TEAM_COUNTER ? 0 : 255);
+WRITE_BYTE(100);
+WRITE_BYTE(m_team != TEAM_COUNTER ? 0 : 255);
+WRITE_BYTE(0);
+WRITE_BYTE(255);
+WRITE_BYTE(255);
+WRITE_BYTE(255);
+WRITE_BYTE(0);
+WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
+WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
+MESSAGE_END();
 
-			timeDebugUpdate = engine->GetTime() + 2.0f;
+timeDebugUpdate = engine->GetTime() + 2.0f;
 		}
 
-		if (m_moveTargetOrigin != nullvec && !FNullEnt (m_moveTargetEntity))
+		if (m_moveTargetOrigin != nullvec && !FNullEnt(m_moveTargetEntity))
 			engine->DrawLine(g_hostEntity, EyePosition(), m_moveTargetOrigin, Color(0, 255, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
 
 		if (m_enemyOrigin != nullvec && !FNullEnt(m_enemy))
@@ -5556,40 +5550,45 @@ void Bot::FunBotAI(void)
 	// Other Mode Bot Ai Here !!!!!
 }
 
-void Bot::BotAI (void)
+void Bot::BotAI(void)
 {
-   // this function gets called each frame and is the core of all bot ai. from here all other subroutines are called
+	// this function gets called each frame and is the core of all bot ai. from here all other subroutines are called
 
-   float movedDistance = 2.0f; // length of different vector (distance bot moved)
+	float movedDistance = 2.0f; // length of different vector (distance bot moved)
 
-   // SyPB Pro P.43 - Base Mode Small improve
-   if (g_gameMode == MODE_BASE)
-   {
-	   if (m_checkKnifeSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat(4.0f, 6.5f) < engine->GetTime())
-	   {
-		   m_checkKnifeSwitch = false;
+	// SyPB Pro P.49 - Base improve about knife move
+	if (m_checkKnifeSwitch)
+	{
+		if (g_gameMode == MODE_BASE)
+		{
+			if (m_buyingFinished && m_spawnTime + engine->RandomFloat(4.0f, 6.5f) < engine->GetTime())
+			{
+				m_checkKnifeSwitch = false;
 
-		   if (sypb_spraypaints.GetBool() && engine->RandomInt(1, 100) < 2)
-			   PushTask(TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime() + 1.0f, false);
+				if (sypb_spraypaints.GetBool() && engine->RandomInt(1, 100) < 2)
+					PushTask(TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime() + 1.0f, false);
 
-		   if (m_skill > 75 && engine->RandomInt(0, 100) < (m_personality == PERSONALITY_RUSHER ? 99 : 80) &&
-			   !m_isReloading && (g_mapType & (MAP_CS | MAP_DE | MAP_ES | MAP_AS)))
-			   SelectWeaponByName("weapon_knife");
-	   }
-   }
-   // SyPB Pro P.49 - Zombie Mode improve
-   else if (IsZombieMode())
-   {
-	   if (m_isZombieBot && m_currentWeapon != WEAPON_KNIFE)
-		   SelectWeaponByName("weapon_knife");
-	   else if (!m_isZombieBot)
-	   {
-		   if (g_gameStartTime - 2.0f > engine->GetTime())
-			   SelectWeaponByName("weapon_knife");
-		   else if (g_gameStartTime > engine->GetTime())
-			   SelectBestWeapon();
-	   }
-   }
+				if (m_skill > 75 && engine->RandomInt(0, 100) < (m_personality == PERSONALITY_RUSHER ? 99 : 80) &&
+					!m_isReloading && (g_mapType & (MAP_CS | MAP_DE | MAP_ES | MAP_AS)))
+					SelectWeaponByName("weapon_knife");
+			}
+		}
+		else if (IsZombieMode())
+		{
+			if (!m_isZombieBot)
+			{
+				if (g_gameStartTime - 2.0f > engine->GetTime())
+					SelectWeaponByName("weapon_knife");
+				else if (g_gameStartTime > engine->GetTime())
+				{
+					m_checkKnifeSwitch = false;
+					SelectBestWeapon();
+				}
+			}
+		}
+		else
+			m_checkKnifeSwitch = false;
+	}
 
    // check if we already switched weapon mode
    if (m_checkWeaponSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat (2.0f, 3.5f) < engine->GetTime ())
