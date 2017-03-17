@@ -2072,7 +2072,8 @@ void Bot::PushTask (Task *task)
 
       if (task == null)
          return;
-      else if (task->taskID == TASK_NORMAL)
+
+      if (task->taskID == TASK_NORMAL)
       {
          m_tasks->desire = TASKPRI_NORMAL;
          m_tasks->data = task->data;
@@ -2107,57 +2108,60 @@ void Bot::PushTask (Task *task)
       }
       else
       {
-         // find the first task on the stack and don't allow push the new one like the same already existing one
-         while (m_tasks->prev != null)
-         {
-            m_tasks = m_tasks->prev;
+		  if (task->taskID == TASK_CAMP)
+			  SelectBestWeapon();
 
-            if (m_tasks->taskID == task->taskID)
-            {
-               foundTaskExisting = true;
+		  // find the first task on the stack and don't allow push the new one like the same already existing one
+		  while (m_tasks->prev != null)
+		  {
+			  m_tasks = m_tasks->prev;
 
-               if (m_tasks->desire != task->desire)
-                  checkPriorities = true;
+			  if (m_tasks->taskID == task->taskID)
+			  {
+				  foundTaskExisting = true;
 
-               m_tasks->desire = task->desire;
-               m_tasks->data = task->data;
-               m_tasks->time = task->time;
-               m_tasks->canContinue = task->canContinue;
-               m_tasks = oldTask;
+				  if (m_tasks->desire != task->desire)
+					  checkPriorities = true;
 
-               break; // now we may need to check the current max desire or next tasks...
-            }
-         }
+				  m_tasks->desire = task->desire;
+				  m_tasks->data = task->data;
+				  m_tasks->time = task->time;
+				  m_tasks->canContinue = task->canContinue;
+				  m_tasks = oldTask;
 
-         // now go back to the previous stack position and try to find the same task as one of "the next" ones (already pushed before and not finished yet)
-         if (!foundTaskExisting && !checkPriorities)
-         {
-            m_tasks = oldTask;
+				  break; // now we may need to check the current max desire or next tasks...
+			  }
+		  }
 
-            while (m_tasks->next != null)
-            {
-               m_tasks = m_tasks->next;
+		  // now go back to the previous stack position and try to find the same task as one of "the next" ones (already pushed before and not finished yet)
+		  if (!foundTaskExisting && !checkPriorities)
+		  {
+			  m_tasks = oldTask;
 
-               if (m_tasks->taskID == task->taskID)
-               {
-                  foundTaskExisting = true;
+			  while (m_tasks->next != null)
+			  {
+				  m_tasks = m_tasks->next;
 
-                  if (m_tasks->desire != task->desire)
-                     checkPriorities = true;
+				  if (m_tasks->taskID == task->taskID)
+				  {
+					  foundTaskExisting = true;
 
-                  m_tasks->desire = task->desire;
-                  m_tasks->data = task->data;
-                  m_tasks->time = task->time;
-                  m_tasks->canContinue = task->canContinue;
-                  m_tasks = oldTask;
+					  if (m_tasks->desire != task->desire)
+						  checkPriorities = true;
 
-                  break; // now we may need to check the current max desire...
-               }
-            }
-         }
+					  m_tasks->desire = task->desire;
+					  m_tasks->data = task->data;
+					  m_tasks->time = task->time;
+					  m_tasks->canContinue = task->canContinue;
+					  m_tasks = oldTask;
 
-         if (!foundTaskExisting)
-            newTaskDifferent = true; // we have some new task pushed on the stack...
+					  break; // now we may need to check the current max desire...
+				  }
+			  }
+		  }
+
+		  if (!foundTaskExisting)
+			  newTaskDifferent = true; // we have some new task pushed on the stack...
       }
    }
    m_tasks = oldTask;
@@ -2198,9 +2202,6 @@ void Bot::PushTask (Task *task)
       // leader bot?
       if (newTaskDifferent && m_isLeader && m_tasks->taskID == TASK_SEEKCOVER)
          CommandTeam (); // reorganize team if fleeing
-
-	  if (newTaskDifferent && m_tasks->taskID == TASK_CAMP)
-		  SelectBestWeapon();
    }
 }
 
@@ -3940,13 +3941,10 @@ void Bot::RunTask (void)
       else
       {
          TaskComplete ();
-         //FindWaypoint ();
 
-		 // SyPB Pro P.43 - Waypoint improve
-		 m_prevGoalIndex = -1;
-		 GetCurrentTask()->data = -1;
-
+		 // SyPB Pro P.49 - Waypoint improve
 		 SetEntityWaypoint(GetEntity());
+		 m_currentWaypointIndex = -1;
 		 GetValidWaypoint();
 		 // --------------
 
@@ -4572,8 +4570,6 @@ void Bot::RunTask (void)
 
 			   m_prevGoalIndex = destIndex;
 			   GetCurrentTask()->data = destIndex;
-
-			   //FindShortestPath(m_currentWaypointIndex, destIndex);
 
 			   // SyPB Pro P.42 - Move Target improve
 			   int moveMode = 0;
@@ -5214,8 +5210,6 @@ void Bot::BotDebugModeMsg(void)
 	if (FNullEnt(g_hostEntity) || IsAlive (g_hostEntity) || g_debugMode == DEBUG_NONE || g_debugMode == DEBUG_SWNPC)
 		return;
 
-	static float timeDebugUpdate = 0.0f;
-
 	int specIndex = g_hostEntity->v.iuser2;
 	if (specIndex != ENTINDEX(GetEntity()))
 		return;
@@ -5224,7 +5218,7 @@ void Bot::BotDebugModeMsg(void)
 
 	if (GetCurrentTask() != null)
 	{
-		if (taskID != GetCurrentTask()->taskID || index != m_currentWaypointIndex || goal != GetCurrentTask()->data || timeDebugUpdate < engine->GetTime())
+		if (taskID != GetCurrentTask()->taskID || index != m_currentWaypointIndex || goal != GetCurrentTask()->data || g_debugUpdateTime < engine->GetTime())
 		{
 			taskID = GetCurrentTask()->taskID;
 			index = m_currentWaypointIndex;
@@ -5461,22 +5455,22 @@ void Bot::BotDebugModeMsg(void)
 			WRITE_BYTE(1);
 			WRITE_SHORT(FixedSigned16(-1, 1 << 13));
 			WRITE_SHORT(FixedSigned16(0, 1 << 13));
-WRITE_BYTE(0);
-WRITE_BYTE(m_team == TEAM_COUNTER ? 0 : 255);
-WRITE_BYTE(100);
-WRITE_BYTE(m_team != TEAM_COUNTER ? 0 : 255);
-WRITE_BYTE(0);
-WRITE_BYTE(255);
-WRITE_BYTE(255);
-WRITE_BYTE(255);
-WRITE_BYTE(0);
-WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
-WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
-WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
-MESSAGE_END();
+			WRITE_BYTE(0);
+			WRITE_BYTE(m_team == TEAM_COUNTER ? 0 : 255);
+			WRITE_BYTE(100);
+			WRITE_BYTE(m_team != TEAM_COUNTER ? 0 : 255);
+			WRITE_BYTE(0);
+			WRITE_BYTE(255);
+			WRITE_BYTE(255);
+			WRITE_BYTE(255);
+			WRITE_BYTE(0);
+			WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+			WRITE_SHORT(FixedUnsigned16(0, 1 << 8));
+			WRITE_SHORT(FixedUnsigned16(1.0, 1 << 8));
+			WRITE_STRING(const_cast <const char *> (&outputBuffer[0]));
+			MESSAGE_END();
 
-timeDebugUpdate = engine->GetTime() + 2.0f;
+			g_debugUpdateTime = engine->GetTime() + 2.0f;
 		}
 
 		if (m_moveTargetOrigin != nullvec && !FNullEnt(m_moveTargetEntity))
@@ -6385,8 +6379,6 @@ void Bot::ReactOnSound (void)
 
 		m_heardSoundTime = engine->GetTime();
 		m_states |= STATE_HEARENEMY;
-
-		m_aimFlags |= AIM_LASTENEMY;
 
 		// didn't bot already have an enemy ? take this one...
 		if (m_lastEnemyOrigin == nullvec || m_lastEnemy == null)

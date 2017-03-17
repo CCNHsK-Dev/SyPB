@@ -52,6 +52,7 @@ bool g_sgdWaypoint = false;
 bool g_sautoWaypoint = false;
 int g_sautoRadius = 32;
 
+float g_debugUpdateTime = 0.0f;
 float g_lastChatTime = 0.0f;
 float g_timeRoundStart = 0.0f;
 float g_timeRoundEnd = 0.0f;

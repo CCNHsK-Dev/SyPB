@@ -1603,12 +1603,6 @@ void DebugModeMsg(void)
 	if (!IsAlive(g_hostEntity) || g_debugMode != DEBUG_PLAYER)
 		return;
 
-	static float timeDebugUpdate = 0.0f;
-	if (timeDebugUpdate > engine->GetTime())
-		return;
-
-	timeDebugUpdate = engine->GetTime() + 1.0f;
-
 	int client = ENTINDEX(g_hostEntity) - 1;
 	Vector src = nullvec;
 

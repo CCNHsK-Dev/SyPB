@@ -491,6 +491,9 @@ Vector Bot::GetAimPosition(void)
 	if (!IsValidPlayer(m_enemy))
 		return m_enemyOrigin = m_lastEnemyOrigin = enemyOrigin;
 
+	if (m_enemy->v.flags & FL_DUCKING)
+		enemyOrigin.z -= 1.0f;
+
 	if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)))
 	{
 		if (IsZombieEntity (m_enemy) || (m_skill >= engine->RandomInt(30, 80) &&

@@ -52,6 +52,7 @@ extern bool g_sgdWaypoint;
 extern bool g_sautoWaypoint;
 extern int g_sautoRadius;
 
+extern float g_debugUpdateTime;
 extern float g_autoPathDistance;
 extern float g_timeBombPlanted;
 extern float g_timeNextBombUpdate;

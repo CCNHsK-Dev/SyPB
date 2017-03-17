@@ -1567,10 +1567,6 @@ void Waypoint::InitializeVisibility (void)
 
 bool Waypoint::IsVisible (int srcIndex, int destIndex)
 {
-	// SyPB Pro P.42 - Base improve
-	if (srcIndex < 0 || srcIndex >= g_numWaypoints || destIndex < 0 || destIndex >= g_numWaypoints)
-		return false;
-
 	uint8_t res = m_visLUT[srcIndex][destIndex >> 2];
 	res >>= (destIndex % 4) << 1;
 
@@ -1579,10 +1575,6 @@ bool Waypoint::IsVisible (int srcIndex, int destIndex)
 
 bool Waypoint::IsDuckVisible (int srcIndex, int destIndex)
 {
-	// SyPB Pro P.42 - Base improve
-	if (srcIndex < 0 || srcIndex >= g_numWaypoints || destIndex < 0 || destIndex >= g_numWaypoints)
-		return false;
-
 	uint8_t res = m_visLUT[srcIndex][destIndex >> 2];
 	res >>= (destIndex % 4) << 1;
 
@@ -1591,10 +1583,6 @@ bool Waypoint::IsDuckVisible (int srcIndex, int destIndex)
 
 bool Waypoint::IsStandVisible (int srcIndex, int destIndex)
 {
-	// SyPB Pro P.42 - Base improve
-	if (srcIndex < 0 || srcIndex >= g_numWaypoints || destIndex < 0 || destIndex >= g_numWaypoints)
-		return false;
-
 	uint8_t res = m_visLUT[srcIndex][destIndex >> 2];
 	res >>= (destIndex % 4) << 1;
 

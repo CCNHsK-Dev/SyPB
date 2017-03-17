@@ -1210,57 +1210,24 @@ void Bot::SetMoveTarget (edict_t *entity)
 
 int Bot::GetAimingWaypoint (int targetWpIndex)
 {
-   // return the most distant waypoint which is seen from the Bot to the Target and is within count
+	int srcIndex = m_currentWaypointIndex;
+	int destIndex = targetWpIndex;
+	srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
+	int bestIndex = srcIndex;
 
-	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
-		// SyPB Pro P.40 - Small Change
-		GetValidWaypoint();
+	while (srcIndex != destIndex)
+	{
+		srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
+		if (srcIndex < 0)
+			continue;
 
-   int srcIndex = m_currentWaypointIndex;
-   int destIndex = targetWpIndex;
-   int bestIndex = srcIndex;
+		if (!g_waypoint->IsVisible(m_currentWaypointIndex, srcIndex))
+			continue;
 
-   PathNode *node = new PathNode;
+		bestIndex = srcIndex;
+	}
 
-   if (node == null)
-      TerminateOnMalloc ();
-
-   node->index = destIndex;
-   node->next = null;
-
-   PathNode *startNode = node;
-
-   while (destIndex != srcIndex)
-   {
-      destIndex = *(g_waypoint->m_pathMatrix + (destIndex * g_numWaypoints) + srcIndex);
-
-      if (destIndex < 0)
-         break;
-
-      node->next = new PathNode ();
-      node = node->next;
-
-      if (node == null)
-         TerminateOnMalloc ();
-
-      node->index = destIndex;
-      node->next = null;
-
-      if (g_waypoint->IsVisible (m_currentWaypointIndex, destIndex))
-      {
-         bestIndex = destIndex;
-         break;
-      }
-   }
-
-   while (startNode != null)
-   {
-      node = startNode->next;
-      delete startNode;
-
-      startNode = node;
-   }
-   return bestIndex;
+	return bestIndex;
 }
 
 
@@ -1369,7 +1336,7 @@ void Bot::GetValidWaypoint(void)
 		waypointIndex2 = g_clients[client].wpIndex2;
 
 		if (m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2 && 
-			(g_waypoint->GetPath (m_currentWaypointIndex)->origin - pev->origin).GetLength () > 600.0f && 
+			(g_waypoint->GetPath (m_currentWaypointIndex)->origin - pev->origin).GetLength () > 400.0f && 
 			!g_waypoint->Reachable(GetEntity (), m_currentWaypointIndex))
 			needFindWaypont = true;
 	}
