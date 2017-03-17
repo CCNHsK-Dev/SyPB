@@ -3234,6 +3234,7 @@ void Bot::ChooseAimDirection (void)
 	   }
    }
 
+   m_lookAt = nullvec;
    if (flags & AIM_OVERRIDE)
       m_lookAt = m_camp;
    else if (flags & AIM_GRENADE)
@@ -3262,13 +3263,20 @@ void Bot::ChooseAimDirection (void)
 	   if (m_trackingEdict == m_lastEnemy && m_timeNextTracking < engine->GetTime())
 		   recalcPath = false;
 
+	   // SyPB Pro P.49 - Last Enemy Aim Origin improve
 	   if (recalcPath)
 	   {
-		   m_lookAt = g_waypoint->GetPath(GetAimingWaypoint(m_lastEnemyWpIndex))->origin;
-		   m_camp = m_lookAt;
+		   int lookWPIndex = GetAimingWaypoint(m_lastEnemyWpIndex);
+		   if (lookWPIndex != m_lastEnemyWpIndex)
+		   {
+			   m_lookAt = g_waypoint->GetPath(lookWPIndex)->origin;
+			   m_camp = m_lookAt;
 
-		   m_timeNextTracking = engine->GetTime() + 1.0f;
-		   m_trackingEdict = m_lastEnemy;
+			   m_timeNextTracking = engine->GetTime() + 1.0f;
+			   m_trackingEdict = m_lastEnemy;
+		   }
+		   else
+			   SetLastEnemy(null);
 	   }
 	   else
 		   m_lookAt = m_camp;
@@ -3284,7 +3292,7 @@ void Bot::ChooseAimDirection (void)
 		   m_lookAt = m_breakable;
 	   else if (!(m_currentTravelFlags & PATHFLAG_JUMP))
 	   {
-		   if (!FNullEnt(m_moveTargetEntity) && m_currentWaypointIndex == m_prevGoalIndex)
+		   if (!FNullEnt(m_moveTargetEntity) && g_waypoint->IsVisible(m_currentWaypointIndex, m_prevGoalIndex))
 			   m_lookAt = GetEntityOrigin(m_moveTargetEntity);
 	   }
    }

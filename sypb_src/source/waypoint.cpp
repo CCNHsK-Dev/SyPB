@@ -1262,6 +1262,7 @@ bool Waypoint::Load (int mode)
    g_exp.Load ();
 
    g_botManager->InitQuota ();
+   m_redoneVisibility = true;
 
    extern ConVar sypb_debuggoal;
    sypb_debuggoal.SetInt (-1);
@@ -1503,70 +1504,73 @@ bool Waypoint::IsNodeReachable (Vector src, Vector destination)
    return false;
 }
 
-void Waypoint::InitializeVisibility (void)
+void Waypoint::InitializeVisibility(void)
 {
-   if (m_redoneVisibility == false)
-      return;
+	if (!m_redoneVisibility)
+		return;
 
-   TraceResult tr;
-   uint8_t res, shift;
+	TraceResult tr;
+	uint8 res, shift;
 
-   for (m_visibilityIndex = 0; m_visibilityIndex < g_numWaypoints; m_visibilityIndex++)
-   {
-      Vector sourceDuck = m_paths[m_visibilityIndex]->origin;
-      Vector sourceStand = m_paths[m_visibilityIndex]->origin;
+	for (m_visibilityIndex = 0; m_visibilityIndex < g_numWaypoints; m_visibilityIndex++)
+	{
+		Vector sourceDuck = m_paths[m_visibilityIndex]->origin;
+		Vector sourceStand = m_paths[m_visibilityIndex]->origin;
 
-      if (m_paths[m_visibilityIndex]->flags & WAYPOINT_CROUCH)
-      {
-         sourceDuck.z += 12.0f;
-         sourceStand.z += 18.0f + 28.0f;
-      }
-      else
-      {
-         sourceDuck.z += -18.0f + 12.0f;
-         sourceStand.z += 28.0f;
-      }
-      uint16 standCount = 0, crouchCount = 0;
+		if (m_paths[m_visibilityIndex]->flags & WAYPOINT_CROUCH)
+		{
+			sourceDuck.z += 12.0f;
+			sourceStand.z += 18.0f + 28.0f;
+		}
+		else
+		{
+			sourceDuck.z += -18.0f + 12.0f;
+			sourceStand.z += 28.0f;
+		}
+		uint16 standCount = 0, crouchCount = 0;
 
-      for (int i = 0; i < g_numWaypoints; i++)
-      {
-         // first check ducked visibility
-         Vector dest = m_paths[i]->origin;
+		for (int i = 0; i < g_numWaypoints; i++)
+		{
+			// first check ducked visibility
+			Vector dest = m_paths[i]->origin;
 
-         TraceLine (sourceDuck, dest, true, null, &tr);
+			TraceLine(sourceDuck, dest, true, null, &tr);
 
-         // check if line of sight to object is not blocked (i.e. visible)
-         if ((tr.flFraction != 1.0f) || tr.fStartSolid)
-            res = 1;
-         else
-            res = 0;
+			// check if line of sight to object is not blocked (i.e. visible)
+			if (tr.flFraction != 1.0f || tr.fStartSolid)
+				res = 1;
+			else
+				res = 0;
 
-         res <<= 1;
+			res <<= 1;
 
-         TraceLine (sourceStand, dest, true, null, &tr);
+			TraceLine(sourceStand, dest, true, null, &tr);
 
-         // check if line of sight to object is not blocked (i.e. visible)
-         if ((tr.flFraction != 1.0f) || tr.fStartSolid)
-            res |= 1;
+			// check if line of sight to object is not blocked (i.e. visible)
+			if (tr.flFraction != 1.0f || tr.fStartSolid)
+				res |= 1;
 
-         shift = (i % 4) << 1;
-         m_visLUT[m_visibilityIndex][i >> 2] &= ~(3 << shift);
-         m_visLUT[m_visibilityIndex][i >> 2] |= res << shift;
+			shift = (i % 4) << 1;
+			m_visLUT[m_visibilityIndex][i >> 2] &= ~(3 << shift);
+			m_visLUT[m_visibilityIndex][i >> 2] |= res << shift;
 
-         if (!(res & 2))
-            crouchCount++;
+			if (!(res & 2))
+				crouchCount++;
 
-         if (!(res & 1))
-            standCount++;
-      }
-      m_paths[m_visibilityIndex]->vis.crouch = crouchCount;
-      m_paths[m_visibilityIndex]->vis.stand = standCount;
-   }
-   m_redoneVisibility = false;
+			if (!(res & 1))
+				standCount++;
+		}
+		m_paths[m_visibilityIndex]->vis.crouch = crouchCount;
+		m_paths[m_visibilityIndex]->vis.stand = standCount;
+	}
+	m_redoneVisibility = false;
 }
 
 bool Waypoint::IsVisible (int srcIndex, int destIndex)
 {
+	if (srcIndex == destIndex)
+		return true;
+
 	uint8_t res = m_visLUT[srcIndex][destIndex >> 2];
 	res >>= (destIndex % 4) << 1;
 
@@ -1575,6 +1579,9 @@ bool Waypoint::IsVisible (int srcIndex, int destIndex)
 
 bool Waypoint::IsDuckVisible (int srcIndex, int destIndex)
 {
+	if (srcIndex == destIndex)
+		return true;
+
 	uint8_t res = m_visLUT[srcIndex][destIndex >> 2];
 	res >>= (destIndex % 4) << 1;
 
@@ -1583,6 +1590,9 @@ bool Waypoint::IsDuckVisible (int srcIndex, int destIndex)
 
 bool Waypoint::IsStandVisible (int srcIndex, int destIndex)
 {
+	if (srcIndex == destIndex)
+		return true;
+
 	uint8_t res = m_visLUT[srcIndex][destIndex >> 2];
 	res >>= (destIndex % 4) << 1;
 

@@ -1210,24 +1210,23 @@ void Bot::SetMoveTarget (edict_t *entity)
 
 int Bot::GetAimingWaypoint (int targetWpIndex)
 {
-	int srcIndex = m_currentWaypointIndex;
-	int destIndex = targetWpIndex;
-	srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
-	int bestIndex = srcIndex;
+	int srcIndex = targetWpIndex;
 
-	while (srcIndex != destIndex)
+	while (srcIndex != m_currentWaypointIndex)
 	{
-		srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
 		if (srcIndex < 0)
 			continue;
 
 		if (!g_waypoint->IsVisible(m_currentWaypointIndex, srcIndex))
+		{
+			srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + m_currentWaypointIndex);
 			continue;
+		}
 
-		bestIndex = srcIndex;
+		return srcIndex;
 	}
 
-	return bestIndex;
+	return *(g_waypoint->m_pathMatrix + (m_currentWaypointIndex * g_numWaypoints) + targetWpIndex);
 }
 
 

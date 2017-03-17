@@ -1371,9 +1371,6 @@ public:
    Vector GetBombPosition (void) { return m_foundBombOrigin; }
    void SetBombPosition (bool shouldReset = false);
    String CheckSubfolderFile (void);
-
-   int *GetWaypointPath() { return m_pathMatrix;  }
-   int *GetWaypointDist() { return m_distMatrix; }
 };
 
 
