@@ -1152,6 +1152,7 @@ void Bot::SetLastEnemy(edict_t *entity)
 		// SyPB Pro P.49 - AMXX API improve
 		((!FNullEnt(m_enemyAPI) && m_enemyAPI != entity)))
 	{
+		m_aimFlags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
 		m_lastEnemy = null;
 		m_lastEnemyOrigin = nullvec;
 		m_lastEnemyWpIndex = -1;

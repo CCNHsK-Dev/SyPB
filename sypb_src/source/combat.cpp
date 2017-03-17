@@ -1306,6 +1306,10 @@ void Bot::CombatFight(void)
 			}
 		}
 
+		// SyPB Pro p.49 - Base improve
+		if (IsOnLadder() || !IsOnFloor())
+			setStrafe = false;
+
 		if (UsesSniper())
 		{
 			m_fightStyle = FIGHT_STAY;
