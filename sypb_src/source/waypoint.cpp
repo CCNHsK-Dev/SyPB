@@ -2665,16 +2665,14 @@ void Waypoint::EraseFromHardDisk (void)
 {
    // this function removes waypoint file from the hard disk
 
-   String deleteList[5];
+   String deleteList[3];
 
    // if we're delete waypoint, delete all corresponding to it files
    deleteList[0] = FormatBuffer ("%s%s.pwf", GetWaypointDir (), GetMapName ()); // waypoint itself
-   deleteList[1] = FormatBuffer ("%sdata/%s.exp", GetWaypointDir (), GetMapName ()); // corresponding to waypoint experience
-   deleteList[3] = FormatBuffer ("%sdata/%s.vis", GetWaypointDir (), GetMapName ()); // corresponding to waypoint vistable
-   deleteList[3] = FormatBuffer ("%sdata/%s.pmt", GetWaypointDir (), GetMapName ()); // corresponding to waypoint path matrix
-   deleteList[4] = FormatBuffer ("%sdata/%s.xml", GetWaypointDir (), GetMapName ()); // corresponding to waypoint xml database
+   deleteList[1] = FormatBuffer ("%sdata/%s.pmt", GetWaypointDir (), GetMapName ()); // corresponding to waypoint path matrix
+   deleteList[2] = FormatBuffer ("%sdata/%s.xml", GetWaypointDir (), GetMapName ()); // corresponding to waypoint xml database
 
-   for (int i = 0; i < 4; i++)
+   for (int i = 0; i < 3; i++)
    {
       if (TryFileOpen (deleteList[i]))
       {

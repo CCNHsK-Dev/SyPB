@@ -131,6 +131,31 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 	return (*bodyPart != 0);
 }
 
+// SyPB Pro P.49 - Base improve
+bool Bot::EntityWaypointVisible(edict_t *entity)
+{
+	int entityWPIndex = GetEntityWaypoint(entity);
+	if ((m_currentWaypointIndex != -1 && g_waypoint->IsVisible(m_currentWaypointIndex, entityWPIndex)) ||
+		(m_prevWptIndex != -1 && g_waypoint->IsVisible(m_prevWptIndex, entityWPIndex)))
+		return true;
+
+	Path *path = g_waypoint->GetPath(entityWPIndex);
+	for (int i = 0; i < Const_MaxPathIndex; i++)
+	{
+		if (path->index[i] == -1)
+			continue;
+
+		if ((m_currentWaypointIndex != -1 && g_waypoint->IsVisible(m_currentWaypointIndex, path->index[i])) ||
+			(m_prevWptIndex != -1 && g_waypoint->IsVisible(m_prevWptIndex, path->index[i])))
+			return true;
+	}
+
+	return false;
+}
+
+
+ConVar sypb_testfunction("sypb_testfunction", "1");
+
 // SyPB Pro P.41 - Look up enemy improve
 bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool checkOnly)
 {
@@ -195,6 +220,13 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 		}
 	}
 
+	// TESTTEST
+	if (sypb_testfunction.GetBool())
+	{
+		if (!EntityWaypointVisible(entity))
+			return false;
+	}
+
 	Vector entityOrigin;
 	uint8_t visibility;
 	bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
@@ -211,7 +243,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 	return seeEntity;
 }
 
-bool Bot::ItemIsVisible (Vector destination, char *itemName)//, bool bomb)
+bool Bot::ItemIsVisible (Vector destination, char *itemName)
 {
    TraceResult tr;
 
@@ -4931,7 +4963,7 @@ void Bot::RunTask (void)
       m_aimFlags |= AIM_OVERRIDE;
 
 	  // SyPB Pro P.45 - Breakable improve
-	  if (FNullEnt(m_breakableEntity) || !FNullEnt(m_enemy) || (pev->origin - m_breakable).GetLength() > 250.0f || 
+	  if (FNullEnt(m_breakableEntity) || !FNullEnt(m_enemy) || (pev->origin - m_breakable).GetLength() > 300.0f || 
 		  (!IsShootableBreakable(m_breakableEntity) && FNullEnt(m_breakableEntity = FindBreakable())))
 	  {
 		  TaskComplete();

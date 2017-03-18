@@ -397,7 +397,6 @@ const char FH_WAYPOINT[] = "PODWAY!";
 const char FH_VISTABLE[] = "PODVIS!";
 
 const int FV_WAYPOINT = 7;
-const int FV_VISTABLE = 2;
 
 // some hardcoded desire defines used to override calculated ones
 const float TASKPRI_NORMAL = 35.0f;
@@ -460,36 +459,11 @@ struct Task
    bool canContinue; // if task can be continued if interrupted
 };
 
-// wave structure
-struct WaveHeader
-{
-   char riffChunkId[4];
-   unsigned long packageSize;
-   char chunkID[4];
-   char formatChunkId[4];
-   unsigned long formatChunkLength;
-   unsigned short dummy;
-   unsigned short channels;
-   unsigned long sampleRate;
-   unsigned long bytesPerSecond;
-   unsigned short bytesPerSample;
-   unsigned short bitsPerSample;
-   char dataChunkId[4];
-   unsigned long dataChunkLength;
-};
-
 // botname structure definition
 struct NameItem
 {
    String name;
    bool isUsed;
-};
-
-// voice config structure definition
-struct ChatterItem
-{
-   String name;
-   float repeatTime;
 };
 
 // language config structure definition
@@ -611,14 +585,6 @@ struct WaypointHeader
    int32 pointNumber;
    char mapName[32];
    char author[32];
-};
-
-// general experience & vistable header information structure
-struct ExtensionHeader
-{
-   char header[8];
-   int32 fileVersion;
-   int32 pointNumber;
 };
 
 // define general waypoint structure
@@ -852,6 +818,8 @@ private:
    bool CheckVisibility (entvars_t *targetOrigin, Vector *origin, uint8_t *bodyPart);
    bool IsEnemyViewable (edict_t *player, bool setEnemy = false, bool allCheck = false, bool checkOnly = false);
 
+   bool EntityWaypointVisible(edict_t *entity);
+
    void CheckGrenadeThrow(void);
 
    edict_t *FindNearestButton (const char *className);
@@ -878,7 +846,7 @@ private:
 
    float GetWalkSpeed (void);
 
-   bool ItemIsVisible(Vector dest, char *itemName);// , bool bomb = false);
+   bool ItemIsVisible(Vector dest, char *itemName);
    bool LastEnemyShootable (void);
    bool IsBehindSmokeClouds (edict_t *ent);
    void RunTask (void);
@@ -916,7 +884,7 @@ private:
    void CommandTeam (void);
    void CombatFight (void);
    bool IsWeaponBadInDistance (int weaponIndex, float distance);
-   bool DoFirePause(float distance);//, FireDelay *fireDelay);
+   bool DoFirePause(float distance);
    bool LookupEnemy (void);
    void FireWeapon (void);
    void FocusEnemy (void);
@@ -1338,7 +1306,6 @@ public:
    void Save (void);
    void SaveXML (void);
 
-   //bool Reachable (Bot *bot, int index, Vector origin = nullvec);
    bool Reachable(edict_t *entity, int index);
    bool IsNodeReachable (Vector src, Vector destination);
    void Think (void);

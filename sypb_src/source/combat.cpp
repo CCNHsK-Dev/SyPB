@@ -661,7 +661,7 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 	return false;
 }
 
-bool Bot::DoFirePause (float distance)//, FireDelay *fireDelay)
+bool Bot::DoFirePause (float distance)
 {
 	if (m_firePause > engine->GetTime())
 		return true;
@@ -992,16 +992,14 @@ bool Bot::KnifeAttack(float attackDistance)
 		entity = FNullEnt (m_enemy) ? m_moveTargetEntity : m_enemy;
 		distance = (pev->origin - GetEntityOrigin(entity)).GetLength();
 	}
-	else if (!FNullEnt(m_breakableEntity))
+
+	if (!FNullEnt(m_breakableEntity))
 	{
 		if (m_breakable == nullvec)
 			m_breakable = GetEntityOrigin(m_breakableEntity);
 
 		if ((pev->origin - m_breakable).GetLength() < distance)
-		{
 			entity = m_breakableEntity;
-			distance = (pev->origin - m_breakable).GetLength();
-		}
 	}
 
 	if (FNullEnt(entity))
