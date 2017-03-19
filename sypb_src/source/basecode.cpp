@@ -134,20 +134,31 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 // SyPB Pro P.49 - Base improve
 bool Bot::EntityWaypointVisible(edict_t *entity)
 {
+	int wpIndex = (m_currentWaypointIndex != -1) ? m_currentWaypointIndex : GetEntityWaypoint(GetEntity());
 	int entityWPIndex = GetEntityWaypoint(entity);
-	if ((m_currentWaypointIndex != -1 && g_waypoint->IsVisible(m_currentWaypointIndex, entityWPIndex)) ||
-		(m_prevWptIndex != -1 && g_waypoint->IsVisible(m_prevWptIndex, entityWPIndex)))
+	if (entityWPIndex == -1 || wpIndex == -1)
 		return true;
 
-	Path *path = g_waypoint->GetPath(entityWPIndex);
-	for (int i = 0; i < Const_MaxPathIndex; i++)
+	Path *wpPath = g_waypoint->GetPath(wpIndex);
+	Path *entityWPPath = g_waypoint->GetPath(entityWPIndex);
+	for (int i = -1; i < Const_MaxPathIndex; i++)
 	{
-		if (path->index[i] == -1)
+		int wpPathIndex = (i == -1) ? wpIndex : wpPath->index[i];
+		if (wpPathIndex == -1)
 			continue;
 
-		if ((m_currentWaypointIndex != -1 && g_waypoint->IsVisible(m_currentWaypointIndex, path->index[i])) ||
-			(m_prevWptIndex != -1 && g_waypoint->IsVisible(m_prevWptIndex, path->index[i])))
-			return true;
+		for (int e = -1; e < Const_MaxPathIndex; e++)
+		{
+			int entityWPPathIndex = (e == -1) ? entityWPIndex : entityWPPath->index[e];
+			if (entityWPPathIndex == -1)
+				continue;
+
+			if (wpPathIndex == entityWPPathIndex)
+				return true;
+
+			if (g_waypoint->IsVisible(wpPathIndex, entityWPPathIndex))
+				return true;
+		}
 	}
 
 	return false;

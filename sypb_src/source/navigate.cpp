@@ -2405,7 +2405,8 @@ void Bot::CheckFall(void)
 			if (fixFall)
 			{
 				// SyPB Pro P.42 - Fall Ai improve
-				SetEntityWaypoint(GetEntity(), -2);
+				SetEntityWaypoint(GetEntity(), 
+					(FNullEnt (m_moveTargetEntity)) ? -2 : GetEntityWaypoint (m_moveTargetEntity));
 				m_currentWaypointIndex = -1;
 				GetValidWaypoint();
 

@@ -978,7 +978,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	else
 	{
 		float distance = (getWpOrigin - origin).GetLength();
-		if (distance >= 250.0f)
+		if (distance >= 300.0f)
 			needCheckNewWaypoint = true;
 		else if (distance >= 32.0f)
 		{
