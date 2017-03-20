@@ -63,6 +63,8 @@ extern float g_timeNextBombUpdate;
 extern float g_timeRoundStart;
 extern float g_lastRadioTime[2];
 
+extern int g_theThinkFps;
+extern int g_lastGameFPS;
 extern float g_secondTime;
 extern float g_gameStartTime;
 
@@ -74,6 +76,7 @@ extern unsigned short g_killHistory;
 
 extern int g_gameMode;
 extern int g_debugMode;
+extern bool g_botActionStop;
 
 extern int g_normalWeaponPrefs[Const_NumWeapons];
 extern int g_rusherWeaponPrefs[Const_NumWeapons];

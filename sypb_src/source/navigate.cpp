@@ -1076,6 +1076,10 @@ void Bot::CheckWeaponData(int state, int weaponId, int clip)
 			m_reloadState = RSTATE_NONE;
 		}
 	}
+
+	if (state == 0 || weaponId == -1 || weaponId > 31)
+		return;
+
 	if (m_ammoInClip[weaponId] > clip)
 		m_timeLastFired = engine->GetTime(); // remember the last bullet time
 

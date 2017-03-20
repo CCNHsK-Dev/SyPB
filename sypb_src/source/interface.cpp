@@ -37,6 +37,7 @@ ConVar sypb_lockzbot("sypb_lockzbot", "1");
 ConVar sypb_showwp("sypb_showwp", "0");
 
 ConVar sypb_gamemod("sypb_gamemod", "0");
+ConVar sypb_stopbots("sypb_stopbots", "0");
 
 // SyPB Pro P.47 - SyPB Version MSG
 void SyPBVersionMSG(edict_t *entity = null)
@@ -2587,7 +2588,7 @@ void StartFrame (void)
    // player population decreases, we should fill the server with other bots.
 
 	LoadEntityData();
-	int i;
+	g_theThinkFps++;
 
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
@@ -2595,7 +2596,7 @@ void StartFrame (void)
 		{
 			// SyPB Pro P.30 - small change
 			bool hasBot = false;
-			for (i = 0; i < engine->GetMaxClients(); i++)
+			for (int i = 0; i < engine->GetMaxClients(); i++)
 			{
 				if (g_botManager->GetBot(i))
 				{
@@ -2618,8 +2619,12 @@ void StartFrame (void)
 		CheckWelcomeMessage();
 	}
 
+	g_botActionStop = sypb_stopbots.GetBool();
 	if (g_secondTime < engine->GetTime())
 	{
+		g_lastGameFPS = g_theThinkFps;
+		g_theThinkFps = 0;
+
 		g_secondTime = engine->GetTime() + 1.0f;
 
 		g_gameMode = sypb_gamemod.GetInt();
@@ -2650,7 +2655,7 @@ void StartFrame (void)
 			}
 		}
 
-		for (i = 0; i < engine->GetMaxClients(); i++)
+		for (int i = 0; i < engine->GetMaxClients(); i++)
 		{
 			edict_t *player = INDEXENT(i + 1);
 

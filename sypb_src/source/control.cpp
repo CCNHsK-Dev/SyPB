@@ -314,23 +314,25 @@ Bot *BotControl::FindOneValidAliveBot (void)
 // SyPB Pro P.45 - Bot think improve
 void BotControl::Think(void)
 {
-	extern ConVar sypb_stopbots;
+	bool runThink = false;
 	for (int i = 0; i < engine->GetMaxClients(); i++)
 	{
 		if (m_bots[i] == null)
 			continue;
 
-		bool runThink = false;
+		runThink = false;
 		if (m_bots[i]->m_thinkTimer <= engine->GetTime())
-		{
-			if (m_bots[i]->m_lastThinkTime <= engine->GetTime())
-				runThink = true;
-		}
+			runThink = true;
 
 		if (runThink)
 		{
 			// SyPB Pro P.48 - Bot think improve
-			m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat (0.9f, 1.0f));
+			if (g_lastGameFPS >= 60)
+				m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat(0.9f, 1.0f));
+			else if (g_lastGameFPS >= 45 || g_lastGameFPS == 0)
+				m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 22.9f) * engine->RandomFloat(0.9f, 1.0f));
+			else
+				m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 18.9f) * engine->RandomFloat(0.9f, 0.95f));
 
 			m_bots[i]->Think();
 
@@ -338,7 +340,7 @@ void BotControl::Think(void)
 			m_bots[i]->m_moveSpeedForRunMove = m_bots[i]->m_moveSpeed;
 			m_bots[i]->m_strafeSpeedForRunMove = m_bots[i]->m_strafeSpeed;
 		}
-		else if (!sypb_stopbots.GetBool())
+		else if (!g_botActionStop)
 			m_bots[i]->FacePosition();
 
 		m_bots[i]->RunPlayerMovement(); // run the player movement 

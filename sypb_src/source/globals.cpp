@@ -62,6 +62,8 @@ float g_timeBombPlanted = 0.0f;
 float g_lastRadioTime[2] = {0.0f, 0.0f};
 float g_autoPathDistance = 250.0f;
 
+int g_theThinkFps = 0;
+int g_lastGameFPS = 0;
 float g_secondTime = 0.0f;
 float g_gameStartTime = 0.0f;
 
@@ -76,6 +78,7 @@ unsigned short g_killHistory = 0;
 
 int g_debugMode = DEBUG_NONE;
 int g_gameMode = MODE_BASE;
+bool g_botActionStop = false;
 
 int g_modelIndexLaser = 0;
 int g_modelIndexArrow = 0;

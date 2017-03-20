@@ -29,7 +29,6 @@ ConVar sypb_debuggoal("sypb_debuggoal", "-1");
 ConVar sypb_followuser ("sypb_followuser", "3");
 ConVar sypb_knifemode ("sypb_knifemode", "0");
 ConVar sypb_walkallow ("sypb_walkallow", "1");
-ConVar sypb_stopbots ("sypb_stopbots", "0");
 ConVar sypb_spraypaints ("sypb_spraypaints", "1");
 ConVar sypb_restrictweapons ("sypb_restrictweapons", "ump45;p90;elite;tmp;mac10;m3;xm1014");
 
@@ -164,9 +163,6 @@ bool Bot::EntityWaypointVisible(edict_t *entity)
 	return false;
 }
 
-
-ConVar sypb_testfunction("sypb_testfunction", "1");
-
 // SyPB Pro P.41 - Look up enemy improve
 bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool checkOnly)
 {
@@ -231,12 +227,9 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 		}
 	}
 
-	// TESTTEST
-	if (sypb_testfunction.GetBool())
-	{
-		if (!EntityWaypointVisible(entity))
-			return false;
-	}
+	// SyPB Pro P.49 - Find Non-Player Enemy improve
+	if (!IsValidPlayer(entity) && !EntityWaypointVisible(entity))
+		return false;
 
 	Vector entityOrigin;
 	uint8_t visibility;
@@ -3433,7 +3426,7 @@ void Bot::Think(void)
    CheckMessageQueue (); // check for pending messages
 
    // SyPB Pro P.30 - Start Think 
-   if (!sypb_stopbots.GetBool() && botMovement && m_isAlive)
+   if (!g_botActionStop && botMovement && m_isAlive)
    {
 	   // SyPB Pro P.37 - Game Mode Ai
 	   if (g_gameMode == MODE_BASE || g_gameMode == MODE_DM || g_gameMode == MODE_NOTEAM ||
