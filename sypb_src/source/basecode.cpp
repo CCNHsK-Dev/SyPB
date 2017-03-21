@@ -4937,10 +4937,10 @@ void Bot::RunTask (void)
 
 		   destIndex = -1;
 		   DeleteSearchNodes();
-		   float safeRadius = engine->RandomFloat(1024.0f, 2048.0f), minPathDistance = 4096.0f;
+		   float minPathDistance = 4096.0f;
 		   for (i = 0; i < g_numWaypoints; i++)
 		   {
-			   if ((g_waypoint->GetPath(i)->origin - g_waypoint->GetBombPosition()).GetLength() < safeRadius)
+			   if ((g_waypoint->GetPath(i)->origin - g_waypoint->GetBombPosition()).GetLength() <  2048.0f)
 				   continue;
 
 			   float pathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, i);
@@ -4953,7 +4953,7 @@ void Bot::RunTask (void)
 		   }
 
 		   if (destIndex < 0)
-			   destIndex = g_waypoint->FindFarest(pev->origin, safeRadius);
+			   destIndex = g_waypoint->FindFarest(pev->origin, 2048.0f);
 
 		   m_prevGoalIndex = destIndex;
 		   GetCurrentTask()->data = destIndex;

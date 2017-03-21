@@ -430,11 +430,19 @@ bool Bot::DoWaypointNav (void)
    else
       m_destOrigin = m_waypointOrigin + pev->view_ofs;
 
+   if (m_jumpAction && (IsOnFloor() || IsOnLadder()))
+   {
+	   if (m_currentWeapon == WEAPON_KNIFE)
+		   SelectBestWeapon();
+
+	   m_jumpAction = false;
+   }
+
    // this waypoint has additional travel flags - care about them
    if (m_currentTravelFlags & PATHFLAG_JUMP)
    {
 	   // bot is not jumped yet?
-	   if (!m_jumpFinished)
+	   if (!m_jumpAction)
 	   {
 		   // if bot's on the ground or on the ladder we're free to jump. actually setting the correct velocity is cheating.
 		   // pressing the jump button gives the illusion of the bot actual jmping.
@@ -446,12 +454,10 @@ bool Bot::DoWaypointNav (void)
 
 			   pev->button |= IN_JUMP;
 
-			   m_jumpFinished = true;
+			   m_jumpAction = true;
 			   m_checkTerrain = false;
 			   m_desiredVelocity = nullvec;
 
-			   if (m_currentWeapon == WEAPON_KNIFE)
-				   SelectBestWeapon();
 		   }
 	   }
    }
@@ -1814,7 +1820,9 @@ void Bot::HeadTowardWaypoint (void)
 				 {
 					 m_currentTravelFlags = path->connectionFlags[i];
 					 m_desiredVelocity = path->connectionVelocity[i];
-					 m_jumpFinished = false;
+
+					 if (IsOnFloor() || IsOnLadder())
+						 m_jumpAction = false;
 
 					 break;
 				 }

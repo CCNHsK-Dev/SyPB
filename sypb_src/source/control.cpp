@@ -1209,7 +1209,7 @@ void Bot::NewRound (void)
    m_blindButton = 0;
    m_blindTime = 0.0f;
    m_jumpTime = 0.0f;
-   m_jumpFinished = false;
+   m_jumpAction = false;
    m_isStuck = false;
 
    m_sayTextBuffer.timeNextChat = engine->GetTime ();

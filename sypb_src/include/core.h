@@ -679,7 +679,7 @@ private:
    int m_loosedBombWptIndex; // nearest to loosed bomb waypoint
 
    unsigned short m_currentTravelFlags; // connection flags like jumping
-   bool m_jumpFinished; // has bot finished jumping
+   bool m_jumpAction; // has bot finished jumping
    Vector m_desiredVelocity; // desired velocity for jump waypoints
    float m_navTimeset; // time waypoint chosen by Bot
 
