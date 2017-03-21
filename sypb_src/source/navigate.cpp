@@ -495,7 +495,9 @@ bool Bot::DoWaypointNav (void)
 	   }
    }
 
-   if (haveDoorEntity)
+   if (!haveDoorEntity)
+	   m_doorOpenAttempt = 0;
+   else
    {
 	   TraceResult tr;
 	   TraceLine(pev->origin, m_waypointOrigin, true, GetEntity(), &tr);
@@ -505,13 +507,16 @@ bool Bot::DoWaypointNav (void)
 	   // SyPB Pro P.49 - Door improve (use YaPB, Thank about it)
 	   if (!FNullEnt(tr.pHit) && strncmp(STRING(tr.pHit->v.classname), "func_door", 9) == 0)
 	   {
-		   edict_t *button = FindNearestButton(STRING(tr.pHit->v.classname));
-		   if (!FNullEnt(button))
+		   if (FNullEnt (m_pickupItem) && m_pickupType != PICKTYPE_BUTTON)
 		   {
-			   m_pickupItem = button;
-			   m_pickupType = PICKTYPE_BUTTON;
+			   edict_t *button = FindNearestButton(STRING(tr.pHit->v.classname));
+			   if (!FNullEnt(button))
+			   {
+				   m_pickupItem = button;
+				   m_pickupType = PICKTYPE_BUTTON;
 
-			   m_navTimeset = engine->GetTime();
+				   m_navTimeset = engine->GetTime();
+			   }
 		   }
 
 		   // if bot hits the door, then it opens, so wait a bit to let it open safely
@@ -526,31 +531,33 @@ bool Bot::DoWaypointNav (void)
 
 			   if (m_doorOpenAttempt > 2 && !FNullEnt(ent = FIND_ENTITY_IN_SPHERE(ent, pev->origin, 512.0f)))
 			   {
-				   if (IsValidPlayer(ent) && IsAlive(ent) && m_team != GetTeam(ent) &&
-					   IsShootableThruObstacle (ent))
+				   if (IsValidPlayer(ent) && IsAlive (ent))
 				   {
-					   m_seeEnemyTime = engine->GetTime() - 0.5f;
+					   if (m_team != GetTeam(ent))
+					   {
+						   if (IsShootableThruObstacle(ent))
+						   {
+							   m_seeEnemyTime = engine->GetTime() - 0.5f;
 
-					   m_states |= STATE_SEEINGENEMY;
-					   m_aimFlags |= AIM_ENEMY;
+							   m_states |= STATE_SEEINGENEMY;
+							   m_aimFlags |= AIM_ENEMY;
 
-					   SetEnemy(ent);
-					   SetLastEnemy(ent);
-
+							   SetEnemy(ent);
+							   SetLastEnemy(ent);
+						   }
+					   }
+					   else
+					   {
+						   DeleteSearchNodes();
+						   ResetTasks();
+					   }
 				   }
-				   else if (IsValidPlayer(ent) && IsAlive(ent) && m_team == GetTeam(ent))
-				   {
-					   DeleteSearchNodes();
-					   ResetTasks();
-				   }
-				   else if (IsValidPlayer(ent) && (!IsAlive(ent) || (ent->v.deadflag & DEAD_DYING)))
-					   m_doorOpenAttempt = 0; // reset count
+				   else if (!IsAlive(ent))
+					   m_doorOpenAttempt = 0;
 			   }
 		   }
 	   }
    }
-   else
-	   m_doorOpenAttempt = 0;
 
    float desiredDistance = 0.0f;
 
@@ -578,7 +585,8 @@ bool Bot::DoWaypointNav (void)
 
    // SyPB Pro P.49 - Waypoint improve
    // needs precise placement - check if we get past the point
-   if (desiredDistance < 16.0f && waypointDistance < 30.0f && (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() > waypointDistance)
+   if (desiredDistance < 16.0f && (waypointDistance < 30.0f || (waypointDistance < desiredDistance+1.0f*0.8f)) &&
+	   (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() > waypointDistance)
 	   desiredDistance = waypointDistance + 1.0f;
    else if ((m_waypointOrigin - pev->origin).GetLength2D() <= 6.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
    {
