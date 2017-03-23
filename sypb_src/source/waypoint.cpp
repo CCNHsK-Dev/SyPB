@@ -797,26 +797,52 @@ void Waypoint::ToggleFlags (int toggleFlag)
 {
    // this function allow manually changing flags
 
-   int index = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
+	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
 
-   if (index != -1)
-   {
-      if (m_paths[index]->flags & toggleFlag)
-         m_paths[index]->flags &= ~toggleFlag;
+	if (index != -1)
+	{
+		if (toggleFlag == WAYPOINT_CAMP)
+		{
+			if (!g_sgdWaypoint)
+			{
+				ChartPrint("[SgdWP] This is SgdWP function!!!"); 
+				return;
+			}
 
-      else if (!(m_paths[index]->flags & toggleFlag))
-      {
-         if (toggleFlag == WAYPOINT_SNIPER && !(m_paths[index]->flags & WAYPOINT_CAMP))
-         {
-            AddLogEntry (LOG_ERROR, "Cannot assign sniper flag to waypoint #%d. This is not camp waypoint", index);
-            return;
-         }
-         m_paths[index]->flags |= toggleFlag;
-      }
+			MakeVectors(g_hostEntity->v.v_angle);
+			Vector forward = GetEntityOrigin(g_hostEntity) + g_hostEntity->v.view_ofs + g_pGlobals->v_forward * 640;
 
-      // play "done" sound...
-      PlaySound (g_hostEntity, "common/wpn_hudon.wav");
-   }
+			if (!(m_paths[index]->flags & toggleFlag))
+			{
+				m_paths[index]->flags |= toggleFlag;
+				m_paths[index]->campStartX = forward.x;
+				m_paths[index]->campStartY = forward.y;
+				ChartPrint("[SgdWP] Pls Set Camp Flags Again to set camp End!");
+			}
+			else
+			{
+				m_paths[index]->campEndX = forward.x;
+				m_paths[index]->campEndY = forward.y;
+
+				ChartPrint("[SgdWP] Camp Flags Finish");
+			}
+		}
+		else if (m_paths[index]->flags & toggleFlag)
+			m_paths[index]->flags &= ~toggleFlag;
+		else if (!(m_paths[index]->flags & toggleFlag))
+		{
+			if (toggleFlag == WAYPOINT_SNIPER && !(m_paths[index]->flags & WAYPOINT_CAMP))
+			{
+				AddLogEntry(LOG_ERROR, "Cannot assign sniper flag to waypoint #%d. This is not camp waypoint", index);
+				return;
+			}
+
+			m_paths[index]->flags |= toggleFlag;
+		}
+
+		// play "done" sound...
+		PlaySound(g_hostEntity, "common/wpn_hudon.wav");
+	}
 }
 
 void Waypoint::SetRadius(int radius)

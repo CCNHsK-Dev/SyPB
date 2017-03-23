@@ -1411,6 +1411,10 @@ void ClientCommand(edict_t *ent)
 					g_waypoint->ToggleFlags(WAYPOINT_CROUCH);
 					break;
 
+				case 8:
+					g_waypoint->ToggleFlags(WAYPOINT_CAMP);
+					break;
+
 				case 9:
 					g_waypoint->DeleteFlags();
 					break;

@@ -936,7 +936,8 @@ int GetTeam (edict_t *ent)
 // SyPB Pro P.42 - Base Waypoint improve
 int SetEntityWaypoint(edict_t *ent, int mode)
 {
-	if (FNullEnt(ent))
+	// Waypoint Edit now, Do now check it!
+	if (g_waypointOn)
 		return -1;
 
 	Vector origin = GetEntityOrigin(ent);

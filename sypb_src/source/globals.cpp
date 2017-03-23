@@ -274,7 +274,7 @@ FireDelay g_fireDelay[Const_NumWeapons + 1] =
 // bot menus
 MenuText g_menus[26] =
 {
-	// main menu
+	// g_menus[0] - main menu
 	{
 		0x2ff,
 		"\\ySyPB Main Menu\\w\v\v"
@@ -285,7 +285,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// bot features menu
+	// g_menus[1] - bot features menu
 	{
 		0x25f,
 		"\\ySyPB Features\\w\v\v"
@@ -297,7 +297,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// bot control menu
+	// g_menus[2] - bot control menu
 	{
 		0x2ff,
 		"\\ySyPB Control Menu\\w\v\v"
@@ -309,7 +309,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// weapon mode select menu
+	// g_menus[3] - weapon mode select menu
 	{
 		0x27f,
 		"\\ySyPB Weapon Mode\\w\v\v"
@@ -323,7 +323,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// personality select menu
+	// g_menus[4] - personality select menu
 	{
 		0x20f,
 		"\\ySyPB Personality\\w\v\v"
@@ -334,7 +334,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// skill select menu
+	// g_menus[5] - skill select menu
 	{
 		0x23f,
 		"\\ySyPB Skill Level\\w\v\v"
@@ -347,7 +347,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// team select menu
+	// g_menus[6] - team select menu
 	{
 		0x213,
 		"\\ySelect a team\\w\v\v"
@@ -357,7 +357,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// terrorist model select menu
+	// g_menus[7] - terrorist model select menu
 	{
 		0x21f,
 		"\\ySelect an appearance\\w\v\v"
@@ -369,7 +369,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// counter-terrirust model select menu
+	// g_menus[8] - counter-terrirust model select menu
 	{
 		0x21f,
 		"\\ySelect an appearance\\w\v\v"
@@ -381,7 +381,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// main waypoint menu
+	// g_menus[9] - main waypoint menu
 	{
 		0x3ff,
 		"\\yWaypoint Operations (Page 1)\\w\v\v"
@@ -397,7 +397,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// main waypoint menu (page 2)
+	// g_menus[10] - main waypoint menu (page 2)
 	{
 		0x3ff,
 		"\\yWaypoint Operations (Page 2)\\w\v\v"
@@ -413,7 +413,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// select waypoint radius menu
+	// g_menus[11] - select waypoint radius menu
 	{
 		0x3ff,
 		"\\yWaypoint Radius\\w\v\v"
@@ -429,7 +429,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// waypoint add menu
+	// g_menus[12] - waypoint add menu
 	{
 		0x3ff,
 		"\\yWaypoint Type\\w\v\v"
@@ -445,7 +445,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// set waypoint flag menu
+	// g_menus[13] - set waypoint flag menu
 	{
 		0x3ff,
 		"\\yToggle Waypoint Flags\\w\v\v"
@@ -455,36 +455,37 @@ MenuText g_menus[26] =
 		"4. Use Elevator\v"
 		"5. Sniper Point (\\yFor Camp Points Only!\\w)\v"
 		"6. Zombie Mode Camp\v"
-		"7. Crouch\v\v"
+		"7. Crouch\v"
+		"8. Camp Point\v"
 		"9. Delete All Flags\v"
 		"0. Exit"
 	},
 
-	// kickmenu #1
+	// g_menus[14] - kickmenu #1
 	{
 		0x0,
 		null,
 	},
 
-	// kickmenu #2
+	// g_menus[15] - kickmenu #2
 	{
 		0x0,
 		null,
 	},
 
-	// kickmenu #3
+	// g_menus[16] - kickmenu #3
 	{
 		0x0,
 		null,
 	},
 
-	// kickmenu #4
+	// g_menus[17] - kickmenu #4
 	{
 		0x0,
 		null,
 	},
 
-	// command menu
+	// g_menus[18] - command menu
 	{
 		0x23f,
 		"\\yBot Command Menu\\w\v\v"
@@ -495,7 +496,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// auto-path max distance
+	// g_menus[19] - auto-path max distance
 	{
 		0x27f,
 		"\\yAutoPath Distance\\w\v\v"
@@ -509,7 +510,7 @@ MenuText g_menus[26] =
 		"0. Exit"
 	},
 
-	// path connections
+	// g_menus[20] - path connections
 	{
 		//0x207,
 		0x3ff,
@@ -521,7 +522,7 @@ MenuText g_menus[26] =
 		"\v0. Exit"
 	},
 
-	// SyPB Pro P.30 - SgdWP
+	// g_menus[21] - SgdWP Menu
 	{
 		0x3ff,
 		"\\ySgdWP Menu\\w\v\v"
@@ -536,6 +537,7 @@ MenuText g_menus[26] =
 		"\v0. Exit"
 	},
 
+	// g_menus[22] - SgdWP Menu - Add Waypoint Part 1
 	{
 		0x3ff,
 		"\\ySgdWP Add Waypoint Menu\\w\v\v"
@@ -551,6 +553,7 @@ MenuText g_menus[26] =
 		"\v0. Exit"
 	},
 
+	// g_menus[23] - SgdWP Menu - Add Waypoint Part 2
 	{
 		0x3ff,
 		"\\ySgdWP Add Waypoint Menu2\\w\v\v"
@@ -560,6 +563,7 @@ MenuText g_menus[26] =
 		"\v0. Exit"
 	},
 
+	// g_menus[24] - SgdWP Menu - Waypoint Team 
 	{
 		0x3ff,
 		"\\ySgdWP Waypoint Team\\w\v\v"
@@ -569,7 +573,7 @@ MenuText g_menus[26] =
 		"\v0. Exit"
 	},
 
-	// SyPB Pro P.45 - SgdWP
+	// g_menus[25] - SgdWP Menu - Save 
 	{
 		0x3ff,
 		"\\ySgdWP Save \\w\v"

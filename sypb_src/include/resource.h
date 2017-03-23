@@ -27,14 +27,14 @@
 #define RESOURCE_INCLUDED
 
 // This is test version?
-//#define PRODUCT_DEV_VERSION
+#define PRODUCT_DEV_VERSION
 
 #if defined(PRODUCT_DEV_VERSION)
 #define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
 // Dev Version Date
 #define PV_VERSION_YEAR 2017
-#define PV_VERSION_MON 3
-#define PV_VERSION_DAY 22
+#define PV_VERSION_MON 4
+#define PV_VERSION_DAY 15
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
 #endif
@@ -48,9 +48,9 @@
 #define SUPPORT_SWNPC_VERSION_F 1.48
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,49,20170322,745 // yyyy/mm/dd  
-#define PRODUCT_VERSION "Beta 1.49"
-#define PRODUCT_VERSION_F 1.49
+#define PRODUCT_VERSION_DWORD 1,50,20170324,750 // yyyy/mm/dd  
+#define PRODUCT_VERSION "Beta 1.50"
+#define PRODUCT_VERSION_F 1.50
 
 // general product information
 #define PRODUCT_NAME "SyPB"
