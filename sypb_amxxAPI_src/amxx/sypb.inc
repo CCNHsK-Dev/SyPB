@@ -176,15 +176,24 @@ native sypb_get_bot_nav_pointid (index, navNum);
 /* -----------------------------------------------------------------------
  sypb_set_entity_action - Set the NPC/ENTITY Action for SyPB (eg: attack this entity)
                             (index = entity id)
-							(team = entity id)
+							(team = entity team)
 							(action = SyPB action)
 							(return 1 = ok / -1 = cannot do it)
 	 API Verion: 1.40
 	 
 	 - How to use? 
-	 index = -1 is del all entity action
-	 action = -1 is del the Id is index entity action
-	 other pls check sypb_entity.cfg
+	 index:		Entity id
+				-1 is del all entity action
+	 team:		Entity Team
+				0 = No Team, 1 = TR, 2 = CT
+	 action:	Bot Action
+				1 = Enemy, Bot Will Attack Entity
+					(Work on Different teams, eg TR bot attack No Team and CT Team Entity)
+				2 = Avoid, Bot Will Avoid Entity (eg, avoid hegrenade)
+					(Work on Different teams, eg TR bot Avoid No Team and CT Team Entity)
+				3 = Move, Bot Will Move To Entity (eg, move to and pickup the weapon)
+					(Work on Same teams, eg TR bot Move To No Team and TR Team Entity)
+				-1 is del the entity action
 */
 native sypb_set_entity_action (index, team, action);
 
