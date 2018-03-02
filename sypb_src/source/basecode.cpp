@@ -3888,15 +3888,6 @@ void Bot::RunTask (void)
          TaskComplete ();
          m_prevGoalIndex = -1;
       }
-	  // SyPB Pro P.49 - Reload Weapon Ai improve
-	  else if (m_isReloading)
-	  {
-		  m_moveSpeed = 0.0f;
-		  m_strafeSpeed = 0.0f;
-
-		  m_moveToGoal = false;
-		  m_checkTerrain = false;
-	  }
       else if (DoWaypointNav ()) // reached final cover waypoint?
       {
          // yep. activate hide behaviour

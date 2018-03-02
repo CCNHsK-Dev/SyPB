@@ -801,6 +801,7 @@ void Waypoint::ToggleFlags (int toggleFlag)
 
 	if (index != -1)
 	{
+		// SyPB Pro P.50 - SgdWP Camp point Add
 		if (toggleFlag == WAYPOINT_CAMP)
 		{
 			if (!g_sgdWaypoint)

@@ -1263,6 +1263,7 @@ void Bot::CombatFight(void)
 			m_moveSpeed = 0.0f;
 		else
 		{
+			// SyPB Pro P.50 - Attack Ai improve
 			int approach;
 
 			if (!(m_states & STATE_SEEINGENEMY)) // if suspecting enemy stand still
@@ -1282,7 +1283,8 @@ void Bot::CombatFight(void)
 			}
 			
 			// only take cover when bomb is not planted and enemy can see the bot or the bot is VIP
-			if (approach < 30 && !g_bombPlanted && (::IsInViewCone(pev->origin, m_enemy) && !UsesSniper () || m_isVIP))
+			if (approach < 30 && !g_bombPlanted && !UsesSniper() && !UsesSniper() && !UsesPistol () && 
+				(::IsInViewCone(pev->origin, m_enemy) || m_isVIP))
 			{
 				setStrafe = true;
 				m_moveSpeed = -pev->maxspeed;
@@ -1299,7 +1301,10 @@ void Bot::CombatFight(void)
 			// SyPB Pro P.35 - Base mode Weapon Ai Improve
 			if (distance < 96 && !UsesSniper ())
 			{
-				pev->button |= IN_DUCK;
+				setStrafe = true;
+				if (!UsesSubmachineGun ())
+					pev->button |= IN_DUCK;
+
 				m_moveSpeed = -pev->maxspeed;
 			}
 		}
@@ -1429,7 +1434,7 @@ void Bot::CombatFight(void)
 	// SyPB Pro P.49 - Base improve
 	if (m_currentWeapon != WEAPON_KNIFE)
 	{
-		if (m_moveSpeed > 0.0f)
+		if (m_moveSpeed > 0.0f && !UsesSubmachineGun ())
 			m_moveSpeed = GetWalkSpeed();
 		else if (m_moveSpeed < 0.0f)
 			m_moveSpeed = -GetWalkSpeed();
