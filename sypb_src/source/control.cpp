@@ -326,13 +326,13 @@ void BotControl::Think(void)
 
 		if (runThink)
 		{
-			// SyPB Pro P.48 - Bot think improve
-			if (g_lastGameFPS >= 60)
-				m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 24.9f) * engine->RandomFloat(0.9f, 1.0f));
-			else if (g_lastGameFPS >= 45 || g_lastGameFPS == 0)
-				m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 22.9f) * engine->RandomFloat(0.9f, 1.0f));
-			else
-				m_bots[i]->m_thinkTimer = engine->GetTime() + ((1.0f / 18.9f) * engine->RandomFloat(0.9f, 0.95f));
+			float gameFps = CVAR_GET_FLOAT("fps_max");
+			if (gameFps < 35.0f)
+				gameFps = 35.0f;
+			else if (gameFps > 101.0f)
+				gameFps = 101.0f;
+
+			m_bots[i]->m_thinkTimer = engine->GetTime() + 1.0f / gameFps;
 
 			m_bots[i]->Think();
 
@@ -1209,7 +1209,7 @@ void Bot::NewRound (void)
    m_blindButton = 0;
    m_blindTime = 0.0f;
    m_jumpTime = 0.0f;
-   m_jumpAction = false;
+   m_jumpFinished = false;
    m_isStuck = false;
 
    m_sayTextBuffer.timeNextChat = engine->GetTime ();

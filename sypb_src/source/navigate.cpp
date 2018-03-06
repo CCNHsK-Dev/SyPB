@@ -430,35 +430,25 @@ bool Bot::DoWaypointNav (void)
    else
       m_destOrigin = m_waypointOrigin + pev->view_ofs;
 
-   if (m_jumpAction && (IsOnFloor() || IsOnLadder()))
-   {
-	   if (m_currentWeapon == WEAPON_KNIFE)
-		   SelectBestWeapon();
-
-	   m_jumpAction = false;
-   }
-
    // this waypoint has additional travel flags - care about them
    if (m_currentTravelFlags & PATHFLAG_JUMP)
    {
-	   // bot is not jumped yet?
-	   if (!m_jumpAction)
+	   if (IsOnFloor() || IsOnLadder())
 	   {
-		   // if bot's on the ground or on the ladder we're free to jump. actually setting the correct velocity is cheating.
-		   // pressing the jump button gives the illusion of the bot actual jmping.
-		   if (IsOnFloor() || IsOnLadder())
+		   if (!m_jumpFinished)
 		   {
-			   // SyPB Pro P.49 - Jump improve  (use YaPB, Thank about it)
+			   pev->velocity = m_desiredVelocity;
 			   if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
 				   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
 
 			   pev->button |= IN_JUMP;
 
-			   m_jumpAction = true;
+			   m_jumpFinished = true;
 			   m_checkTerrain = false;
 			   m_desiredVelocity = nullvec;
-
 		   }
+		   else if (m_currentWeapon == WEAPON_KNIFE)
+			   SelectBestWeapon();
 	   }
    }
 
@@ -466,26 +456,16 @@ bool Bot::DoWaypointNav (void)
 
    if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
    {
-	   if (!IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
-	   {
-		   m_checkTerrain = false;
-
-		   if (m_waypointOrigin.z < pev->origin.z + 16.0f &&
-			   (pev->origin - g_waypoint->GetPath(m_currentWaypointIndex)->origin).GetLength2D() < 25.0f)
-		   {
-			   m_moveSpeed = waypointDistance;
-
-			   if (m_moveSpeed < 150.0f)
-				   m_moveSpeed = 150.0f;
-			   else if (m_moveSpeed > pev->maxspeed)
-				   m_moveSpeed = pev->maxspeed;
-		   }
-	   }
-	   
 	   if (m_waypointOrigin.z >= (pev->origin.z + 16.0f))
+		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0, 0, 16);
+	   else if (m_waypointOrigin.z < pev->origin.z + 16.0f && !IsOnLadder() && IsOnFloor() && !(pev->flags & FL_DUCKING))
 	   {
-		   m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin + Vector(0.0f, 0.0f, 16.0f);
-		   m_destOrigin = m_waypointOrigin + Vector(0.0f, 0.0f, 16.0f);
+		   m_moveSpeed = waypointDistance;
+
+		   if (m_moveSpeed < 150.0f)
+			   m_moveSpeed = 150.0f;
+		   else if (m_moveSpeed > pev->maxspeed)
+			   m_moveSpeed = pev->maxspeed;
 	   }
    }
 
@@ -604,8 +584,6 @@ bool Bot::DoWaypointNav (void)
    // SyPB Pro P.42 - AMXX API
    if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
 	   m_waypointGoalAPI = -1;
-
-   ChangeBotEntityWaypoint(m_prevWptIndex, m_currentWaypointIndex);
 
    if (waypointDistance < desiredDistance)
    {
@@ -1330,8 +1308,14 @@ void Bot::SetWaypointOrigin(void)
 		TraceResult tr;
 		TraceLine(Vector(pev->origin.x, pev->origin.y, pev->absmin.z), m_waypointOrigin, true, true, GetEntity(), &tr);
 
+		// SyPB Pro P.36 - ladder improve
 		if (tr.flFraction < 1.0f)
-			m_waypointOrigin = m_waypointOrigin + (pev->origin - m_waypointOrigin) * 0.5f + Vector(0.0f, 0.0f, 32.0f);
+		{
+			if (m_waypointOrigin.z >= pev->origin.z)
+				m_waypointOrigin += tr.vecPlaneNormal;
+			else
+				m_waypointOrigin -= tr.vecPlaneNormal;
+		}
 	}
 }
 
@@ -1345,17 +1329,16 @@ void Bot::GetValidWaypoint(void)
 		needFindWaypont = true;
 	else if ((m_navTimeset + GetEstimatedReachTime() < engine->GetTime()))
 		needFindWaypont = true;
-	// SyPB Pro P.42 - Waypoint improve
-	else
+	else if (m_isStuck)
 	{
 		int waypointIndex1, waypointIndex2;
 		int client = ENTINDEX(GetEntity()) - 1;
 		waypointIndex1 = g_clients[client].wpIndex;
 		waypointIndex2 = g_clients[client].wpIndex2;
 
-		if (m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2 && 
-			(g_waypoint->GetPath (m_currentWaypointIndex)->origin - pev->origin).GetLength () > 400.0f && 
-			!g_waypoint->Reachable(GetEntity (), m_currentWaypointIndex))
+		if (m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2 &&
+			(g_waypoint->GetPath(m_currentWaypointIndex)->origin - pev->origin).GetLength() > 400.0f &&
+			!g_waypoint->Reachable(GetEntity(), m_currentWaypointIndex))
 			needFindWaypont = true;
 	}
 
@@ -1363,6 +1346,8 @@ void Bot::GetValidWaypoint(void)
 	{
 		if (m_currentWaypointIndex != -1 && g_gameMode == MODE_BASE)
 			g_exp.CollectValidDamage(m_currentWaypointIndex, m_team);
+
+		m_currentTravelFlags = 0;
 
 		DeleteSearchNodes();
 		FindWaypoint();
@@ -1372,25 +1357,31 @@ void Bot::GetValidWaypoint(void)
 }
 
 // SyPB Pro P.49 - Base Waypoint improve
-void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, bool howardNew)
+void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex)
 {
-	int i = ENTINDEX(GetEntity ()) - 1;
-	int newWaypointIndex = preWaypointIndex;
-	if (howardNew)
-		goto lastly;
-
-	if (g_clients[i].getWPTime == engine->GetTime())
+	if (preWaypointIndex == -1 && nextWaypointIndex == -1)
 		return;
+
+	int i = ENTINDEX(GetEntity ()) - 1;
 
 	if (preWaypointIndex == -1 || nextWaypointIndex == -1)
-		return;
+	{
+		g_clients[i].wpIndex = (preWaypointIndex == -1) ? nextWaypointIndex : preWaypointIndex;
+		g_clients[i].wpIndex2 = -1;
+		goto lastly;
+	}
 
+	int nearWaypointIndex = -1;
 	if ((g_waypoint->GetPath(nextWaypointIndex)->origin - pev->origin).GetLength() <=
 		(g_waypoint->GetPath(preWaypointIndex)->origin - pev->origin).GetLength())
-		newWaypointIndex = nextWaypointIndex;
+		nearWaypointIndex = nextWaypointIndex;
+	else
+		nearWaypointIndex = preWaypointIndex;
+
+	g_clients[i].wpIndex = (nearWaypointIndex == nextWaypointIndex) ? preWaypointIndex : nextWaypointIndex;
+	g_clients[i].wpIndex2 = nearWaypointIndex;
 
 lastly:
-	g_clients[i].wpIndex = newWaypointIndex;
 	g_clients[i].getWpOrigin = GetEntityOrigin(GetEntity());
 	g_clients[i].getWPTime = engine->GetTime();
 }
@@ -1412,12 +1403,6 @@ void Bot::ChangeWptIndex (int waypointIndex)
 
    m_currentWaypointIndex = waypointIndex;
    m_navTimeset = engine->GetTime ();
-
-   // get the current waypoint flags
-   if (m_currentWaypointIndex != -1)
-      m_waypointFlags = g_waypoint->GetPath (m_currentWaypointIndex)->flags;
-   else
-      m_waypointFlags = 0;
 }
 
 int Bot::ChooseBombWaypoint (void)
@@ -1822,7 +1807,7 @@ void Bot::HeadTowardWaypoint (void)
 					 m_desiredVelocity = path->connectionVelocity[i];
 
 					 if (IsOnFloor() || IsOnLadder())
-						 m_jumpAction = false;
+						 m_jumpFinished = false;
 
 					 break;
 				 }
@@ -1918,8 +1903,9 @@ void Bot::HeadTowardWaypoint (void)
          }
 
          ChangeWptIndex (destIndex);
+
 		 // SyPB Pro P.49 - Base Waypoint improve
-		 ChangeBotEntityWaypoint(m_prevWptIndex, -1, true);
+		 ChangeBotEntityWaypoint(m_prevWptIndex, destIndex);
       }
    }
 

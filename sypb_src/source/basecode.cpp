@@ -3263,7 +3263,7 @@ void Bot::ChooseAimDirection (void)
    // don't allow bot to look at danger positions under certain circumstances
    if (!(flags & (AIM_GRENADE | AIM_ENEMY | AIM_ENTITY)))
    {
-	   if (IsOnLadder() || IsInWater() || (m_waypointFlags & WAYPOINT_LADDER) || (m_currentTravelFlags & PATHFLAG_JUMP))
+	   if (IsOnLadder() || IsInWater() || (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) || (m_currentTravelFlags & PATHFLAG_JUMP))
 	   {
 		   m_canChooseAimDirection = false;
 		   flags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
@@ -3319,7 +3319,6 @@ void Bot::ChooseAimDirection (void)
    }
    else if (flags & AIM_CAMP)
       m_lookAt = m_camp;
-   // SyPB Pro P.38 - Look At improve
    else if (flags & AIM_NAVPOINT)
    {
 	   // SyPB Pro P.45 - LookAt improve
@@ -3434,11 +3433,11 @@ void Bot::Think(void)
 		   BotAI();
 	   else
 		   FunBotAI();
-	   
-	   MoveAction();
-	   
-	   BotDebugModeMsg();
    }
+
+   MoveAction();
+
+   BotDebugModeMsg();
 }
 
 void Bot::SecondThink (void)
@@ -3525,18 +3524,6 @@ void Bot::RunTask (void)
       // user forced a waypoint as a goal?
       if (sypb_debuggoal.GetInt () != -1 && sypb_debuggoal.GetInt() >= 0 && sypb_debuggoal.GetInt() < g_numWaypoints)
       {
-         // check if we reached it
-         if (((path->origin - pev->origin).SkipZ ()).GetLengthSquared () < 16 && GetCurrentTask ()->data == sypb_debuggoal.GetInt ())
-         {
-            m_moveSpeed = 0.0f;
-            m_strafeSpeed = 0.0f;
-
-            m_checkTerrain = false;
-            m_moveToGoal = false;
-
-            return; // we can safely return here
-         }
-
          if (GetCurrentTask ()->data != sypb_debuggoal.GetInt ())
          {
             DeleteSearchNodes ();
@@ -4021,6 +4008,7 @@ void Bot::RunTask (void)
       // stop camping if time over or gets hurt by something else than bullets
       if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
          TaskComplete ();
+
       break;
 
    // blinded (flashbanged) behaviour
@@ -5693,7 +5681,6 @@ void Bot::BotAI(void)
    m_moveToGoal = true;
    m_wantsToFire = false;
 
-   //AvoidGrenades (); // avoid flyings grenades
    AvoidEntity();
    m_isUsingGrenade = false;
    
@@ -5714,9 +5701,7 @@ void Bot::BotAI(void)
 
    // SyPB Pro P.34 - Base Ai
    Vector directionOld = m_destOrigin - (pev->origin + pev->velocity * m_frameInterval);
-   Vector directionNormal = directionOld.Normalize ();
-   //Vector direction = directionNormal;
-   directionNormal.z = 0.0f;
+   Vector directionNormal = directionOld.Normalize2D ();
 
    m_moveAngles = directionOld.ToAngles ();
 
@@ -5791,10 +5776,7 @@ void Bot::BotAI(void)
    // time to reach waypoint
    if (m_navTimeset + GetEstimatedReachTime () < engine->GetTime () && m_moveToGoal)
    {
-	   // SyPB Pro P.40 - Base Change for Waypoint OS
-	   if (FNullEnt (m_enemy) || m_currentWaypointIndex == -1 ||
-		   (pev->origin - g_waypoint->GetPath (m_currentWaypointIndex)->origin).GetLength () > (g_waypoint->GetPath (m_currentWaypointIndex)->radius) * 3)
-		   GetValidWaypoint ();
+	   GetValidWaypoint();
 
 	   if (FNullEnt(m_enemy))
 	   {
@@ -5810,16 +5792,27 @@ void Bot::BotAI(void)
 	   }
    }
 
-   // SyPB Pro P.49 - Ladder improve
-   if (m_duckTime >= engine->GetTime())
-	   pev->button |= IN_DUCK;
-   else if (pev->button & IN_DUCK)
+   // SyPB Pro P.21 - Ladder Strengthen
+   bool OnLadderNoDuck = false;
+   if (IsOnLadder())
    {
-	   if (m_currentWaypointIndex != -1 &&
-		   (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) &&
-		   (!IsOnLadder() || m_isStuck))
-		   pev->button &= ~IN_DUCK;
+	   OnLadderNoDuck = true;
+	   if (!(g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) && (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH))
+		   OnLadderNoDuck = false;
    }
+   else if (m_navNode != null)
+   {
+	   if (g_waypoint->GetPath(m_navNode->index)->flags& WAYPOINT_LADDER)
+		   OnLadderNoDuck = true;
+   }
+
+   if (OnLadderNoDuck)
+   {
+	   m_campButtons &= ~IN_DUCK;
+	   pev->button &= ~IN_DUCK;
+   }
+   else if (m_duckTime > engine->GetTime())
+	   pev->button |= IN_DUCK;
 
    // SyPB Pro P.39 - Small change for Jump
    if (pev->button & IN_JUMP)

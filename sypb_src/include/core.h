@@ -675,11 +675,10 @@ private:
    int m_currentWaypointIndex; // current waypoint index
    int m_travelStartIndex; // travel start index to double jump action
    int m_prevWptIndex; // previous waypoint indices from waypoint find
-   int m_waypointFlags; // current waypoint flags
    int m_loosedBombWptIndex; // nearest to loosed bomb waypoint
 
    unsigned short m_currentTravelFlags; // connection flags like jumping
-   bool m_jumpAction; // has bot finished jumping
+   bool m_jumpFinished; // has bot finished jumping
    Vector m_desiredVelocity; // desired velocity for jump waypoints
    float m_navTimeset; // time waypoint chosen by Bot
 
@@ -868,7 +867,7 @@ private:
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
    void ChangeWptIndex (int waypointIndex);
-   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex, bool howardNew = false);
+   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);

@@ -2530,7 +2530,7 @@ void LoadEntityData(void)
 			g_clients[i].origin = GetEntityOrigin(entity);
 
 			// SyPB Pro P.41 - Get Waypoint improve
-			if (g_clients[i].getWPTime + 1.2f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+			if (g_clients[i].getWPTime + 1.5f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
 				SetEntityWaypoint(entity);
 
 			SoundSimulateUpdate(i);
@@ -2561,7 +2561,7 @@ void LoadEntityData(void)
 				continue;
 			}
 
-			if (g_entityGetWpTime[i] + 1.5f < engine->GetTime() || g_entityWpIndex[i] == -1)
+			if (g_entityGetWpTime[i] + 1.2f < engine->GetTime() || g_entityWpIndex[i] == -1)
 				SetEntityWaypoint(entity);
 		}
 
@@ -2592,7 +2592,6 @@ void StartFrame (void)
    // player population decreases, we should fill the server with other bots.
 
 	LoadEntityData();
-	g_theThinkFps++;
 
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
@@ -2626,9 +2625,6 @@ void StartFrame (void)
 	g_botActionStop = sypb_stopbots.GetBool();
 	if (g_secondTime < engine->GetTime())
 	{
-		g_lastGameFPS = g_theThinkFps;
-		g_theThinkFps = 0;
-
 		g_secondTime = engine->GetTime() + 1.0f;
 
 		g_gameMode = sypb_gamemod.GetInt();
