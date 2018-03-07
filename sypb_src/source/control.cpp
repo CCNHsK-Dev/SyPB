@@ -314,36 +314,10 @@ Bot *BotControl::FindOneValidAliveBot (void)
 // SyPB Pro P.45 - Bot think improve
 void BotControl::Think(void)
 {
-	bool runThink = false;
 	for (int i = 0; i < engine->GetMaxClients(); i++)
 	{
-		if (m_bots[i] == null)
-			continue;
-
-		runThink = false;
-		if (m_bots[i]->m_thinkTimer <= engine->GetTime())
-			runThink = true;
-
-		if (runThink)
-		{
-			float gameFps = CVAR_GET_FLOAT("fps_max");
-			if (gameFps < 35.0f)
-				gameFps = 35.0f;
-			else if (gameFps > 101.0f)
-				gameFps = 101.0f;
-
-			m_bots[i]->m_thinkTimer = engine->GetTime() + 1.0f / gameFps;
-
+		if (m_bots[i] != null)
 			m_bots[i]->Think();
-
-			m_bots[i]->m_moveAnglesForRunMove = m_bots[i]->m_moveAngles;
-			m_bots[i]->m_moveSpeedForRunMove = m_bots[i]->m_moveSpeed;
-			m_bots[i]->m_strafeSpeedForRunMove = m_bots[i]->m_strafeSpeed;
-		}
-		else if (!g_botActionStop)
-			m_bots[i]->FacePosition();
-
-		m_bots[i]->RunPlayerMovement(); // run the player movement 
 	}
 
 	DebugModeMsg();
@@ -1008,10 +982,6 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 	m_moneyAmount = 0;
 	m_logotypeIndex = engine->RandomInt(0, 5);
 
-	// initialize msec value
-	m_msecInterval = engine->GetTime();
-	m_msecVal = static_cast <uint8_t> (g_pGlobals->frametime * 1000.0f);
-	m_msecBuiltin = engine->RandomInt(1, 4);
 
 	// assign how talkative this bot will be
 	m_sayTextBuffer.chatDelay = engine->RandomFloat(3.8f, 10.0f);
@@ -1021,7 +991,7 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 	m_skill = skill;
 	m_weaponBurstMode = BURST_DISABLED;
 
-	m_lastThinkTime = engine->GetTime();
+	m_lastCommandTime = engine->GetTime() - 0.1f;
 	m_frameInterval = engine->GetTime();
 
 	switch (personality)
@@ -1300,8 +1270,9 @@ void Bot::NewRound (void)
    PushMessageQueue (CMENU_BUY);
    PushTask (TASK_NORMAL, TASKPRI_NORMAL, -1, 0.0, true);
 
-   m_thinkTimer = 0.0f;
    m_secondThinkTimer = 0.0f;
+
+   m_thinkInterval = (1.0f / 30.0f) * engine->RandomFloat(0.95f, 1.05f);
 }
 
 void Bot::Kill (void)

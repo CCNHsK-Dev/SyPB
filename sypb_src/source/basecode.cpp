@@ -3338,6 +3338,29 @@ void Bot::ChooseAimDirection (void)
 
 void Bot::Think(void)
 {
+	if (m_thinkFps <= engine->GetTime())
+	{
+		// execute delayed think
+		ThinkFrame();
+		
+		m_moveAnglesForRunMove = m_moveAngles;
+		m_moveSpeedForRunMove = m_moveSpeed;
+		m_strafeSpeedForRunMove = m_strafeSpeed;
+
+		// skip some frames
+		m_thinkFps = engine->GetTime() + m_thinkInterval;
+	}
+	else
+	{
+		MoveAction();
+		FacePosition();
+	}
+
+	RunPlayerMovement();
+}
+
+void Bot::ThinkFrame(void)
+{
    pev->button = 0;
    pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
 
@@ -3350,9 +3373,6 @@ void Bot::Think(void)
    m_moveAngles = nullvec;
 
    m_canChooseAimDirection = true;
-
-   m_frameInterval = engine->GetTime () - m_lastThinkTime;
-   m_lastThinkTime = engine->GetTime ();
 
    // SyPB Pro P.38 - Damage Victim Action
    if (m_damageTime < engine->GetTime() && m_damageTime != 0.0f)
@@ -6210,14 +6230,16 @@ void Bot::RunPlayerMovement(void)
 	// pass through it. Then, when the next frame will begin, the stucking problem will arise !
 
 	// SyPB Pro P.41 - Run Player Move
-	m_msecVal = static_cast <uint8_t> ((engine->GetTime() - m_msecInterval) * 1000.0f);
-	m_msecInterval = engine->GetTime();
+	m_frameInterval = engine->GetTime() - m_lastCommandTime;
+
+	uint8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
+	m_lastCommandTime = engine->GetTime();
 
 	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), 
 		m_moveAnglesForRunMove, m_moveSpeedForRunMove, m_strafeSpeedForRunMove, 0.0f, 
 		static_cast <unsigned short> (pev->button), 
 		0, 
-		static_cast <uint8_t> (m_msecVal));
+		static_cast <uint8_t> (msecVal));
 }
 
 

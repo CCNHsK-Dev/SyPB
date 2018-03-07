@@ -711,12 +711,8 @@ private:
    bool m_duckDefuse; // should or not bot duck to defuse bomb
    float m_duckDefuseCheckTime; // time to check for ducking for defuse
 
-   int m_msecBuiltin; // random msec method for this bot
-   float m_msecVal;
-   float m_msecInterval; // used for leon hartwig's method for msec calculation
-
    float m_frameInterval; // bot's frame interval
-   float m_lastThinkTime; // time bot last thinked
+   float m_lastCommandTime; // time bot last thinked
    float m_secondThinkTimer;
 
    float m_zoomCheckTime; // time to check zoom again
@@ -987,6 +983,8 @@ public:
    float m_agressionLevel; // dynamic aggression level (in game)
    float m_fearLevel; // dynamic fear level (in game)
    float m_nextEmotionUpdate; // next time to sanitize emotions
+   float m_thinkFps; // skip some frames in bot thinking
+   float m_thinkInterval; // interval between frames
 
    int m_actMessageIndex; // current processed message
    int m_pushMessageIndex; // offset for next pushed message
@@ -1025,7 +1023,6 @@ public:
    edict_t *m_trackingEdict; // pointer to last tracked player when camping/hiding
    float m_timeNextTracking; // time waypoint index for tracking player is recalculated
 
-   float m_thinkTimer; // think timer interval
    float m_firePause; // time to pause firing
    float m_shootTime; // time to shoot
    float m_timeLastFired; // time to last firing
@@ -1050,6 +1047,7 @@ public:
    inline Vector EarPosition (void) { return pev->origin + pev->view_ofs; };
 
    void Think (void);
+   void ThinkFrame(void);
    void NewRound (void);
    void EquipInBuyzone (int buyCount);
    void PushMessageQueue (int message);

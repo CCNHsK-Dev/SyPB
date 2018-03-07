@@ -1336,9 +1336,7 @@ void Bot::GetValidWaypoint(void)
 		waypointIndex1 = g_clients[client].wpIndex;
 		waypointIndex2 = g_clients[client].wpIndex2;
 
-		if (m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2 &&
-			(g_waypoint->GetPath(m_currentWaypointIndex)->origin - pev->origin).GetLength() > 400.0f &&
-			!g_waypoint->Reachable(GetEntity(), m_currentWaypointIndex))
+		if (m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2)
 			needFindWaypont = true;
 	}
 
