@@ -48,7 +48,7 @@
 #define SUPPORT_SWNPC_VERSION_F 1.48
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,50,20180313,754 // yyyy/mm/dd  
+#define PRODUCT_VERSION_DWORD 1,50,20180313,755 // yyyy/mm/dd  
 #define PRODUCT_VERSION "Beta 1.50"
 #define PRODUCT_VERSION_F 1.50
 

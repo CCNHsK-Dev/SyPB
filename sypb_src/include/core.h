@@ -966,6 +966,7 @@ public:
    bool m_hasProgressBar; // has progress bar on a HUD
    bool m_jumpReady; // is double jump ready
    bool m_canChooseAimDirection; // can choose aiming direction
+   bool m_botMovement;
 
    float m_blindTime; // time when bot is blinded
    float m_blindMoveSpeed; // mad speeds when bot is blind

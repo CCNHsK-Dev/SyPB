@@ -3339,6 +3339,10 @@ void Bot::ChooseAimDirection (void)
 // SyPB Pro P.50 - Think improve
 void Bot::Think(void)
 {
+	m_isAlive = IsAlive(GetEntity());
+	m_team = GetTeam(GetEntity());
+	m_isZombieBot = IsZombieEntity(GetEntity());
+
 	if (m_thinkFps <= engine->GetTime())
 	{
 		// execute delayed think
@@ -3351,10 +3355,19 @@ void Bot::Think(void)
 		// skip some frames
 		m_thinkFps = engine->GetTime() + m_thinkInterval;
 	}
-	else
+	else if (!g_botActionStop && m_botMovement)
+	{
+		// Bot Action improve
+		DoWaypointNav();
+
+		ChooseAimDirection();
+		FacePosition();
+	}
+
+	if (!g_botActionStop && m_botMovement)
 	{
 		MoveAction();
-		FacePosition();
+		BotDebugModeMsg();
 	}
 
 	RunPlayerMovement();
@@ -3364,10 +3377,6 @@ void Bot::ThinkFrame(void)
 {
    pev->button = 0;
    pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
-
-   m_isAlive = IsAlive(GetEntity());
-   m_team = GetTeam(GetEntity());
-   m_isZombieBot = IsZombieEntity(GetEntity());
 
    m_moveSpeed = 0.0f;
    m_strafeSpeed = 0.0f;
@@ -3380,7 +3389,7 @@ void Bot::ThinkFrame(void)
 	   m_damageTime = 0.0f;
 
    // is bot movement enabled
-   bool botMovement = false;
+   m_botMovement = false;
 
    if (m_notStarted) // if the bot hasn't selected stuff to start the game yet, go do that...
       StartGame (); // select team & class
@@ -3433,7 +3442,7 @@ void Bot::ThinkFrame(void)
    else if (m_buyingFinished &&
 	   !(pev->maxspeed < 10 && GetCurrentTask()->taskID != TASK_PLANTBOMB && 
 	   GetCurrentTask()->taskID != TASK_DEFUSEBOMB))
-      botMovement = true;
+	   m_botMovement = true;
 
    // check is it time to execute think (called once per second (not frame))
    if (m_secondThinkTimer < engine->GetTime ())
@@ -3446,7 +3455,7 @@ void Bot::ThinkFrame(void)
    CheckMessageQueue (); // check for pending messages
 
    // SyPB Pro P.30 - Start Think 
-   if (!g_botActionStop && botMovement && m_isAlive)
+   if (!g_botActionStop && m_botMovement)
    {
 	   // SyPB Pro P.37 - Game Mode Ai
 	   if (g_gameMode == MODE_BASE || g_gameMode == MODE_DM || g_gameMode == MODE_NOTEAM ||
@@ -3455,10 +3464,6 @@ void Bot::ThinkFrame(void)
 	   else
 		   FunBotAI();
    }
-
-   MoveAction();
-
-   BotDebugModeMsg();
 }
 
 void Bot::SecondThink (void)
@@ -5741,7 +5746,7 @@ void Bot::BotAI(void)
 	   if (!FNullEnt(m_enemy))
 		   CombatFight();
    }
-
+   
    // SyPB Pro P.49 - Miss C4 Action improve
    if (g_bombPlanted && m_isAlive && OutOfBombTimer ())
    {
