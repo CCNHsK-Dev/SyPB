@@ -1107,7 +1107,7 @@ void Bot::CheckTouchEntity(edict_t *entity)
 			m_breakable = GetEntityOrigin(entity);
 			m_destOrigin = m_breakable;
 
-			if (pev->origin.z > m_breakable.z)
+			if (pev->origin.z > m_breakable.z && (pev->origin - GetEntityOrigin(entity)).GetLength2D() <= 60.0f)
 				m_campButtons = IN_DUCK;
 			else
 				m_campButtons = pev->button & IN_DUCK;
@@ -1329,6 +1329,7 @@ void Bot::GetValidWaypoint(void)
 		needFindWaypont = true;
 	else if ((m_navTimeset + GetEstimatedReachTime() < engine->GetTime()))
 		needFindWaypont = true;
+	// SyPB Pro P.50 - Find Waypoint improve
 	else if (m_isStuck)
 	{
 		int waypointIndex1, waypointIndex2;
@@ -2454,7 +2455,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		}
 		else
 		{
-			if (movedDistance < 2.0f && m_prevSpeed >= 20.0f)
+			if (movedDistance < 2.0f && m_prevSpeed >= 1.0f)
 			{
 				m_prevTime = engine->GetTime();
 				m_isStuck = true;

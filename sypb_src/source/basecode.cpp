@@ -3336,6 +3336,7 @@ void Bot::ChooseAimDirection (void)
 	   m_lookAt = m_destOrigin;
 }
 
+// SyPB Pro P.50 - Think improve
 void Bot::Think(void)
 {
 	if (m_thinkFps <= engine->GetTime())

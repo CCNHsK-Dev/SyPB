@@ -1272,7 +1272,7 @@ void Bot::NewRound (void)
 
    m_secondThinkTimer = 0.0f;
 
-   m_thinkInterval = (1.0f / 30.0f) * engine->RandomFloat(0.95f, 1.05f);
+   m_thinkInterval = (1.0f / engine->RandomFloat(24.9f, 29.9f)) * engine->RandomFloat(0.95f, 1.05f);
 }
 
 void Bot::Kill (void)
