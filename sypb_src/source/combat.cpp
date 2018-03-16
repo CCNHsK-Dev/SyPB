@@ -1215,17 +1215,19 @@ void Bot::CombatFight(void)
 			else
 				baseDistance = viewCone ? 400.0f : 300.0f;
 
+			if (viewCone && !NPCEnemy)
+			{
+				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 350);
+				if (enemyIsZombie && m_currentWeapon == WEAPON_KNIFE && haveEnemy >= 3)
+					baseDistance = 450.0f;
+				else if (haveEnemy >= 6)
+					baseDistance += 120.0f;
+				else if (haveEnemy >= 3)
+					baseDistance += 70.0f;
+			}
+
 			if (baseDistance != -1.0f)
 			{
-				if (viewCone && !NPCEnemy)
-				{
-					int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 350);
-					if (haveEnemy >= 6)
-						baseDistance += 120.0f;
-					else if (haveEnemy >= 3)
-						baseDistance += 70.0f;
-				}
-
 				// SyPB Pro P.38 - Zomibe Mode Attack Ai small improve
 				if (m_reloadState != RSTATE_NONE)
 					baseDistance *= 1.5f;
@@ -1274,16 +1276,15 @@ void Bot::CombatFight(void)
 			{
 				approach = static_cast <int> (pev->health * m_agressionLevel);
 
-				if (UsesSniper() && (approach > 49))
-					approach = 49;
-
 				// SyPB Pro P.35 - Base mode Weapon Ai Improve
 				if (UsesSubmachineGun())
 					approach += 20;
+				else if (approach > 49 && (UsesSniper() || UsesPistol ()))
+					approach = 49;
 			}
 			
 			// only take cover when bomb is not planted and enemy can see the bot or the bot is VIP
-			if (approach < 30 && !g_bombPlanted && !UsesSniper() && !UsesSniper() && !UsesPistol () && 
+			if (approach < 30 && !g_bombPlanted && 
 				(::IsInViewCone(pev->origin, m_enemy) || m_isVIP))
 			{
 				setStrafe = true;
@@ -1364,46 +1365,48 @@ void Bot::CombatFight(void)
 			if (!setStrafe)
 			{
 				m_strafeSpeed = 0.0f;
-				m_strafeSetTime = engine->GetTime() + engine->RandomFloat(0.5f, 2.5f);
-			}
-
-			if (m_strafeSetTime < engine->GetTime())
-			{
-				// to start strafing, we have to first figure out if the target is on the left side or right side
-				MakeVectors(m_enemy->v.v_angle);
-
-				Vector dirToPoint = (pev->origin - GetEntityOrigin(m_enemy)).Normalize2D();
-				Vector rightSide = g_pGlobals->v_right.Normalize2D();
-
-				if ((dirToPoint | rightSide) < 0)
-					m_combatStrafeDir = 1;
-				else
-					m_combatStrafeDir = 0;
-
-				if (engine->RandomInt(1, 100) < 30)
-					m_combatStrafeDir ^= 1;
-
-				m_strafeSetTime = engine->GetTime() + engine->RandomFloat(0.5f, 2.5f);
-			}
-
-			if (m_combatStrafeDir == 0)
-			{
-				if (!CheckWallOnLeft())
-					m_strafeSpeed = -GetWalkSpeed();
-				else
-				{
-					m_combatStrafeDir ^= 1;
-					m_strafeSetTime = engine->GetTime() + 0.7f;
-				}
+				m_strafeSetTime = engine->GetTime() + engine->RandomFloat(1.0f, 2.5f);
 			}
 			else
 			{
-				if (!CheckWallOnRight())
-					m_strafeSpeed = GetWalkSpeed();
+				if (m_strafeSetTime < engine->GetTime())
+				{
+					// to start strafing, we have to first figure out if the target is on the left side or right side
+					MakeVectors(m_enemy->v.v_angle);
+
+					Vector dirToPoint = (pev->origin - GetEntityOrigin(m_enemy)).Normalize2D();
+					Vector rightSide = g_pGlobals->v_right.Normalize2D();
+
+					if ((dirToPoint | rightSide) < 0)
+						m_combatStrafeDir = 1;
+					else
+						m_combatStrafeDir = 0;
+
+					if (engine->RandomInt(1, 100) < 30)
+						m_combatStrafeDir ^= 1;
+
+					m_strafeSetTime = engine->GetTime() + engine->RandomFloat(0.5f, 2.5f);
+				}
+
+				if (m_combatStrafeDir == 0)
+				{
+					if (!CheckWallOnLeft())
+						m_strafeSpeed = -GetWalkSpeed();
+					else
+					{
+						m_combatStrafeDir ^= 1;
+						m_strafeSetTime = engine->GetTime() + 0.7f;
+					}
+				}
 				else
 				{
-					m_combatStrafeDir ^= 1;
-					m_strafeSetTime = engine->GetTime() + 1.0f;
+					if (!CheckWallOnRight())
+						m_strafeSpeed = GetWalkSpeed();
+					else
+					{
+						m_combatStrafeDir ^= 1;
+						m_strafeSetTime = engine->GetTime() + 1.0f;
+					}
 				}
 			}
 
