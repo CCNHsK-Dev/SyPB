@@ -2530,7 +2530,7 @@ void LoadEntityData(void)
 			g_clients[i].origin = GetEntityOrigin(entity);
 
 			// SyPB Pro P.41 - Get Waypoint improve
-			if (g_clients[i].getWPTime + 1.5f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+			if (g_clients[i].getWPTime + 0.8f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
 				SetEntityWaypoint(entity);
 
 			SoundSimulateUpdate(i);

@@ -2561,26 +2561,30 @@ bool Bot::EnemyIsThreat (void)
    return false;
 }
 
-// SyPB Pro P.49 - Enemy Ai improve (for more mode)
+// SyPB Pro P.50 - Enemy Ai improve (for more mode)
 bool Bot::ReactOnEnemy(void)
 {
 	if (!EnemyIsThreat())
 		return false;
 
-	m_isEnemyReachable = false;
+	if (m_enemyReachableTimer >= engine->GetTime())
+		goto lastly;
 
 	float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
 	if (m_isZombieBot || enemyDistance <= 120.0f)
 	{
 		m_isEnemyReachable = true;
-		goto lastly;
+		goto upDateCheckTime;
 	}
 
-	if (m_enemyReachableTimer >= engine->GetTime())
-		goto lastly;
-
+	m_isEnemyReachable = false;
 	int i = GetEntityWaypoint(GetEntity());
 	int enemyIndex = GetEntityWaypoint(m_enemy);
+	if (i == enemyIndex || m_currentWaypointIndex == enemyIndex)
+	{
+		m_isEnemyReachable = true;
+		goto upDateCheckTime;
+	}
 
 	if (m_zhCampPointIndex != -1)
 	{
@@ -2599,59 +2603,45 @@ bool Bot::ReactOnEnemy(void)
 			}
 		}
 
-		goto lastly;
+		goto upDateCheckTime;
 	}
-
-	float pathDist;
 
 	if (IsZombieEntity(m_enemy))
 	{
-		if (m_navNode == null)
+		if (m_navNode == null || m_navNode->next == null)
 			m_isEnemyReachable = (enemyDistance <= 500.0f);
 		else
 		{
-			pathDist = g_waypoint->GetPathDistanceFloat(enemyIndex, i);
-
-			if (pathDist <= 400.0f && (m_navNode->index != i &&
-				g_waypoint->GetPathDistanceFloat(enemyIndex, m_navNode->index) < pathDist) ||
-				(m_navNode->next == null || 
-					g_waypoint->GetPathDistanceFloat(enemyIndex, m_navNode->next->index) < pathDist))
+			PathNode *navid = &m_navNode[0];
+			float checkPointDistance[2] = { -1.0f, -1.0f};
+			while (navid != null)
 			{
-				m_isEnemyReachable = true;
-				goto lastly;
+				checkPointDistance[1] = checkPointDistance[0];
+				checkPointDistance[0] = (g_waypoint->GetPath(navid->index)->origin - GetEntityOrigin(m_enemy)).GetLength();
+				if (checkPointDistance[0] <= 260.0f ||
+					(checkPointDistance[0] <= 400.0f && checkPointDistance[1] != -1.0f &&
+					checkPointDistance[0] < (checkPointDistance[1] * 0.9)))
+				{
+					m_isEnemyReachable = true;
+					break;
+				}
+
+				navid = navid->next;
 			}
 		}
-		goto lastly;
+
+		goto upDateCheckTime;
 	}
 
-	// SyPB Pro P.43 - Knife Ai improve
-	if (m_currentWeapon == WEAPON_KNIFE)
-	{
-		if (i == enemyIndex)
-			m_isEnemyReachable = true;
-		// SyPB Pro P.44 - Knife Ai improve
-		else if (m_navNode != null && m_navNode->index == enemyIndex)
-			m_isEnemyReachable = true;
-
-		if (!m_isEnemyReachable)
-		{
-			SetMoveTarget(m_enemy);
-
-			// SyPB Pro P.45 - Knife Ai improve
-			// Bot will try to change best weapon / not use knife only....
-			SelectBestWeapon();
-		}
-	}
+	float pathDist;
+	pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
+	float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
+	if (pathDist - lineDist > 112.0f)
+		m_isEnemyReachable = false;
 	else
-	{
-		pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
-		float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
-		if (pathDist - lineDist > 112.0f)
-			m_isEnemyReachable = false;
-		else
-			m_isEnemyReachable = true;
-	}
+		m_isEnemyReachable = true;
 
+upDateCheckTime:
 	m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat(0.3f, 0.5f);
 
 lastly:
@@ -5365,6 +5355,12 @@ void Bot::BotDebugModeMsg(void)
 			char weaponName[80], aimFlags[32], botType[32];
 			char enemyName[80], pickName[80];
 
+			float enemyDistance = 0.0f;
+			if (IsAlive(m_enemy))
+				enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
+			else if (IsAlive(m_moveTargetEntity))
+				enemyDistance = (pev->origin - GetEntityOrigin(m_moveTargetEntity)).GetLength();
+
 			// SyPB Pro P.42 - small improve
 			if (IsAlive(m_enemy))
 				sprintf(enemyName, "[E]: %s", GetEntityName(m_enemy));
@@ -5486,7 +5482,7 @@ void Bot::BotDebugModeMsg(void)
 				"Nav: %d  Next Nav: %d \n"
 				"GEWI: %d GEWI2: %d \n"
 				"Move Speed: %2.f  Strafe Speed: %2.f \n "
-				"Check Terran: %d  Stuck: %d \n",
+				"Check Terran: %d  Stuck: %d \n enemyDistance: %.2f",
 				gamemodName,
 				GetEntityName(GetEntity()), taskName, aimFlags,
 				&weaponName[7], GetAmmoInClip(), GetAmmo(),
@@ -5497,7 +5493,7 @@ void Bot::BotDebugModeMsg(void)
 				navIndex[0], navIndex[1],
 				g_clients[client].wpIndex, g_clients[client].wpIndex2,
 				m_moveSpeed, m_strafeSpeed,
-				m_checkTerrain, m_isStuck);
+				m_checkTerrain, m_isStuck, enemyDistance);
 
 			MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
 			WRITE_BYTE(TE_TEXTMESSAGE);

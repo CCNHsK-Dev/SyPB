@@ -1172,26 +1172,18 @@ void Bot::CombatFight(void)
 		(pev->velocity.GetLength() < 2.0f))
 		pev->button |= IN_DUCK;
 
-	// SyPB Pro P.30 - Zombie Mod
-	if (IsZombieMode()) // SyPB Pro P.37 - small change
+	// SyPB Pro P.39 - Zombie Ai improve
+	if (m_isZombieBot)
 	{
-		m_prevGoalIndex = -1;
-		m_moveToGoal = false;
-		m_navTimeset = engine->GetTime();
-
-		// SyPB Pro P.39 - Zombie Ai improve
-		if (m_isZombieBot)
-		{
-			m_moveSpeed = pev->maxspeed;
-			return;
-		}
+		m_moveSpeed = pev->maxspeed;
+		return;
 	}
-
-	Vector enemyOrigin = GetEntityOrigin(m_enemy);
-	float distance = (pev->origin - enemyOrigin).GetLength();
 
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
+		Vector enemyOrigin = GetEntityOrigin(m_enemy);
+		float distance = (pev->origin - enemyOrigin).GetLength();
+
 		bool NPCEnemy = !IsValidPlayer(m_enemy);
 		bool enemyIsZombie = IsZombieEntity(m_enemy);
 		bool setStrafe = false;
@@ -1217,7 +1209,7 @@ void Bot::CombatFight(void)
 
 			if (viewCone && !NPCEnemy)
 			{
-				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 350);
+				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 400.0f);
 				if (enemyIsZombie && m_currentWeapon == WEAPON_KNIFE && haveEnemy >= 3)
 					baseDistance = 450.0f;
 				else if (haveEnemy >= 6)
