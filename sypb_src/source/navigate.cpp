@@ -447,8 +447,6 @@ bool Bot::DoWaypointNav (void)
 			   m_checkTerrain = false;
 			   m_desiredVelocity = nullvec;
 		   }
-		   else if (m_currentWeapon == WEAPON_KNIFE)
-			   SelectBestWeapon();
 	   }
    }
 
@@ -1330,14 +1328,16 @@ void Bot::GetValidWaypoint(void)
 	else if ((m_navTimeset + GetEstimatedReachTime() < engine->GetTime()))
 		needFindWaypont = true;
 	// SyPB Pro P.50 - Find Waypoint improve
-	else if (m_isStuck)
+	else
 	{
 		int waypointIndex1, waypointIndex2;
 		int client = ENTINDEX(GetEntity()) - 1;
 		waypointIndex1 = g_clients[client].wpIndex;
 		waypointIndex2 = g_clients[client].wpIndex2;
 
-		if (m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2)
+		if ((waypointIndex1 == -1 && waypointIndex2 == -1) || 
+			(m_isStuck &&
+				m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2))
 			needFindWaypont = true;
 	}
 
@@ -1797,6 +1797,12 @@ void Bot::HeadTowardWaypoint (void)
          if (m_currentWaypointIndex != -1)
          {
 			 Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+
+			 if (m_currentTravelFlags & PATHFLAG_JUMP && m_jumpFinished && m_currentWeapon == WEAPON_KNIFE)
+			 {
+				 if (IsOnFloor() || IsOnLadder())
+					 SelectBestWeapon();
+			 }
 
 			 for (int i = 0; i < Const_MaxPathIndex; i++)
 			 {

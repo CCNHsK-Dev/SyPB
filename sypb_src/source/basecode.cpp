@@ -5730,11 +5730,9 @@ void Bot::BotAI(void)
    m_moveAngles.ClampAngles ();
    m_moveAngles.x *= -1.0f; // invert for engine
 
-   // SyPB Pro P.49 - Base improve 
+   // SyPB Pro P.50 - Base improve 
    if (!IsOnLadder() && GetCurrentTask()->taskID != TASK_CAMP && !FNullEnt (m_enemy) && 
-	   ((g_gameMode == MODE_BASE && m_skill >= 75) || (g_gameMode == MODE_DM && m_skill >= 60) ||
-		   m_isZombieBot || IsZombieEntity (m_enemy) || UsesSniper() || !IsValidPlayer(m_enemy) ||
-		   m_isReloading || m_isVIP))
+	   (m_skill >= 60 || m_isZombieBot || IsZombieEntity (m_enemy) || !IsValidPlayer (m_enemy)))
    {
 	   m_moveToGoal = false; // don't move to goal
 	   m_navTimeset = engine->GetTime();
@@ -6343,13 +6341,13 @@ bool Bot::OutOfBombTimer (void)
    float timeLeft = GetBombTimeleft ();
 
    // if time left greater than 13, no need to do other checks
-   if (timeLeft > 13)
+   if (timeLeft > 15.0f)
       return false;
 
    Vector bombOrigin = g_waypoint->GetBombPosition ();
 
    // for terrorist, if timer is lower than eleven seconds, return true
-   if (static_cast <int> (timeLeft) < 12 && m_team == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength () < 1024.0f)
+   if (timeLeft < 12.0f && m_team == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength () < 1024.0f)
       return true;
 
    bool hasTeammatesWithDefuserKit = false;

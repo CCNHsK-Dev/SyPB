@@ -1209,7 +1209,7 @@ void Bot::CombatFight(void)
 
 			if (viewCone && !NPCEnemy)
 			{
-				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 400.0f);
+				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 400);
 				if (enemyIsZombie && m_currentWeapon == WEAPON_KNIFE && haveEnemy >= 3)
 					baseDistance = 450.0f;
 				else if (haveEnemy >= 6)
