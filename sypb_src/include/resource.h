@@ -33,7 +33,7 @@
 #define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
 // Dev Version Date
 #define PV_VERSION_YEAR 2018
-#define PV_VERSION_MON 4
+#define PV_VERSION_MON 7
 #define PV_VERSION_DAY 15
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
@@ -48,7 +48,7 @@
 #define SUPPORT_SWNPC_VERSION_F 1.48
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,50,20180330,758 // yyyy/mm/dd  
+#define PRODUCT_VERSION_DWORD 1,50,20180515,759 // yyyy/mm/dd  
 #define PRODUCT_VERSION "Beta 1.50"
 #define PRODUCT_VERSION_F 1.50
 
