@@ -2436,9 +2436,10 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 	if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
 		m_checkTerrain = false;
 
-	m_isStuck = false;
 	if (!m_checkTerrain)
 		return;
+
+	m_isStuck = false;
 
 	// SyPB Pro P.49 - Base improve
 	if (!IsOnFloor() && !IsOnLadder() && !IsInWater())
@@ -2450,8 +2451,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 	CheckCloseAvoidance(directionNormal);
 
 	// SyPB Pro P.42 - Bot Stuck improve
-	if ((m_moveSpeed <= -10 || m_moveSpeed >= 10 || m_strafeSpeed >= 10 || m_strafeSpeed <= -10) &&
-		m_lastCollTime < engine->GetTime())
+	if ((m_moveSpeed >= 10 || m_strafeSpeed >= 10) && m_lastCollTime < engine->GetTime())
 	{
 		// SyPB Pro P.38 - Get Stuck improve
 		if (m_damageTime >= engine->GetTime() && m_isZombieBot)
@@ -2467,7 +2467,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				m_isStuck = true;
 
 				if (m_firstCollideTime == 0.0f)
-					m_firstCollideTime = engine->GetTime() + 0.2f;
+					m_firstCollideTime = engine->GetTime();
 			}
 			else
 			{
@@ -2475,15 +2475,21 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				if (!IsOnLadder() && CantMoveForward(directionNormal, &tr))
 				{
 					if (m_firstCollideTime == 0.0f)
-						m_firstCollideTime = engine->GetTime() + 0.2f;
+						m_firstCollideTime = engine->GetTime();
 
-					else if (m_firstCollideTime <= engine->GetTime())
+					else if (m_firstCollideTime + 0.3f <= engine->GetTime())
 						m_isStuck = true;
 				}
 				else
 					m_firstCollideTime = 0.0f;
 			}
 		}
+	}
+
+	if (m_isStuck && m_currentWaypointIndex >= 0 && m_currentWaypointIndex < g_numWaypoints)
+	{
+		if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH)
+			m_isStuck = false;
 	}
 
 	if (!m_isStuck) // not stuck?
@@ -2499,6 +2505,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 
 		return;
 	}
+
 	// SyPB Pro P.47 - Base improve
 	// not yet decided what to do?
 	if (m_collisionState == COSTATE_UNDECIDED)

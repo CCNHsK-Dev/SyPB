@@ -287,7 +287,7 @@ void Bot::ZombieModeAi(void)
 	edict_t *entity = null;
 	if (m_isZombieBot)
 	{
-		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity))
+		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity) && !m_isStuck)
 		{
 			edict_t *targetEnt = null;
 			float targetDistance = 9999.9f;
@@ -361,26 +361,25 @@ void Bot::ZombieModeAi(void)
 
 
 
-void Bot::ZmCampPointAction(int mode)
+void Bot::ZmCampPointAction(void)
 {
 	// SyPB Pro P.47 - Zombie Mode Human Camp Action
 	if (g_waypoint->m_zmHmPoints.IsEmpty())
 		return;
 
 	float campAction = 0.0f;
-	int campPointWaypointIndex = -1;
+	static int campPointWaypointIndex = -1;
 
 	if (g_waypoint->IsZBCampPoint(m_currentWaypointIndex))
 	{
 		campPointWaypointIndex = m_currentWaypointIndex;
 
-		if (mode == 1)
-			campAction = 1.0f;
+		if (m_prevGoalIndex == -1)
+			campAction = -1.0f;
 		else
-			campAction = 1.6f;
+			campAction = engine->RandomFloat (1.0f, 1.5f);
 	}
-
-	else if (mode == 0 && GetCurrentTask()->data != -1 && g_waypoint->IsZBCampPoint(GetCurrentTask()->data))
+	else if (GetCurrentTask()->data != -1 && g_waypoint->IsZBCampPoint(GetCurrentTask()->data))
 	{
 		if (&m_navNode[0] != null)
 		{
@@ -394,9 +393,9 @@ void Bot::ZmCampPointAction(int mode)
 				if (GetCurrentTask()->data == navid->index)
 				{
 					Vector pointOrigin = g_waypoint->GetPath(navid->index)->origin;
-					if ((pointOrigin - pev->origin).GetLength2D() <= 200.0f && IsWaypointUsed(navid->index))
+					if ((pointOrigin - pev->origin).GetLength2D() <= 220.0f && IsWaypointUsed(navid->index))
 					{
-						campAction = (movePoint * 1.8f);
+						campAction = (movePoint * 1.5f);
 						campPointWaypointIndex = navid->index;
 						break;
 					}
@@ -407,10 +406,14 @@ void Bot::ZmCampPointAction(int mode)
 	}
 
 	if (campAction == 0.0f || campPointWaypointIndex == -1)
+	{
 		m_checkCampPointTime = 0.0f;
-	else if (m_checkCampPointTime == 0.0f && campAction != 1.0f)
+		campPointWaypointIndex = -1;
+	}
+	else if (m_checkCampPointTime == 0.0f)
 		m_checkCampPointTime = engine->GetTime() + campAction;
-	else if (m_checkCampPointTime  < engine->GetTime() || campAction == 1.0f)
+
+	if (m_checkCampPointTime != 0.0f && m_checkCampPointTime < engine->GetTime())
 	{
 		m_zhCampPointIndex = campPointWaypointIndex;
 
@@ -482,7 +485,7 @@ void Bot::AvoidEntity(void)
 
 		if (strcmp(STRING(entity->v.classname), "grenade") == 0)
 		{
-			if (IsZombieMode() && m_isZombieBot)
+			if (IsZombieMode())
 				continue;
 
 			if (strcmp(STRING(entity->v.model) + 9, "flashbang.mdl") == 0 &&
@@ -3651,7 +3654,7 @@ void Bot::RunTask (void)
          }
 		 // SyPB Pro P.30 - Zombie Mode Human Camp
 		 else if (g_gameMode == MODE_ZP && !m_isZombieBot)
-			 ZmCampPointAction(1);
+			 ZmCampPointAction();
          else if (g_gameMode == MODE_BASE)
          {
             // some goal waypoints are map dependant so check it out...

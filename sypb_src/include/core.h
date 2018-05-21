@@ -51,7 +51,7 @@ using namespace Math;
 
 #include "runtime.h"
 
-const int checkEntityNum = 20;
+const int checkEntityNum = 36;
 const int checkEnemyNum = 128;
 
 // defines bots tasks
@@ -791,7 +791,7 @@ private:
    void AvoidEntity (void);
 
    void ZombieModeAi (void);
-   void ZmCampPointAction(int mode = 0);
+   void ZmCampPointAction(void);
 
    void CheckSilencer (void);
    bool CheckWallOnLeft (void);
