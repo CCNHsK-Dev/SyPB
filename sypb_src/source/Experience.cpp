@@ -149,49 +149,6 @@ void BotExperience::UpdateGlobalKnowledge (void)
    }
 }
 
-void BotExperience::CollectGoal (int health, int damage, int goal, int prevGoal, int team)
-{
-   if (g_numWaypoints < 1 || g_waypointsChanged || prevGoal < 0 || goal < 0)
-      return; // something went wrong
-
-   // only rate goal waypoint if bot died because of the damage
-   if (health - damage > 0)
-      return;
-
-   SetValue (goal, prevGoal,  GetValue (goal, prevGoal, team) - health / 20,  team);
-}
-
-void BotExperience::CollectDamage (const Client &victim, const Client &attacker, int health, int damage, float &vicVal, float &attVal)
-{
-   if (!victim.IsPlayer () || !attacker.IsPlayer () || victim == attacker)
-      return;
-
-   int teamOfVictim = GetTeam (victim);
-
-   if (teamOfVictim == GetTeam (attacker))
-      return;
-
-   attVal -= static_cast <float> (damage);
-
-   if (attacker.IsBot ())
-      vicVal += static_cast <float> (damage);
-
-   if (damage < 15)
-      return;
-
-   int indices[2] =
-   {
-	   GetEntityWaypoint (attacker), 
-	   GetEntityWaypoint (victim)
-   };
-
-   // only record data if damage above 20 health
-   if (health > 20)
-      SetDamage (indices[1], indices[1], GetValue (indices[1], indices[1], teamOfVictim) + 1, teamOfVictim);
-
-   SetDamage (indices[1], indices[0], GetDamage (indices[1], indices[0], teamOfVictim) + damage / (attacker.IsBot () ? 10 : 7),teamOfVictim);
-}
-
 void BotExperience::CollectValue (int start, int goal, int health, float goalValue)
 {
    for (int t = 0; t < TEAM_COUNT; t++)

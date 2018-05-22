@@ -589,7 +589,7 @@ bool Bot::DoWaypointNav (void)
       if (GetCurrentTask ()->data == m_currentWaypointIndex)
       {
          // add goal values
-         if (m_chosenGoalIndex != -1)
+         if (g_gameMode == MODE_BASE && m_chosenGoalIndex != -1)
          {
             g_exp.CollectValue (m_chosenGoalIndex, m_currentWaypointIndex, static_cast <int> (pev->health), m_goalValue);
          }
@@ -1325,7 +1325,7 @@ void Bot::GetValidWaypoint(void)
 	bool needFindWaypont = false;
 	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
 		needFindWaypont = true;
-	else if ((m_navTimeset + GetEstimatedReachTime() < engine->GetTime()))
+	else if ((m_navTimeset + GetEstimatedReachTime()) < engine->GetTime())
 		needFindWaypont = true;
 	// SyPB Pro P.50 - Find Waypoint improve
 	else
@@ -1798,11 +1798,8 @@ void Bot::HeadTowardWaypoint (void)
          {
 			 Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
 
-			 if (m_currentTravelFlags & PATHFLAG_JUMP && m_jumpFinished && m_currentWeapon == WEAPON_KNIFE)
-			 {
-				 if (IsOnFloor() || IsOnLadder())
-					 SelectBestWeapon();
-			 }
+			 if (m_jumpFinished && m_currentWeapon == WEAPON_KNIFE)
+				 SelectBestWeapon();
 
 			 for (int i = 0; i < Const_MaxPathIndex; i++)
 			 {

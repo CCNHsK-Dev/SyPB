@@ -1363,7 +1363,6 @@ extern bool IsDedicatedServer (void);
 extern bool IsVisible (const Vector &origin, edict_t *ent);
 extern bool IsAlive (edict_t *ent);
 extern bool IsInViewCone (Vector origin, edict_t *ent);
-extern bool IsWeaponShootingThroughWall (int id);
 extern bool IsValidBot (edict_t *ent);
 extern bool IsValidPlayer (edict_t *ent);
 extern bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant = false);

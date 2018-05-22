@@ -3340,10 +3340,6 @@ void Bot::Think(void)
 	{
 		// execute delayed think
 		ThinkFrame();
-		
-		m_moveAnglesForRunMove = m_moveAngles;
-		m_moveSpeedForRunMove = m_moveSpeed;
-		m_strafeSpeedForRunMove = m_strafeSpeed;
 
 		// skip some frames
 		m_thinkFps = engine->GetTime() + m_thinkInterval;
@@ -5735,7 +5731,8 @@ void Bot::BotAI(void)
 
    // SyPB Pro P.50 - Base improve 
    if (!IsOnLadder() && GetCurrentTask()->taskID != TASK_CAMP && !FNullEnt (m_enemy) && 
-	   (m_skill >= 60 || m_isZombieBot || IsZombieEntity (m_enemy) || !IsValidPlayer (m_enemy)))
+	   (m_skill >= 60 || m_isZombieBot || 
+		   (m_isEnemyReachable && (IsZombieEntity (m_enemy) || !IsValidPlayer (m_enemy)))))
    {
 	   m_moveToGoal = false; // don't move to goal
 	   m_navTimeset = engine->GetTime();
@@ -6238,11 +6235,8 @@ void Bot::RunPlayerMovement(void)
 	uint8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
 	m_lastCommandTime = engine->GetTime();
 
-	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), 
-		m_moveAnglesForRunMove, m_moveSpeedForRunMove, m_strafeSpeedForRunMove, 0.0f, 
-		static_cast <unsigned short> (pev->button), 
-		0, 
-		static_cast <uint8_t> (msecVal));
+	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), m_moveAngles, m_moveSpeed, m_strafeSpeed, 
+		0.0f, static_cast <unsigned short> (pev->button), 0, static_cast <uint8_t> (msecVal));
 }
 
 

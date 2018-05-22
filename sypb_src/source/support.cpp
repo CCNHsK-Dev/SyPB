@@ -852,26 +852,6 @@ lastly:
 		g_exp.UpdateGlobalKnowledge(); // update experience data on round start
 }
 
-bool IsWeaponShootingThroughWall (int id)
-{
-   // returns if weapon can pierce through a wall
-
-   int i = 0;
-
-   while (g_weaponSelect[i].id)
-   {
-      if (g_weaponSelect[i].id == id)
-      {
-         if (g_weaponSelect[i].shootsThru)
-            return true;
-
-         return false;
-      }
-      i++;
-   }
-   return false;
-}
-
 void SetGameMode(int gamemode)
 {
 	extern ConVar sypb_gamemod;

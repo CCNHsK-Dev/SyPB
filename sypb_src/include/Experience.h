@@ -118,27 +118,6 @@ public:
    void UpdateGlobalKnowledge (void);
 
    //
-   // Function: CollectDamage
-   //
-   // Description here.
-   //
-   // Parameters:
-   //   victim - 
-   //   attacker - 
-   //   health - 
-   //   damage - 
-   //   vicVal - 
-   //   attVal - 
-   //
-   // Returns:
-   //   
-   //
-   // Remarks:
-   //   
-   //
-   void CollectDamage (const Client &victim, const Client &attacker, int health, int damage, float &vicVal, float &attVal);
-
-   //
    // Function: CollectValidDamage
    //
    // Description here.
@@ -218,25 +197,6 @@ public:
    //   
    //
    void DrawLines (int nearest, Path *path);
-
-   //
-   // Function: CollectGoal
-   //
-   // Description here.
-   //
-   // Parameters:
-   //   health - 
-   //   damage - 
-   //   goal - 
-   //   prevGoal - 
-   //
-   // Returns:
-   //   
-   //
-   // Remarks:
-   //   
-   //
-   void CollectGoal (int health, int damage, int goal, int prevGoal, int team);
 
    //
    // Function: ColletValue
