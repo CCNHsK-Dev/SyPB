@@ -533,6 +533,8 @@ struct Client_old
    float hearingDistance; // distance this sound is heared
    float timeSoundLasting; // time sound is played/heared
 
+   Vector headOrigin; // 
+
    // SyPB Pro P.41 - Get Waypoint improve
    int wpIndex;
    int wpIndex2;
@@ -1377,7 +1379,6 @@ extern const char *GetModName (void);
 extern const char *GetField (const char *string, int fieldId, bool endLine = false);
 
 extern Vector GetEntityOrigin (edict_t *ent);
-extern Vector GetTopOrigin(edict_t *ent);
 extern Vector GetBottomOrigin(edict_t *ent);
 extern Vector GetPlayerHeadOrigin(edict_t *ent);
 

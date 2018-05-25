@@ -2529,6 +2529,21 @@ void LoadEntityData(void)
 
 			g_clients[i].origin = GetEntityOrigin(entity);
 
+			void *pmodel = GET_MODEL_PTR(entity);
+			studiohdr_t *pstudiohdr = (studiohdr_t *)pmodel;
+
+			mstudiobbox_t *var_c = (mstudiobbox_t *)(((uint8_t *)pstudiohdr) + pstudiohdr->hitboxindex);
+
+			for (int h = 0; h < pstudiohdr->numhitboxes; h++)
+			{
+				if (var_c[h].group == 1)
+				{
+					Vector headOrigin, headAngles;
+					(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
+					g_clients[i].headOrigin = headOrigin + Vector (0.0f, 0.0f, 1.3f);
+				}
+			}
+
 			// SyPB Pro P.41 - Get Waypoint improve
 			if (g_clients[i].getWPTime + 0.8f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
 				SetEntityWaypoint(entity);
@@ -2541,6 +2556,8 @@ void LoadEntityData(void)
 		g_clients[i].wpIndex2 = -1;
 		g_clients[i].getWpOrigin = nullvec;
 		g_clients[i].getWPTime = 0.0f;
+
+		g_clients[i].headOrigin = nullvec;
 
 		g_clients[i].isZombiePlayerAPI = -1;
 	}

@@ -2533,7 +2533,7 @@ bool Bot::IsOnAttackDistance(edict_t *targetEntity, float distance)
 
 	if (m_currentWeapon == WEAPON_KNIFE)
 	{
-		if ((origin - GetTopOrigin(targetEntity) - Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
+		if ((origin - GetPlayerHeadOrigin(targetEntity) - Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
 			return true;
 
 		if ((origin - GetBottomOrigin(targetEntity) + Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
@@ -5526,7 +5526,6 @@ void Bot::BotDebugModeMsg(void)
 		if (m_destOrigin != nullvec)
 			engine->DrawLine(g_hostEntity, pev->origin, m_destOrigin, Color(0, 0, 255, 200), 10, 0, 5, 1, LINE_SIMPLE);
 
-
 		// now draw line from source to destination
 		PathNode *node = &m_navNode[0];
 
@@ -5580,6 +5579,11 @@ void Bot::BotDebugModeMsg(void)
 			engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
 				Color(0, 255, 255, 100), 15, 0, 8, 1, LINE_SIMPLE);
 		}
+
+		const float root = sqrtf(32.0f);
+		src = g_clients[ENTINDEX(GetEntity()) - 1].headOrigin;
+		engine->DrawLine(g_hostEntity, src + Vector(root, -root, 0), src + Vector(-root, root, 0), Color(255, 0, 0, 100), 10, 0, 0, 10);
+		engine->DrawLine(g_hostEntity, src + Vector(-root, -root, 0), src + Vector(root, root, 0), Color(255, 0, 0, 100), 10, 0, 0, 10);
 	}
 }
 

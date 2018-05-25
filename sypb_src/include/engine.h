@@ -1147,6 +1147,70 @@ typedef struct link_s
 
 typedef struct edict_s edict_t;
 
+// SyPB Pro P.50 - TESTTEST
+typedef struct
+{
+	int					id;
+	int					version;
+
+	char				name[64];
+	int					length;
+
+	Vector				eyeposition;	// ideal eye position
+	Vector				min;			// ideal movement hull size
+	Vector				max;
+	Vector				bbmin;			// clipping bounding box
+	Vector				bbmax;
+
+	int					flags;
+
+	int					numbones;			// bones
+	int					boneindex;
+
+	int					numbonecontrollers;		// bone controllers
+	int					bonecontrollerindex;
+
+	int					numhitboxes;			// complex bounding boxes
+	int					hitboxindex;
+
+	int					numseq;				// animation sequences
+	int					seqindex;
+
+	int					numseqgroups;		// demand loaded sequences
+	int					seqgroupindex;
+
+	int					numtextures;		// raw textures
+	int					textureindex;
+	int					texturedataindex;
+
+	int					numskinref;			// replaceable textures
+	int					numskinfamilies;
+	int					skinindex;
+
+	int					numbodyparts;
+	int					bodypartindex;
+
+	int					numattachments;		// queryable attachable points
+	int					attachmentindex;
+
+	int					soundtable;
+	int					soundindex;
+	int					soundgroups;
+	int					soundgroupindex;
+
+	int					numtransitions;		// animation node to animation node transition graph
+	int					transitionindex;
+} studiohdr_t;
+
+typedef struct mstudiobbox_s {
+	int    bone;
+	int    group;         // intersection group
+	Vector bbmin;      // bounding box
+	Vector bbmax;
+
+} mstudiobbox_t;
+
+/*
 typedef struct
 {
    Vector normal;
@@ -1164,7 +1228,8 @@ typedef struct
    edict_t *ent;                // entity the surface is on
    int hitgroup;                // 0 == generic, non zero is specific body part
 } trace_t;
-
+*/
+// TESTTEST - End
 
 #define FCVAR_ARCHIVE      (1 << 0)     // set to cause it to be saved to vars.rc
 #define FCVAR_USERINFO     (1 << 1)     // changes the client's info string

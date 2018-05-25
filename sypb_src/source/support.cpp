@@ -158,50 +158,32 @@ Vector GetEntityOrigin (edict_t *ent)
 }
 
 // SyPB Pro P.42 - Get Entity Top/Bottom Origin
-Vector GetTopOrigin(edict_t *ent)
-{
-	if (FNullEnt(ent))
-		return nullvec;
-
-	Vector origin = GetEntityOrigin(ent);
-	Vector topOrigin = origin + ent->v.maxs;
-	if (topOrigin.z < origin.z)
-		topOrigin = origin + ent->v.mins;
-
-	topOrigin.x = origin.x;
-	topOrigin.y = origin.y;
-	return topOrigin;
-}
-
 Vector GetBottomOrigin(edict_t *ent)
 {
 	if (FNullEnt(ent))
 		return nullvec;
 
-	Vector origin = GetEntityOrigin(ent);
-	Vector bottomOrigin = origin + ent->v.mins;
-	if (bottomOrigin.z > origin.z)
-		bottomOrigin = origin + ent->v.maxs;
-
-	bottomOrigin.x = origin.x;
-	bottomOrigin.y = origin.y;
+	Vector bottomOrigin = GetEntityOrigin(ent);
+	bottomOrigin.z = ent->v.absmin.z;
 	return bottomOrigin;
 }
 
 // SyPB Pro P.42 - Get Player Head Origin 
 Vector GetPlayerHeadOrigin(edict_t *ent)
 {
-	Vector headOrigin = GetTopOrigin(ent);
+	Vector headOrigin = nullvec;
 
-	if (!(ent->v.flags & FL_DUCKING))
+	if (IsValidPlayer(ent))
 	{
-		Vector origin = GetEntityOrigin(ent);
-		float hbDistance = headOrigin.z - origin.z;
-		hbDistance /= 2.5f;
-		headOrigin.z -= hbDistance;
+		int clientIndex = ENTINDEX(ent) - 1;
+		headOrigin = g_clients[clientIndex].headOrigin;
 	}
-	else
-		headOrigin.z -= 1.0f;
+
+	if (headOrigin == nullvec)
+	{
+		headOrigin = GetEntityOrigin(ent);
+		headOrigin.z = ent->v.absmin.z + (ent->v.size.z * 0.81f);
+	}
 
 	return headOrigin;
 }
