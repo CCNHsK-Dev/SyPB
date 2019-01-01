@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -381,7 +381,7 @@ void Bot::ZmCampPointAction(void)
 		if (m_prevGoalIndex == -1)
 			campAction = -1.0f;
 		else
-			campAction = engine->RandomFloat (1.0f, 1.5f);
+			campAction = engine->RandomFloat(1.0f, 1.5f);
 	}
 	else if (GetCurrentTask()->data != -1 && g_waypoint->IsZBCampPoint(GetCurrentTask()->data))
 	{
@@ -416,7 +416,7 @@ void Bot::ZmCampPointAction(void)
 	}
 	else if (m_checkCampPointTime == 0.0f)
 		m_checkCampPointTime = engine->GetTime() + campAction;
-
+	
 	if (m_checkCampPointTime != 0.0f && m_checkCampPointTime < engine->GetTime())
 	{
 		m_zhCampPointIndex = campPointWaypointIndex;
@@ -2547,25 +2547,25 @@ bool Bot::IsOnAttackDistance(edict_t *targetEntity, float distance)
 	return false;
 }
 
-bool Bot::EnemyIsThreat (void)
-{   	   
-   // SyPB Pro P.16
-   if (FNullEnt (m_enemy))
-   	   return false;
+bool Bot::EnemyIsThreat(void)
+{
+	// SyPB Pro P.16
+	if (FNullEnt(m_enemy))
+		return false;
 
-   if (GetCurrentTask ()->taskID == TASK_SEEKCOVER)
-   	   return false;
+	if (GetCurrentTask()->taskID == TASK_SEEKCOVER)
+		return false;
 
-   // SyPB Pro P.48 - Zombie Mode Human Camp improve
-   if (GetCurrentTask()->taskID == TASK_CAMP && m_zhCampPointIndex == -1)
-	   return false;
+	// SyPB Pro P.48 - Zombie Mode Human Camp improve
+	if (GetCurrentTask()->taskID == TASK_CAMP && m_zhCampPointIndex == -1)
+		return false;
 
-   // SyPB Pro P.43 - Enemy Ai small improve 
-   if (IsOnAttackDistance(m_enemy, 256.0f) ||
-	   (m_currentWaypointIndex != WEAPON_KNIFE && IsInViewCone(GetEntityOrigin(m_enemy))))
-	   return true;
+	// SyPB Pro P.43 - Enemy Ai small improve 
+	if (IsOnAttackDistance(m_enemy, 256.0f) ||
+		(m_currentWaypointIndex != WEAPON_KNIFE && IsInViewCone(GetEntityOrigin(m_enemy))))
+		return true;
 
-   return false;
+	return false;
 }
 
 // SyPB Pro P.50 - Enemy Ai improve (for more mode)
@@ -2620,14 +2620,14 @@ bool Bot::ReactOnEnemy(void)
 		else
 		{
 			PathNode *navid = &m_navNode[0];
-			float checkPointDistance[2] = { -1.0f, -1.0f};
+			float checkPointDistance[2] = { -1.0f, -1.0f };
 			while (navid != null)
 			{
 				checkPointDistance[1] = checkPointDistance[0];
 				checkPointDistance[0] = (g_waypoint->GetPath(navid->index)->origin - GetEntityOrigin(m_enemy)).GetLength();
 				if (checkPointDistance[0] <= 260.0f ||
 					(checkPointDistance[0] <= 400.0f && checkPointDistance[1] != -1.0f &&
-					checkPointDistance[0] < (checkPointDistance[1] * 0.9)))
+						checkPointDistance[0] < (checkPointDistance[1] * 0.9)))
 				{
 					m_isEnemyReachable = true;
 					break;
@@ -3260,7 +3260,8 @@ void Bot::ChooseAimDirection (void)
    // don't allow bot to look at danger positions under certain circumstances
    if (!(flags & (AIM_GRENADE | AIM_ENEMY | AIM_ENTITY)))
    {
-	   if (IsOnLadder() || IsInWater() || (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) || (m_currentTravelFlags & PATHFLAG_JUMP))
+	   if (IsOnLadder() || IsInWater() || 
+		   (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) || (m_currentTravelFlags & PATHFLAG_JUMP))
 	   {
 		   m_canChooseAimDirection = false;
 		   flags &= ~(AIM_LASTENEMY | AIM_PREDICTENEMY);
@@ -3316,6 +3317,7 @@ void Bot::ChooseAimDirection (void)
    }
    else if (flags & AIM_CAMP)
       m_lookAt = m_camp;
+   // SyPB Pro P.38 - Look At improve
    else if (flags & AIM_NAVPOINT)
    {
 	   // SyPB Pro P.45 - LookAt improve
@@ -3342,15 +3344,15 @@ void Bot::Think(void)
 
 	if (m_thinkFps <= engine->GetTime())
 	{
-		// execute delayed think
+		// execute delayed think 
 		ThinkFrame();
 
-		// skip some frames
+		// skip some frames 
 		m_thinkFps = engine->GetTime() + m_thinkInterval;
 	}
 	else if (!g_botActionStop && m_botMovement)
 	{
-		// Bot Action improve
+		// Bot Action improve 
 		DoWaypointNav();
 
 		ChooseAimDirection();
@@ -3552,6 +3554,18 @@ void Bot::RunTask (void)
       // user forced a waypoint as a goal?
       if (sypb_debuggoal.GetInt () != -1 && sypb_debuggoal.GetInt() >= 0 && sypb_debuggoal.GetInt() < g_numWaypoints)
       {
+         // check if we reached it
+         if (((path->origin - pev->origin).SkipZ ()).GetLengthSquared () < 16 && GetCurrentTask ()->data == sypb_debuggoal.GetInt ())
+         {
+            m_moveSpeed = 0.0f;
+            m_strafeSpeed = 0.0f;
+
+            m_checkTerrain = false;
+            m_moveToGoal = false;
+
+            return; // we can safely return here
+         }
+
          if (GetCurrentTask ()->data != sypb_debuggoal.GetInt ())
          {
             DeleteSearchNodes ();
@@ -4036,7 +4050,6 @@ void Bot::RunTask (void)
       // stop camping if time over or gets hurt by something else than bullets
       if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
          TaskComplete ();
-
       break;
 
    // blinded (flashbanged) behaviour
@@ -4342,9 +4355,9 @@ void Bot::RunTask (void)
             m_checkTerrain = false;
             m_navTimeset = engine->GetTime ();
 
-			if (path->flags & WAYPOINT_CROUCH)
-				pev->button |= (IN_ATTACK | IN_DUCK);
-			else
+            if (path->flags & WAYPOINT_CROUCH)
+               pev->button |= (IN_ATTACK | IN_DUCK);
+            else
                pev->button |= IN_ATTACK;
 
             m_moveSpeed = 0.0f;
@@ -4718,7 +4731,7 @@ void Bot::RunTask (void)
                   SelectWeaponByName ("weapon_hegrenade");
             }
             else if (!(pev->oldbuttons & IN_ATTACK))
-              pev->button |= IN_ATTACK;
+               pev->button |= IN_ATTACK;
 			else // SyPB Pro P.27 - Debug Grenade
 			{
 				SelectBestWeapon();
@@ -5258,7 +5271,7 @@ void Bot::RunTask (void)
 void Bot::BotDebugModeMsg(void)
 {
 	// SyPB Pro P.48 - Debug Msg
-	if (FNullEnt(g_hostEntity) || IsAlive (g_hostEntity) || g_debugMode == DEBUG_NONE || g_debugMode == DEBUG_SWNPC)
+	if (FNullEnt(g_hostEntity) || IsAlive(g_hostEntity) || g_debugMode == DEBUG_NONE || g_debugMode == DEBUG_SWNPC)
 		return;
 
 	int specIndex = g_hostEntity->v.iuser2;
@@ -5539,6 +5552,7 @@ void Bot::BotDebugModeMsg(void)
 		if (m_destOrigin != nullvec)
 			engine->DrawLine(g_hostEntity, pev->origin, m_destOrigin, Color(0, 0, 255, 200), 10, 0, 5, 1, LINE_SIMPLE);
 
+
 		// now draw line from source to destination
 		PathNode *node = &m_navNode[0];
 
@@ -5728,8 +5742,8 @@ void Bot::BotAI(void)
    FacePosition (); // and turn to chosen aim direction
 
    // the bots wants to fire at something?
-   if (m_wantsToFire && !m_isUsingGrenade && m_shootTime <= engine->GetTime())
-	   FireWeapon(); // if bot didn't fire a bullet try again next frame
+   if (m_wantsToFire && !m_isUsingGrenade && m_shootTime <= engine->GetTime ())
+      FireWeapon (); // if bot didn't fire a bullet try again next frame
    else if (!m_wantsToFire)
 	   m_sniperFire = false;
 
@@ -5741,7 +5755,9 @@ void Bot::BotAI(void)
 
    // SyPB Pro P.34 - Base Ai
    Vector directionOld = m_destOrigin - (pev->origin + pev->velocity * m_frameInterval);
-   Vector directionNormal = directionOld.Normalize2D ();
+   Vector directionNormal = directionOld.Normalize ();
+   //Vector direction = directionNormal;
+   directionNormal.z = 0.0f;
 
    m_moveAngles = directionOld.ToAngles ();
 
@@ -5750,8 +5766,8 @@ void Bot::BotAI(void)
 
    // SyPB Pro P.50 - Base improve 
    if (!IsOnLadder() && GetCurrentTask()->taskID != TASK_CAMP && !FNullEnt (m_enemy) && 
-	   (m_skill >= 60 || m_isZombieBot || 
-		   (m_isEnemyReachable && (IsZombieEntity (m_enemy) || !IsValidPlayer (m_enemy)))))
+	   (m_skill >= 60 || m_isZombieBot ||
+	   (m_isEnemyReachable && (IsZombieEntity(m_enemy) || !IsValidPlayer(m_enemy)))))
    {
 	   m_moveToGoal = false; // don't move to goal
 	   m_navTimeset = engine->GetTime();
@@ -5759,7 +5775,7 @@ void Bot::BotAI(void)
 	   if (!FNullEnt(m_enemy))
 		   CombatFight();
    }
-   
+
    // SyPB Pro P.49 - Miss C4 Action improve
    if (g_bombPlanted && m_isAlive && OutOfBombTimer ())
    {
@@ -5815,7 +5831,10 @@ void Bot::BotAI(void)
    // time to reach waypoint
    if (m_navTimeset + GetEstimatedReachTime () < engine->GetTime () && m_moveToGoal)
    {
-	   GetValidWaypoint();
+	   // SyPB Pro P.40 - Base Change for Waypoint OS
+	   if (FNullEnt (m_enemy) || m_currentWaypointIndex == -1 ||
+		   (pev->origin - g_waypoint->GetPath (m_currentWaypointIndex)->origin).GetLength () > (g_waypoint->GetPath (m_currentWaypointIndex)->radius) * 3)
+		   GetValidWaypoint ();
 
 	   if (FNullEnt(m_enemy))
 	   {
@@ -5831,7 +5850,6 @@ void Bot::BotAI(void)
 	   }
    }
 
-   // SyPB Pro P.21 - Ladder Strengthen
    bool OnLadderNoDuck = false;
    if (IsOnLadder())
    {
@@ -6251,10 +6269,10 @@ void Bot::RunPlayerMovement(void)
 	// SyPB Pro P.41 - Run Player Move
 	m_frameInterval = engine->GetTime() - m_lastCommandTime;
 
-	uint8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
+	int8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
 	m_lastCommandTime = engine->GetTime();
 
-	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), m_moveAngles, m_moveSpeed, m_strafeSpeed, 
+	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), m_moveAngles, m_moveSpeed, m_strafeSpeed,
 		0.0f, static_cast <unsigned short> (pev->button), 0, static_cast <uint8_t> (msecVal));
 }
 
@@ -6363,7 +6381,7 @@ bool Bot::OutOfBombTimer (void)
    Vector bombOrigin = g_waypoint->GetBombPosition ();
 
    // for terrorist, if timer is lower than eleven seconds, return true
-   if (timeLeft < 12.0f && m_team == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength () < 1024.0f)
+   if (timeLeft < 12.0f && m_team == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength() < 1024.0f)
       return true;
 
    bool hasTeammatesWithDefuserKit = false;

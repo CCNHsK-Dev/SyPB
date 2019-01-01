@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -161,7 +161,7 @@ Vector GetEntityOrigin (edict_t *ent)
    return entityOrigin;
 }
 
-// SyPB Pro P.42 - Get Entity Top/Bottom Origin
+
 Vector GetBottomOrigin(edict_t *ent)
 {
 	if (FNullEnt(ent))
@@ -169,6 +169,7 @@ Vector GetBottomOrigin(edict_t *ent)
 
 	Vector bottomOrigin = GetEntityOrigin(ent);
 	bottomOrigin.z = ent->v.absmin.z;
+
 	return bottomOrigin;
 }
 
@@ -177,7 +178,7 @@ Vector GetPlayerHeadOrigin(edict_t *ent)
 {
 	Vector headOrigin = nullvec;
 
-	if (IsValidPlayer(ent))
+	if (IsValidPlayer(ent))	
 	{
 		int clientIndex = ENTINDEX(ent) - 1;
 		headOrigin = g_clients[clientIndex].headOrigin;

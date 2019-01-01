@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -537,7 +537,7 @@ struct Client_old
    float hearingDistance; // distance this sound is heared
    float timeSoundLasting; // time sound is played/heared
 
-   Vector headOrigin; // 
+   Vector headOrigin; //  
 
    // SyPB Pro P.41 - Get Waypoint improve
    int wpIndex;
@@ -681,6 +681,7 @@ private:
    int m_currentWaypointIndex; // current waypoint index
    int m_travelStartIndex; // travel start index to double jump action
    int m_prevWptIndex; // previous waypoint indices from waypoint find
+   int m_waypointFlags; // current waypoint flags
    int m_loosedBombWptIndex; // nearest to loosed bomb waypoint
 
    unsigned short m_currentTravelFlags; // connection flags like jumping
@@ -869,7 +870,7 @@ private:
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
    void ChangeWptIndex (int waypointIndex);
-   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex);
+   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex, bool howardNew = false);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);
@@ -990,7 +991,7 @@ public:
    float m_agressionLevel; // dynamic aggression level (in game)
    float m_fearLevel; // dynamic fear level (in game)
    float m_nextEmotionUpdate; // next time to sanitize emotions
-   float m_thinkFps; // skip some frames in bot thinking
+   float m_thinkFps; // skip some frames in bot thinking 
    float m_thinkInterval; // interval between frames
 
    int m_actMessageIndex; // current processed message

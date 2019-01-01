@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -442,6 +442,7 @@ bool Bot::DoWaypointNav (void)
 		   if (!m_jumpFinished)
 		   {
 			   pev->velocity = m_desiredVelocity;
+
 			   if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
 				   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
 
@@ -587,13 +588,15 @@ bool Bot::DoWaypointNav (void)
    if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
 	   m_waypointGoalAPI = -1;
 
+   ChangeBotEntityWaypoint(m_prevWptIndex, m_currentWaypointIndex);
+
    if (waypointDistance < desiredDistance)
    {
       // Did we reach a destination Waypoint?
       if (GetCurrentTask ()->data == m_currentWaypointIndex)
       {
          // add goal values
-         if (g_gameMode == MODE_BASE && m_chosenGoalIndex != -1)
+		  if (g_gameMode == MODE_BASE && m_chosenGoalIndex != -1)
          {
             g_exp.CollectValue (m_chosenGoalIndex, m_currentWaypointIndex, static_cast <int> (pev->health), m_goalValue);
          }
@@ -1310,7 +1313,6 @@ void Bot::SetWaypointOrigin(void)
 		TraceResult tr;
 		TraceLine(Vector(pev->origin.x, pev->origin.y, pev->absmin.z), m_waypointOrigin, true, true, GetEntity(), &tr);
 
-		// SyPB Pro P.36 - ladder improve
 		if (tr.flFraction < 1.0f)
 		{
 			if (m_waypointOrigin.z >= pev->origin.z)
@@ -1331,7 +1333,7 @@ void Bot::GetValidWaypoint(void)
 		needFindWaypont = true;
 	else if ((m_navTimeset + GetEstimatedReachTime()) < engine->GetTime())
 		needFindWaypont = true;
-	// SyPB Pro P.50 - Find Waypoint improve
+	// SyPB Pro P.42 - Waypoint improve
 	else
 	{
 		int waypointIndex1, waypointIndex2;
@@ -1339,7 +1341,7 @@ void Bot::GetValidWaypoint(void)
 		waypointIndex1 = g_clients[client].wpIndex;
 		waypointIndex2 = g_clients[client].wpIndex2;
 
-		if ((waypointIndex1 == -1 && waypointIndex2 == -1) || 
+		if ((waypointIndex1 == -1 && waypointIndex2 == -1) ||
 			(m_isStuck &&
 				m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2))
 			needFindWaypont = true;
@@ -1350,8 +1352,6 @@ void Bot::GetValidWaypoint(void)
 		if (m_currentWaypointIndex != -1 && g_gameMode == MODE_BASE)
 			g_exp.CollectValidDamage(m_currentWaypointIndex, m_team);
 
-		m_currentTravelFlags = 0;
-
 		DeleteSearchNodes();
 		FindWaypoint();
 
@@ -1360,31 +1360,25 @@ void Bot::GetValidWaypoint(void)
 }
 
 // SyPB Pro P.49 - Base Waypoint improve
-void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex)
+void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, bool howardNew)
 {
-	if (preWaypointIndex == -1 && nextWaypointIndex == -1)
+	int i = ENTINDEX(GetEntity ()) - 1;
+	int newWaypointIndex = preWaypointIndex;
+	if (howardNew)
+		goto lastly;
+
+	if (g_clients[i].getWPTime == engine->GetTime())
 		return;
 
-	int i = ENTINDEX(GetEntity ()) - 1;
-
 	if (preWaypointIndex == -1 || nextWaypointIndex == -1)
-	{
-		g_clients[i].wpIndex = (preWaypointIndex == -1) ? nextWaypointIndex : preWaypointIndex;
-		g_clients[i].wpIndex2 = -1;
-		goto lastly;
-	}
+		return;
 
-	int nearWaypointIndex = -1;
 	if ((g_waypoint->GetPath(nextWaypointIndex)->origin - pev->origin).GetLength() <=
 		(g_waypoint->GetPath(preWaypointIndex)->origin - pev->origin).GetLength())
-		nearWaypointIndex = nextWaypointIndex;
-	else
-		nearWaypointIndex = preWaypointIndex;
-
-	g_clients[i].wpIndex = (nearWaypointIndex == nextWaypointIndex) ? preWaypointIndex : nextWaypointIndex;
-	g_clients[i].wpIndex2 = nearWaypointIndex;
+		newWaypointIndex = nextWaypointIndex;
 
 lastly:
+	g_clients[i].wpIndex = newWaypointIndex;
 	g_clients[i].getWpOrigin = GetEntityOrigin(GetEntity());
 	g_clients[i].getWPTime = engine->GetTime();
 }
@@ -1406,6 +1400,12 @@ void Bot::ChangeWptIndex (int waypointIndex)
 
    m_currentWaypointIndex = waypointIndex;
    m_navTimeset = engine->GetTime ();
+
+   // get the current waypoint flags
+   if (m_currentWaypointIndex != -1)
+      m_waypointFlags = g_waypoint->GetPath (m_currentWaypointIndex)->flags;
+   else
+      m_waypointFlags = 0;
 }
 
 int Bot::ChooseBombWaypoint (void)
@@ -1909,9 +1909,8 @@ void Bot::HeadTowardWaypoint (void)
          }
 
          ChangeWptIndex (destIndex);
-
 		 // SyPB Pro P.49 - Base Waypoint improve
-		 ChangeBotEntityWaypoint(m_prevWptIndex, destIndex);
+		 ChangeBotEntityWaypoint(m_prevWptIndex, -1, true);
       }
    }
 
@@ -2462,7 +2461,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		}
 		else
 		{
-			if (movedDistance < 2.0f && m_prevSpeed >= 1.0f)
+			if (movedDistance < 2.0f && m_prevSpeed >= 20.0f)
 			{
 				m_prevTime = engine->GetTime();
 				m_isStuck = true;
@@ -2477,7 +2476,6 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				{
 					if (m_firstCollideTime == 0.0f)
 						m_firstCollideTime = engine->GetTime();
-
 					else if (m_firstCollideTime + 0.3f <= engine->GetTime())
 						m_isStuck = true;
 				}
@@ -2506,7 +2504,6 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 
 		return;
 	}
-
 	// SyPB Pro P.47 - Base improve
 	// not yet decided what to do?
 	if (m_collisionState == COSTATE_UNDECIDED)

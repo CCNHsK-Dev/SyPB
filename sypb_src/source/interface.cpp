@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -2535,7 +2535,6 @@ void LoadEntityData(void)
 
 			void *pmodel = GET_MODEL_PTR(entity);
 			studiohdr_t *pstudiohdr = (studiohdr_t *)pmodel;
-
 			mstudiobbox_t *var_c = (mstudiobbox_t *)(((uint8_t *)pstudiohdr) + pstudiohdr->hitboxindex);
 
 			for (int h = 0; h < pstudiohdr->numhitboxes; h++)
@@ -2544,12 +2543,12 @@ void LoadEntityData(void)
 				{
 					Vector headOrigin, headAngles;
 					(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
-					g_clients[i].headOrigin = headOrigin + Vector (0.0f, 0.0f, 1.3f);
+					g_clients[i].headOrigin = headOrigin + Vector(0.0f, 0.0f, 1.3f);
 				}
 			}
 
 			// SyPB Pro P.41 - Get Waypoint improve
-			if (g_clients[i].getWPTime + 0.8f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+			if (g_clients[i].getWPTime + 1.2f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
 				SetEntityWaypoint(entity);
 
 			SoundSimulateUpdate(i);
@@ -2582,7 +2581,7 @@ void LoadEntityData(void)
 				continue;
 			}
 
-			if (g_entityGetWpTime[i] + 1.2f < engine->GetTime() || g_entityWpIndex[i] == -1)
+			if (g_entityGetWpTime[i] + 1.5f < engine->GetTime() || g_entityWpIndex[i] == -1)
 				SetEntityWaypoint(entity);
 		}
 

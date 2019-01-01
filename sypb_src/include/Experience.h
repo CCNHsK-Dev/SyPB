@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -121,6 +121,7 @@ public:
    //
    void UpdateGlobalKnowledge (void);
 
+
    //
    // Function: CollectValidDamage
    //
@@ -201,6 +202,7 @@ public:
    //   
    //
    void DrawLines (int nearest, Path *path);
+
 
    //
    // Function: ColletValue

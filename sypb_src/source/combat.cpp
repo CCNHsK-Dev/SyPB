@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -693,7 +693,7 @@ bool Bot::DoFirePause (float distance)
 		m_sniperFire = true;
 		m_firePause = engine->GetTime() + 0.1f;
 
-		if (pev->velocity.GetLength() > 6.0f)
+		if (pev->velocity.GetLength() > 2.0f)
 			return true;
 	}
 
@@ -1201,7 +1201,7 @@ void Bot::CombatFight(void)
 			{
 				if (enemyIsZombie && IsZombieMode())
 					baseDistance = viewCone ? 450.0f : -1.0f;
-				else 
+				else
 					baseDistance = -1.0f;
 			}
 			else if (m_currentWeapon == WEAPON_XM1014 || m_currentWeapon == WEAPON_M3)
@@ -1275,12 +1275,12 @@ void Bot::CombatFight(void)
 				// SyPB Pro P.35 - Base mode Weapon Ai Improve
 				if (UsesSubmachineGun())
 					approach += 20;
-				else if (approach > 49 && (UsesSniper() || UsesPistol ()))
+				else if (approach > 49 && (UsesSniper() || UsesPistol()))
 					approach = 49;
 			}
-			
+
 			// only take cover when bomb is not planted and enemy can see the bot or the bot is VIP
-			if (approach < 30 && !g_bombPlanted && 
+			if (approach < 30 && !g_bombPlanted &&
 				(::IsInViewCone(pev->origin, m_enemy) || m_isVIP))
 			{
 				setStrafe = true;
@@ -1296,10 +1296,10 @@ void Bot::CombatFight(void)
 				m_moveSpeed = pev->maxspeed;
 
 			// SyPB Pro P.35 - Base mode Weapon Ai Improve
-			if (distance < 96 && !UsesSniper ())
+			if (distance < 96 && !UsesSniper())
 			{
 				setStrafe = true;
-				if (!UsesSubmachineGun ())
+				if (!UsesSubmachineGun())
 					pev->button |= IN_DUCK;
 
 				m_moveSpeed = -pev->maxspeed;
@@ -1355,8 +1355,7 @@ void Bot::CombatFight(void)
 
 		// SyPB Pro P.42 - Attack Move Ai improve 
 		if (((pev->button & IN_RELOAD) || m_isReloading) || (m_skill >= 70 && m_fightStyle == FIGHT_STRAFE &&
-			((!enemyIsZombie && distance < 800.0f) ||
-				(enemyIsZombie && distance < 500.0f))))
+			((!enemyIsZombie && distance < 800.0f) || (enemyIsZombie && distance < 500.0f))))
 		{
 			if (!setStrafe)
 			{
@@ -1433,7 +1432,7 @@ void Bot::CombatFight(void)
 	// SyPB Pro P.49 - Base improve
 	if (m_currentWeapon != WEAPON_KNIFE)
 	{
-		if (m_moveSpeed > 0.0f && !UsesSubmachineGun ())
+		if (m_moveSpeed > 0.0f && !UsesSubmachineGun())
 			m_moveSpeed = GetWalkSpeed();
 		else if (m_moveSpeed < 0.0f)
 			m_moveSpeed = -GetWalkSpeed();

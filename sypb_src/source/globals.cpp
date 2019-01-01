@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -65,7 +65,6 @@ float g_timeNextBombUpdate = 0.0f;
 float g_timeBombPlanted = 0.0f;
 float g_lastRadioTime[2] = {0.0f, 0.0f};
 float g_autoPathDistance = 250.0f;
-
 
 float g_secondTime = 0.0f;
 float g_gameStartTime = 0.0f;

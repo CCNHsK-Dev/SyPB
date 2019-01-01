@@ -1,7 +1,8 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
+// And Thank About Yet Another POD-Bot Development Team.
 //  Copyright (C) 2009-2010 Dmitry Zhukov. All rights reserved.
 //
 //  This software is provided 'as-is', without any express or implied

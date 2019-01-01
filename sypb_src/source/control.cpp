@@ -1,7 +1,7 @@
-//
-// Copyright (c) 2003-2019, by HsK-Dev Blog
-// https://ccnhsk-dev.blogspot.com/
-//
+// 
+// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// https://ccnhsk-dev.blogspot.com/ 
+// 
 // And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
@@ -985,7 +985,6 @@ Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
 	m_startAction = CMENU_IDLE;
 	m_moneyAmount = 0;
 	m_logotypeIndex = engine->RandomInt(0, 5);
-
 
 	// assign how talkative this bot will be
 	m_sayTextBuffer.chatDelay = engine->RandomFloat(3.8f, 10.0f);
