@@ -1,4 +1,8 @@
 //
+// Copyright (c) 2003-2019, by HsK-Dev Blog
+// https://ccnhsk-dev.blogspot.com/
+//
+// And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,9 +36,9 @@
 #if defined(PRODUCT_DEV_VERSION)
 #define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
 // Dev Version Date
-#define PV_VERSION_YEAR 2018
-#define PV_VERSION_MON 7
-#define PV_VERSION_DAY 15
+#define PV_VERSION_YEAR 2019
+#define PV_VERSION_MON 3
+#define PV_VERSION_DAY 1
 #else
 #define PRODUCT_DEV_VERSION_FORTEST ""
 #endif
@@ -48,7 +52,7 @@
 #define SUPPORT_SWNPC_VERSION_F 1.48
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,50,20180525,763 // yyyy/mm/dd  
+#define PRODUCT_VERSION_DWORD 1,50,20190101,764 // yyyy/mm/dd  
 #define PRODUCT_VERSION "Beta 1.50"
 #define PRODUCT_VERSION_F 1.50
 

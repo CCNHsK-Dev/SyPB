@@ -1,4 +1,8 @@
 //
+// Copyright (c) 2003-2019, by HsK-Dev Blog
+// https://ccnhsk-dev.blogspot.com/
+//
+// And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3473,6 +3477,15 @@ void Bot::MoveAction(void)
 		m_strafeSpeed = 0.0f;
 	}
 
+	if (m_sniperFire)
+	{
+		m_moveSpeed = 0.0f;
+		m_strafeSpeed = 0.0f;
+
+		if (!(m_currentTravelFlags & PATHFLAG_JUMP))
+			pev->button &= ~IN_JUMP;
+	}
+
 	if (!(pev->button & (IN_FORWARD | IN_BACK)))
 	{
 		if (m_moveSpeed > 0)
@@ -4329,9 +4342,9 @@ void Bot::RunTask (void)
             m_checkTerrain = false;
             m_navTimeset = engine->GetTime ();
 
-            if (path->flags & WAYPOINT_CROUCH)
-               pev->button |= (IN_ATTACK | IN_DUCK);
-            else
+			if (path->flags & WAYPOINT_CROUCH)
+				pev->button |= (IN_ATTACK | IN_DUCK);
+			else
                pev->button |= IN_ATTACK;
 
             m_moveSpeed = 0.0f;
@@ -4705,7 +4718,7 @@ void Bot::RunTask (void)
                   SelectWeaponByName ("weapon_hegrenade");
             }
             else if (!(pev->oldbuttons & IN_ATTACK))
-               pev->button |= IN_ATTACK;
+              pev->button |= IN_ATTACK;
 			else // SyPB Pro P.27 - Debug Grenade
 			{
 				SelectBestWeapon();
@@ -5715,8 +5728,10 @@ void Bot::BotAI(void)
    FacePosition (); // and turn to chosen aim direction
 
    // the bots wants to fire at something?
-   if (m_wantsToFire && !m_isUsingGrenade && m_shootTime <= engine->GetTime ())
-      FireWeapon (); // if bot didn't fire a bullet try again next frame
+   if (m_wantsToFire && !m_isUsingGrenade && m_shootTime <= engine->GetTime())
+	   FireWeapon(); // if bot didn't fire a bullet try again next frame
+   else if (!m_wantsToFire)
+	   m_sniperFire = false;
 
    // check for reloading
    CheckReload ();

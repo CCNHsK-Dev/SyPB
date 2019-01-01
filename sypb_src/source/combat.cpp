@@ -1,4 +1,8 @@
 //
+// Copyright (c) 2003-2019, by HsK-Dev Blog
+// https://ccnhsk-dev.blogspot.com/
+//
+// And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -686,17 +690,11 @@ bool Bot::DoFirePause (float distance)
 
 	if (UsesSniper())
 	{
-		if (!(m_currentTravelFlags & PATHFLAG_JUMP))
-			pev->button &= ~IN_JUMP;
+		m_sniperFire = true;
+		m_firePause = engine->GetTime() + 0.1f;
 
-		m_moveSpeed = 0.0f;
-		m_strafeSpeed = 0.0f;
-
-		if (pev->velocity.GetLength() > 2.0f)
-		{
-			m_firePause = engine->GetTime() + 0.1f;
+		if (pev->velocity.GetLength() > 6.0f)
 			return true;
-		}
 	}
 
 	return false;
@@ -834,6 +832,8 @@ WeaponSelectEnd:
 		m_firePause = 0.0f;
 		m_timeLastFired = 0.0f;
 
+		m_sniperFire = false;
+
 		return;
 	}
 
@@ -916,6 +916,8 @@ WeaponSelectEnd:
 
 		if (pev->button & IN_ATTACK)
 			m_shootTime = engine->GetTime();
+
+		m_sniperFire = false;
 	}
 	else
 	{
@@ -979,6 +981,7 @@ WeaponSelectEnd:
 			}
 		}
 		m_shootTime = engine->GetTime() + delayTime;
+		m_sniperFire = false;
 	}
 }
 
@@ -1179,6 +1182,7 @@ void Bot::CombatFight(void)
 		return;
 	}
 
+	m_timeWaypointMove = 0.0f;
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
 		Vector enemyOrigin = GetEntityOrigin(m_enemy);
@@ -1351,8 +1355,8 @@ void Bot::CombatFight(void)
 
 		// SyPB Pro P.42 - Attack Move Ai improve 
 		if (((pev->button & IN_RELOAD) || m_isReloading) || (m_skill >= 70 && m_fightStyle == FIGHT_STRAFE &&
-			((!enemyIsZombie && distance < (UsesSniper() ? 150.0f : 800.0f)) ||
-				(enemyIsZombie && distance < (UsesSniper() ? 300.0f : 500.0f)))))
+			((!enemyIsZombie && distance < 800.0f) ||
+				(enemyIsZombie && distance < 500.0f))))
 		{
 			if (!setStrafe)
 			{

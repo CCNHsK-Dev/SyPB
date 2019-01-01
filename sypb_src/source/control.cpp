@@ -1,4 +1,8 @@
 //
+// Copyright (c) 2003-2019, by HsK-Dev Blog
+// https://ccnhsk-dev.blogspot.com/
+//
+// And Thank About Yet Another POD-Bot Development Team.
 // Copyright (c) 2003-2009, by Yet Another POD-Bot Development Team.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1172,6 +1176,7 @@ void Bot::NewRound (void)
    m_playerTargetTime = engine->GetTime ();
    m_firePause = 0.0f;
    m_timeLastFired = 0.0f;
+   m_sniperFire = false;
 
    m_grenadeCheckTime = 0.0f;
    m_isUsingGrenade = false;
