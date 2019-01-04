@@ -12,15 +12,15 @@
 #endif
 
 #if defined __linux__
-	#define EXTRAOFFSET					5
+#define EXTRAOFFSET					5
 #else
-	#define EXTRAOFFSET					0
+#define EXTRAOFFSET					0
 #endif
-	
+
 #if !defined PLATFORM_LINUX64
-	#define OFFSET_TEAM					114 + EXTRAOFFSET
+#define OFFSET_TEAM					114 + EXTRAOFFSET
 #else
-	#define OFFSET_TEAM					139 + EXTRAOFFSET
+#define OFFSET_TEAM					139 + EXTRAOFFSET
 #endif
 
 // for when we care about how many bits we use
@@ -1147,7 +1147,7 @@ typedef struct link_s
 
 typedef struct edict_s edict_t;
 
-// SyPB Pro P.50 - TESTTEST
+// SyPB Pro P.50 - Player Model Data
 typedef struct
 {
 	int					id;
@@ -1209,27 +1209,6 @@ typedef struct mstudiobbox_s {
 	Vector bbmax;
 
 } mstudiobbox_t;
-
-/*
-typedef struct
-{
-   Vector normal;
-   float dist;
-} plane_t;
-
-typedef struct
-{
-   qboolean allsolid;           // if true, plane is not valid
-   qboolean startsolid;         // if true, the initial point was in a solid area
-   qboolean inopen, inwater;
-   float fraction;              // time completed, 1.0f = didn't hit anything
-   Vector endpos;               // final position
-   plane_t plane;               // surface normal at impact
-   edict_t *ent;                // entity the surface is on
-   int hitgroup;                // 0 == generic, non zero is specific body part
-} trace_t;
-*/
-// TESTTEST - End
 
 #define FCVAR_ARCHIVE      (1 << 0)     // set to cause it to be saved to vars.rc
 #define FCVAR_USERINFO     (1 << 1)     // changes the client's info string

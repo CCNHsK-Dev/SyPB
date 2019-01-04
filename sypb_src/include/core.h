@@ -284,7 +284,7 @@ enum NetMsg
    NETMSG_TEXTMSG = 12,
    NETMSG_BARTIME = 13,
    NETMSG_SAYTEXT = 14,
-   NETMSG_NUM = 15
+   NETMSG_NUM = 18
 };
 
 // sensing states

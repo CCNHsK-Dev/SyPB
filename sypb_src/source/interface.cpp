@@ -2887,7 +2887,6 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       g_netMsg->SetId (NETMSG_SCREENFADE, GET_USER_MSG_ID (PLID, "ScreenFade", null));
       g_netMsg->SetId (NETMSG_HLTV, GET_USER_MSG_ID (PLID, "HLTV", null));
       g_netMsg->SetId (NETMSG_TEXTMSG, GET_USER_MSG_ID (PLID, "TextMsg", null));
-
       g_netMsg->SetId (NETMSG_BARTIME, GET_USER_MSG_ID (PLID, "BarTime", null));
 
       g_netMsg->SetId (NETMSG_SAYTEXT, GET_USER_MSG_ID (PLID, "SayText", null));
@@ -2907,8 +2906,6 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       // is this message for a bot?
       if (index != -1 && !(ed->v.flags & FL_DORMANT) && g_botManager->GetBot (index)->GetEntity () == ed)
       {
-         g_netMsg->Reset ();
-
          g_netMsg->SetBot (g_botManager->GetBot (index));
 
          // message handling is done in usermsg.cpp
@@ -2927,10 +2924,8 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
    }
    else if (msgDest == MSG_ALL)
    {
-      g_netMsg->Reset ();
-
       g_netMsg->HandleMessageIfRequired (msgType, NETMSG_TEXTMSG);
-	  
+
       if (msgType == SVC_INTERMISSION)
       {
          for (int i = 0; i < engine->GetMaxClients (); i++)

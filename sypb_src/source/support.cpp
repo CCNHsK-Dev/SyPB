@@ -854,50 +854,42 @@ bool IsZombieMode(void)
 
 int GetTeam (edict_t *ent)
 {
-	// SyPB Pro P.1
-	// new get team off set, return player true team
-	int client = ENTINDEX (ent) - 1, player_team = TEAM_COUNT;
-	
-	 // SyPB Pro P.5
-	if (!IsValidPlayer (ent))
+	int client = ENTINDEX(ent) - 1;
+
+	if (!IsValidPlayer(ent))
 	{
 		// SyPB Pro P.42 - Entity Team
-		player_team = 0;
 		for (int i = 0; i < entityNum; i++)
 		{
 			if (g_entityId[i] == -1)
 				continue;
 
 			if (ent == INDEXENT(g_entityId[i]))
-			{
-				player_team = g_entityTeam[i];
-				break;
-			}
+				return g_entityTeam[i];
 		}
 
 		return -1;
 	}
 
-	// SyPB Pro P.42 - Small Change 
+
+
 	if (g_gameMode == MODE_DM)
-		player_team = client + 10;
+		g_clients[client].team = client + 10;
 	else if (g_gameMode == MODE_ZP)
 	{
 		if (g_gameStartTime > engine->GetTime())
-			player_team = 2;
+			g_clients[client].team = TEAM_COUNTER;
 		else if (g_roundEnded)
-			player_team = TEAM_TERRORIST;
-		else
-			player_team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
+			g_clients[client].team = TEAM_TERRORIST;
+		
+		g_clients[client].team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
 	}
 	else if (g_gameMode == MODE_NOTEAM)
-		player_team = 2;
+		g_clients[client].team = 0;
 	else 
-		player_team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
-
-	g_clients[client].team = player_team;
-
-	return player_team;
+		g_clients[client].team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
+	
+	return g_clients[client].team;
 }
 
 // SyPB Pro P.42 - Base Waypoint improve

@@ -1236,7 +1236,7 @@ int Bot::FindWaypoint (void)
 {
 	// SyPB Pro P.42 - Waypoint improve
 	int waypointIndex = -1, waypointIndex1, waypointIndex2;
-	int client = ENTINDEX(GetEntity()) - 1;
+	int client = GetIndex() - 1;
 	waypointIndex1 = g_clients[client].wpIndex;
 	waypointIndex2 = g_clients[client].wpIndex2;
 
@@ -1337,7 +1337,7 @@ void Bot::GetValidWaypoint(void)
 	else
 	{
 		int waypointIndex1, waypointIndex2;
-		int client = ENTINDEX(GetEntity()) - 1;
+		int client = GetIndex() - 1;
 		waypointIndex1 = g_clients[client].wpIndex;
 		waypointIndex2 = g_clients[client].wpIndex2;
 
@@ -1362,7 +1362,7 @@ void Bot::GetValidWaypoint(void)
 // SyPB Pro P.49 - Base Waypoint improve
 void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, bool howardNew)
 {
-	int i = ENTINDEX(GetEntity ()) - 1;
+	int i = GetIndex() - 1;
 	int newWaypointIndex = preWaypointIndex;
 	if (howardNew)
 		goto lastly;

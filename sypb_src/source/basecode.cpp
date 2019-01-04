@@ -2577,6 +2577,8 @@ bool Bot::ReactOnEnemy(void)
 	if (m_enemyReachableTimer >= engine->GetTime())
 		goto lastly;
 
+	m_isEnemyReachable = false;
+
 	float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
 	if (m_isZombieBot || enemyDistance <= 120.0f)
 	{
@@ -2584,7 +2586,6 @@ bool Bot::ReactOnEnemy(void)
 		goto upDateCheckTime;
 	}
 
-	m_isEnemyReachable = false;
 	int i = GetEntityWaypoint(GetEntity());
 	int enemyIndex = GetEntityWaypoint(m_enemy);
 	if (i == enemyIndex || m_currentWaypointIndex == enemyIndex)
@@ -2615,8 +2616,8 @@ bool Bot::ReactOnEnemy(void)
 
 	if (IsZombieEntity(m_enemy))
 	{
-		if (m_navNode == null || m_navNode->next == null)
-			m_isEnemyReachable = (enemyDistance <= 500.0f);
+		if (m_navNode == null)
+			m_isEnemyReachable = (enemyDistance <= 400.0f);
 		else
 		{
 			PathNode *navid = &m_navNode[0];
@@ -2649,7 +2650,7 @@ bool Bot::ReactOnEnemy(void)
 		m_isEnemyReachable = true;
 
 upDateCheckTime:
-	m_enemyReachableTimer = engine->GetTime() + engine->RandomFloat(0.3f, 0.5f);
+	m_enemyReachableTimer = engine->GetTime() + 0.3f;
 
 lastly:
 	if (m_isEnemyReachable)
@@ -5275,7 +5276,7 @@ void Bot::BotDebugModeMsg(void)
 		return;
 
 	int specIndex = g_hostEntity->v.iuser2;
-	if (specIndex != ENTINDEX(GetEntity()))
+	if (specIndex != GetIndex ())
 		return;
 
 	static int index, goal, taskID;
@@ -5494,7 +5495,7 @@ void Bot::BotDebugModeMsg(void)
 				navid = navid->next;
 			}
 
-			int client = ENTINDEX(GetEntity()) - 1;
+			int client = GetIndex() - 1;
 
 			char outputBuffer[512];
 			sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
@@ -5608,7 +5609,7 @@ void Bot::BotDebugModeMsg(void)
 		}
 
 		const float root = sqrtf(32.0f);
-		src = g_clients[ENTINDEX(GetEntity()) - 1].headOrigin;
+		src = g_clients[GetIndex() - 1].headOrigin;
 		engine->DrawLine(g_hostEntity, src + Vector(root, -root, 0), src + Vector(-root, root, 0), Color(255, 0, 0, 100), 10, 0, 0, 10);
 		engine->DrawLine(g_hostEntity, src + Vector(-root, -root, 0), src + Vector(root, root, 0), Color(255, 0, 0, 100), 10, 0, 0, 10);
 	}

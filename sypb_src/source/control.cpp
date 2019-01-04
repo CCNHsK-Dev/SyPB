@@ -803,7 +803,7 @@ void BotControl::ListBots (void)
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
-      edict_t *player = INDEXENT (i);
+      edict_t *player = INDEXENT (i+1);
 
       // is this player slot valid
       if (IsValidBot (player) != null && GetBot (player) != null)
@@ -829,7 +829,7 @@ int BotControl::GetHumansNum (int mod)
 {
    // this function returns number of humans playing on the server
 
-   int count = 0;
+   int count = 0, team;
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
@@ -839,8 +839,8 @@ int BotControl::GetHumansNum (int mod)
 			   count++;
 		   else
 		   {
-			   int team = *((int*)INDEXENT (i+1)->pvPrivateData+OFFSET_TEAM);
-			   if (team == (TEAM_COUNTER+1) || team == (TEAM_TERRORIST+1))
+			   team = GetTeam (INDEXENT(i+1));
+			   if (team == TEAM_COUNTER || team == TEAM_TERRORIST)
 				   count++;
 		   }
 	   }
