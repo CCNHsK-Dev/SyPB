@@ -442,10 +442,6 @@ bool Bot::DoWaypointNav (void)
 		   if (!m_jumpFinished)
 		   {
 			   pev->velocity = m_desiredVelocity;
-
-			   if (m_desiredVelocity.x != 0.0f && m_desiredVelocity.y != 0.0f)
-				   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
-
 			   pev->button |= IN_JUMP;
 
 			   m_jumpFinished = true;
@@ -592,38 +588,36 @@ bool Bot::DoWaypointNav (void)
 
    if (waypointDistance < desiredDistance)
    {
-      // Did we reach a destination Waypoint?
-      if (GetCurrentTask ()->data == m_currentWaypointIndex)
-      {
-         // add goal values
-		  if (g_gameMode == MODE_BASE && m_chosenGoalIndex != -1)
-         {
-            g_exp.CollectValue (m_chosenGoalIndex, m_currentWaypointIndex, static_cast <int> (pev->health), m_goalValue);
-         }
+	   // Did we reach a destination Waypoint?
+	   if (GetCurrentTask()->data == m_currentWaypointIndex)
+	   {
+		   // add goal values
+		   if (g_gameMode == MODE_BASE && m_chosenGoalIndex != -1)
+			   g_exp.CollectValue(m_chosenGoalIndex, m_currentWaypointIndex, static_cast <int> (pev->health), m_goalValue);
 
-         return true;
-      }
-      else if (m_navNode == null)
-         return false;
+		   return true;
+	   }
+	   else if (m_navNode == null)
+		   return false;
 
-      if ((g_mapType & MAP_DE) && g_bombPlanted && m_team == TEAM_COUNTER && GetCurrentTask ()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->data != -1)
-      {
-         Vector bombOrigin = CheckBombAudible ();
+	   if ((g_mapType & MAP_DE) && g_bombPlanted && m_team == TEAM_COUNTER && GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->data != -1)
+	   {
+		   Vector bombOrigin = CheckBombAudible();
 
-         // bot within 'hearable' bomb tick noises?
-         if (bombOrigin != nullvec)
-         {
-            float distance = (bombOrigin - g_waypoint->GetPath (GetCurrentTask()->data)->origin).GetLength ();
+		   // bot within 'hearable' bomb tick noises?
+		   if (bombOrigin != nullvec)
+		   {
+			   float distance = (bombOrigin - g_waypoint->GetPath(GetCurrentTask()->data)->origin).GetLength();
 
-            if (distance > 512.0f)
-               g_waypoint->SetGoalVisited (GetCurrentTask()->data); // doesn't hear so not a good goal
-         }
-         else
-            g_waypoint->SetGoalVisited (GetCurrentTask ()->data); // doesn't hear so not a good goal
-      }
+			   if (distance > 512.0f)
+				   g_waypoint->SetGoalVisited(GetCurrentTask()->data); // doesn't hear so not a good goal
+		   }
+		   else
+			   g_waypoint->SetGoalVisited(GetCurrentTask()->data); // doesn't hear so not a good goal
+	   }
 
-      HeadTowardWaypoint (); // do the actual movement checking
-	  return false;
+	   HeadTowardWaypoint(); // do the actual movement checking
+	   return false;
    }
 
    return false;

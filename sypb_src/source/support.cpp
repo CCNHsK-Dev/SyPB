@@ -854,8 +854,6 @@ bool IsZombieMode(void)
 
 int GetTeam (edict_t *ent)
 {
-	int client = ENTINDEX(ent) - 1;
-
 	if (!IsValidPlayer(ent))
 	{
 		// SyPB Pro P.42 - Entity Team
@@ -871,24 +869,7 @@ int GetTeam (edict_t *ent)
 		return -1;
 	}
 
-
-
-	if (g_gameMode == MODE_DM)
-		g_clients[client].team = client + 10;
-	else if (g_gameMode == MODE_ZP)
-	{
-		if (g_gameStartTime > engine->GetTime())
-			g_clients[client].team = TEAM_COUNTER;
-		else if (g_roundEnded)
-			g_clients[client].team = TEAM_TERRORIST;
-		
-		g_clients[client].team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
-	}
-	else if (g_gameMode == MODE_NOTEAM)
-		g_clients[client].team = 0;
-	else 
-		g_clients[client].team = *((int*)ent->pvPrivateData + OFFSET_TEAM) - 1;
-	
+	int client = ENTINDEX(ent) - 1;	
 	return g_clients[client].team;
 }
 

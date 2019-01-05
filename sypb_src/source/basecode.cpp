@@ -3480,13 +3480,11 @@ void Bot::MoveAction(void)
 		m_strafeSpeed = 0.0f;
 	}
 
-	if (m_sniperFire)
+	if (m_sniperFire && !(m_currentTravelFlags & PATHFLAG_JUMP))
 	{
 		m_moveSpeed = 0.0f;
 		m_strafeSpeed = 0.0f;
-
-		if (!(m_currentTravelFlags & PATHFLAG_JUMP))
-			pev->button &= ~IN_JUMP;
+		pev->button &= ~IN_JUMP;
 	}
 
 	if (!(pev->button & (IN_FORWARD | IN_BACK)))
@@ -3504,6 +3502,9 @@ void Bot::MoveAction(void)
 		else if (m_strafeSpeed < 0)
 			pev->button |= IN_MOVELEFT;
 	}
+
+	if (m_sniperFire && pev->button & IN_ATTACK)
+		m_sniperFire = false;
 }
 
 void Bot::RunTask (void)
@@ -6363,7 +6364,7 @@ float Bot::GetEstimatedReachTime (void)
 		if (estimatedTime > 8.0f)
 			estimatedTime = 8.0f;
 	}
-	return estimatedTime;
+	return estimatedTime + 1.0f;
 }
 
 bool Bot::OutOfBombTimer (void)

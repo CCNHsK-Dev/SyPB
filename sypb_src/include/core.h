@@ -890,7 +890,6 @@ private:
    bool LookupEnemy (void);
    void FireWeapon (void);
    void FocusEnemy (void);
-
    bool KnifeAttack(float attackDistance = 0.0f);
 
    void SelectBestWeapon (void);

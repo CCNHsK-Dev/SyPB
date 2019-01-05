@@ -2512,6 +2512,7 @@ void LoadEntityData(void)
 			g_clients[i].wpIndex2 = -1;
 			g_clients[i].getWpOrigin = nullvec;
 			g_clients[i].getWPTime = 0.0f;
+			g_clients[i].team = TEAM_COUNT;
 
 			g_clients[i].isZombiePlayerAPI = -1;
 			continue;
@@ -2524,6 +2525,22 @@ void LoadEntityData(void)
 			g_clients[i].flags |= CFLAG_ALIVE;
 		else
 			g_clients[i].flags &= ~CFLAG_ALIVE;
+
+		if (g_gameMode == MODE_DM)
+			g_clients[i].team = i + 10;
+		else if (g_gameMode == MODE_ZP)
+		{
+			if (g_gameStartTime > engine->GetTime())
+				g_clients[i].team = TEAM_COUNTER;
+			else if (g_roundEnded)
+				g_clients[i].team = TEAM_TERRORIST;
+
+			g_clients[i].team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
+		}
+		else if (g_gameMode == MODE_NOTEAM)
+			g_clients[i].team = TEAM_COUNT;
+		else
+			g_clients[i].team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
 
 		if (g_clients[i].flags & CFLAG_ALIVE)
 		{
@@ -2543,7 +2560,8 @@ void LoadEntityData(void)
 				{
 					Vector headOrigin, headAngles;
 					(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
-					g_clients[i].headOrigin = headOrigin + Vector(0.0f, 0.0f, 1.3f);
+					g_clients[i].headOrigin = g_clients[i].origin;
+					g_clients[i].headOrigin.z = headOrigin.z + 0.8f;
 				}
 			}
 

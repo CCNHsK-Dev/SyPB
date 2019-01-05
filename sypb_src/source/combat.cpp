@@ -916,8 +916,6 @@ WeaponSelectEnd:
 
 		if (pev->button & IN_ATTACK)
 			m_shootTime = engine->GetTime();
-
-		m_sniperFire = false;
 	}
 	else
 	{
@@ -981,7 +979,6 @@ WeaponSelectEnd:
 			}
 		}
 		m_shootTime = engine->GetTime() + delayTime;
-		m_sniperFire = false;
 	}
 }
 
