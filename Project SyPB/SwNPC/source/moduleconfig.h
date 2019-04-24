@@ -16,13 +16,13 @@
  *   to add multiple entries.
  */
 
-#define MODULE_VERSION PRODUCT_VERSION
+#define MODULE_VERSION SWNPC_VERSION
 
-#define MODULE_NAME PRODUCT_NAME
+#define MODULE_NAME SWNPC_NAME
 #define MODULE_AUTHOR PRODUCT_AUTHOR
 #define MODULE_URL PRODUCT_URL
-#define MODULE_LOGTAG PRODUCT_NAME
-#define MODULE_LIBRARY PRODUCT_NAME
+#define MODULE_LOGTAG SWNPC_NAME
+#define MODULE_LIBRARY SWNPC_NAME
 #define MODULE_LIBCLASS ""
 // If you want the module not to be reloaded on mapchange, remove / comment out the next line
 #define MODULE_RELOAD_ON_MAPCHANGE

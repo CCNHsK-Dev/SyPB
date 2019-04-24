@@ -3,7 +3,7 @@
 #include "main.h"
 
 #include "extdll.h"
-#include "version.h"
+#include <../../version.h>
 
 // Calling the SyPB.dll ****
 typedef void(*_SypbAMXXAPI_Version)(float, int, int, int, int);
@@ -171,23 +171,23 @@ void SyPBDataLoad (void)
 
 		return;
 	}
-	AMXX_Check_APIVersion(float (PRODUCT_VERSION_F), PRODUCT_VERSION_DWORD);
+	AMXX_Check_APIVersion(float (SYPBAPI_VERSION_F), SYPBAPI_VERSION_DWORD);
 	// ---- API part start
 	
 	api_version = Amxx_APIVersion();
 
-	if (float (PRODUCT_VERSION_F) != api_version)
+	if (float (SYPBAPI_VERSION_F) != api_version)
 	{
 		LogToFile("***************************");
 		LogToFile("Error: API Version Error");
 
-		if (float(PRODUCT_VERSION_F) > api_version)
+		if (float(SYPBAPI_VERSION_F) > api_version)
 			LogToFile("-Pls upgrade your SyPB Version");
 		else
 			LogToFile("-Pls upgrade your SyPB API Version");
 
 		LogToFile("SyPB API Version: %.2f | SyPB Support SyPB API Version: %.2f",
-			float(PRODUCT_VERSION_F), api_version);
+			float(SYPBAPI_VERSION_F), api_version);
 		LogToFile("-Visit 'http://ccnhsk-dev.blogspot.com/' Check the new version :)");
 		LogToFile("[Error] SyPB AMXX API CANNOT RUN");
 		LogToFile("***************************");
@@ -577,7 +577,7 @@ int LogToFile(char *szLogText, ...)
 		return 1;
 	}
 
-	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	int buildVersion[4] = { SYPBAPI_VERSION_DWORD };
 	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
 	char buildVersionName[64];

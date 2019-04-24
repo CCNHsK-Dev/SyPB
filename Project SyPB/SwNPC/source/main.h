@@ -7,7 +7,7 @@
 #include <string.h>
 #include <malloc.h>
 #include "amxxmodule.h"
-#include "version.h"
+#include <../../version.h>
 #include "extdll.h"
 
 // Error Log

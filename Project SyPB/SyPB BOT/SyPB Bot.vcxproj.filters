@@ -54,9 +54,6 @@
     <ClInclude Include=".\include\platform.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include=".\include\resource.h">
-      <Filter>Include</Filter>
-    </ClInclude>
     <ClInclude Include=".\include\runtime.h">
       <Filter>Include</Filter>
     </ClInclude>

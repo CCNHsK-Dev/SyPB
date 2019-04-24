@@ -172,8 +172,8 @@ metamod_funcs_t gMetaFunctionTable =
 plugin_info_t Plugin_info =
 {
    META_INTERFACE_VERSION, // interface version
-   PRODUCT_NAME, // plugin name
-   PRODUCT_VERSION, // plugin version
+   SYPB_NAME, // plugin name
+   SYPB_VERSION, // plugin version
    PRODUCT_DATE, // date of creation
    PRODUCT_AUTHOR, // plugin author
    PRODUCT_URL, // plugin URL

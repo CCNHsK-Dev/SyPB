@@ -5,12 +5,12 @@
 #ifndef __MODULECONFIG_H__
 #define __MODULECONFIG_H__
 
-#define MODULE_NAME "SyPB AMXX DLL"
-#define MODULE_VERSION "1.40"
-#define MODULE_AUTHOR "HsK Dev-Blog @ CCN"
-#define MODULE_URL "http://ccnhsk-dev.blogspot.com/"
-#define MODULE_LOGTAG "SyPB"
-#define MODULE_LIBRARY "sypb_amxx"
+#define MODULE_NAME SYPBAPI_NAME
+#define MODULE_VERSION SYPBAPI_VERSION
+#define MODULE_AUTHOR PRODUCT_AUTHOR
+#define MODULE_URL PRODUCT_URL
+#define MODULE_LOGTAG SYPBAPI_NAME
+#define MODULE_LIBRARY SYPBAPI_NAME
 #define MODULE_LIBCLASS ""
 
 // If you want the module not to be reloaded on mapchange, remove / comment out the next line

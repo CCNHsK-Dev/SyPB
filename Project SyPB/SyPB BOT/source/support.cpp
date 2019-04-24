@@ -1355,23 +1355,19 @@ void CheckWelcomeMessage(void)
 	{
 		if (sypb_welcomemsg.GetInt() != 0)
 			receiveTime = engine->GetTime() + 10.0f;
-
-#if defined(PRODUCT_DEV_VERSION)	
-		receiveTime = engine->GetTime() + 10.0f;
-#endif
 	}
 
 	if (receiveTime > 0.0f && receiveTime < engine->GetTime())
 	{   
-		int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+		int buildVersion[4] = { SYPB_VERSION_DWORD };
 		uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
-		ChartPrint("----- [%s %s] by' %s -----", PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR);
+		ChartPrint("----- [%s %s] by' %s -----", SYPB_NAME, SYPB_VERSION, PRODUCT_AUTHOR);
 		ChartPrint("***** Build: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
 		ChartPrint("***** Support API Version:%.2f | SwNPC Version:%.2f *****",
-			float(SUPPORT_API_VERSION_F), float(SUPPORT_SWNPC_VERSION_F));
+			float(SYPBAPI_VERSION_F), float(SWNPC_VERSION_F));
 
-		if (amxxDLL_Version != -1.0 && amxxDLL_Version == float(SUPPORT_API_VERSION_F))
+		if (amxxDLL_Version != -1.0 && amxxDLL_Version == float(SYPBAPI_VERSION_F))
 		{
 			ChartPrint("***** SyPB API: Running - Version:%.2f (%u.%u.%u.%u)",
 				amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
@@ -1379,7 +1375,7 @@ void CheckWelcomeMessage(void)
 		else
 			ChartPrint("***** SyPB API: FAIL *****");
 
-		if (SwNPC_Version != -1.0 && SwNPC_Version == float(SUPPORT_SWNPC_VERSION_F))
+		if (SwNPC_Version != -1.0 && SwNPC_Version == float(SWNPC_VERSION_F))
 		{
 			ChartPrint("***** SwNPC: Running - Version:%.2f (%u.%u.%u.%u)",
 				SwNPC_Version, SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
@@ -1484,7 +1480,7 @@ void MOD_AddLogEntry(int mod, char *format)
 	if (mod == -1)
 	{
 		sprintf(modName, "SyPB");
-		int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+		int buildVersion[4] = { SYPB_VERSION_DWORD };
 		for (int i = 0; i < 4; i++)
 			mod_bV16[i] = (uint16)buildVersion[i];
 	}
@@ -1527,7 +1523,7 @@ void MOD_AddLogEntry(int mod, char *format)
 	time_t tickTime = time(&tickTime);
 	tm *time = localtime(&tickTime);
 
-	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	int buildVersion[4] = { SYPB_VERSION_DWORD };
 	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
 	sprintf(logLine, "[%02d:%02d:%02d] %s", time->tm_hour, time->tm_min, time->tm_sec, format);

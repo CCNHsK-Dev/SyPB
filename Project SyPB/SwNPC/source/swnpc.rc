@@ -1,0 +1,32 @@
+
+
+#include <winver.h>
+#include <../../version.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION SWNPC_VERSION_DWORD
+PRODUCTVERSION SWNPC_VERSION_DWORD
+FILEOS 0x40004
+FILETYPE 0x2
+{
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "040904E4"
+		{
+			VALUE "CompanyName", PRODUCT_AUTHOR        "\0"
+				VALUE "FileDescription", SWNPC_DESCRIPTION   "\0"
+				VALUE "FileVersion", SWNPC_VERSION       "\0"
+				VALUE "OriginalFilename", "SwNPC_amxx.dll" "\0"
+				VALUE "LegalCopyright", PRODUCT_COPYRIGHT     "\0"
+				VALUE "LegalTrademarks", PRODUCT_AUTHOR         "\0"
+				VALUE "ProductName", SWNPC_NAME          "\0"
+				VALUE "ProductVersion", SWNPC_VERSION       "\0"
+		}
+	}
+#ifndef NOLANGINFO
+	BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 0x400, 1252
+	}
+#endif
+}

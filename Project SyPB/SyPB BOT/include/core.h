@@ -1436,7 +1436,7 @@ inline bool IsNullString (const char *input)
 extern ConVar sypb_knifemode;
 
 #include <globals.h>
-#include <resource.h>
+#include <../../version.h>
 
 #include <Experience.h>
 

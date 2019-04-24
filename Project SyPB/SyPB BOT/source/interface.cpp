@@ -35,7 +35,7 @@ ConVar sypb_password ("sypb_password", "", VARTYPE_PASSWORD);
 ConVar sypb_password_key ("sypb_password_key", "_sypb_wp");
 
 ConVar sypb_language ("sypb_language", "en");
-ConVar sypb_version ("sypb_version", PRODUCT_VERSION, VARTYPE_READONLY);
+ConVar sypb_version ("sypb_version", SYPB_VERSION, VARTYPE_READONLY);
 
 ConVar sypb_lockzbot("sypb_lockzbot", "1");
 ConVar sypb_showwp("sypb_showwp", "0");
@@ -46,7 +46,7 @@ ConVar sypb_stopbots("sypb_stopbots", "0");
 // SyPB Pro P.47 - SyPB Version MSG
 void SyPBVersionMSG(edict_t *entity = null)
 {
-	int buildVersion[4] = { PRODUCT_VERSION_DWORD };
+	int buildVersion[4] = { SYPB_VERSION_DWORD };
 	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
 	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
@@ -70,7 +70,7 @@ void SyPBVersionMSG(edict_t *entity = null)
 	char versionData[1024];
 	sprintf(versionData, 
 		"------------------------------------------------\n"
-		"%s %s %s\n"
+		"%s %s\n"
 		"Build: %u.%u.%u.%u\n"
 		"Support API Version:%.2f\n"
 		"Support SwNPC Version:%.2f\n"
@@ -88,20 +88,20 @@ void SyPBVersionMSG(edict_t *entity = null)
 		"Compiled: %s, %s (UTC +08:00)\n"
 		"Meta-Interface Version: %s\n"
 		"------------------------------------------------",
-		PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_DEV_VERSION_FORTEST, 
+		SYPB_NAME, SYPB_VERSION,
 		bV16[0], bV16[1], bV16[2], bV16[3],
-		float(SUPPORT_API_VERSION_F),
-		float(SUPPORT_SWNPC_VERSION_F),
+		float(SYPBAPI_VERSION_F),
+		float(SWNPC_VERSION_F),
 		//API_Version, 
-		(amxxDLL_Version == -1.0 || amxxDLL_Version != float(SUPPORT_API_VERSION_F)) ? "FAIL" : "RUNNING",
+		(amxxDLL_Version == -1.0 || amxxDLL_Version != float(SYPBAPI_VERSION_F)) ? "FAIL" : "RUNNING",
 		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
 		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
-		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SUPPORT_API_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
+		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SYPBAPI_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SYPBAPI_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
 		// SwNPC
-		(SwNPC_Version == -1.0 || SwNPC_Version != float(SUPPORT_SWNPC_VERSION_F)) ? "FAIL" : "RUNNING",
+		(SwNPC_Version == -1.0 || SwNPC_Version != float(SWNPC_VERSION_F)) ? "FAIL" : "RUNNING",
 		(SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
 		swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3],
-		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SUPPORT_SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
+		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
 		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, META_INTERFACE_VERSION);
 
 	if (IsValidPlayer (entity))
@@ -3497,7 +3497,7 @@ export void Meta_Init (void)
 // SyPB Pro P.30 - AMXX API
 export bool Amxx_RunSypb(void)
 {
-	API_Version = float(SUPPORT_API_VERSION_F); // SyPB API_P
+	API_Version = float(SYPBAPI_VERSION_F); // SyPB API_P
 	API_TestMSG("Amxx_RunSypb Checking - Done");
 	return true;
 }
@@ -3890,7 +3890,7 @@ export void SwNPC_GetHostEntity(edict_t **hostEntity)
 
 export float SwNPC_SyPBSupportVersion(void)
 {
-	return float(SUPPORT_SWNPC_VERSION_F);
+	return float(SWNPC_VERSION_F);
 }
 
 export void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)

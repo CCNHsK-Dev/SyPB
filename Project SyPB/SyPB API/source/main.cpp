@@ -1,7 +1,7 @@
 #include "main.h"
 #include "extdll.h"
 
-#include "version.h"
+#include <../../version.h>
 
 bool sypbLog = false;
 

@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "amxxmodule.h"
+#include <../../version.h>
 
 /************* METAMOD SUPPORT *************/
 #ifdef USE_METAMOD

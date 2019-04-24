@@ -1,0 +1,34 @@
+
+#ifndef RESOURCE_INCLUDED
+#define RESOURCE_INCLUDED
+
+#define PRODUCT_AUTHOR "HsK Dev-Blog @ CCN"
+#define PRODUCT_URL "http://ccnhsk-dev.blogspot.com/"
+#define PRODUCT_EMAIL "ccndevblog@outlook.com"
+#define PRODUCT_LOGTAG "SyPB"
+
+#define PRODUCT_COPYRIGHT PRODUCT_AUTHOR
+#define PRODUCT_SUPPORT_VERSION "1.6"
+#define PRODUCT_DATE __DATE__
+
+// SyPB -------------------------
+#define SYPB_NAME "SyPB"
+#define SYPB_VERSION_DWORD 1,50,20190425,769 // yyyy/mm/dd  
+#define SYPB_VERSION "Beta 1.50"
+#define SYPB_VERSION_F 1.50
+
+#define SWNPC_NAME "SwNPC"
+#define SWNPC_VERSION "Beta 1.50"
+#define SWNPC_VERSION_F 1.50
+#define SWNPC_VERSION_DWORD 1,50,20190425,122 // yyyy/mm/dd   
+
+#define SYPBAPI_NAME "SyPB AMXX API"
+#define SYPBAPI_VERSION "Beta 1.50"
+#define SYPBAPI_VERSION_F 1.50
+#define SYPBAPI_VERSION_DWORD 1,50,20190425,50    // yyyy/mm/dd   
+
+#define SYPB_DESCRIPTION SYPB_NAME " " SYPB_VERSION " (API: " SYPBAPI_VERSION " | SwNPC: " SWNPC_VERSION ")"
+#define SWNPC_DESCRIPTION SWNPC_NAME " " SWNPC_VERSION
+#define SYPBAPI_DESCRIPTION SYPBAPI_NAME " " SYPBAPI_VERSION
+
+#endif // RESOURCE_INCLUDED

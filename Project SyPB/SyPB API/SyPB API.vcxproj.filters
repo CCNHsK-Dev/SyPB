@@ -26,6 +26,8 @@
       <Filter>sdk</Filter>
     </ClInclude>
     <ClInclude Include="source\main.h" />
-    <ClInclude Include="source\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\sypb_api.rc" />
   </ItemGroup>
 </Project>

@@ -58,7 +58,7 @@ void SyPBDataLoad(void)
 		LogToFile("Loading Fail, Pls Try upgrade your SyPB Version");
 		return;
 	}
-	SwNPCAPI_SwNPCBuild(float(PRODUCT_VERSION_F), PRODUCT_VERSION_DWORD);
+	SwNPCAPI_SwNPCBuild(float(SWNPC_VERSION_F), SWNPC_VERSION_DWORD);
 
 	SwNPCAPI_SwNPCLogFile = (_SwNPCLogFile)GetProcAddress(dll, "SwNPC_AddLog");
 	if (!SwNPCAPI_SwNPCLogFile)
@@ -68,15 +68,15 @@ void SyPBDataLoad(void)
 	}
 
 	float sypbSupportVersion = SwNPCAPI_SyPBSupportVersion();
-	if (sypbSupportVersion != float(PRODUCT_VERSION_F))
+	if (sypbSupportVersion != float(SWNPC_VERSION_F))
 	{
-		if (sypbSupportVersion < float(PRODUCT_VERSION_F))
+		if (sypbSupportVersion < float(SWNPC_VERSION_F))
 			LogToFile("Pls upgarde you SyPB Version");
 		else
 			LogToFile("Pls upgarde you SwNPC Version");
 
 		LogToFile("SwNPC Version: %.2f | SyPB Support SwNPC Version: %.2f",
-			float(PRODUCT_VERSION_F), sypbSupportVersion);
+			float(SWNPC_VERSION_F), sypbSupportVersion);
 		return;
 	}
 

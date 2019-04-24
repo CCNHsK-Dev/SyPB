@@ -151,7 +151,9 @@
     <ClInclude Include="sdk\CVector.h" />
     <ClInclude Include="sdk\moduleconfig.h" />
     <ClInclude Include="source\main.h" />
-    <ClInclude Include="source\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\sypb_api.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

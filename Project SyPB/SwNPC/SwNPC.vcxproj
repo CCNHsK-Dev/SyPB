@@ -149,7 +149,9 @@
     <ClInclude Include="source\core.h" />
     <ClInclude Include="source\main.h" />
     <ClInclude Include="source\moduleconfig.h" />
-    <ClInclude Include="source\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\swnpc.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

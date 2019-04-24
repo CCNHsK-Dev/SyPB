@@ -27,9 +27,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\version.h">
-      <Filter>Include</Filter>
-    </ClInclude>
     <ClInclude Include="source\amxxmodule.h">
       <Filter>Include</Filter>
     </ClInclude>
@@ -50,5 +47,8 @@
     <Filter Include="Include">
       <UniqueIdentifier>{103e6dbf-260b-470a-aa13-9a45e3b3ffc3}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\swnpc.rc" />
   </ItemGroup>
 </Project>

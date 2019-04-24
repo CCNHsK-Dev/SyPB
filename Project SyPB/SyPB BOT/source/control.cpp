@@ -95,29 +95,6 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 	// this function completely prepares bot entity (edict) for creation, creates team, skill, sets name etc, and
 	// then sends result to bot constructor
 
-#if defined(PRODUCT_DEV_VERSION)
-	// SyPB Pro P.34 - Preview DeadLine
-	time_t rawtime;
-	struct tm * timeinfo;
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	int year = timeinfo->tm_year + 1900, mon = timeinfo->tm_mon + 1, day = timeinfo->tm_mday;
-	int today = (year * 10000) + (mon * 100) + (day);
-	int deadline = (PV_VERSION_YEAR * 10000) + (PV_VERSION_MON * 100) + PV_VERSION_DAY;
-
-	if ((deadline - today) < 0)
-	{
-		m_creationTab.RemoveAll(); // something wrong with waypoints, reset tab of creation
-		sypb_quota.SetInt(0); // reset quota
-		sypb_auto_players.SetInt(-1);
-
-		ChartPrint("[SyPB Preview] This Preview version outdate *****");
-		ChartPrint("[SyPB Preview] This Preview version outdate *****");
-		ChartPrint("[SyPB Preview] This Preview version outdate *****");
-		return -3;
-	}
-#endif
-
 	// SyPB Pro P.22 - join after player
 	if (sypb_join_after_player.GetBool() == true)
 	{
