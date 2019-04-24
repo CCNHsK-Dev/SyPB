@@ -96,7 +96,6 @@ extern char g_fakeArgv[256];
 
 // SyPB Pro P.42 - Entity Action
 extern float g_checkEntityDataTime;
-extern const int entityNum = 256;
 extern int g_entityId[entityNum];
 extern int g_entityTeam[entityNum];
 extern int g_entityAction[entityNum];

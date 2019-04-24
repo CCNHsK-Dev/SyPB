@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="SyPB_Debug|x64">
+      <Configuration>SyPB_Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="SyPB_Release|Win32">
       <Configuration>SyPB_Release</Configuration>
       <Platform>Win32</Platform>
@@ -9,11 +13,16 @@
       <Configuration>SyPB_Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="SyPB_Release|x64">
+      <Configuration>SyPB_Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C232645A-3B99-48F4-A1F3-F20CF0A9568B}</ProjectGuid>
     <RootNamespace>sypb</RootNamespace>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>1.SyPB Bot</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'" Label="Configuration">
@@ -21,7 +30,7 @@
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>
     </CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'" Label="Configuration">
@@ -29,9 +38,15 @@
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>
     </CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|x64'">
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|x64'">
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -45,10 +60,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">.\sypb_release\</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">.\sypb_debug\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">.\sypb_release\inf\</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">.\sypb_debug\inf\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">..\Project_OutPut\SyPB_Bot\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">..\Project_OutPut\SyPB_Bot\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">..\Project_OutPut\SyPB_Bot\inf\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">..\Project_OutPut\SyPB_Bot\inf\</IntDir>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</IgnoreImportLibrary>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</LinkIncremental>
@@ -60,10 +75,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetName>sypb</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TargetName>sypb</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">
     <Midl>
@@ -71,7 +88,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\new_release/sypb.tlb</TypeLibraryName>
+      <TypeLibraryName>..\Project_OutPut\SyPB_Bot\new_release/sypb.tlb</TypeLibraryName>
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
@@ -79,7 +96,7 @@
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>.\;..\;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\;.\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>false</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -87,12 +104,12 @@
       </FunctionLevelLinking>
       <RuntimeTypeInfo>
       </RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>core.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>.\sypb_release\inf\sypb.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\sypb_release\asm\</AssemblerListingLocation>
-      <ObjectFileName>.\sypb_release\obj\</ObjectFileName>
-      <ProgramDataBaseFileName>.\sypb_release\inf\</ProgramDataBaseFileName>
+      <PrecompiledHeaderOutputFile>..\Project_OutPut\SyPB_Bot\inf\sypb.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>..\Project_OutPut\SyPB_Bot\asm\</AssemblerListingLocation>
+      <ObjectFileName>..\Project_OutPut\SyPB_Bot\obj\</ObjectFileName>
+      <ProgramDataBaseFileName>..\Project_OutPut\SyPB_Bot\inf\</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -120,7 +137,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <OutputFile>.\sypb_release/sypb.dll</OutputFile>
+      <OutputFile>..\Project_OutPut/sypb.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -133,7 +150,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
-      <ImportLibrary>.\sypb_release\inf\sypb.lib</ImportLibrary>
+      <ImportLibrary>..\Project_OutPut\SyPB_Bot\inf\sypb.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>
@@ -148,7 +165,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\new_release/sypb.tlb</TypeLibraryName>
+      <TypeLibraryName>..\Project_OutPut\SyPB_Bot\new_release/sypb.tlb</TypeLibraryName>
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
@@ -156,7 +173,7 @@
       <Optimization>Disabled</Optimization>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>.\;..\;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\SyPB BOT;.\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>
       </StringPooling>
@@ -164,12 +181,12 @@
       <FunctionLevelLinking>
       </FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>core.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>.\sypb_debug\inf\sypb.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\sypb_debug\asm\</AssemblerListingLocation>
-      <ObjectFileName>.\sypb_debug\obj\</ObjectFileName>
-      <ProgramDataBaseFileName>.\sypb_debug\inf\</ProgramDataBaseFileName>
+      <PrecompiledHeaderOutputFile>..\Project_OutPut\SyPB_Bot\inf\sypb.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>..\Project_OutPut\SyPB_Bot\asm\</AssemblerListingLocation>
+      <ObjectFileName>..\Project_OutPut\SyPB_Bot\obj\</ObjectFileName>
+      <ProgramDataBaseFileName>..\Project_OutPut\SyPB_Bot\inf\</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -206,7 +223,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <OutputFile>.\sypb_debug/sypb.dll</OutputFile>
+      <OutputFile>..\Project_OutPut/sypb.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
@@ -219,7 +236,7 @@
       <RandomizedBaseAddress>true</RandomizedBaseAddress>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
-      <ImportLibrary>.\sypb_debug\inf\sypb.lib</ImportLibrary>
+      <ImportLibrary>..\Project_OutPut\SyPB_Bot\inf\sypb.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
@@ -240,34 +257,30 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\basecode.cpp" />
-    <ClCompile Include="..\source\chatlib.cpp" />
-    <ClCompile Include="..\source\combat.cpp" />
-    <ClCompile Include="..\source\control.cpp" />
-    <ClCompile Include="..\source\engine.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">Use</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\source\Experience.cpp" />
-    <ClCompile Include="..\source\globals.cpp" />
-    <ClCompile Include="..\source\interface.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="..\source\navigate.cpp" />
-    <ClCompile Include="..\source\netmsg.cpp" />
-    <ClCompile Include="..\source\support.cpp" />
-    <ClCompile Include="..\source\waypoint.cpp" />
+    <ClInclude Include=".\include\core.h" />
+    <ClInclude Include=".\include\engine.h" />
+    <ClInclude Include=".\include\Experience.h" />
+    <ClInclude Include=".\include\globals.h" />
+    <ClInclude Include=".\include\platform.h" />
+    <ClInclude Include=".\include\resource.h" />
+    <ClInclude Include=".\include\runtime.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\core.h" />
-    <ClInclude Include="..\include\engine.h" />
-    <ClInclude Include="..\include\Experience.h" />
-    <ClInclude Include="..\include\globals.h" />
-    <ClInclude Include="..\include\platform.h" />
-    <ClInclude Include="..\include\resource.h" />
-    <ClInclude Include="..\include\runtime.h" />
+    <ResourceCompile Include=".\include\sypb.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\include\sypb.rc" />
+    <ClCompile Include=".\source\basecode.cpp" />
+    <ClCompile Include=".\source\chatlib.cpp" />
+    <ClCompile Include=".\source\combat.cpp" />
+    <ClCompile Include=".\source\control.cpp" />
+    <ClCompile Include=".\source\engine.cpp" />
+    <ClCompile Include=".\source\Experience.cpp" />
+    <ClCompile Include=".\source\globals.cpp" />
+    <ClCompile Include=".\source\interface.cpp" />
+    <ClCompile Include=".\source\navigate.cpp" />
+    <ClCompile Include=".\source\netmsg.cpp" />
+    <ClCompile Include=".\source\support.cpp" />
+    <ClCompile Include=".\source\waypoint.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -55,6 +55,7 @@ using namespace Math;
 
 #include "runtime.h"
 
+const int entityNum = 256;
 const int checkEntityNum = 36;
 const int checkEnemyNum = 128;
 

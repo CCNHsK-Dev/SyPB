@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="source\amxxmodule.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\api.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\npc_ai.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\npc_control.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sypbload.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\waypoint.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\version.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="source\amxxmodule.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="source\core.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="source\main.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="source\moduleconfig.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{bb4db6ca-2f7b-4a3a-9b2d-b36ca610e38b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{103e6dbf-260b-470a-aa13-9a45e3b3ffc3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

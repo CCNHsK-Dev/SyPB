@@ -31,7 +31,7 @@
 #define RESOURCE_INCLUDED
 
 // This is test version?
-#define PRODUCT_DEV_VERSION
+//#define PRODUCT_DEV_VERSION
 
 #if defined(PRODUCT_DEV_VERSION)
 #define PRODUCT_DEV_VERSION_FORTEST "(DEV)"
@@ -52,7 +52,7 @@
 #define SUPPORT_SWNPC_VERSION_F 1.48
 
 // SyPB Version
-#define PRODUCT_VERSION_DWORD 1,50,20190106,768 // yyyy/mm/dd  
+#define PRODUCT_VERSION_DWORD 1,50,20190425,769 // yyyy/mm/dd  
 #define PRODUCT_VERSION "Beta 1.50"
 #define PRODUCT_VERSION_F 1.50
 
