@@ -30,6 +30,7 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 	SET_MODEL(GetEntity(), (char *)STRING(pev->model));
 	pev->framerate = 1.0;
 	pev->frame = 0;
+
 	g_npcSize[0] = Vector(-16.0f, -16.0f, -32.0f);
 	g_npcSize[1] = Vector(16.0f, 16.0f, 32.0f);
 
@@ -932,16 +933,16 @@ void NPC::CheckStuck(float oldSpeed)
 
 		TraceResult tr;
 		Vector dest = pev->origin;
-		dest.z += 32;
-		Vector src = pev->origin + gpGlobals->v_forward * 32;
+		dest.z += 36;
+		Vector src = pev->origin + gpGlobals->v_forward * 36;
 
 		UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
 		if (tr.flFraction > 0.0f && tr.flFraction != 1.0f)
 		{
-			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity ()).z) - 32;
-			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 32)
+			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity ()).z) - 36;
+			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 36)
 			{
-				pev->velocity.z = (270.0f * pev->gravity) + 32.0f;
+				pev->velocity.z = (270.0f * pev->gravity) + 36.0f;
 				m_jumpAction = false;
 			}
 		}

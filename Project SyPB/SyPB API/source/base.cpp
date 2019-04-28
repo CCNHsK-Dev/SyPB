@@ -92,6 +92,10 @@ _BlockWeaponPick Amxx_BlockWeaponPick;
 typedef int(*_GetEntityWaypointId) (int);
 _GetEntityWaypointId Amxx_GetEntityWaypointId;
 
+// API 1.50
+typedef bool(*_ZombieModGameStart) (int);
+_ZombieModGameStart Amxx_ZombieModGameStart;
+
 float api_version = 0.0;
 
 void SyPBDataLoad (void)
@@ -289,6 +293,11 @@ void SyPBDataLoad (void)
 	Amxx_GetEntityWaypointId = (_GetEntityWaypointId)GetProcAddress(dll, "Amxx_GetEntityWaypointId");
 	if (!Amxx_GetEntityWaypointId)
 		LogToFile("Load API::Amxx_GetEntityWaypointId Failed");
+
+	// 1.50
+	Amxx_ZombieModGameStart = (_ZombieModGameStart)GetProcAddress(dll, "Amxx_ZombieModGameStart");
+	if (!Amxx_ZombieModGameStart)
+		LogToFile("Load API::Amxx_ZombieModGameStart Failed");
 }
 
 static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params)
@@ -533,6 +542,16 @@ static cell AMX_NATIVE_CALL amxx_GetEntityWaypointId(AMX *amx, cell *params) // 
 	return Amxx_GetEntityWaypointId(id);
 }
 
+static cell AMX_NATIVE_CALL amxx_ZombieModGameStart(AMX* amx, cell* params) // 1.50
+{
+	if (!Amxx_ZombieModGameStart || api_version < float(1.50))
+		return -2;
+
+	int input = params[1];
+
+	return Amxx_ZombieModGameStart(input);
+}
+
 AMX_NATIVE_INFO sypb_natives[] =
 {
 	{ "is_run_sypb", amxx_runSypb },
@@ -566,6 +585,8 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ "sypb_block_weapon_pick", amxx_BlockWeaponPick }, 
 	// 1.48
 	{ "sypb_get_entity_point", amxx_GetEntityWaypointId}, 
+	// 1.50
+	{ "sypb_zombie_game_start", amxx_ZombieModGameStart }, 
 	{ NULL, NULL },
 };
 
@@ -588,17 +609,20 @@ int LogToFile(char *szLogText, ...)
 
 	FILE *fp;
 
-	if (!(fp = fopen(fileHere, "a")))
-		return 0;
+	fp = fopen(fileHere, "a");
+	if (fp)
+	{
+		va_list vArgptr;
+		char szText[1024];
 
-	va_list vArgptr;
-	char szText[1024];
+		va_start(vArgptr, szLogText);
+		vsprintf(szText, szLogText, vArgptr);
+		va_end(vArgptr);
 
-	va_start(vArgptr, szLogText);
-	vsprintf(szText, szLogText, vArgptr);
-	va_end(vArgptr);
+		fprintf(fp, " %s\n", szText);
+		fclose(fp);
+		return 1;
+	}
 
-	fprintf(fp, " %s\n", szText);
-	fclose(fp);
-	return 1;
+	return 0;
 }

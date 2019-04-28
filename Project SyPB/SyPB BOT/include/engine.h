@@ -2248,6 +2248,10 @@ typedef int(*_AMXX_BLOCK_WEAPON_PICK) (int index, int blockWeaponPick);
 // SyPB Pro P.48 - AMXX API
 C_DLLEXPORT int Amxx_GetEntityWaypointId(int index);
 typedef int(*_AMXX_GET_ENTITY_WAYPOINT_ID) (int index);
+
+// SyPB Pro P.50 - AMXX API
+C_DLLEXPORT int Amxx_ZombieModGameStart(int input);
+typedef int(*_AMXX_ZOMBIE_MOD_GAME_START) (int input);
 // AMXX SyPB API End
 
 

@@ -1,13 +1,13 @@
 
 /*
 * This is SyPB API for AMXX
-* Version : 1.48
-* Support Build: 1.48.50576.49 or new
+* Version : 1.50
+* Support Build: 1.50.5340.51 or new
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.48.50576.699 or new
+* Support SyPB Build: 1.50.5340.770 or new
 *
-* Date: 28/1/2017
+* Date: 28/4/2019
 */
 
 
@@ -223,3 +223,11 @@ native sypb_block_weapon_pick (index, blockWeaponPick);
 	 API Verion: 1.48
 */
 native sypb_get_entity_point (index);
+
+/* -----------------------------------------------------------------------
+ sypb_zombie_game_start - Check and Set Zombie Mode Game Start
+							(action = -1 check only / 0 = game stop / 1 = game start)
+							(return -1 = not zombie mod / 0 = game not start / 1 = game start)
+	 API Verion: 1.50
+*/
+native sypb_zombie_game_start (action = -1);

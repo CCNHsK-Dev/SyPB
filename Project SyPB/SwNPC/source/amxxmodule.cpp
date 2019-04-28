@@ -2379,39 +2379,42 @@ C_DLLEXPORT void __stdcall GiveFnptrsToDll( enginefuncs_t* pengfuncsFromEngine, 
 	// --> ** Function core
 
 #ifdef _MSC_VER
-	// Epilog
-	if (sizeof(int*) == 8)
-	{	// 64 bit
+	switch (sizeof(int*))
+	{
+	case 8:
 		__asm
 		{
 			// Pop registers
 			pop	edi
 			pop	esi
-				pop	ebx
-				// Restore stack frame pointer
-				mov	esp, ebp
-				// Restore ebp
-				pop	ebp
-				// 2 * sizeof(int*) = 16 on 64 bit
-				ret 16
+			pop	ebx
+			// Restore stack frame pointer
+			mov	esp, ebp
+			// Restore ebp
+			pop	ebp
+			// 2 * sizeof(int*) = 16 on 64 bit
+			ret 16
 		}
-	}
-	else
-	{	// 32 bit
+
+		break;
+
+	default:
 		__asm
 		{
 			// Pop registers
 			pop	edi
 			pop	esi
-				pop	ebx
-				// Restore stack frame pointer
-				mov	esp, ebp
-				// Restore ebp
-				pop	ebp
-				// 2 * sizeof(int*) = 8 on 32 bit
-				ret 8
+			pop	ebx
+			// Restore stack frame pointer
+			mov	esp, ebp
+			// Restore ebp
+			pop	ebp
+			// 2 * sizeof(int*) = 8 on 32 bit
+			ret 8
 		}
-	}
+
+		break;
+	} 
 #endif // #ifdef _MSC_VER
 }
 

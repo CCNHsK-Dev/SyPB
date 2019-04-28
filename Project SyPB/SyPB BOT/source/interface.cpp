@@ -2534,8 +2534,8 @@ void LoadEntityData(void)
 				g_clients[i].team = TEAM_COUNTER;
 			else if (g_roundEnded)
 				g_clients[i].team = TEAM_TERRORIST;
-
-			g_clients[i].team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
+			else
+				g_clients[i].team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
 		}
 		else if (g_gameMode == MODE_NOTEAM)
 			g_clients[i].team = TEAM_COUNT;
@@ -3873,6 +3873,26 @@ export int Amxx_GetEntityWaypointId(int index) // 1.48
 	API_TestMSG("Amxx_GetEntityWaypointId Checking - [%s] - Done", GetEntityName (entity));
 
 	return GetEntityWaypoint(entity);
+}
+
+// SyPB Pro P.50 - AMXX API
+export int Amxx_ZombieModGameStart(int input) // 1.50
+{
+	if (!IsZombieMode())
+		return -1;
+
+	if (input == -1)
+		return (!g_roundEnded && g_gameStartTime <= engine->GetTime());
+
+	if (input == 1)
+	{
+		g_roundEnded = false;
+		g_gameStartTime = 0.0f;
+		return 1;
+	}
+
+	g_gameStartTime = engine->GetTime() + (CVAR_GET_FLOAT("mp_roundtime") * 60);
+	return 0;
 }
 // AMXX SyPB API End
 

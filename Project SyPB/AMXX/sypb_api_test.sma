@@ -1,21 +1,21 @@
 
 /*
 * This is SyPB API for AMXX
-* Version : 1.48
-* Support Build: 1.48.50576.49 or new
+* Version : 1.50
+* Support Build: 1.50.5337.50 or new
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.48.50576.699 or new
+* Support SyPB Build: 1.50.5337.769 or new
 *
-* Date: 28/1/2017
+* Date: 26/4/2019
 */
 
 #include <amxmodx>
 #include <fakemeta>
 #include <sypb>
 
-#define PLUGIN	"[SyPB API] Testing"
-#define VERSION	"1.48.50576.49"
+#define PLUGIN	"[SyPB API] Demo"
+#define VERSION	"1.50.5337.50"
 #define AUTHOR	"HsK-Dev Blog By'CCN"
 
 new bool:g_sypb_run;

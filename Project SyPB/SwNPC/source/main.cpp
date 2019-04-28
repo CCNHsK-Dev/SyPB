@@ -155,20 +155,6 @@ void FN_RemoveEntity(edict_t *c)
 	RETURN_META(MRES_IGNORED);
 }
 
-void FN_TraceLine(const float *v1, const float *v2, int fNoMonsters, edict_t *pentToSkip, TraceResult *ptr)
-{
-	if (IsValidPlayer (pentToSkip) && g_npcManager->IsSwNPC(ptr->pHit) != null)
-	{
-		if (ptr->iHitgroup == 8)
-		{
-			ptr->iHitgroup = 1;
-			RETURN_META(MRES_HANDLED);
-		}
-	}
-
-	RETURN_META(MRES_IGNORED);
-}
-
 const char *GetModName(void)
 {
 	static char modName[256];

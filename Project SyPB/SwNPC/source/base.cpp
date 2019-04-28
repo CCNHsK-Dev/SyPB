@@ -471,6 +471,8 @@ int __fastcall HookTraceAttack(void *pthis, int i, entvars_t *pevAttacker, float
 {
 	edict_t *attacker = ENT(pevAttacker);
 	edict_t *victim = (*(entvars_t **)((char*)pthis + 4))->pContainingEntity;
+	
+	//(*g_engfuncs.pfnClientPrintf)	(attacker, print_center, "testtest");
 
 	TraceAttack(victim, attacker, flDamage, vecDir, ptr, bitsDamageType);
 	return 0;
