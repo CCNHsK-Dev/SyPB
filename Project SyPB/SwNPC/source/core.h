@@ -129,6 +129,8 @@ private:
 
 	void TaskB_FollowEntity(void);
 
+	void NPCTask(void);
+
 	void FindEnemy(void);
 	float GetEntityDistance(edict_t *entity);
 	bool IsEnemyViewable(edict_t *entity);

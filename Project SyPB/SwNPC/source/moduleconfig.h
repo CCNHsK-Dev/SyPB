@@ -369,7 +369,7 @@
 // #define FN_SetOrigin_Post					SetOrigin_Post
 // #define FN_EmitSound_Post					EmitSound_Post
 // #define FN_EmitAmbientSound_Post				EmitAmbientSound_Post
-// #define FN_TraceLine_Post					TraceLine_Post
+#define FN_TraceLine_Post					TraceLine_Post
 // #define FN_TraceToss_Post					TraceToss_Post
 // #define FN_TraceMonsterHull_Post				TraceMonsterHull_Post
 // #define FN_TraceHull_Post					TraceHull_Post

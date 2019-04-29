@@ -264,13 +264,7 @@ void NPC::NPCAi(void)
 	FindWaypoint();
 
 	FindEnemy();
-
-	if (m_task & TASK_ENEMY)
-		TaskEnemy();
-	else if (m_task & TASK_MOVETOTARGET)
-		TaskMoveTarget();
-	else
-		TaskBase();
+	NPCTask();
 
 	if (m_destOrigin == nullvec && m_currentWaypointIndex != -1)
 	{
@@ -293,6 +287,16 @@ void NPC::NPCAction(void)
 	MoveAction();
 
 	ChangeAnim();
+}
+
+void NPC::NPCTask(void)
+{
+	if (m_task & TASK_ENEMY)
+		TaskEnemy();
+	else if (m_task & TASK_MOVETOTARGET)
+		TaskMoveTarget();
+	else
+		TaskBase();
 }
 
 void NPC::TaskBase(void)

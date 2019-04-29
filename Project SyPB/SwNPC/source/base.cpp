@@ -113,13 +113,6 @@ bool IsInWater(edict_t *entity)
 	return entity->v.waterlevel >= 2;
 }
 
-bool IsFriendlyFireOn(void)
-{
-	cvar_t *teamDamage = CVAR_GET_POINTER("mp_friendlyfire");
-
-	return teamDamage->value > 0;
-}
-
 const char *GetEntityName(edict_t *entity)
 {
 	static char entityName[256];
@@ -131,6 +124,27 @@ const char *GetEntityName(edict_t *entity)
 		strcpy(entityName, (char *)STRING(entity->v.classname));
 
 	return &entityName[0];
+}
+
+bool IsFriendlyFireOn(void)
+{
+	cvar_t* teamDamage = CVAR_GET_POINTER("mp_friendlyfire");
+
+	return teamDamage->value > 0;
+}
+
+void FN_TraceLine_Post(const float* v1, const float* v2, int fNoMonsters, edict_t* pentToSkip, TraceResult* ptr)
+{
+	if (!IsAlive(pentToSkip))
+		RETURN_META(MRES_IGNORED);
+
+	if (ptr->iHitgroup > 7 && g_npcManager->IsSwNPC(ptr->pHit))
+	{
+		ptr->iHitgroup = 3;
+		RETURN_META(MRES_SUPERCEDE);
+	}
+
+	RETURN_META(MRES_IGNORED);
 }
 
 void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir, TraceResult *ptr, int bitsDamageType)
@@ -424,69 +438,6 @@ float LookupActionTime(void *pmodel, int seqNum)
 	return time;
 }
 
-void MakeHookFunction(NPC *npc)
-{
-	if (npc->GetEntity ()->pvPrivateData == null)
-	{
-		LogToFile("[Error] Cannot Hook Entity Trace Attack - pEnt null - ID:%d", ENTINDEX(npc->GetEntity()));
-		return;
-	}
-
-	npc->vtable = *((void***)(((char*)npc->GetEntity()->pvPrivateData) + 0x0));
-	if (npc->vtable == null)
-	{
-		LogToFile("[Error] Cannot Hook Entity Trace Attack - vtable null - ID:%d", ENTINDEX(npc->GetEntity()));
-		return;
-	}
-
-	int **ivtable = (int **)npc->vtable;
-
-	npc->vFcTraceAttack = (void *)ivtable[TraceAttackOffset];
-	npc->vFcTakeDamage = (void *)ivtable[TakeDamageOffset];
-
-	if (npc->vFcTraceAttack == null)
-		LogToFile("[Error] Cannot Hook Entity Trace Attack - vFcTraceAttack null - ID:%d", ENTINDEX(npc->GetEntity()));
-	else
-	{
-		DWORD OldFlags;
-		VirtualProtect(&ivtable[TraceAttackOffset], sizeof(int*), PAGE_READWRITE, &OldFlags);
-
-		ivtable[TraceAttackOffset] = (int *)HookTraceAttack;
-	}
-
-	if (npc->vFcTakeDamage == null)
-		LogToFile("[Error] Cannot Hook Entity Take Damage - vFcTakeDamage null - ID:%d", ENTINDEX(npc->GetEntity()));
-	else
-	{
-		DWORD OldFlags;
-		VirtualProtect (&ivtable[TakeDamageOffset], sizeof(int*), PAGE_READWRITE, &OldFlags);
-
-		ivtable[TakeDamageOffset] = (int *)HookTakeDamage;
-	}
-
-	npc->pvData = npc->GetEntity()->pvPrivateData;
-}
-
-int __fastcall HookTraceAttack(void *pthis, int i, entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType)
-{
-	edict_t *attacker = ENT(pevAttacker);
-	edict_t *victim = (*(entvars_t **)((char*)pthis + 4))->pContainingEntity;
-	
-	//(*g_engfuncs.pfnClientPrintf)	(attacker, print_center, "testtest");
-
-	TraceAttack(victim, attacker, flDamage, vecDir, ptr, bitsDamageType);
-	return 0;
-}
-
-int __fastcall HookTakeDamage(void *pthis, int i, entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamage)
-{
-	edict_t *attack = ENT(pevAttacker);
-	edict_t *victim = (*(entvars_t **)((char*)pthis + 4))->pContainingEntity;
-
-	TakeDamage(victim, attack, flDamage, bitsDamage);
-	return 0;
-}
-
 void UTIL_BloodDrips(const Vector &origin, const Vector &direction, int color, int amount)
 {
 	if (!UTIL_ShouldShowBlood(color))
@@ -615,6 +566,114 @@ BOOL UTIL_ShouldShowBlood(int color)
 	return false;
 }
 
+
+void DrawLine(edict_t* client, Vector start, Vector end, Color color, int width, int noise, int speed, int life, int lineType)
+{
+	if (FNullEnt(client))
+		return;
+
+	g_engfuncs.pfnMessageBegin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, client);
+	g_engfuncs.pfnWriteByte(TE_BEAMPOINTS);
+
+	g_engfuncs.pfnWriteCoord(start.x);
+	g_engfuncs.pfnWriteCoord(start.y);
+	g_engfuncs.pfnWriteCoord(start.z);
+
+	g_engfuncs.pfnWriteCoord(end.x);
+	g_engfuncs.pfnWriteCoord(end.y);
+	g_engfuncs.pfnWriteCoord(end.z);
+
+	switch (lineType)
+	{
+	case LINE_SIMPLE:
+		g_engfuncs.pfnWriteShort(g_modelIndexLaser);
+		break;
+
+	case LINE_ARROW:
+		g_engfuncs.pfnWriteShort(g_modelIndexArrow);
+		break;
+	}
+
+	g_engfuncs.pfnWriteByte(0);
+	g_engfuncs.pfnWriteByte(10);
+
+	g_engfuncs.pfnWriteByte(life);
+	g_engfuncs.pfnWriteByte(width);
+	g_engfuncs.pfnWriteByte(noise);
+
+	g_engfuncs.pfnWriteByte(color.red);
+	g_engfuncs.pfnWriteByte(color.green);
+	g_engfuncs.pfnWriteByte(color.blue);
+
+	g_engfuncs.pfnWriteByte(color.alpha); // alpha as brightness here
+	g_engfuncs.pfnWriteByte(speed);
+
+	g_engfuncs.pfnMessageEnd();
+}
+
+void MakeHookFunction(NPC* npc)
+{
+	if (npc->GetEntity()->pvPrivateData == null)
+	{
+		LogToFile("[Error] Cannot Hook Entity Trace Attack - pEnt null - ID:%d", ENTINDEX(npc->GetEntity()));
+		return;
+	}
+
+	npc->vtable = *((void***)(((char*)npc->GetEntity()->pvPrivateData) + 0x0));
+	if (npc->vtable == null)
+	{
+		LogToFile("[Error] Cannot Hook Entity Trace Attack - vtable null - ID:%d", ENTINDEX(npc->GetEntity()));
+		return;
+	}
+
+	int** ivtable = (int**)npc->vtable;
+
+	npc->vFcTraceAttack = (void*)ivtable[TraceAttackOffset];
+	npc->vFcTakeDamage = (void*)ivtable[TakeDamageOffset];
+
+	if (npc->vFcTraceAttack == null)
+		LogToFile("[Error] Cannot Hook Entity Trace Attack - vFcTraceAttack null - ID:%d", ENTINDEX(npc->GetEntity()));
+	else
+	{
+		DWORD OldFlags;
+		VirtualProtect(&ivtable[TraceAttackOffset], sizeof(int*), PAGE_READWRITE, &OldFlags);
+
+		ivtable[TraceAttackOffset] = (int*)HookTraceAttack;
+	}
+
+	if (npc->vFcTakeDamage == null)
+		LogToFile("[Error] Cannot Hook Entity Take Damage - vFcTakeDamage null - ID:%d", ENTINDEX(npc->GetEntity()));
+	else
+	{
+		DWORD OldFlags;
+		VirtualProtect(&ivtable[TakeDamageOffset], sizeof(int*), PAGE_READWRITE, &OldFlags);
+
+		ivtable[TakeDamageOffset] = (int*)HookTakeDamage;
+	}
+
+	npc->pvData = npc->GetEntity()->pvPrivateData;
+}
+
+int __fastcall HookTraceAttack(void* pthis, int i, entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType)
+{
+	edict_t* attacker = ENT(pevAttacker);
+	edict_t* victim = (*(entvars_t * *)((char*)pthis + 4))->pContainingEntity;
+
+	//(*g_engfuncs.pfnClientPrintf)	(attacker, print_center, "testtest");
+
+	TraceAttack(victim, attacker, flDamage, vecDir, ptr, bitsDamageType);
+	return 0;
+}
+
+int __fastcall HookTakeDamage(void* pthis, int i, entvars_t * pevInflictor, entvars_t * pevAttacker, float flDamage, int bitsDamage)
+{
+	edict_t* attack = ENT(pevAttacker);
+	edict_t* victim = (*(entvars_t * *)((char*)pthis + 4))->pContainingEntity;
+
+	TakeDamage(victim, attack, flDamage, bitsDamage);
+	return 0;
+}
+
 void UTIL_TraceLine(const Vector &vecStart, const Vector &vecEnd, IGNORE_MONSTERS igmon, IGNORE_GLASS ignoreGlass, edict_t *pentIgnore, TraceResult *ptr)
 {
 	TRACE_LINE(vecStart, vecEnd, (igmon == ignore_monsters ? TRUE : FALSE) | (ignoreGlass ? 0x100 : 0), pentIgnore, ptr);
@@ -663,46 +722,3 @@ void EMIT_SOUND_DYN(edict_t *entity, int channel, const char *sample, float volu
 	EMIT_SOUND_DYN2(entity, channel, sample, volume, attenuation, flags, pitch);
 }
 
-void DrawLine(edict_t *client, Vector start, Vector end, Color color, int width, int noise, int speed, int life, int lineType)
-{
-	if (FNullEnt (client))
-		return;
-
-	g_engfuncs.pfnMessageBegin(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, client);
-	g_engfuncs.pfnWriteByte(TE_BEAMPOINTS);
-
-	g_engfuncs.pfnWriteCoord(start.x);
-	g_engfuncs.pfnWriteCoord(start.y);
-	g_engfuncs.pfnWriteCoord(start.z);
-
-	g_engfuncs.pfnWriteCoord(end.x);
-	g_engfuncs.pfnWriteCoord(end.y);
-	g_engfuncs.pfnWriteCoord(end.z);
-
-	switch (lineType)
-	{
-	case LINE_SIMPLE:
-		g_engfuncs.pfnWriteShort(g_modelIndexLaser);
-		break;
-
-	case LINE_ARROW:
-		g_engfuncs.pfnWriteShort(g_modelIndexArrow);
-		break;
-	}
-
-	g_engfuncs.pfnWriteByte(0);
-	g_engfuncs.pfnWriteByte(10);
-
-	g_engfuncs.pfnWriteByte(life);
-	g_engfuncs.pfnWriteByte(width);
-	g_engfuncs.pfnWriteByte(noise);
-
-	g_engfuncs.pfnWriteByte(color.red);
-	g_engfuncs.pfnWriteByte(color.green);
-	g_engfuncs.pfnWriteByte(color.blue);
-
-	g_engfuncs.pfnWriteByte(color.alpha); // alpha as brightness here
-	g_engfuncs.pfnWriteByte(speed);
-
-	g_engfuncs.pfnMessageEnd();
-}
