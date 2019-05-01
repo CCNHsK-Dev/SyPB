@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.5337.122
+* Support Build: 1.50.5414.125
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.5337.769 or new
 *
-* Date: 26/4/2019
+* Date: 2/5/2019
 */
 
 /* -----------------------------------------------------------------------
@@ -62,11 +62,17 @@ native swnpc_set_size (npcId, Float:minSize[3], Float:maxSize[3]);
 
 native swnpc_set_find_enemy_mode (npcId, feMode);
 
-native swnpc_set_sequence_name (npcId, const idle[], const move[], const attack[], const damage[], const dead[]);
+//native swnpc_set_sequence_name (npcId, const idle[], const move[], const attack[], const damage[], const dead[]);
+// 1.50 Change
+native swnpc_set_sequence_name (npcId, const idle[], const move[], const walk[], const attack[], const damage[], const dead[]);
 
 native swnpc_set_blood_color (npcId, bloodColor);
 
-native swnpc_set_sound (npcId, const attackSound[], const damageSound[], const deadSound[]);
+//native swnpc_set_sound (npcId, const attackSound[], const damageSound[], const deadSound[]);
+// 1.50 Change 
+// soundClass : 0 is attack / 1 is damage / 2 is dead / 3 is footstep
+native swnpc_set_sound (npcId, soundClass, const sound1[] = "null", const sound2[] = "null"
+						, const sound3[] = "null" , const sound4[] = "null")
 
 native swnpc_set_damage_multiples (npcId, Float:damageMultiples);
 

@@ -215,14 +215,14 @@ int NPCControl::SetFEMode(int npcId, int feMode)
 	return 1;
 }
 
-int NPCControl::SetSequence(int npcId, const char *idle, const char *move, const char *attack, const char *damage,
-	const char *dead)
+int NPCControl::SetSequence(int npcId, const char *idle, const char *move, const char *walk, 
+	const char *attack, const char *damage, const char *dead)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->SetSequence(idle, move, attack, damage, dead);
+	npc->SetSequence(idle, move, walk, attack, damage, dead);
 	return 1;
 }
 
@@ -271,13 +271,13 @@ int NPCControl::SetBloodColor(int npcId, int bloodColor)
 	return 1;
 }
 
-int NPCControl::SetSound(int npcId, const char *attackSound, const char *damageSound, const char *deadSound)
+int NPCControl::SetSound(int npcId, int soundClass, const char* sound1, const char* sound2, const char* sound3, const char* sound4)
 {
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->SetSound(attackSound, damageSound, deadSound);
+	npc->SetSound(soundClass, sound1, sound2, sound3, sound4);
 	return 1;
 }
 

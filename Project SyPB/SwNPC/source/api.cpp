@@ -74,11 +74,12 @@ static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 
 	char *idle = MF_GetAmxString(amx, params[2], apiBuffer++, null);
 	char *move = MF_GetAmxString(amx, params[3], apiBuffer++, null);
-	char *attack = MF_GetAmxString(amx, params[4], apiBuffer++, null);
-	char *damage = MF_GetAmxString(amx, params[5], apiBuffer++, null);
-	char *dead = MF_GetAmxString(amx, params[6], apiBuffer++, null);
+	char *walk = MF_GetAmxString(amx, params[4], apiBuffer++, null);
+	char *attack = MF_GetAmxString(amx, params[5], apiBuffer++, null);
+	char *damage = MF_GetAmxString(amx, params[6], apiBuffer++, null);
+	char *dead = MF_GetAmxString(amx, params[7], apiBuffer++, null);
 
-	return g_npcManager->SetSequence(npcId, idle, move, attack, damage, dead);
+	return g_npcManager->SetSequence(npcId, idle, move, walk, attack, damage, dead);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAddFrags(AMX *amx, cell *params) // 1.48
@@ -105,15 +106,16 @@ static cell AMX_NATIVE_CALL amxx_setBloodColor(AMX *amx, cell *params) // 1.42
 	return g_npcManager->SetBloodColor(npcId, bloodColor);
 }
 
-static cell AMX_NATIVE_CALL amxx_setSound(AMX *amx, cell *params) // 1.42
+static cell AMX_NATIVE_CALL amxx_setSound(AMX *amx, cell *params) // 1.50
 {
 	int npcId = params[1];
+	int soundClass = params[2];
+	char* sound1 = MF_GetAmxString(amx, params[3], apiBuffer++, null);
+	char* sound2 = MF_GetAmxString(amx, params[4], apiBuffer++, null);
+	char* sound3 = MF_GetAmxString(amx, params[5], apiBuffer++, null);
+	char* sound4 = MF_GetAmxString(amx, params[6], apiBuffer++, null);
 
-	char *attackSound = MF_GetAmxString(amx, params[2], apiBuffer++, null);
-	char *damageSound = MF_GetAmxString(amx, params[3], apiBuffer++, null);
-	char *deadSound = MF_GetAmxString(amx, params[4], apiBuffer++, null);
-
-	return g_npcManager->SetSound(npcId, attackSound, damageSound, deadSound);
+	return g_npcManager->SetSound(npcId, soundClass, sound1, sound2, sound3, sound4);
 }
 
 static cell AMX_NATIVE_CALL amxx_setDamageMultiples(AMX *amx, cell *params) // 1.42

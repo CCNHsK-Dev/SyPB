@@ -106,7 +106,12 @@ void NPC::NewNPCSetting(void)
 	//m_gaitSequence[AS_MOVE] = -1;
 
 	for (i = 0; i < NS_ALL; i++)
-		m_npcSound[i] = "null";
+	{
+		m_npcSound[i][0] = "null";
+		m_npcSound[i][1] = "null";
+		m_npcSound[i][2] = "null";
+		m_npcSound[i][3] = "null";
+	}
 
 	m_findEnemyMode = 0;
 	m_bloodColor = BLOOD_COLOR_RED;
@@ -138,6 +143,7 @@ void NPC::ResetNPC(void)
 
 	m_deadActionTime = -1.0f;
 	m_changeActionTime = -1.0f;
+	m_setFootStepSoundTime = -1.0f;
 
 	m_currentWaypointIndex = -1;
 	m_navTime = gpGlobals->time;
@@ -208,6 +214,7 @@ void NPC::DeadThink(void)
 	{
 		m_deadActionTime = gpGlobals->time + m_deadRemoveTime;
 		m_changeActionTime = -1.0f;
+		m_setFootStepSoundTime = gpGlobals->time + 10.0f;
 
 		pev->velocity = nullvec;
 		pev->takedamage = DAMAGE_NO;
@@ -276,6 +283,7 @@ void NPC::NPCAi(void)
 	if (m_iDamage)
 	{
 		m_changeActionTime = -1.0f;
+		m_setFootStepSoundTime = gpGlobals->time + 2.0f;
 		g_npcAS |= ASC_DAMAGE;
 		m_iDamage = false;
 	}
@@ -785,6 +793,7 @@ bool NPC::AttackAction(edict_t *entity, bool needSetSpeed)
 		g_npcAS |= ASC_ATTACK;
 		m_attackTime = gpGlobals->time;
 		m_changeActionTime = -1.0f;
+		m_setFootStepSoundTime = gpGlobals->time + 2.0f;
 
 		MakeVectors(pev->angles);
 		float x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
@@ -866,9 +875,9 @@ void NPC::MoveAction(void)
 		pev->movetype = MOVETYPE_PUSHSTEP;
 
 	float oldSpeed = pev->speed;
-	pev->speed = m_moveSpeed;
 	if (m_moveSpeed == 0.0f || !IsAlive (GetEntity ()))
 	{
+		pev->speed = m_moveSpeed;
 		if (!IsOnLadder(GetEntity()) && pev->solid != SOLID_NOT)
 			DROP_TO_FLOOR(GetEntity());
 		return;
@@ -876,7 +885,7 @@ void NPC::MoveAction(void)
 
 	if (IsOnLadder(GetEntity()) || pev->solid == SOLID_NOT)
 	{
-		pev->velocity = GetSpeedVector(pev->origin, m_destOrigin, pev->speed);
+		pev->velocity = GetSpeedVector(pev->origin, m_destOrigin, m_moveSpeed);
 
 		if (pev->solid == SOLID_NOT)
 			goto lastly;
@@ -889,8 +898,8 @@ void NPC::MoveAction(void)
 		vecAng = Vector(0.0f, vecAng.y, 0.0f);
 		UTIL_MakeVectorsPrivate(vecAng, vecFwd, null, null);
 
-		pev->velocity.x = vecFwd.x * pev->speed;
-		pev->velocity.y = vecFwd.y * pev->speed;
+		pev->velocity.x = vecFwd.x * m_moveSpeed;
+		pev->velocity.y = vecFwd.y * m_moveSpeed;
 	}
 
 	if (m_jumpAction)
@@ -899,14 +908,27 @@ void NPC::MoveAction(void)
 		m_jumpAction = false;
 	}
 
+lastly:
 	CheckStuck(oldSpeed);
 
-	lastly:
-	float speed = GetDistance2D(pev->velocity);
-	if (speed > 10.0f || speed < -10.0f)
-		g_npcAS |= ASC_MOVE;
+	float speed = pev->speed;
+	pev->speed = m_moveSpeed;
 
-	//MakeVectors(pev->angles);
+	if (IsOnFloor(GetEntity ()))
+	{
+		if ((speed >= (pev->maxspeed / 2) || speed <= (-pev->maxspeed / 2)))
+		{
+			g_npcAS |= ASC_MOVE;
+
+			if (m_setFootStepSoundTime <= gpGlobals->time)
+			{
+				m_setFootStepSoundTime = gpGlobals->time + 0.3f;
+				PlayNPCSound(NS_FOOTSTEP);
+			}
+		}
+		else if (speed >= 10 || speed <= -10)
+			g_npcAS |= ASC_WALK;
+	}
 }
 
 void NPC::CheckStuck(float oldSpeed)
@@ -915,6 +937,9 @@ void NPC::CheckStuck(float oldSpeed)
 		return;
 
 	if (WalkMove())
+		return;
+
+	if (pev->solid == SOLID_NOT)
 		return;
 
 	if (m_checkStuckTime > gpGlobals->time)
@@ -1015,6 +1040,11 @@ void NPC::ChangeAnim()
 	if (m_changeActionTime > gpGlobals->time)
 		return;
 
+	if (m_actionSequence[AS_MOVE] == -1 && m_actionSequence[AS_WALK] != -1)
+		m_actionSequence[AS_MOVE] = m_actionSequence[AS_WALK];
+	else if (m_actionSequence[AS_WALK] == -1 && m_actionSequence[AS_MOVE] != -1)
+		m_actionSequence[AS_WALK] = m_actionSequence[AS_MOVE];
+
 	int animDesired;
 	if (g_npcAS & ASC_DEAD && m_actionSequence[AS_DEAD] != -1)
 		animDesired = m_actionSequence[AS_DEAD];
@@ -1028,8 +1058,11 @@ void NPC::ChangeAnim()
 		animDesired = m_actionSequence[AS_DAMAGE];
 		m_changeActionTime = gpGlobals->time + m_actionTime[AS_DAMAGE];
 	}
+
 	else if (g_npcAS & ASC_MOVE && m_actionSequence[AS_MOVE] != -1)
 		animDesired = m_actionSequence[AS_MOVE];
+	else if (g_npcAS & ASC_WALK && m_actionSequence[AS_WALK] != -1)
+		animDesired = m_actionSequence[AS_WALK];
 	else if (m_actionSequence[AS_IDLE] != -1)
 		animDesired = m_actionSequence[AS_IDLE];
 	else
@@ -1084,11 +1117,15 @@ void NPC::SetUpPModel(void)
 
 void NPC::PlayNPCSound(int soundClass)
 {
-	if (strcmp(m_npcSound[soundClass], "null") != 0)
+	int soundNum = -1;
+	for (int i = 3; i >= 0; i--)
 	{
-		int chanChannels = (soundClass == NS_ATTACK) ? CHAN_WEAPON : CHAN_VOICE;
-		EMIT_SOUND(GetEntity(), chanChannels, m_npcSound[soundClass], VOL_NORM, ATTN_NORM);
+		if (strcmp(m_npcSound[soundClass][i], "null") != 0)
+			soundNum = RANDOM_LONG(0, i);
 	}
+
+	if (soundNum != -1)
+		EMIT_SOUND(GetEntity(), CHAN_VOICE, m_npcSound[soundClass][soundNum], VOL_NORM, ATTN_NORM);
 }
 
 void NPC::DeleteSearchNodes(void)
@@ -1311,10 +1348,11 @@ int NPC::GetNavDataAPI(int data)
 	return -1;
 }
 
-void NPC::SetSequence(const char *idle, const char *move, const char *attack, const char *damage, const char *dead)
+void NPC::SetSequence(const char *idle, const char *move, const char *walk, const char *attack, const char *damage, const char *dead)
 {
 	m_ASName[AS_IDLE] = (char *)idle;
 	m_ASName[AS_MOVE] = (char *)move;
+	m_ASName[AS_WALK] = (char*)walk;
 	m_ASName[AS_ATTACK] = (char *)attack;
 	m_ASName[AS_DAMAGE] = (char *)damage;
 	m_ASName[AS_DEAD] = (char *)dead;
@@ -1323,11 +1361,15 @@ void NPC::SetSequence(const char *idle, const char *move, const char *attack, co
 	SetUpPModel();
 }
 
-void NPC::SetSound(const char *attackSound, const char *damageSound, const char *deadSound)
+void NPC::SetSound(int soundClass, const char *sound1, const char *sound2, const char* sound3, const char* sound4)
 {
-	m_npcSound[NS_ATTACK] = (char *)attackSound;
-	m_npcSound[NS_DAMAGE] = (char *)damageSound;
-	m_npcSound[NS_DEAD] = (char *)deadSound;
+	if (soundClass < 0 || soundClass >= NS_ALL)
+		return;
+
+	m_npcSound[soundClass][0] = (char*)sound1;
+	m_npcSound[soundClass][1] = (char*)sound2;
+	m_npcSound[soundClass][2] = (char*)sound3;
+	m_npcSound[soundClass][3] = (char*)sound4;
 }
 
 void NPC::DebugModeMsg(void)
