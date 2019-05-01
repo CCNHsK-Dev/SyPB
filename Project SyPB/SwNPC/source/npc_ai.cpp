@@ -1124,8 +1124,15 @@ void NPC::PlayNPCSound(int soundClass)
 			soundNum = RANDOM_LONG(0, i);
 	}
 
-	if (soundNum != -1)
-		EMIT_SOUND(GetEntity(), CHAN_VOICE, m_npcSound[soundClass][soundNum], VOL_NORM, ATTN_NORM);
+	if (soundNum == -1)
+		return;
+
+	if (soundClass == NS_ATTACK)
+		EMIT_SOUND_DYN(GetEntity (), CHAN_WEAPON, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
+	else if (soundClass == NS_FOOTSTEP)
+		EMIT_SOUND_DYN(GetEntity(), CHAN_BODY, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
+	else 
+		EMIT_SOUND_DYN(GetEntity(), CHAN_VOICE, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
 }
 
 void NPC::DeleteSearchNodes(void)
