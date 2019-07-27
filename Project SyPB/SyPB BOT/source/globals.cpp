@@ -174,7 +174,7 @@ plugin_info_t Plugin_info =
    META_INTERFACE_VERSION, // interface version
    SYPB_NAME, // plugin name
    SYPB_VERSION, // plugin version
-   PRODUCT_DATE, // date of creation
+   __DATE__, // date of creation
    PRODUCT_AUTHOR, // plugin author
    PRODUCT_URL, // plugin URL
    PRODUCT_LOGTAG, // plugin logtag

@@ -16,7 +16,7 @@ FILETYPE 0x2
           VALUE "FileDescription",   SYPB_DESCRIPTION   "\0"
           VALUE "FileVersion",       SYPB_VERSION       "\0"
           VALUE "OriginalFilename",  "sypb.dll" "\0"
-          VALUE "LegalCopyright",    PRODUCT_COPYRIGHT     "\0"
+          VALUE "LegalCopyright", PRODUCT_AUTHOR     "\0"
           VALUE "LegalTrademarks",   PRODUCT_AUTHOR         "\0"
           VALUE "ProductName",       SYPB_NAME          "\0"
 		  VALUE "ProductVersion",    SYPB_VERSION       "\0"

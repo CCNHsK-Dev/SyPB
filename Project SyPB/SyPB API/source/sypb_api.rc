@@ -17,7 +17,7 @@ FILETYPE 0x2
 				VALUE "FileDescription", SYPBAPI_DESCRIPTION   "\0"
 				VALUE "FileVersion", SYPBAPI_VERSION       "\0"
 				VALUE "OriginalFilename", "sypb_amxx.dll" "\0"
-				VALUE "LegalCopyright", PRODUCT_COPYRIGHT     "\0"
+				VALUE "LegalCopyright", PRODUCT_AUTHOR     "\0"
 				VALUE "LegalTrademarks", PRODUCT_AUTHOR         "\0"
 				VALUE "ProductName", SYPBAPI_NAME          "\0"
 				VALUE "ProductVersion", SYPBAPI_VERSION       "\0"

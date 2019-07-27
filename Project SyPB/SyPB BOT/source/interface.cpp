@@ -238,7 +238,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
       char aboutData[] =
          "+---------------------------------------------------------------------------------+\n"
-         " The SyPB for Counter-Strike " PRODUCT_SUPPORT_VERSION "\n"
+         " The SyPB for Counter-Strike 1.6 and Counter-Strike: Condition Zero\n"
          " Created by " PRODUCT_AUTHOR ", Using PODBot Code\n"
          " Website: " PRODUCT_URL "\n"
          "+---------------------------------------------------------------------------------+\n";
