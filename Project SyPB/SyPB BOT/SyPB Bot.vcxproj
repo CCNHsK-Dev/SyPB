@@ -256,7 +256,7 @@
       <MinimumRequiredVersion>
       </MinimumRequiredVersion>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutputPath)$(TargetFileName)</OutputFile>
+      <OutputFile>..\Project_OutPut\$(TargetFileName)</OutputFile>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
@@ -355,7 +355,7 @@
       <MinimumRequiredVersion>
       </MinimumRequiredVersion>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutputPath)$(TargetFileName)</OutputFile>
+      <OutputFile>..\Project_OutPut_XP\$(TargetFileName)</OutputFile>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>

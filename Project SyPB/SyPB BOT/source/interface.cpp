@@ -3495,20 +3495,20 @@ export void Meta_Init (void)
 }
 
 // SyPB Pro P.30 - AMXX API
-export bool Amxx_RunSypb(void)
+C_DLLEXPORT bool Amxx_RunSypb(void)
 {
 	API_Version = float(SYPBAPI_VERSION_F); // SyPB API_P
 	API_TestMSG("Amxx_RunSypb Checking - Done");
 	return true;
 }
 
-export float Amxx_APIVersion(void)
+C_DLLEXPORT float Amxx_APIVersion(void)
 {
 	API_TestMSG("Amxx_APIVersion Checking - API Version:%.2f - Done", API_Version);
 	return API_Version;
 }
 
-export void Amxx_Check_amxxdllversion(float version, int bu1, int bu2, int bu3, int bu4)
+C_DLLEXPORT void Amxx_Check_amxxdllversion(float version, int bu1, int bu2, int bu3, int bu4)
 {
 	amxxDLL_Version = version;
 	amxxDLL_bV16[0] = (uint16)bu1;
@@ -3517,14 +3517,14 @@ export void Amxx_Check_amxxdllversion(float version, int bu1, int bu2, int bu3, 
 	amxxDLL_bV16[3] = (uint16)bu4;
 }
 
-export int Amxx_IsSypb(int index) // 1.30
+C_DLLEXPORT int Amxx_IsSypb(int index) // 1.30
 {
 	index -= 1;
 	API_TestMSG("Amxx_IsSypb Checking - Done");
 	return (g_botManager->GetBot(index) != null);
 }
 
-export int Amxx_CheckEnemy(int index) // 1.30
+C_DLLEXPORT int Amxx_CheckEnemy(int index) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3535,7 +3535,7 @@ export int Amxx_CheckEnemy(int index) // 1.30
 	return (bot->m_enemy == null) ? -1 : (ENTINDEX(bot->m_enemy));
 }
 
-export int Amxx_CheckMoveTarget(int index) // 1.30
+C_DLLEXPORT int Amxx_CheckMoveTarget(int index) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3546,7 +3546,7 @@ export int Amxx_CheckMoveTarget(int index) // 1.30
 	return (bot->m_moveTargetEntity == null) ? -1 : (ENTINDEX(bot->m_moveTargetEntity));
 }
 
-export int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
+C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3572,7 +3572,7 @@ export int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 	return 1;
 }
 
-export int Amxx_SetBotMove(int index, int pluginSet) // 1.30
+C_DLLEXPORT int Amxx_SetBotMove(int index, int pluginSet) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3584,7 +3584,7 @@ export int Amxx_SetBotMove(int index, int pluginSet) // 1.30
 	return 1;
 }
 
-export int Amxx_SetBotLookAt(int index, Vector lookAt) // 1.30
+C_DLLEXPORT int Amxx_SetBotLookAt(int index, Vector lookAt) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3596,7 +3596,7 @@ export int Amxx_SetBotLookAt(int index, Vector lookAt) // 1.30
 	return 1;
 }
 
-export int Amxx_SetWeaponClip(int index, int weaponClip) // 1.30
+C_DLLEXPORT int Amxx_SetWeaponClip(int index, int weaponClip) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3608,7 +3608,7 @@ export int Amxx_SetWeaponClip(int index, int weaponClip) // 1.30
 	return 1;
 }
 
-export int Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
+C_DLLEXPORT int Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3621,7 +3621,7 @@ export int Amxx_BlockWeaponReload(int index, int blockWeaponReload) // 1.30
 }
 
 // SyPB Pro P.31 - AMXX API
-export int Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
+C_DLLEXPORT int Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3637,7 +3637,7 @@ export int Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
 
 
 // SyPB Pro P.34 - AMXX API
-export int Amxx_AddSyPB(const char *name, int skill, int team) // 1.34
+C_DLLEXPORT int Amxx_AddSyPB(const char *name, int skill, int team) // 1.34
 {
 	int botId = g_botManager->AddBotAPI(name, skill, team);
 
@@ -3652,7 +3652,7 @@ export int Amxx_AddSyPB(const char *name, int skill, int team) // 1.34
 }
 
 // SyPB Pro P.35 - AMXX API
-export int Amxx_SetGunADistance(int index, int minDistance, int maxDistance)  // 1.35
+C_DLLEXPORT int Amxx_SetGunADistance(int index, int minDistance, int maxDistance)  // 1.35
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3667,7 +3667,7 @@ export int Amxx_SetGunADistance(int index, int minDistance, int maxDistance)  //
 }
 
 // SyPB Pro P.38 - AMXX API
-export int Amxx_IsZombieBot(int index)
+C_DLLEXPORT int Amxx_IsZombieBot(int index)
 {
 	edict_t *player = INDEXENT(index);
 
@@ -3681,7 +3681,7 @@ export int Amxx_IsZombieBot(int index)
 	return 0;
 }
 
-export int Amxx_SetZombieBot(int index, int zombieBot)
+C_DLLEXPORT int Amxx_SetZombieBot(int index, int zombieBot)
 {
 	index -= 1;
 	if (FNullEnt(g_clients[index].ent))
@@ -3701,7 +3701,7 @@ export int Amxx_SetZombieBot(int index, int zombieBot)
 	return 1;
 }
 
-export int Amxx_GetOriginPoint(Vector origin) // 1.38
+C_DLLEXPORT int Amxx_GetOriginPoint(Vector origin) // 1.38
 {
 	int pointId = g_waypoint->FindNearest(origin);
 
@@ -3714,7 +3714,7 @@ export int Amxx_GetOriginPoint(Vector origin) // 1.38
 	return -1;
 }
 
-export int Amxx_GetBotPoint(int index, int mod) // 1.38
+C_DLLEXPORT int Amxx_GetBotPoint(int index, int mod) // 1.38
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3731,7 +3731,7 @@ export int Amxx_GetBotPoint(int index, int mod) // 1.38
 }
 
 // SyPB Pro P.40 - AMXX API
-export int Amxx_GetBotNavNum(int index) // 1.40
+C_DLLEXPORT int Amxx_GetBotNavNum(int index) // 1.40
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3744,7 +3744,7 @@ export int Amxx_GetBotNavNum(int index) // 1.40
 	return navNum;
 }
 
-export int Amxx_GetBotNavPointId(int index, int pointNum) // 1.40
+C_DLLEXPORT int Amxx_GetBotNavPointId(int index, int pointNum) // 1.40
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3756,7 +3756,7 @@ export int Amxx_GetBotNavPointId(int index, int pointNum) // 1.40
 	return navId;
 }
 
-export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
+C_DLLEXPORT int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 {
 	// SyPB Pro P.42 - AMXX API Entity Action
 	int i;
@@ -3821,12 +3821,12 @@ export int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 }
 
 // SyPB Pro P.42 - AMXX API
-export void Amxx_AddLog(char *logText) // 1.42 - Not API
+C_DLLEXPORT void Amxx_AddLog(char *logText) // 1.42 - Not API
 {
 	MOD_AddLogEntry(0, logText);
 }
 
-export int Amxx_SetBotGoal(int index, int goal) // 1.42
+C_DLLEXPORT int Amxx_SetBotGoal(int index, int goal) // 1.42
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3841,7 +3841,7 @@ export int Amxx_SetBotGoal(int index, int goal) // 1.42
 	return 1;
 }
 
-export int Amxx_BlockWeaponPick(int index, int blockWeaponPick) // 1.42
+C_DLLEXPORT int Amxx_BlockWeaponPick(int index, int blockWeaponPick) // 1.42
 {
 	index -= 1;
 	Bot *bot = g_botManager->GetBot(index);
@@ -3864,7 +3864,7 @@ export int Amxx_BlockWeaponPick(int index, int blockWeaponPick) // 1.42
 }
 
 // SyPB Pro P.48 - AMXX API
-export int Amxx_GetEntityWaypointId(int index) // 1.48
+C_DLLEXPORT int Amxx_GetEntityWaypointId(int index) // 1.48
 {
 	edict_t *entity = INDEXENT(index);
 	if (!IsAlive(entity) || !IsValidPlayer(entity))
@@ -3876,7 +3876,7 @@ export int Amxx_GetEntityWaypointId(int index) // 1.48
 }
 
 // SyPB Pro P.50 - AMXX API
-export int Amxx_ZombieModGameStart(int input) // 1.50
+C_DLLEXPORT int Amxx_ZombieModGameStart(int input) // 1.50
 {
 	if (!IsZombieMode())
 		return -1;
@@ -3897,7 +3897,7 @@ export int Amxx_ZombieModGameStart(int input) // 1.50
 // AMXX SyPB API End
 
 // SyPB Pro P.42 - SwNPC API
-export void SwNPC_GetHostEntity(edict_t **hostEntity)
+C_DLLEXPORT void SwNPC_GetHostEntity(edict_t **hostEntity)
 {
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
@@ -3908,12 +3908,12 @@ export void SwNPC_GetHostEntity(edict_t **hostEntity)
 	*hostEntity = null;
 }
 
-export float SwNPC_SyPBSupportVersion(void)
+C_DLLEXPORT float SwNPC_SyPBSupportVersion(void)
 {
 	return float(SWNPC_VERSION_F);
 }
 
-export void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)
+C_DLLEXPORT void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)
 {
 	SwNPC_Version = version;
 	SwNPC_Build[0] = (uint16)bu1;
@@ -3922,12 +3922,12 @@ export void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)
 	SwNPC_Build[3] = (uint16)bu4;
 }
 
-export void SwNPC_AddLog(char *logText)
+C_DLLEXPORT void SwNPC_AddLog(char *logText)
 {
 	MOD_AddLogEntry(1, logText);
 }
 
-export int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance)
+C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance)
 {
 	int numWaypoints = 0;
 	Vector wpOrigin[Const_MaxWaypoints];
@@ -3990,12 +3990,12 @@ export int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags,
 	return numWaypoints;
 }
 
-export int SwNPC_GetEntityWaypointIndex(edict_t *entity)
+C_DLLEXPORT int SwNPC_GetEntityWaypointIndex(edict_t *entity)
 {
 	return GetEntityWaypoint(entity);
 }
 
-export void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEntity)
+C_DLLEXPORT void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEntity)
 {
 	SetEntityWaypoint(getEntity, GetEntityWaypoint(targetEntity));
 }
