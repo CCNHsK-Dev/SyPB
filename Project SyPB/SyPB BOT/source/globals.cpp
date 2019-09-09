@@ -177,7 +177,7 @@ plugin_info_t Plugin_info =
    __DATE__, // date of creation
    PRODUCT_AUTHOR, // plugin author
    PRODUCT_URL, // plugin URL
-   PRODUCT_LOGTAG, // plugin logtag
+   SYPB_NAME, // plugin logtag
    PT_STARTUP, // when loadable
    PT_NEVER, // when unloadable
 };

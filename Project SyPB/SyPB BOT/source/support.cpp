@@ -1145,7 +1145,7 @@ void ServerPrint (const char *format, ...)
    vsprintf (string, g_localizer->TranslateInput (format), ap);
    va_end (ap);
 
-   SERVER_PRINT (FormatBuffer ("[%s] %s\n", PRODUCT_LOGTAG, string));
+   SERVER_PRINT (FormatBuffer ("[%s] %s\n", SYPB_NAME, string));
 }
 
 void ServerPrintNoTag (const char *format, ...)
@@ -1173,7 +1173,7 @@ void API_TestMSG(const char *format, ...)
 	vsprintf(string, g_localizer->TranslateInput(format), ap);
 	va_end(ap);
 
-	SERVER_PRINT(FormatBuffer("[%s-API Test] %s\n", PRODUCT_LOGTAG, string));
+	SERVER_PRINT(FormatBuffer("[%s Test] %s\n", SYPBAPI_NAME, string));
 }
 
 void CenterPrint (const char *format, ...)
