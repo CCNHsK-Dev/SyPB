@@ -16,14 +16,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "0. Base", "0. Base", "{4B6F
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		SyPB_Debug_XP|Win32 = SyPB_Debug_XP|Win32
 		SyPB_Debug|Win32 = SyPB_Debug|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C232645A-3B99-48F4-A1F3-F20CF0A9568B}.SyPB_Debug_XP|Win32.ActiveCfg = SyPB_Debug_XP|Win32
+		{C232645A-3B99-48F4-A1F3-F20CF0A9568B}.SyPB_Debug_XP|Win32.Build.0 = SyPB_Debug_XP|Win32
 		{C232645A-3B99-48F4-A1F3-F20CF0A9568B}.SyPB_Debug|Win32.ActiveCfg = SyPB_Debug|Win32
 		{C232645A-3B99-48F4-A1F3-F20CF0A9568B}.SyPB_Debug|Win32.Build.0 = SyPB_Debug|Win32
 		{C232645A-3B99-48F4-A1F3-F20CF0A9568B}.SyPB_Debug|Win32.Deploy.0 = SyPB_Debug|Win32
+		{4A2FF1C1-2B73-4CE3-A3E1-5FC2C43CB876}.SyPB_Debug_XP|Win32.ActiveCfg = SyPB_Debug_XP|Win32
+		{4A2FF1C1-2B73-4CE3-A3E1-5FC2C43CB876}.SyPB_Debug_XP|Win32.Build.0 = SyPB_Debug_XP|Win32
 		{4A2FF1C1-2B73-4CE3-A3E1-5FC2C43CB876}.SyPB_Debug|Win32.ActiveCfg = Debug|Win32
 		{4A2FF1C1-2B73-4CE3-A3E1-5FC2C43CB876}.SyPB_Debug|Win32.Build.0 = Debug|Win32
+		{05330595-B76E-4838-9C03-7D49168F206F}.SyPB_Debug_XP|Win32.ActiveCfg = SyPB_Debug_XP|Win32
+		{05330595-B76E-4838-9C03-7D49168F206F}.SyPB_Debug_XP|Win32.Build.0 = SyPB_Debug_XP|Win32
 		{05330595-B76E-4838-9C03-7D49168F206F}.SyPB_Debug|Win32.ActiveCfg = Debug|Win32
 		{05330595-B76E-4838-9C03-7D49168F206F}.SyPB_Debug|Win32.Build.0 = Debug|Win32
 	EndGlobalSection

@@ -1,6 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="SyPB_Debug_XP|Win32">
+      <Configuration>SyPB_Debug_XP</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="SyPB_Release|Win32">
       <Configuration>SyPB_Release</Configuration>
       <Platform>Win32</Platform>
@@ -34,6 +38,14 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet />
+    <PlatformToolset>v141_xp</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
@@ -43,27 +55,41 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">..\Project_OutPut\SyPB_Bot\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">..\Project_OutPut\SyPB_Bot\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">..\Project_OutPut_XP\SyPB_Bot\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">..\Project_OutPut\SyPB_Bot\inf\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">..\Project_OutPut\SyPB_Bot\inf\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">..\Project_OutPut_XP\SyPB_Bot\inf\</IntDir>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</IgnoreImportLibrary>
     <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">false</IgnoreImportLibrary>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</GenerateManifest>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">false</GenerateManifest>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">false</GenerateManifest>
     <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">false</EmbedManifest>
     <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">true</EmbedManifest>
+    <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">true</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Release|Win32'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <TargetName>sypb</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TargetName>sypb</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <TargetName>sypb</TargetName>
@@ -243,6 +269,106 @@
       <OutputManifestFile />
     </Manifest>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TargetEnvironment>Win32</TargetEnvironment>
+      <TypeLibraryName>..\Project_OutPut\SyPB_Bot\new_release/sypb.tlb</TypeLibraryName>
+      <HeaderFileName>
+      </HeaderFileName>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>.\;.\SyPB BOT;.\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>
+      </StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>core.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>..\Project_OutPut_XP\SyPB_Bot\inf\sypb.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>..\Project_OutPut_XP\SyPB_Bot\asm\</AssemblerListingLocation>
+      <ObjectFileName>..\Project_OutPut_XP\SyPB_Bot\obj\</ObjectFileName>
+      <ProgramDataBaseFileName>..\Project_OutPut_XP\SyPB_Bot\inf\</ProgramDataBaseFileName>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <EnablePREfast>false</EnablePREfast>
+      <MultiProcessorCompilation>
+      </MultiProcessorCompilation>
+      <CompileAsManaged>
+      </CompileAsManaged>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BrowseInformation>
+      </BrowseInformation>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <BrowseInformationFile>
+      </BrowseInformationFile>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_USING_V110_SDK71_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>false</GenerateMapFile>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <SetChecksum>false</SetChecksum>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <TurnOffAssemblyGeneration>true</TurnOffAssemblyGeneration>
+      <ImportLibrary>..\Project_OutPut_XP\SyPB_Bot\inf\sypb.lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <MinimumRequiredVersion>
+      </MinimumRequiredVersion>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutputPath)$(TargetFileName)</OutputFile>
+    </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+    <Manifest>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Manifest>
+    <Manifest>
+      <VerboseOutput>true</VerboseOutput>
+      <OutputManifestFile>
+      </OutputManifestFile>
+    </Manifest>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include=".\include\core.h" />
     <ClInclude Include=".\include\engine.h" />
@@ -254,7 +380,9 @@
   <ItemGroup>
     <ResourceCompile Include=".\include\sypb.rc">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug|Win32'">0x7c04</Culture>
+      <Culture Condition="'$(Configuration)|$(Platform)'=='SyPB_Debug_XP|Win32'">0x7c04</Culture>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
