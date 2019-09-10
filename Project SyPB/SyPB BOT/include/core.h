@@ -1406,7 +1406,7 @@ extern void CenterPrint (const char *format, ...);
 extern void ClientPrint (edict_t *ent, int dest, const char *format, ...);
 extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
 
-extern bool IsNotAttackLab(edict_t *entity, Vector attackOrigin);
+extern int IsNotAttackLab(edict_t *entity, Vector attackOrigin);
 extern bool IsAntiBlock(edict_t *entity);
 
 extern void SetEntityActionData(int i, int index = -1, int team = -1, int action = -1);

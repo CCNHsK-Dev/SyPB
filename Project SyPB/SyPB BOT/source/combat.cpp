@@ -134,7 +134,7 @@ float Bot::GetEntityDistance(edict_t *entity)
 	if (FNullEnt(entity))
 		return 9999.9f;
 
-	float distance = (pev->origin - GetEntityOrigin(entity)).GetLength();
+	const float distance = (pev->origin - GetEntityOrigin(entity)).GetLength();
 	if (distance <= 180.0f)
 		return distance;
 
@@ -214,6 +214,9 @@ bool Bot::LookupEnemy(void)
 			SetEnemy(null);
 			SetLastEnemy(null);
 			m_enemyUpdateTime = 0.0f;
+
+			if (g_gameMode == MODE_DM)
+				m_fearLevel += 0.15f;
 		}
 
 		// SyPB Pro P.40 - Trace Line improve
@@ -309,13 +312,13 @@ bool Bot::LookupEnemy(void)
 		// SyPB Pro P.42 - Move Target
 		if (m_currentWaypointIndex != GetEntityWaypoint(targetEntity))
 		{
-			float distance = GetEntityDistance(m_moveTargetEntity);
+			const float distance = GetEntityDistance(m_moveTargetEntity);
 			if (distance <= enemy_distance + 400.0f)
 			{
-				int targetWpIndex = GetEntityWaypoint(targetEntity);
+				const int targetWpIndex = GetEntityWaypoint(targetEntity);
 				bool shortDistance = false;
 
-				Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+				const Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
 				for (int j = 0; j < Const_MaxPathIndex; j++)
 				{
 					if (path->index[j] != targetWpIndex)
@@ -374,7 +377,7 @@ bool Bot::LookupEnemy(void)
 			// SyPB Pro P.42 - Zombie Ai improve
 			// SyPB Pro P.48 - Zombie Ai improve
 			int srcIndex = GetEntityWaypoint(GetEntity());
-			int destIndex = GetEntityWaypoint(targetEntity);
+			const int destIndex = GetEntityWaypoint(targetEntity);
 			if ((m_currentTravelFlags & PATHFLAG_JUMP))
 				movePoint = 10;
 			else if (srcIndex == destIndex || m_currentWaypointIndex == destIndex)
@@ -522,7 +525,7 @@ bool Bot::IsFriendInLineOfFire (float distance)
 {
 	int i;
 	edict_t *entity = null;
-	bool needCheckFriendEntity = engine->IsFriendlyFireOn();
+	const bool needCheckFriendEntity = engine->IsFriendlyFireOn();
 	bool hasHostage = false;
 	if (!needCheckFriendEntity)
 	{
@@ -571,8 +574,8 @@ bool Bot::IsFriendInLineOfFire (float distance)
 		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) != m_team || GetEntity() == entity)
 			continue;
 
-		float friendDistance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-		float squareDistance = sqrtf(1089.0f + (friendDistance * friendDistance));
+		const float friendDistance = (GetEntityOrigin(entity) - pev->origin).GetLength();
+		const float squareDistance = sqrtf(1089.0f + (friendDistance * friendDistance));
 
 		// SyPB Pro P.41 - VS LOG
 		if (friendDistance <= distance)
@@ -618,7 +621,7 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 		return false;
 
 	TraceResult tr;
-	Vector dest = GetEntityOrigin(entity);
+	const Vector dest = GetEntityOrigin(entity);
 
 	float obstacleDistance = 0.0f;
 
@@ -626,9 +629,7 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 
 	if (tr.fStartSolid)
 	{
-		Vector source = tr.vecEndPos;
-
-		TraceLine (dest, source, true, GetEntity (), &tr);
+		TraceLine (dest, tr.vecEndPos, true, GetEntity (), &tr);
 		if (tr.flFraction != 1.0f)
 		{
 			// SyPB Pro P.48 - Base improve
@@ -643,7 +644,7 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 			if (dest.z >= tr.vecEndPos.z + 200.0f)
 				return false;
 
-			obstacleDistance = (tr.vecEndPos - source).GetLength ();
+			obstacleDistance = (tr.vecEndPos - tr.vecEndPos).GetLength ();
 		}
 	}
 
@@ -677,7 +678,7 @@ bool Bot::DoFirePause (float distance)
 			return true;
 	}
 
-	float angle = (fabsf(pev->punchangle.y) + fabsf(pev->punchangle.x)) * Math::MATH_PI / 360.0f;
+	const float angle = (fabsf(pev->punchangle.y) + fabsf(pev->punchangle.x)) * Math::MATH_PI / 360.0f;
 
 	// check if we need to compensate recoil
 	if (tanf(angle) * (distance + (distance / 4)) > g_skillTab[m_skill / 20].recoilAmount)
@@ -704,7 +705,7 @@ bool Bot::DoFirePause (float distance)
 void Bot::FireWeapon(void)
 {
 	// this function will return true if weapon was fired, false otherwise
-	float distance = (m_lookAt - EyePosition()).GetLength(); // how far away is the enemy?
+	const float distance = (m_lookAt - EyePosition()).GetLength(); // how far away is the enemy?
 
 	// if using grenade stop this
 	if (m_isUsingGrenade)
@@ -728,7 +729,7 @@ void Bot::FireWeapon(void)
 	edict_t *enemy = m_enemy;
 
 	int selectId = WEAPON_KNIFE, selectIndex = 0, chosenWeaponIndex = 0;
-	int weapons = pev->weapons;
+	const int weapons = pev->weapons;
 
 	// SyPB Pro P.43 - Attack Ai improve
 	if (m_isZombieBot || sypb_knifemode.GetBool())
@@ -761,7 +762,7 @@ void Bot::FireWeapon(void)
 
 		while (selectTab[selectIndex].id)
 		{
-			int id = selectTab[selectIndex].id;
+			const int id = selectTab[selectIndex].id;
 
 			if (weapons & (1 << id))
 			{
@@ -786,7 +787,7 @@ void Bot::FireWeapon(void)
 				selectIndex = secondaryId;
 		}
 
-		int id = selectTab[selectIndex].id;
+		const int id = selectTab[selectIndex].id;
 		if (g_weaponDefs[id].ammo1 != -1 && m_ammo[g_weaponDefs[id].ammo1] >= selectTab[selectIndex].minPrimaryAmmo)
 		{
 			if (m_reloadState == RSTATE_NONE || m_reloadCheckTime > engine->GetTime() || GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB)
@@ -1013,18 +1014,15 @@ bool Bot::KnifeAttack(float attackDistance)
 	}
 	else
 	{
-		float kad1 = (m_knifeDistance1API <= 0) ? 96.0f : m_knifeDistance1API;
-		float kad2 = (m_knifeDistance2API <= 0) ? 96.0f : m_knifeDistance2API;
-
-		if (IsOnAttackDistance(entity, kad1))
+		if (IsOnAttackDistance(entity, (m_knifeDistance1API <= 0) ? 96.0f : m_knifeDistance1API))
 			kaMode = 1;
-		if (IsOnAttackDistance(entity, kad2))
+		if (IsOnAttackDistance(entity, (m_knifeDistance2API <= 0) ? 96.0f : m_knifeDistance2API))
 			kaMode += 2;
 	}
 
 	if (kaMode > 0)
 	{
-		float distanceSkipZ = (pev->origin - GetEntityOrigin(entity)).GetLength2D();
+		const float distanceSkipZ = (pev->origin - GetEntityOrigin(entity)).GetLength2D();
 
 		// SyPB Pro P.35 - Knife Attack Change
 		if (pev->origin.z > GetEntityOrigin(entity).z && distanceSkipZ < 64.0f)
@@ -1073,7 +1071,7 @@ bool Bot::IsWeaponBadInDistance(int weaponIndex, float distance)
 	// this function checks, is it better to use pistol instead of current primary weapon
 	// to attack our enemy, since current weapon is not very good in this situation.
 
-	int weaponID = g_weaponSelect[weaponIndex].id;
+	const int weaponID = g_weaponSelect[weaponIndex].id;
 
 	if (weaponID == WEAPON_KNIFE)
 		return false;
@@ -1125,7 +1123,7 @@ void Bot::FocusEnemy (void)
    if (m_enemySurpriseTime > engine->GetTime ())
       return;
 
-   float distance = (m_lookAt - EyePosition()).GetLength2D();  // how far away is the enemy scum?
+   const float distance = (m_lookAt - EyePosition()).GetLength2D();  // how far away is the enemy scum?
 
    if (distance < 128)
 	   m_wantsToFire = true;
@@ -1135,13 +1133,13 @@ void Bot::FocusEnemy (void)
 		   m_wantsToFire = true;
 	   else
 	   {
-		   float dot = GetShootingConeDeviation(GetEntity(), &m_enemyOrigin);
+		   const float dot = GetShootingConeDeviation(GetEntity(), &m_enemyOrigin);
 
 		   if (dot < 0.90f)
 			   m_wantsToFire = false;
 		   else
 		   {
-			   float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
+			   const float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
 
 			   // enemy faces bot?
 			   if (enemyDot >= 0.90f)
@@ -1182,17 +1180,17 @@ void Bot::CombatFight(void)
 	m_timeWaypointMove = 0.0f;
 	if (m_timeWaypointMove + m_frameInterval < engine->GetTime())
 	{
-		Vector enemyOrigin = GetEntityOrigin(m_enemy);
-		float distance = (pev->origin - enemyOrigin).GetLength();
+		const Vector enemyOrigin = GetEntityOrigin(m_enemy);
+		const float distance = (pev->origin - enemyOrigin).GetLength();
 
-		bool NPCEnemy = !IsValidPlayer(m_enemy);
-		bool enemyIsZombie = IsZombieEntity(m_enemy);
+		const bool NPCEnemy = !IsValidPlayer(m_enemy);
+		const bool enemyIsZombie = IsZombieEntity(m_enemy);
 		bool setStrafe = false;
 
 		if (m_currentWeapon == WEAPON_KNIFE || NPCEnemy || enemyIsZombie)
 		{
 			float baseDistance = 600.0f;
-			bool viewCone = NPCEnemy ? (::IsInViewCone(pev->origin, m_enemy)) : true;
+			const bool viewCone = NPCEnemy ? (::IsInViewCone(pev->origin, m_enemy)) : true;
 
 			if (m_currentWeapon == WEAPON_KNIFE)
 			{
@@ -1210,7 +1208,7 @@ void Bot::CombatFight(void)
 
 			if (viewCone && !NPCEnemy)
 			{
-				int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 400);
+				const int haveEnemy = GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 400);
 				if (enemyIsZombie && m_currentWeapon == WEAPON_KNIFE && haveEnemy >= 3)
 					baseDistance = 450.0f;
 				else if (haveEnemy >= 6)
@@ -1226,8 +1224,9 @@ void Bot::CombatFight(void)
 					baseDistance *= 1.5f;
 				else if (m_currentWeapon != WEAPON_KNIFE)
 				{
-					int weapons = pev->weapons, weaponIndex = -1;
-					int maxClip = CheckMaxClip(weapons, &weaponIndex);
+					int weaponIndex = -1;
+					const int weapons = pev->weapons;
+					const int maxClip = CheckMaxClip(weapons, &weaponIndex);
 
 					if (m_ammoInClip[weaponIndex] < (maxClip * 0.2))
 						baseDistance *= 1.6f;
@@ -1259,7 +1258,7 @@ void Bot::CombatFight(void)
 		else
 		{
 			// SyPB Pro P.50 - Attack Ai improve
-			int approach;
+			int approach = 100;
 
 			if (!(m_states & STATE_SEEINGENEMY)) // if suspecting enemy stand still
 				approach = 49;
@@ -1316,7 +1315,7 @@ void Bot::CombatFight(void)
 		{
 			if (m_lastFightStyleCheck + 3.0f < engine->GetTime())
 			{
-				int rand = engine->RandomInt(1, 100);
+				const int rand = engine->RandomInt(1, 100);
 
 				if (distance < 450.0f)
 					m_fightStyle = FIGHT_STRAFE;
@@ -1407,9 +1406,8 @@ void Bot::CombatFight(void)
 		}
 		else if (m_fightStyle == FIGHT_STAY && m_moveSpeed == 0.0f && engine->RandomInt(1, 100) < 10)
 		{
-			int nearestToEnemyPoint = GetEntityWaypoint(m_enemy);
 			if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)) && GetCurrentTask()->taskID != TASK_SEEKCOVER &&
-				GetCurrentTask()->taskID != TASK_HUNTENEMY && g_waypoint->IsDuckVisible(m_currentWaypointIndex, nearestToEnemyPoint))
+				GetCurrentTask()->taskID != TASK_HUNTENEMY && g_waypoint->IsDuckVisible(m_currentWaypointIndex, GetEntityWaypoint(m_enemy)))
 				m_duckTime = engine->GetTime() + 0.5f;
 
 			m_moveSpeed = 0.0f;

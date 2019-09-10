@@ -1053,14 +1053,14 @@ bool IsAntiBlock(edict_t *entity)
 	return false;
 }
 
-bool IsNotAttackLab(edict_t *entity, Vector attackOrigin)
+int IsNotAttackLab(edict_t *entity, Vector attackOrigin)
 {
 	if (FNullEnt(entity))
 		return true;
 
 	// SyPB Pro P.48 - Base improve
 	if (entity->v.takedamage == DAMAGE_NO)
-		return true;
+		return 1;
 
 	// SyPB Pro P.29 - New Invisible get
 	if (entity->v.rendermode == kRenderTransAlpha)
@@ -1074,10 +1074,10 @@ bool IsNotAttackLab(edict_t *entity, Vector attackOrigin)
 			return false;
 
 		float enemy_distance = (GetEntityOrigin(entity) - attackOrigin).GetLength();
-		return (renderamt <= (enemy_distance / 5));
+		return (renderamt <= (enemy_distance / 5)) ? 2 : 0;
 	}
 
-	return false;
+	return 0;
 }
 
 bool IsDedicatedServer (void)
