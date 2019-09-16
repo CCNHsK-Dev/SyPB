@@ -143,7 +143,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		else if (sypb_difficulty.GetInt() == 0)
 			skill = engine->RandomInt(1, 29);
 		// SyPB Pro P.45 - Bot Skill Level improve
-		else if (sypb_difficulty.GetInt() == -2)
+		else  if (sypb_difficulty.GetInt() == -2)
 			skill = engine->RandomInt(1, 100);
 		else
 		{

@@ -5874,37 +5874,14 @@ void Bot::BotAI(void)
    else if (m_duckTime > engine->GetTime())
 	   pev->button |= IN_DUCK;
 
-   // SyPB Pro P.39 - Small change for Jump
    if (pev->button & IN_JUMP)
+	   m_jumpTime = engine->GetTime();
+
+   if (m_jumpTime + 0.85f > engine->GetTime())
    {
-	   if (m_currentTravelFlags & PATHFLAG_JUMP)
-	   {
-		   // SyPB Pro P.40 - Jump improve
-		   Vector point1Origin, point2Origin;
-		   if (m_prevWptIndex != -1)
-			   point1Origin = g_waypoint->GetPath(m_prevWptIndex)->origin;
-		   else if (IsOnFloor())
-			   point1Origin = pev->origin;
-
-		   if (m_currentWaypointIndex != -1)
-			   point2Origin = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
-
-		   if (point1Origin != nullvec && point2Origin != nullvec)
-		   {
-			   if ((point1Origin - point2Origin).GetLength () >= 100.0f)
-				   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.85f, 1.35f);
-			   else if (point1Origin.z > point2Origin.z)
-				   m_jumpTime = engine->GetTime();
-			   else
-				   m_jumpTime = engine->GetTime() + engine->RandomFloat(0.6f, 0.85f);
-		   }
-	   }
-	   else
-		   m_jumpTime = engine->GetTime() + 0.85f;
+	   if (!IsOnFloor() && !IsInWater())
+		   pev->button |= IN_DUCK;
    }
-
-   if (m_jumpTime > engine->GetTime())
-	   pev->button |= IN_DUCK; 
 
    // save the previous speed (for checking if stuck)
    m_prevSpeed = fabsf (m_moveSpeed);

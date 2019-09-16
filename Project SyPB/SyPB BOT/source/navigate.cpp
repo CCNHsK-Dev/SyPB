@@ -437,17 +437,14 @@ bool Bot::DoWaypointNav (void)
    // this waypoint has additional travel flags - care about them
    if (m_currentTravelFlags & PATHFLAG_JUMP)
    {
-	   if (IsOnFloor() || IsOnLadder())
+	   if (!m_jumpFinished && (IsOnFloor() || IsOnLadder()))
 	   {
-		   if (!m_jumpFinished)
-		   {
-			   pev->velocity = m_desiredVelocity;
-			   pev->button |= IN_JUMP;
+		   pev->velocity = m_desiredVelocity;
+		   pev->button |= IN_JUMP;
 
-			   m_jumpFinished = true;
-			   m_checkTerrain = false;
-			   m_desiredVelocity = nullvec;
-		   }
+		   m_jumpFinished = true;
+		   m_checkTerrain = false;
+		   m_desiredVelocity = nullvec;
 	   }
    }
 
@@ -1328,18 +1325,9 @@ void Bot::GetValidWaypoint(void)
 	else if ((m_navTimeset + GetEstimatedReachTime()) < engine->GetTime())
 		needFindWaypont = true;
 	// SyPB Pro P.42 - Waypoint improve
-	else
-	{
-		int waypointIndex1, waypointIndex2;
-		int client = GetIndex() - 1;
-		waypointIndex1 = g_clients[client].wpIndex;
-		waypointIndex2 = g_clients[client].wpIndex2;
-
-		if ((waypointIndex1 == -1 && waypointIndex2 == -1) ||
-			(m_isStuck &&
-				m_currentWaypointIndex != waypointIndex1 && m_currentWaypointIndex != waypointIndex2))
-			needFindWaypont = true;
-	}
+	else if (m_isStuck ||
+		(g_clients[GetIndex() - 1].wpIndex == -1 && g_clients[GetIndex() - 1].wpIndex2 == -1))
+		needFindWaypont = true;
 
 	if (needFindWaypont)
 	{

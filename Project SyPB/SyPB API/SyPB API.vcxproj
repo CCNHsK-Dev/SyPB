@@ -61,18 +61,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\Project_OutPut_Release\SyPB_API\</OutDir>
+    <OutDir>..\Project_OutPut_Release\</OutDir>
     <IntDir>..\Project_OutPut_Release\SyPB_API\inf\</IntDir>
     <TargetName>sypb_amxx</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\Project_OutPut_Debug\SyPB_API\</OutDir>
+    <OutDir>..\Project_OutPut_Debug\</OutDir>
     <IntDir>..\Project_OutPut_Debug\SyPB_API\inf\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>sypb_amxx</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_XP|Win32'">
-    <OutDir>..\Project_OutPut_XP_Debug\SyPB_API\</OutDir>
+    <OutDir>..\Project_OutPut_XP_Debug\</OutDir>
     <IntDir>..\Project_OutPut_XP_Debug\SyPB_API\inf\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>sypb_amxx</TargetName>
@@ -91,8 +91,16 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <OutputFile>..\Project_OutPut_Debug\$(TargetFileName)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
+      <ProgramDatabaseFile>$(OutDir)SyPB_API\$(TargetName).pdb</ProgramDatabaseFile>
+      <ProfileGuidedDatabase>$(OutDir)SyPB_API\$(TargetName).pgd</ProfileGuidedDatabase>
+      <ImportLibrary>$(OutDir)SyPB_API\$(TargetName).lib</ImportLibrary>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
+    <Xdcmake>
+      <OutputFile>$(OutDir)SyPB_API\$(TargetName).xml</OutputFile>
+    </Xdcmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_XP|Win32'">
     <ClCompile>
@@ -109,7 +117,12 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <OutputFile>..\Project_OutPut_XP_Debug\$(TargetFileName)</OutputFile>
+      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
+      <ProgramDatabaseFile>$(OutDir)SyPB_API\$(TargetName).pdb</ProgramDatabaseFile>
+      <ProfileGuidedDatabase>$(OutDir)SyPB_API\$(TargetName).pgd</ProfileGuidedDatabase>
+      <ImportLibrary>$(OutDir)SyPB_API\$(TargetName).lib</ImportLibrary>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -126,13 +139,16 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>false</EnableCOMDATFolding>
-      <OptimizeReferences>false</OptimizeReferences>
-      <OutputFile>..\Project_OutPut_Release/$(TargetFileName)</OutputFile>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
+      <ProgramDatabaseFile>$(OutDir)SyPB_API\$(TargetName).pdb</ProgramDatabaseFile>
+      <ProfileGuidedDatabase>$(OutDir)SyPB_API\$(TargetName).pgd</ProfileGuidedDatabase>
+      <ImportLibrary>$(OutDir)SyPB_API\$(TargetName).lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
