@@ -227,25 +227,6 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       ClientPrint (ent, print_center, date);
    }
 
-   // displays bot about information
-   else if (stricmp (arg0, "about_bot") == 0 || stricmp (arg0, "about") == 0)
-   {
-      if (g_gameVersion == CSVER_VERYOLD)
-      {
-         ServerPrint ("Cannot do this on CS 1.5");
-         return 1;
-      }
-
-      char aboutData[] =
-         "+---------------------------------------------------------------------------------+\n"
-         " The SyPB for Counter-Strike 1.6 and Counter-Strike: Condition Zero\n"
-         " Created by " PRODUCT_AUTHOR ", Using PODBot Code\n"
-         " Website: " PRODUCT_URL "\n"
-         "+---------------------------------------------------------------------------------+\n";
-
-      HudMessage (ent, true, Color (engine->RandomInt (33, 255), engine->RandomInt (33, 255), engine->RandomInt (33, 255)), aboutData);
-   }
-
    // displays version information
    else if (stricmp(arg0, "version") == 0 || stricmp(arg0, "ver") == 0)
 	   SyPBVersionMSG(ent);
@@ -255,8 +236,6 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    {
       ClientPrint (ent, print_console, "Bot Commands:");
       ClientPrint (ent, print_console, "sypb version            - display version information.");
-      ClientPrint (ent, print_console, "sypb about              - show bot about information.");
-      //ClientPrint (ent, print_console, "sypb add                - create a bot in current game.");
       ClientPrint (ent, print_console, "sypb fill               - fill the server with random bots.");
       ClientPrint (ent, print_console, "sypb kickall            - disconnects all bots from current game.");
       ClientPrint (ent, print_console, "sypb killbots           - kills all bots in current game.");
@@ -2560,13 +2539,14 @@ void LoadEntityData(void)
 				{
 					Vector headOrigin, headAngles;
 					(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
-					g_clients[i].headOrigin = g_clients[i].origin;
-					g_clients[i].headOrigin.z = headOrigin.z + 0.8f;
+					g_clients[i].headOrigin = headOrigin;
+					g_clients[i].headOrigin.z = headOrigin.z + 1.2f;
 				}
 			}
 
 			// SyPB Pro P.41 - Get Waypoint improve
-			if (g_clients[i].getWPTime + 1.2f < engine->GetTime() || (g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1))
+			if ((g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1) || 
+				g_clients[i].getWPTime < engine->GetTime())
 				SetEntityWaypoint(entity);
 
 			SoundSimulateUpdate(i);
@@ -2599,7 +2579,7 @@ void LoadEntityData(void)
 				continue;
 			}
 
-			if (g_entityGetWpTime[i] + 1.5f < engine->GetTime() || g_entityWpIndex[i] == -1)
+			if (g_entityGetWpTime[i] < engine->GetTime() || g_entityWpIndex[i] == -1)
 				SetEntityWaypoint(entity);
 		}
 

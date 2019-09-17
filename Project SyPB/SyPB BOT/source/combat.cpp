@@ -504,13 +504,13 @@ Vector Bot::GetAimPosition(void)
 	if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)))
 	{
 		if (IsZombieEntity (m_enemy) || (m_skill >= engine->RandomInt(30, 80) &&
-			(m_currentWeapon != WEAPON_AWP || m_enemy->v.health > 300.0f)))
+			(m_currentWeapon != WEAPON_AWP || m_enemy->v.health > 150.0f)))
 			enemyOrigin = GetPlayerHeadOrigin(m_enemy);
 	}
 	else if (m_visibility & VISIBILITY_HEAD)
 		enemyOrigin = GetPlayerHeadOrigin(m_enemy);
 
-	if ((g_gameMode == MODE_BASE || g_gameMode == MODE_DM) && m_skill <= engine->RandomInt(50, 75))
+	if ((g_gameMode == MODE_BASE || g_gameMode == MODE_DM) && m_skill <= 50)
 	{
 		enemyOrigin.x += engine->RandomFloat(m_enemy->v.mins.x, m_enemy->v.maxs.x);
 		enemyOrigin.y += engine->RandomFloat(m_enemy->v.mins.y, m_enemy->v.maxs.y);
@@ -1286,10 +1286,13 @@ void Bot::CombatFight(void)
 				GetCurrentTask()->canContinue = true;
 				GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
 			}
-			else if (approach < 50)
-				m_moveSpeed = 0.0f;
 			else
-				m_moveSpeed = pev->maxspeed;
+			{
+				if (approach >= 50 && (!(pev->button & IN_ATTACK) || UsesBadPrimary()))
+					m_moveSpeed = pev->maxspeed;
+				else
+					m_moveSpeed = 0.0f;
+			}
 
 			// SyPB Pro P.35 - Base mode Weapon Ai Improve
 			if (distance < 96 && !UsesSniper())
@@ -1303,7 +1306,8 @@ void Bot::CombatFight(void)
 		}
 
 		// SyPB Pro p.49 - Base improve
-		if (IsOnLadder() || !IsOnFloor())
+		if (IsOnLadder() || !IsOnFloor() || 
+			(pev->button & IN_ATTACK && !UsesBadPrimary ()))
 			setStrafe = false;
 
 		if (UsesSniper())

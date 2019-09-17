@@ -1324,10 +1324,15 @@ void Bot::GetValidWaypoint(void)
 		needFindWaypont = true;
 	else if ((m_navTimeset + GetEstimatedReachTime()) < engine->GetTime())
 		needFindWaypont = true;
-	// SyPB Pro P.42 - Waypoint improve
-	else if (m_isStuck ||
-		(g_clients[GetIndex() - 1].wpIndex == -1 && g_clients[GetIndex() - 1].wpIndex2 == -1))
-		needFindWaypont = true;
+	else
+	{
+		const int client = GetIndex() - 1;
+		if (m_isStuck)
+			g_clients[client].wpIndex = g_clients[client].wpIndex2 = -1;
+
+		if (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1)
+			needFindWaypont = true;
+	}
 
 	if (needFindWaypont)
 	{
@@ -1362,7 +1367,7 @@ void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, b
 lastly:
 	g_clients[i].wpIndex = newWaypointIndex;
 	g_clients[i].getWpOrigin = GetEntityOrigin(GetEntity());
-	g_clients[i].getWPTime = engine->GetTime();
+	g_clients[i].getWPTime = engine->GetTime() + 1.5f;
 }
 
 void Bot::ChangeWptIndex (int waypointIndex)

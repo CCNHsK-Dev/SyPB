@@ -179,10 +179,7 @@ Vector GetPlayerHeadOrigin(edict_t *ent)
 	Vector headOrigin = nullvec;
 
 	if (IsValidPlayer(ent))	
-	{
-		int clientIndex = ENTINDEX(ent) - 1;
-		headOrigin = g_clients[clientIndex].headOrigin;
-	}
+		headOrigin = g_clients[ENTINDEX(ent) - 1].headOrigin;
 
 	if (headOrigin == nullvec)
 	{
@@ -880,11 +877,11 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	if (g_waypointOn)
 		return -1;
 
-	Vector origin = GetEntityOrigin(ent);
+	const Vector origin = GetEntityOrigin(ent);
 	if (origin == nullvec)
 		return -1;
 
-	bool isPlayer = IsValidPlayer(ent);
+	const bool isPlayer = IsValidPlayer(ent);
 	int i = -1;
 
 	if (isPlayer)
@@ -906,9 +903,10 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		return -1;
 
 	bool needCheckNewWaypoint = false;
-	float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
 	int wpIndex = isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
-	Vector getWpOrigin = isPlayer ? g_clients[i].getWpOrigin : g_entityGetWpOrigin[i];
+
+	const float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
+	const Vector getWpOrigin = isPlayer ? g_clients[i].getWpOrigin : g_entityGetWpOrigin[i];
 
 	if (wpIndex == -1 || getWpOrigin == nullvec)
 		needCheckNewWaypoint = true;
@@ -935,9 +933,9 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 				if (!g_waypoint->Reachable(ent, wpIndex))
 					needCheckNewWaypoint = true;
 				else if (isPlayer)
-					g_clients[i].getWPTime = engine->GetTime();
+					g_clients[i].getWPTime = engine->GetTime() + 1.0f;
 				else
-					g_entityGetWpTime[i] = engine->GetTime();
+					g_entityGetWpTime[i] = engine->GetTime() + 1.2f;
 			}
 		}
 	}
@@ -956,14 +954,14 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	{
 		g_entityWpIndex[i] = wpIndex;
 		g_entityGetWpOrigin[i] = origin;
-		g_entityGetWpTime[i] = engine->GetTime();
+		g_entityGetWpTime[i] = engine->GetTime() + 1.5f;
 	}
 	else
 	{
 		g_clients[i].wpIndex = wpIndex;
 		g_clients[i].wpIndex2 = wpIndex2;
 		g_clients[i].getWpOrigin = origin;
-		g_clients[i].getWPTime = engine->GetTime();
+		g_clients[i].getWPTime = engine->GetTime() + 1.5f;
 	}
 
 	return wpIndex;
@@ -997,7 +995,7 @@ int GetEntityWaypoint(edict_t *ent)
 
 	// SyPB Pro P.42 - Base Waypoint improve
 	int client = ENTINDEX(ent) - 1;
-	if (g_clients[client].getWPTime < engine->GetTime() + 1.5f || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
+	if (g_clients[client].getWPTime < engine->GetTime() || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
 		SetEntityWaypoint(ent);
 
 	return g_clients[client].wpIndex;
