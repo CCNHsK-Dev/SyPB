@@ -71,8 +71,7 @@ enum BotTask
    TASK_PLANTBOMB,
    TASK_DEFUSEBOMB,
    TASK_FIGHTENEMY,
-   TASK_HUNTENEMY,
-   TASK_SEEKCOVER,
+   TASK_ACTIONFORENEMY,
    TASK_THROWHEGRENADE,
    TASK_THROWFBGRENADE,
    TASK_THROWSMGRENADE,
@@ -884,8 +883,8 @@ private:
    Vector CheckBombAudible (void);
 
    int CheckGrenades (void);
-   void CommandTeam (void);
    void CombatFight (void);
+   void ActionForEnemy(void);
    bool IsWeaponBadInDistance (int weaponIndex, float distance);
    bool DoFirePause(float distance);
    bool LookupEnemy (void);
@@ -993,6 +992,7 @@ public:
    float m_nextEmotionUpdate; // next time to sanitize emotions
    float m_thinkFps; // skip some frames in bot thinking 
    float m_thinkInterval; // interval between frames
+   bool m_enemyActionMod;
 
    int m_actMessageIndex; // current processed message
    int m_pushMessageIndex; // offset for next pushed message

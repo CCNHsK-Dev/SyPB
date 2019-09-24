@@ -1856,93 +1856,59 @@ void Bot::SetConditions (void)
       g_taskFilters[TASK_PICKUPITEM].desire = 0.0f;
    }
 
-   float desireLevel = 0.0f;
-
    // calculate desire to attack
    if ((m_states & STATE_SEEINGENEMY) && ReactOnEnemy ())
       g_taskFilters[TASK_FIGHTENEMY].desire = TASKPRI_FIGHTENEMY;
    else
-      g_taskFilters[TASK_FIGHTENEMY].desire = 0;
+      g_taskFilters[TASK_FIGHTENEMY].desire = 0.0f;
 
-   // calculate desires to seek cover or hunt
-   if (IsValidPlayer (m_lastEnemy) && m_lastEnemyOrigin != nullvec && !((g_mapType & MAP_DE) && g_bombPlanted) && !(pev->weapons & (1 << WEAPON_C4)) && (m_loosedBombWptIndex == -1 && m_team == TEAM_TERRORIST))
-   {
-      float distance = (m_lastEnemyOrigin - pev->origin).GetLength ();
-      
-      // SyPB Pro P.16
-      float ratio = 0.0f;
-      const float retreatLevel = (pev->max_health - pev->health) * tempFear;
-            
-      if (m_isZombieBot)
-      	  ratio = 0;
-      else 
-      {
-		  float timeSeen = m_seeEnemyTime - engine->GetTime();
-		  float timeHeard = m_heardSoundTime - engine->GetTime();
-
-		  if (timeSeen > timeHeard)
-		  {
-			  timeSeen += 10.0f;
-			  ratio = timeSeen * 0.1f;
-		  }
-		  else
-		  {
-			  timeHeard += 10.0f;
-			  ratio = timeHeard * 0.1f;
-		  }
-
-      	  if (!FNullEnt (m_enemy) && IsZombieEntity (m_enemy))
-      	  	  ratio *= 10;
-      	  else if (!FNullEnt (m_lastEnemy) && IsZombieEntity (m_lastEnemy))
-      	  	  ratio *= 6;
-      	  else if (g_bombPlanted || m_isStuck)
-      	  	  ratio /= 3;
-      	  else if (m_isVIP || m_isReloading)
-      	  	  ratio *= 2;
-      }
-      
-	  // SyPB Pro P.38 - Small Change
-	  if (distance > 500.0f || (!m_isZombieBot) &&
-		  ((!FNullEnt(m_enemy) && IsZombieEntity(m_enemy)) || (!FNullEnt(m_lastEnemy) && IsZombieEntity(m_lastEnemy))))
-		  g_taskFilters[TASK_SEEKCOVER].desire = retreatLevel * ratio;
-      
-      // if half of the round is over, allow hunting
-      // FIXME: it probably should be also team/map dependant
-      if (FNullEnt (m_enemy) && (g_timeRoundMid < engine->GetTime ()) && !m_isUsingGrenade && 
-		  m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
-      {
-         desireLevel = 4096.0f - ((1.0f - tempAgression) * distance);
-         desireLevel = (100.0f * desireLevel) / 4096.0f;
-         desireLevel -= retreatLevel;
-
-         if (desireLevel > 89.0f)
-            desireLevel = 89.0f;
-
-		 // SyPB Pro P.10
-		 if (g_gameMode == MODE_DM)
-			 desireLevel *= 2;
-		 else if (IsZombieMode ())
-			 desireLevel = 0.0f;
-		 else 
-		 {
-			 if (g_mapType & MAP_DE)
-			 {
-				 if ((g_bombPlanted && m_team == TEAM_COUNTER) || (!g_bombPlanted && m_team == TEAM_TERRORIST))
-					 desireLevel *= 1.5;
-				 if ((g_bombPlanted && m_team == TEAM_TERRORIST) || (!g_bombPlanted && m_team == TEAM_COUNTER))
-					 desireLevel *= 0.5;
-			 }
-		 }
-
-         g_taskFilters[TASK_HUNTENEMY].desire = desireLevel;
-      }
-      else
-         g_taskFilters[TASK_HUNTENEMY].desire = 0.0f;
-   }
+   m_enemyActionMod = false;
+   if ((FNullEnt(m_enemy) && FNullEnt(m_lastEnemy)) || m_isZombieBot)
+	   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
+   else if (IsZombieEntity(m_lastEnemy))
+	   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
    else
    {
-      g_taskFilters[TASK_SEEKCOVER].desire = 0.0f;
-      g_taskFilters[TASK_HUNTENEMY].desire = 0.0f;
+	   const float retreatLevel = (pev->max_health - pev->health) * tempFear;
+	   const float timeSeen = m_seeEnemyTime - engine->GetTime() + 10.0f;
+	   float ratio = timeSeen * 0.1f;
+
+	   if (m_isVIP || m_isReloading)
+		   ratio *= 2;
+	   else if (g_bombPlanted || m_isStuck)
+		   ratio /= 3;
+
+	   g_taskFilters[TASK_ACTIONFORENEMY].desire = retreatLevel * ratio;
+
+	   if (FNullEnt(m_enemy) && (g_timeRoundMid < engine->GetTime()) && !m_isUsingGrenade &&
+		   m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
+	   {
+		   float desireLevel = 4096.0f - ((1.0f - tempAgression) * (m_lastEnemyOrigin - pev->origin).GetLength());
+		   desireLevel = (100.0f * desireLevel) / 4096.0f;
+		   desireLevel -= retreatLevel;
+
+		   if (desireLevel > 89.0f)
+			   desireLevel = 89.0f;
+
+		   if (g_gameMode == MODE_DM)
+			   desireLevel *= 2;
+		   else
+		   {
+			   if (g_mapType & MAP_DE)
+			   {
+				   if ((g_bombPlanted && m_team == TEAM_COUNTER) || (!g_bombPlanted && m_team == TEAM_TERRORIST))
+					   desireLevel *= 1.5;
+				   if ((g_bombPlanted && m_team == TEAM_TERRORIST) || (!g_bombPlanted && m_team == TEAM_COUNTER))
+					   desireLevel *= 0.5;
+			   }
+		   }
+
+		   if (desireLevel >= (retreatLevel * ratio) - 10.0f)
+		   {
+			   m_enemyActionMod = true;
+			   g_taskFilters[TASK_ACTIONFORENEMY].desire = desireLevel;
+		   }
+	   }
    }
 
    // blinded behaviour
@@ -1954,33 +1920,18 @@ void Bot::SetConditions (void)
 	   m_blindCampPoint = -1;
    }
 
-   // now we've initialized all the desires go through the hard work
-   // of filtering all actions against each other to pick the most
-   // rewarding one to the bot.
-
-   // FIXME: instead of going through all of the actions it might be
-   // better to use some kind of decision tree to sort out impossible
-   // actions.
-
-   // most of the values were found out by trial-and-error and a helper
-   // utility i wrote so there could still be some weird behaviors, it's
-   // hard to check them all out.
-
    m_oldCombatDesire = HysteresisDesire (g_taskFilters[TASK_FIGHTENEMY].desire, 40.0f, 90.0f, m_oldCombatDesire);
    g_taskFilters[TASK_FIGHTENEMY].desire = m_oldCombatDesire;
 
+   // testtest
    Task *taskOffensive = &g_taskFilters[TASK_FIGHTENEMY];
-   Task *taskPickup = &g_taskFilters[TASK_PICKUPITEM];
+   Task* taskEnemyAction = ThresholdDesire(&g_taskFilters[TASK_ACTIONFORENEMY], 
+	   (m_enemyActionMod ? 40.0f : 60.0f), 0.0f);
 
-   // calc survive (cover/hide)
-   Task *taskSurvive = ThresholdDesire (&g_taskFilters[TASK_SEEKCOVER], 40.0f, 0.0f);
-   taskSurvive = SubsumeDesire (&g_taskFilters[TASK_HIDE], taskSurvive);
+   taskOffensive = MaxDesire(taskOffensive, taskEnemyAction);
+   taskOffensive = SubsumeDesire (taskOffensive, &g_taskFilters[TASK_PICKUPITEM]); // if offensive task, don't allow picking up stuff
 
-   Task *def = ThresholdDesire (&g_taskFilters[TASK_HUNTENEMY], 60.0f, 0.0f); // don't allow hunting if desire's 60<
-   taskOffensive = SubsumeDesire (taskOffensive, taskPickup); // if offensive task, don't allow picking up stuff
-
-   Task *taskSub = MaxDesire (taskOffensive, def); // default normal & careful tasks against offensive actions
-   Task *final = SubsumeDesire (&g_taskFilters[TASK_BLINDED], MaxDesire (taskSurvive, taskSub)); // reason about fleeing instead
+   Task *final = SubsumeDesire (&g_taskFilters[TASK_BLINDED], MaxDesire (taskOffensive, &g_taskFilters[TASK_HIDE])); // reason about fleeing instead
 
    if (m_tasks != null)
       final = MaxDesire (final, m_tasks);
@@ -2249,10 +2200,6 @@ void Bot::PushTask (Task *task)
    {
       DeleteSearchNodes ();
       m_lastCollTime = engine->GetTime () + 0.5f;
-
-      // leader bot?
-      if (newTaskDifferent && m_isLeader && m_tasks->taskID == TASK_SEEKCOVER)
-         CommandTeam (); // reorganize team if fleeing
    }
 }
 
@@ -2559,9 +2506,6 @@ bool Bot::EnemyIsThreat(void)
 {
 	// SyPB Pro P.16
 	if (FNullEnt(m_enemy))
-		return false;
-
-	if (GetCurrentTask()->taskID == TASK_SEEKCOVER)
 		return false;
 
 	// SyPB Pro P.48 - Zombie Mode Human Camp improve
@@ -3854,157 +3798,6 @@ void Bot::RunTask (void)
 
       break;
 
-   // hunt down enemy
-   case TASK_HUNTENEMY:
-      m_aimFlags |= AIM_NAVPOINT;
-      m_checkTerrain = true;
-
-      // if we've got new enemy...
-      if (!FNullEnt (m_enemy) || FNullEnt (m_lastEnemy))
-      {
-         // forget about it...
-         TaskComplete ();
-         m_prevGoalIndex = -1;
-
-		 SetLastEnemy(null);
-      }
-      else if (GetTeam (m_lastEnemy) == m_team)
-      {
-         // don't hunt down our teammate...
-         RemoveCertainTask (TASK_HUNTENEMY);
-         m_prevGoalIndex = -1;
-      }
-      else if (DoWaypointNav ()) // reached last enemy pos?
-      {
-         // forget about it...
-         TaskComplete ();
-         m_prevGoalIndex = -1;
-
-		 SetLastEnemy(null);
-      }
-      else if (!GoalIsValid ()) // do we need to calculate a new path?
-      {
-         DeleteSearchNodes ();
-
-         // is there a remembered index?
-		 if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
-			 destIndex = GetCurrentTask()->data;
-		 else // no. we need to find a new one
-			 destIndex = GetEntityWaypoint(m_lastEnemy);
-
-         // remember index
-         m_prevGoalIndex = destIndex;
-		 GetCurrentTask()->data = destIndex;
-
-         if (destIndex != m_currentWaypointIndex)
-            FindPath (m_currentWaypointIndex, destIndex, m_pathType);
-      }
-
-      // bots skill higher than 60?
-      if (m_skill > 60 && engine->IsFootstepsOn ())
-      {
-         // then make him move slow if near enemy
-         if (!(m_currentTravelFlags & PATHFLAG_JUMP))
-         {
-            if (m_currentWaypointIndex != -1)
-            {
-               if (path->radius < 32 && !IsOnLadder () && !IsInWater () && m_seeEnemyTime + 4.0f > engine->GetTime () && m_skill < 80)
-                  pev->button |= IN_DUCK;
-            }
-
-            if ((m_lastEnemyOrigin - pev->origin).GetLength () < 512.0f && !(pev->flags & FL_DUCKING))
-               m_moveSpeed = GetWalkSpeed ();
-         }
-      }
-      break;
-
-   // bot seeks cover from enemy
-   case TASK_SEEKCOVER:
-      m_aimFlags |= AIM_NAVPOINT;
-	  
-      if (FNullEnt (m_lastEnemy) || !IsAlive (m_lastEnemy))
-      {
-         TaskComplete ();
-         m_prevGoalIndex = -1;
-      }
-      else if (DoWaypointNav ()) // reached final cover waypoint?
-      {
-         // yep. activate hide behaviour
-         TaskComplete ();
-
-         m_prevGoalIndex = -1;
-         m_pathType = 1;
-
-         // start hide task
-         PushTask (TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime () + engine->RandomFloat (5.0f, 15.0f), false);
-         destination = m_lastEnemyOrigin;
-
-         // get a valid look direction
-         GetCampDirection (&destination);
-
-         m_aimFlags |= AIM_CAMP;
-         m_camp = destination;
-         m_campDirection = 0;
-
-         // chosen waypoint is a camp waypoint?
-         if (path->flags & WAYPOINT_CAMP)
-         {
-            // use the existing camp wpt prefs
-            if (path->flags & WAYPOINT_CROUCH)
-               m_campButtons = IN_DUCK;
-            else
-               m_campButtons = 0;
-         }
-         else
-         {
-            // choose a crouch or stand pos
-            if (g_waypoint->GetPath (m_currentWaypointIndex)->vis.crouch <= path->vis.stand)
-               m_campButtons = IN_DUCK;
-            else
-               m_campButtons = 0;
-
-            // enter look direction from previously calculated positions
-			path->campStartX = destination.x;
-			path->campStartY = destination.y;
-
-            path->campStartX = destination.x;
-			path->campEndY = destination.y;
-         }
-
-         if ((m_reloadState == RSTATE_NONE) && (GetAmmoInClip () < 8) && (GetAmmo () != 0))
-            m_reloadState = RSTATE_PRIMARY;
-
-         m_moveSpeed = 0.0f;
-         m_strafeSpeed = 0.0f;
-
-         m_moveToGoal = false;
-         m_checkTerrain = true;
-      }
-      else if (!GoalIsValid ()) // we didn't choose a cover waypoint yet or lost it due to an attack?
-      {
-         DeleteSearchNodes ();
-
-		 // SyPB Pro P.38 - Zombie Mode Camp improve
-		 if (g_gameMode == MODE_ZP && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
-			 destIndex = FindGoal();
-		 else if (GetCurrentTask()->data != -1)
-			 destIndex = GetCurrentTask()->data;
-		 else
-			 destIndex = FindCoverWaypoint(1024.0f);
-
-		 if (destIndex < 0 || destIndex >= g_numWaypoints)
-			 destIndex = g_waypoint->FindFarest(pev->origin, 500.0f);
-
-         m_campDirection = 0;
-         m_prevGoalIndex = destIndex;
-		 GetCurrentTask()->data = destIndex;
-
-         if (destIndex != m_currentWaypointIndex)
-            FindPath (m_currentWaypointIndex, destIndex, 2);
-      }
-
-      break;
-
    // plain attacking
    case TASK_FIGHTENEMY:
       m_moveToGoal = true;
@@ -4027,6 +3820,11 @@ void Bot::RunTask (void)
 
       m_navTimeset = engine->GetTime ();
       break;
+
+   // Attack Enemy and other action for enemy
+   case TASK_ACTIONFORENEMY:
+	   ActionForEnemy();
+	   break;
 
    // Bot is pausing
    case TASK_PAUSE:
@@ -5335,12 +5133,11 @@ void Bot::BotDebugModeMsg(void)
 				sprintf(taskName, "AttackEnemy");
 				break;
 
-			case TASK_HUNTENEMY:
-				sprintf(taskName, "HuntEnemy");
-				break;
-
-			case TASK_SEEKCOVER:
-				sprintf(taskName, "SeekCover");
+			case TASK_ACTIONFORENEMY:
+				if (!m_enemyActionMod)
+					sprintf(taskName, "ActionForEnemy [0]");
+				else
+					sprintf(taskName, "ActionForEnemy [1]");
 				break;
 
 			case TASK_THROWHEGRENADE:

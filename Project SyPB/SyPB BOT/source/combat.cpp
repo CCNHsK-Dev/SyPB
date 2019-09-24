@@ -1156,6 +1156,147 @@ void Bot::FocusEnemy (void)
    }
 }
 
+void Bot::ActionForEnemy(void)
+{
+	// testtest
+	if (FNullEnt(m_enemy) && FNullEnt(m_lastEnemy))
+	{
+		TaskComplete();
+		return;
+	}
+
+	if (GetTeam(m_lastEnemy) == m_team || !IsAlive (m_lastEnemy))
+	{
+		RemoveCertainTask(TASK_ACTIONFORENEMY);
+		m_prevGoalIndex = -1;
+		return;
+	}
+
+	m_aimFlags |= AIM_NAVPOINT;
+	int destIndex = -1;
+
+	if (m_enemyActionMod)
+	{
+		m_checkTerrain = true;
+
+		// if we've got new enemy...
+		if (!FNullEnt(m_enemy) || FNullEnt(m_lastEnemy) || DoWaypointNav())
+		{
+			// forget about it...
+			TaskComplete();
+			m_prevGoalIndex = -1;
+
+			SetLastEnemy(null);
+		}
+		else if (!GoalIsValid()) // do we need to calculate a new path?
+		{
+			DeleteSearchNodes();
+
+			// is there a remembered index?
+			if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
+				destIndex = GetCurrentTask()->data;
+			else // no. we need to find a new one
+				destIndex = GetEntityWaypoint(m_lastEnemy);
+
+			// remember index
+			m_prevGoalIndex = destIndex;
+			GetCurrentTask()->data = destIndex;
+
+			if (destIndex != m_currentWaypointIndex)
+				FindPath(m_currentWaypointIndex, destIndex, m_pathType);
+		}
+
+		if (m_skill > 60 && engine->IsFootstepsOn())
+		{
+			if (!(m_currentTravelFlags & PATHFLAG_JUMP))
+			{
+				if ((m_lastEnemyOrigin - pev->origin).GetLength() < 512.0f && !(pev->flags & FL_DUCKING))
+					m_moveSpeed = GetWalkSpeed();
+			}
+		}
+
+		return;
+	}
+
+	if (DoWaypointNav()) // reached final cover waypoint?
+	{
+		// yep. activate hide behaviour
+		TaskComplete();
+
+		m_prevGoalIndex = -1;
+		m_pathType = 1;
+
+		// start hide task
+		PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(5.0f, 15.0f), false);
+		Vector destination = m_lastEnemyOrigin;
+
+		// get a valid look direction
+		GetCampDirection(&destination);
+
+		m_aimFlags |= AIM_CAMP;
+		m_camp = destination;
+		m_campDirection = 0;
+
+		Path* path = g_waypoint->GetPath(m_currentWaypointIndex);
+
+		// chosen waypoint is a camp waypoint?
+		if (path->flags & WAYPOINT_CAMP)
+		{
+			// use the existing camp wpt prefs
+			if (path->flags & WAYPOINT_CROUCH)
+				m_campButtons = IN_DUCK;
+			else
+				m_campButtons = 0;
+		}
+		else
+		{
+			// choose a crouch or stand pos
+			if (g_waypoint->GetPath(m_currentWaypointIndex)->vis.crouch <= path->vis.stand)
+				m_campButtons = IN_DUCK;
+			else
+				m_campButtons = 0;
+
+			// enter look direction from previously calculated positions
+			path->campStartX = destination.x;
+			path->campStartY = destination.y;
+
+			path->campStartX = destination.x;
+			path->campEndY = destination.y;
+		}
+
+		if ((m_reloadState == RSTATE_NONE) && (GetAmmoInClip() < 8) && (GetAmmo() != 0))
+			m_reloadState = RSTATE_PRIMARY;
+
+		m_moveSpeed = 0.0f;
+		m_strafeSpeed = 0.0f;
+
+		m_moveToGoal = false;
+		m_checkTerrain = true;
+	}
+	else if (!GoalIsValid()) // we didn't choose a cover waypoint yet or lost it due to an attack?
+	{
+		DeleteSearchNodes();
+
+		// SyPB Pro P.38 - Zombie Mode Camp improve
+		if (g_gameMode == MODE_ZP && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
+			destIndex = FindGoal();
+		else if (GetCurrentTask()->data != -1)
+			destIndex = GetCurrentTask()->data;
+		else
+			destIndex = FindCoverWaypoint(1024.0f);
+
+		if (destIndex < 0 || destIndex >= g_numWaypoints)
+			destIndex = g_waypoint->FindFarest(pev->origin, 500.0f);
+
+		m_campDirection = 0;
+		m_prevGoalIndex = destIndex;
+		GetCurrentTask()->data = destIndex;
+
+		if (destIndex != m_currentWaypointIndex)
+			FindPath(m_currentWaypointIndex, destIndex, 2);
+	}
+}
+
 // SyPB Pro P.30 - Attack Ai
 void Bot::CombatFight(void)
 {
@@ -1238,8 +1379,9 @@ void Bot::CombatFight(void)
 
 				if (distance <= baseDistance)
 				{
-					m_moveSpeed = -pev->maxspeed;
-					setStrafe = true;
+					GetCurrentTask()->taskID = TASK_ACTIONFORENEMY;
+					GetCurrentTask()->canContinue = true;
+					GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
 				}
 				else if (distance >= (baseDistance + 100.0f))
 				{
@@ -1263,7 +1405,7 @@ void Bot::CombatFight(void)
 			if (!(m_states & STATE_SEEINGENEMY)) // if suspecting enemy stand still
 				approach = 49;
 			else if (m_isReloading || m_isVIP) // if reloading or vip back off
-				approach = 29;
+				approach = 19;
 			else
 			{
 				approach = static_cast <int> (pev->health * m_agressionLevel);
@@ -1275,14 +1417,10 @@ void Bot::CombatFight(void)
 					approach = 49;
 			}
 
-			// only take cover when bomb is not planted and enemy can see the bot or the bot is VIP
-			if (approach < 30 && !g_bombPlanted &&
-				(::IsInViewCone(pev->origin, m_enemy) || m_isVIP))
+			if (approach < 20 && !g_bombPlanted &&
+				(m_isVIP || ::IsInViewCone(GetEntityOrigin (m_enemy), GetEntity ())))
 			{
-				setStrafe = true;
-				m_moveSpeed = -pev->maxspeed;
-
-				GetCurrentTask()->taskID = TASK_SEEKCOVER;
+				GetCurrentTask()->taskID = TASK_ACTIONFORENEMY;
 				GetCurrentTask()->canContinue = true;
 				GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
 			}
@@ -1410,8 +1548,8 @@ void Bot::CombatFight(void)
 		}
 		else if (m_fightStyle == FIGHT_STAY && m_moveSpeed == 0.0f && engine->RandomInt(1, 100) < 10)
 		{
-			if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)) && GetCurrentTask()->taskID != TASK_SEEKCOVER &&
-				GetCurrentTask()->taskID != TASK_HUNTENEMY && g_waypoint->IsDuckVisible(m_currentWaypointIndex, GetEntityWaypoint(m_enemy)))
+			if ((m_visibility & (VISIBILITY_HEAD | VISIBILITY_BODY)) && GetCurrentTask()->taskID != TASK_ACTIONFORENEMY && 
+				g_waypoint->IsDuckVisible(m_currentWaypointIndex, GetEntityWaypoint(m_enemy)))
 				m_duckTime = engine->GetTime() + 0.5f;
 
 			m_moveSpeed = 0.0f;
@@ -1664,47 +1802,6 @@ void Bot::SelectWeaponByName (const char *name)
 void Bot::SelectWeaponbyNumber (int num)
 {
    FakeClientCommand (GetEntity (), g_weaponSelect[num].weaponName);
-}
-
-void Bot::CommandTeam (void)
-{
-	// SyPB Pro P.37 - small chanage
-	if (g_gameMode != MODE_BASE)
-		return;
-
-	// prevent spamming
-	if (m_timeTeamOrder > engine->GetTime())
-		return;
-
-	bool memberNear = false;
-	bool memberExists = false;
-
-	// search teammates seen by this bot
-	for (int i = 0; i < engine->GetMaxClients(); i++)
-	{
-		if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || g_clients[i].team != m_team || g_clients[i].ent == GetEntity())
-			continue;
-
-		memberExists = true;
-
-		if (EntityIsVisible(g_clients[i].origin))
-		{
-			memberNear = true;
-			break;
-		}
-	}
-
-	if (memberNear) // has teammates ?
-	{
-		if (m_personality == PERSONALITY_RUSHER)
-			RadioMessage(Radio_StormTheFront);
-		else
-			RadioMessage(Radio_Fallback);
-	}
-	else if (memberExists)
-		RadioMessage(Radio_TakingFire);
-
-	m_timeTeamOrder = engine->GetTime() + engine->RandomFloat(5.0f, 30.0f);
 }
 
 bool Bot::IsGroupOfEnemies (Vector location, int numEnemies, int radius)
