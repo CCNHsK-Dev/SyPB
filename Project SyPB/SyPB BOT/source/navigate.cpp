@@ -429,10 +429,7 @@ bool Bot::DoWaypointNav (void)
       m_navTimeset = engine->GetTime ();
    }
 
-   if (pev->flags & FL_DUCKING)
-      m_destOrigin = m_waypointOrigin;
-   else
-      m_destOrigin = m_waypointOrigin + pev->view_ofs;
+   m_destOrigin = m_waypointOrigin + pev->view_ofs;
 
    // this waypoint has additional travel flags - care about them
    if (m_currentTravelFlags & PATHFLAG_JUMP)
@@ -560,19 +557,18 @@ bool Bot::DoWaypointNav (void)
    {
       if (g_waypoint->GetPath (m_currentWaypointIndex)->connectionFlags[i] != 0)
       {
-         desiredDistance = 0;
+         desiredDistance = 0.0f;
          break;
       }
    }
 
-   // SyPB Pro P.49 - Waypoint improve
-   // needs precise placement - check if we get past the point
-   if (desiredDistance < 16.0f && (waypointDistance < 30.0f || (waypointDistance < desiredDistance+1.0f*0.8f)) &&
-	   (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() > waypointDistance)
+   if (desiredDistance < 22.0f && waypointDistance < 30.0f && 
+	   (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() >= waypointDistance)
 	   desiredDistance = waypointDistance + 1.0f;
-   else if ((m_waypointOrigin - pev->origin).GetLength2D() <= 6.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
+   else if (!(m_currentTravelFlags & PATHFLAG_JUMP) && 
+	   (m_waypointOrigin - pev->origin).GetLength2D() <= 8.0f && m_waypointOrigin.z <= pev->origin.z + 32.0f)
    {
-	   if (m_navNode == null || 
+	   if (m_navNode == null ||
 		   (m_navNode->next != null && g_waypoint->Reachable(GetEntity(), m_navNode->next->index)))
 		   desiredDistance = waypointDistance + 1.0f;
    }
@@ -1305,12 +1301,7 @@ void Bot::SetWaypointOrigin(void)
 		TraceLine(Vector(pev->origin.x, pev->origin.y, pev->absmin.z), m_waypointOrigin, true, true, GetEntity(), &tr);
 
 		if (tr.flFraction < 1.0f)
-		{
-			if (m_waypointOrigin.z >= pev->origin.z)
-				m_waypointOrigin += tr.vecPlaneNormal;
-			else
-				m_waypointOrigin -= tr.vecPlaneNormal;
-		}
+			m_waypointOrigin = m_waypointOrigin + (pev->origin - m_waypointOrigin) * 0.5f + Vector(0.0f, 0.0f, 32.0f);
 	}
 }
 
@@ -1841,56 +1832,19 @@ void Bot::HeadTowardWaypoint (void)
 			if (!IsAntiBlock(GetEntity()) && !IsOnLadder () &&
 				g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER)
 			{
-				float waitTime = -1.0f;
+				// TESTTEST p.50
 				for (int c = 0; c < engine->GetMaxClients(); c++)
 				{
-					Bot *otherBot = g_botManager->GetBot(c);
-					if (otherBot == null || otherBot == this || !IsAlive(otherBot->GetEntity()) || 
-						IsAntiBlock (otherBot->GetEntity ()))
+					Bot* otherBot = g_botManager->GetBot(c);
+					if (otherBot == null || otherBot == this || !IsAlive(otherBot->GetEntity()) ||
+						IsAntiBlock(otherBot->GetEntity()))
 						continue;
 
-					if (!otherBot->IsOnLadder())
+					if (otherBot->m_currentWaypointIndex == destIndex)
 					{
-						if (otherBot->m_currentWaypointIndex == destIndex)
-						{
-							Vector wpOrigin = g_waypoint->GetPath(destIndex)->origin;
-
-							if ((otherBot->pev->origin - wpOrigin).GetLength() <
-								(pev->origin - wpOrigin).GetLength())
-							{
-								waitTime = 0.5f;
-								break;
-							}
-						}
-
-						continue;
+						PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1.5f, false);
+						return;
 					}
-
-					if (&otherBot->m_navNode[0] == null)
-					{
-						int otherBotLadderWpIndex = otherBot->m_currentWaypointIndex;
-						if (destIndex == otherBotLadderWpIndex ||
-							(m_navNode->next != null && m_navNode->next->index == otherBotLadderWpIndex))
-						{
-							waitTime = 0.5f;
-							break;
-						}
-
-						continue;
-					}
-
-					if (otherBot->m_currentWaypointIndex == destIndex &&
-						otherBot->m_navNode != null && otherBot->m_navNode->index == m_currentWaypointIndex)
-					{
-						waitTime = 0.5f;
-						break;
-					}
-				}
-
-				if (waitTime != -1.0f)
-				{
-					PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + waitTime, false);
-					return;
 				}
 			}
          }

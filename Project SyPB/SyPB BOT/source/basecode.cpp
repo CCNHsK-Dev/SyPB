@@ -6347,21 +6347,20 @@ float Bot::GetEstimatedReachTime (void)
 
 bool Bot::OutOfBombTimer (void)
 {
-   if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints || 
-	   ((g_mapType & MAP_DE) && (m_hasProgressBar || GetCurrentTask ()->taskID == TASK_ESCAPEFROMBOMB)))
+   if (m_hasProgressBar || GetCurrentTask ()->taskID == TASK_ESCAPEFROMBOMB)
       return false; // if CT bot already start defusing, or already escaping, return false
 
    // calculate left time
    const float timeLeft = GetBombTimeleft ();
 
    // if time left greater than 13, no need to do other checks
-   if (timeLeft > 15.0f)
+   if (timeLeft > 13.0f)
       return false;
 
-   Vector bombOrigin = g_waypoint->GetBombPosition ();
+   const Vector bombOrigin = g_waypoint->GetBombPosition ();
 
    // for terrorist, if timer is lower than eleven seconds, return true
-   if (timeLeft < 12.0f && m_team == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength() < 1024.0f)
+   if (timeLeft < 13.0f && m_team == TEAM_TERRORIST && (bombOrigin - pev->origin).GetLength() < 1024.0f)
       return true;
 
    bool hasTeammatesWithDefuserKit = false;
@@ -6383,7 +6382,7 @@ bool Bot::OutOfBombTimer (void)
    const float reachTime = g_waypoint->GetTravelTime (pev->maxspeed, g_waypoint->GetPath (m_currentWaypointIndex)->origin, bombOrigin);
 
    // for counter-terrorist check alos is we have time to reach position plus average defuse time
-   if ((timeLeft < reachTime + 6.0f && !m_hasDefuser && !hasTeammatesWithDefuserKit) || (timeLeft < reachTime + 3.0f && m_hasDefuser))
+   if ((timeLeft < reachTime + 8.0f && !m_hasDefuser && !hasTeammatesWithDefuserKit) || (timeLeft < reachTime + 4.0f && m_hasDefuser))
       return true;
 
    if (m_hasProgressBar && IsOnFloor () && (m_hasDefuser ? 10.0f : 15.0f > GetBombTimeleft ()))
