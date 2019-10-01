@@ -1869,20 +1869,19 @@ void Bot::SetConditions (void)
 	   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
    else
    {
-	   const float retreatLevel = (pev->max_health - pev->health) * tempFear;
-	   const float timeSeen = m_seeEnemyTime - engine->GetTime() + 10.0f;
-	   float ratio = timeSeen * 0.1f;
-
-	   if (m_isVIP || m_isReloading)
-		   ratio *= 2;
-	   else if (g_bombPlanted || m_isStuck)
-		   ratio /= 3;
-
-	   g_taskFilters[TASK_ACTIONFORENEMY].desire = retreatLevel * ratio;
-
-	   if (FNullEnt(m_enemy) && (g_timeRoundMid < engine->GetTime()) && !m_isUsingGrenade &&
-		   m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
+	   if (m_isVIP || m_isReloading || (g_gameMode == MODE_BASE && !g_bombPlanted && pev->health <= 30.0f))
 	   {
+		   if (g_gameMode == MODE_BASE && GetNearbyFriendsNearPosition(GetEntityOrigin(GetEntity()), 200) <
+			   GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 200))
+			   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
+		   else if (g_gameMode != MODE_BASE && !m_isVIP)
+			   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
+	   }
+	   else if (FNullEnt(m_enemy) && (g_gameMode != MODE_BASE || g_timeRoundMid < engine->GetTime()) &&
+		   !m_isUsingGrenade && m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
+	   {
+		   const float retreatLevel = (pev->max_health - pev->health) * tempFear;
+
 		   float desireLevel = 4096.0f - ((1.0f - tempAgression) * (m_lastEnemyOrigin - pev->origin).GetLength());
 		   desireLevel = (100.0f * desireLevel) / 4096.0f;
 		   desireLevel -= retreatLevel;
@@ -1903,7 +1902,7 @@ void Bot::SetConditions (void)
 			   }
 		   }
 
-		   if (desireLevel >= (retreatLevel * ratio) - 10.0f)
+		   if (desireLevel >= g_taskFilters[TASK_ACTIONFORENEMY].desire)
 		   {
 			   m_enemyActionMod = true;
 			   g_taskFilters[TASK_ACTIONFORENEMY].desire = desireLevel;

@@ -2672,24 +2672,8 @@ void Bot::FacePosition(void)
 	direction.ClampAngles();
 	deviation.ClampAngles();
 
-	// SyPB Pro P.37 - Aim OS
-	bool godAim = false;
-
-	// SyPB Pro P.40 - Aim OS improve
-	if (!FNullEnt(m_enemy))
-	{
-		if (m_wantsToFire && IsInViewCone(m_enemyOrigin))
-		{
-			if (m_currentWeapon == WEAPON_AWP && (m_skill >= 80 || g_gameMode != MODE_BASE))
-				godAim = true;
-			else if (m_skill >= 70 || IsZombieEntity(m_enemy))
-				godAim = true;
-			else if (m_isZombieBot)
-				godAim = true;
-		}
-	}
-
-	if (godAim)
+	if ((m_wantsToFire || pev->button & IN_ATTACK) &&
+		(m_isZombieBot || m_skill >= 70 || UsesSniper () || IsZombieEntity (m_enemy)))
 		pev->v_angle = direction;
 	else
 	{
