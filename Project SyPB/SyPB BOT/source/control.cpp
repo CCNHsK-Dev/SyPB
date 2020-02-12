@@ -913,105 +913,100 @@ void BotControl::Free (int index)
    m_bots[index] = null;
 }
 
-// SyPB Pro P.43 - Base improve
-Bot::Bot(edict_t *bot, int skill, int personality, int team, int member)
+Bot::Bot(edict_t* bot, int skill, int personality, int team, int member)
 {
-	char rejectReason[128];
-	int clientIndex = ENTINDEX(bot);
+    memset(reinterpret_cast <void*> (this), 0, sizeof(*this));
 
-	memset(reinterpret_cast <void *> (this), 0, sizeof(*this));
+    const int clientIndex = ENTINDEX(bot);
+    pev = &bot->v;
 
-	pev = &bot->v;
+    if (bot->pvPrivateData != nullptr)
+        FREE_PRIVATE(bot);
 
-	if (bot->pvPrivateData != NULL)
-		FREE_PRIVATE(bot);
+    bot->pvPrivateData = nullptr;
+    bot->v.frags = 0;
 
-	bot->pvPrivateData = NULL;
-	bot->v.frags = 0;
+    BotControl::CallGameEntity(&bot->v);
 
-	// create the player entity by calling MOD's player function
-	BotControl::CallGameEntity(&bot->v);
+    char* buffer = GET_INFOKEYBUFFER(bot);
+    SET_CLIENT_KEYVALUE (clientIndex, buffer, "_vgui_menus", "0");
 
-	// set all info buffer keys for this bot
-	char *buffer = GET_INFOKEYBUFFER(bot);
+    if (sypb_tagbots.GetBool())
+        SET_CLIENT_KEYVALUE(clientIndex, buffer, "*bot", "1");
 
-	// SyPB Pro P.45 - Bot Base Data for CS
-	SET_CLIENT_KEYVALUE(clientIndex, buffer, "_vgui_menus", "0");
-	//SET_CLIENT_KEYVALUE(clientIndex, buffer, "model", "");
+    char botIP[30];
+    sprintf(botIP, "127.0.0.%d", clientIndex + 100);
 
-	if (sypb_tagbots.GetBool())
-		SET_CLIENT_KEYVALUE(clientIndex, buffer, "*bot", "1");
+    char reject[256] = { 0, };
+    MDLL_ClientConnect(bot, GetEntityName (bot), botIP, reject);
+    if (!IsNullString(reject))
+    {
+        AddLogEntry(LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName(bot), reject);
+        ServerCommand("kick \"%s\"", GetEntityName(bot)); // kick the bot player if the server refused it
 
-	rejectReason[0] = 0; // reset the reject reason template string
-	MDLL_ClientConnect(bot, "Bot", "127.0.0.1", rejectReason);
+        bot->v.flags |= FL_KILLME;
+        return;
+    }
 
-	if (!IsNullString(rejectReason))
-	{
-		AddLogEntry(LOG_WARNING, "Server refused '%s' connection (%s)", GetEntityName(bot), rejectReason);
-		ServerCommand("kick \"%s\"", GetEntityName(bot)); // kick the bot player if the server refused it
+    MDLL_ClientPutInServer(bot);
+    bot->v.flags |= FL_FAKECLIENT; // set this player as fakeclient
 
-		bot->v.flags |= FL_KILLME;
-	}
+    // initialize all the variables for this bot...
+    m_notStarted = true;  // hasn't joined game yet
 
-	MDLL_ClientPutInServer(bot);
-	bot->v.flags |= FL_FAKECLIENT; // set this player as fakeclient
+    m_startAction = CMENU_IDLE;
+    m_moneyAmount = 0;
+    m_logotypeIndex = engine->RandomInt(0, 5);
 
-	// initialize all the variables for this bot...
-	m_notStarted = true;  // hasn't joined game yet
+    // assign how talkative this bot will be
+    m_sayTextBuffer.chatDelay = engine->RandomFloat(3.8f, 10.0f);
+    m_sayTextBuffer.chatProbability = engine->RandomInt(1, 100);
 
-	m_startAction = CMENU_IDLE;
-	m_moneyAmount = 0;
-	m_logotypeIndex = engine->RandomInt(0, 5);
+    m_isAlive = false;
+    m_skill = skill;
+    m_weaponBurstMode = BURST_DISABLED;
 
-	// assign how talkative this bot will be
-	m_sayTextBuffer.chatDelay = engine->RandomFloat(3.8f, 10.0f);
-	m_sayTextBuffer.chatProbability = engine->RandomInt(1, 100);
+    m_lastCommandTime = engine->GetTime() - 0.1f;
+    m_frameInterval = engine->GetTime();
 
-	m_isAlive = false;
-	m_skill = skill;
-	m_weaponBurstMode = BURST_DISABLED;
+    switch (personality)
+    {
+    case 1:
+        m_personality = PERSONALITY_RUSHER;
+        m_baseAgressionLevel = engine->RandomFloat(0.7f, 1.0f);
+        m_baseFearLevel = engine->RandomFloat(0.0f, 0.4f);
+        break;
 
-	m_lastCommandTime = engine->GetTime() - 0.1f;
-	m_frameInterval = engine->GetTime();
+    case 2:
+        m_personality = PERSONALITY_CAREFUL;
+        m_baseAgressionLevel = engine->RandomFloat(0.0f, 0.4f);
+        m_baseFearLevel = engine->RandomFloat(0.7f, 1.0f);
+        break;
 
-	switch (personality)
-	{
-	case 1:
-		m_personality = PERSONALITY_RUSHER;
-		m_baseAgressionLevel = engine->RandomFloat(0.7f, 1.0f);
-		m_baseFearLevel = engine->RandomFloat(0.0f, 0.4f);
-		break;
+    default:
+        m_personality = PERSONALITY_NORMAL;
+        m_baseAgressionLevel = engine->RandomFloat(0.4f, 0.7f);
+        m_baseFearLevel = engine->RandomFloat(0.4f, 0.7f);
+        break;
+    }
 
-	case 2:
-		m_personality = PERSONALITY_CAREFUL;
-		m_baseAgressionLevel = engine->RandomFloat(0.0f, 0.4f);
-		m_baseFearLevel = engine->RandomFloat(0.7f, 1.0f);
-		break;
+    memset(&m_ammoInClip, 0, sizeof(m_ammoInClip));
+    memset(&m_ammo, 0, sizeof(m_ammo));
 
-	default:
-		m_personality = PERSONALITY_NORMAL;
-		m_baseAgressionLevel = engine->RandomFloat(0.4f, 0.7f);
-		m_baseFearLevel = engine->RandomFloat(0.4f, 0.7f);
-		break;
-	}
+    m_currentWeapon = 0; // current weapon is not assigned at start
+    m_agressionLevel = m_baseAgressionLevel;
+    m_fearLevel = m_baseFearLevel;
+    m_nextEmotionUpdate = engine->GetTime() + 0.5f;
 
-	memset(&m_ammoInClip, 0, sizeof(m_ammoInClip));
-	memset(&m_ammo, 0, sizeof(m_ammo));
+    // just to be sure
+    m_actMessageIndex = 0;
+    m_pushMessageIndex = 0;
 
-	m_currentWeapon = 0; // current weapon is not assigned at start
-	m_agressionLevel = m_baseAgressionLevel;
-	m_fearLevel = m_baseFearLevel;
-	m_nextEmotionUpdate = engine->GetTime() + 0.5f;
+    // assign team and class
+    m_wantedTeam = team;
+    m_wantedClass = member;
 
-	// just to be sure
-	m_actMessageIndex = 0;
-	m_pushMessageIndex = 0;
-
-	// assign team and class
-	m_wantedTeam = team;
-	m_wantedClass = member;
-
-	NewRound();
+    NewRound();
 }
 
 Bot::~Bot (void)

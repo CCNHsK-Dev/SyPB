@@ -1468,7 +1468,10 @@ void AddLogEntry (int logLevel, const char *format, ...)
    MOD_AddLogEntry (-1, logLine);
 
    if (logLevel == LOG_FATAL)
-      FreeLibraryMemory ();
+   {
+       g_botManager->RemoveAll();
+       FreeLibraryMemory();
+   }
 }
 
 void MOD_AddLogEntry(int mod, char *format)

@@ -178,10 +178,7 @@ void NPC::FrameThink(void)
 	}
 
 	if (!IsAlive(GetEntity()))
-	{
 		DeadThink();
-		return;
-	}
 }
 
 void NPC::Think(void)
@@ -910,12 +907,20 @@ void NPC::MoveAction(void)
 
 lastly:
 	CheckStuck(oldSpeed);
+	pev->speed = m_moveSpeed;
 
+	float speed = GetDistance2D(pev->velocity);	
+	if (speed > 10.0f || speed < -10.0f)
+		g_npcAS |= ASC_MOVE;
+
+
+	/*
 	float speed = pev->speed;
 	pev->speed = m_moveSpeed;
 
 	if (IsOnFloor(GetEntity ()))
 	{
+		
 		if ((speed >= (pev->maxspeed / 2) || speed <= (-pev->maxspeed / 2)))
 		{
 			g_npcAS |= ASC_MOVE;
@@ -928,7 +933,9 @@ lastly:
 		}
 		else if (speed >= 10 || speed <= -10)
 			g_npcAS |= ASC_WALK;
+			
 	}
+	*/
 }
 
 void NPC::CheckStuck(float oldSpeed)
@@ -1127,12 +1134,13 @@ void NPC::PlayNPCSound(int soundClass)
 	if (soundNum == -1)
 		return;
 
+	int soundChannel = CHAN_VOICE;
 	if (soundClass == NS_ATTACK)
-		EMIT_SOUND_DYN(GetEntity (), CHAN_WEAPON, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
+		soundChannel = CHAN_WEAPON;
 	else if (soundClass == NS_FOOTSTEP)
-		EMIT_SOUND_DYN(GetEntity(), CHAN_BODY, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
-	else 
-		EMIT_SOUND_DYN(GetEntity(), CHAN_VOICE, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
+		soundChannel = CHAN_BODY;
+
+	EMIT_SOUND_DYN(GetEntity(), soundChannel, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
 }
 
 void NPC::DeleteSearchNodes(void)

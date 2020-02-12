@@ -4086,17 +4086,18 @@ DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t 
 
 DLL_ENTRYPOINT
 {
-   // dynamic library entry point, can be used for uninitialization stuff. NOT for initializing
-   // anything because if you ever attempt to wander outside the scope of this function on a
-   // DLL attach, LoadLibrary() will simply fail. And you can't do I/Os here either. Nice eh ?
+	// dynamic library entry point, can be used for uninitialization stuff. NOT for initializing
+	// anything because if you ever attempt to wander outside the scope of this function on a
+	// DLL attach, LoadLibrary() will simply fail. And you can't do I/Os here either. Nice eh ?
 
    // dynamic library detaching ??
    if (DLL_DETACHING)
    {
-      FreeLibraryMemory (); // free everything that's freeable
+	   g_botManager->RemoveAll();
+	   FreeLibraryMemory();
 
-      if (g_gameLib != null)
-         delete g_gameLib; // if dynamic link library of mod is load, free it
+	   if (g_gameLib != null)
+		   delete g_gameLib; // if dynamic link library of mod is load, free it
    }
    DLL_RETENTRY; // the return data type is OS specific too
 }
