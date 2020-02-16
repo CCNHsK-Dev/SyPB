@@ -1722,7 +1722,7 @@ void ClientCommand(edict_t *ent)
 								bot->m_doubleJumpEntity = client->ent;
 
 								bot->PushTask(TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, engine->GetTime(), true);
-								bot->TeamSayText(FormatBuffer("Ok %s, i will help you!", GetEntityName (ent)));
+								bot->ChatSay (true, FormatBuffer("Ok %s, i will help you!", GetEntityName (ent)));
 							}
 							else if (selection == 2)
 								bot->ResetDoubleJumpState();
@@ -3078,22 +3078,6 @@ const char *pfnCmd_Args (void)
    // is this a bot issuing that client command?
    if (g_isFakeCommand)
    {
-      // is it a "say" or "say_team" client command?
-      if (strncmp ("say ", g_fakeArgv, 4) == 0)
-      {
-         if (g_isMetamod)
-            RETURN_META_VALUE (MRES_SUPERCEDE, g_fakeArgv + 4);
-
-         return g_fakeArgv + 4; // skip the "say" bot client command
-      }
-      else if (strncmp ("say_team ", g_fakeArgv, 9) == 0)
-      {
-         if (g_isMetamod)
-            RETURN_META_VALUE (MRES_SUPERCEDE, g_fakeArgv + 9);
-
-         return g_fakeArgv + 9; // skip the "say_team" bot client command
-      }
-
       if (g_isMetamod)
          RETURN_META_VALUE (MRES_SUPERCEDE, g_fakeArgv);
 

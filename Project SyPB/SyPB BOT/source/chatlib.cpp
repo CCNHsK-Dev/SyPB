@@ -439,72 +439,47 @@ bool Bot::RepliesToPlayer (void)
    return false;
 }
 
-void Bot::SayText (const char *text)
+void Bot::ChatSay(bool teamSay, const char *text)
 {
-   // this function prints saytext message to all players
+    if (IsNullString(text))
+        return;
 
-   if (IsNullString (text))
-      return;
+    char botName[80];
+    char botTeam[22];
+    char tempMessage[256];
 
-   char botName[80];
+    if (!teamSay)
+        strcpy(botTeam, "");
+    else if (m_team == TEAM_TERRORIST)
+        strcpy(botTeam, "(Terrorist)");
+    else if (m_team == TEAM_COUNTER)
+        strcpy(botTeam, "(Counter-Terrorist)");
 
-   char tempMessage[256];
-   strcpy (botName, GetEntityName(GetEntity ()));
+    strcpy(botName, GetEntityName(GetEntity()));
 
-   for (int i = 0; i < engine->GetMaxClients (); i++)
-   {
-      if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].ent == GetEntity ()))
-         continue;
 
-      if (m_isAlive)
-         sprintf (tempMessage, "%c%s :  %s\n", 0x02, botName, text);
-      else
-         sprintf (tempMessage, "%c*DEAD* %c%s%c :  %s\n", 0x01, 0x03, botName, 0x01, text);
+    for (int i = 0; i < engine->GetMaxClients(); i++)
+    {
+        if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == GetEntity() || g_clients[i].flags & FL_FAKECLIENT)
+            continue;
 
-      if ((g_clients[i].flags & CFLAG_ALIVE && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && !m_isAlive))
-      {
-         MESSAGE_BEGIN (MSG_ONE, g_netMsg->GetId (NETMSG_SAYTEXT), null, g_clients[i].ent);
-            WRITE_BYTE (GetIndex ());
-            WRITE_STRING (tempMessage);
-         MESSAGE_END ();
-      }
-   }
+        if (teamSay && g_clients[i].team != m_team)
+            continue;
+
+        if (!m_isAlive)
+            sprintf(tempMessage, "%c*DEAD*%s %c%s%c :  %s\n", 0x01, botTeam, 0x03, botName, 0x01, text);
+        else
+        {
+            if (teamSay)
+                sprintf(tempMessage, "%c%s %c%s%c :  %s\n", 0x01, botTeam, 0x03, botName, 0x01, text);
+            else
+                sprintf(tempMessage, "%c%s :  %s\n", 0x02, botName, text);
+        }
+
+        MESSAGE_BEGIN(MSG_ONE, g_netMsg->GetId(NETMSG_SAYTEXT), null, g_clients[i].ent);
+        WRITE_BYTE(GetIndex());
+        WRITE_STRING(tempMessage);
+        MESSAGE_END();
+    }
 }
 
-void Bot::TeamSayText (const char *text)
-{
-   // this function prints saytext message only for teammates
-
-   if (IsNullString (text))
-      return;
-
-   char botName[80];
-   char tempMessage[256];
-   char botTeam[80];
-
-   if (m_team == TEAM_TERRORIST)
-      strcpy (botTeam, "(Terrorist)");
-   else if (m_team == TEAM_COUNTER)
-      strcpy (botTeam, "(Counter-Terrorist)");
-
-   strcpy (botName, GetEntityName(GetEntity ()));
-
-   for (int i = 0; i < engine->GetMaxClients (); i++)
-   {
-      if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
-         continue;
-
-      if (m_isAlive)
-         sprintf (tempMessage, "%c%s %c%s%c :  %s\n", 0x01, botTeam, 0x03, botName, 0x01, text);
-      else
-         sprintf (tempMessage, "%c*DEAD*%s %c%s%c :  %s\n", 0x01, botTeam, 0x03, botName, 0x01, text);
-
-      if ((g_clients[i].flags & CFLAG_ALIVE && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && m_isAlive) || (!(g_clients[i].flags & CFLAG_ALIVE) && !m_isAlive))
-      {
-         MESSAGE_BEGIN (MSG_ONE, g_netMsg->GetId (NETMSG_SAYTEXT), null, g_clients[i].ent);
-             WRITE_BYTE (GetIndex ());
-             WRITE_STRING (tempMessage);
-         MESSAGE_END ();
-      }
-   }
-}

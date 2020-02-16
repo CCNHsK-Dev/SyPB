@@ -39,7 +39,8 @@ ConVar sypb_difficulty ("sypb_difficulty", "4");
 ConVar sypb_minskill ("sypb_minskill", "60");
 ConVar sypb_maxskill ("sypb_maxskill", "100"); 
 
-ConVar sypb_tagbots ("sypb_tagbots", "0");
+ConVar sypb_latencytag ("sypb_tagbots", "0");
+ConVar sypb_nametag("sypb_nametag", "1");
 
 ConVar sypb_join_after_player ("sypb_join_after_player", "0"); 
 
@@ -212,7 +213,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 
 	// SyPB Pro P.37 - Bot Name / Tag
 	char botName[64];
-	sprintf(botName, "%s%s", sypb_tagbots.GetBool () == true ? "" : "[SyPB] ", outputName);
+	sprintf(botName, "%s%s", sypb_nametag.GetBool () == true ? "[SyPB] " : "", outputName);
 
 	if (FNullEnt((bot = (*g_engfuncs.pfnCreateFakeClient) (botName))))
 	{
@@ -931,7 +932,7 @@ Bot::Bot(edict_t* bot, int skill, int personality, int team, int member)
     char* buffer = GET_INFOKEYBUFFER(bot);
     SET_CLIENT_KEYVALUE (clientIndex, buffer, "_vgui_menus", "0");
 
-    if (sypb_tagbots.GetBool())
+    if (sypb_latencytag.GetInt() == 1)
         SET_CLIENT_KEYVALUE(clientIndex, buffer, "*bot", "1");
 
     char botIP[30];

@@ -1081,8 +1081,7 @@ public:
    void PushTask (BotTask taskID, float desire, int data, float time, bool canContinue);
    void DiscardWeaponForUser (edict_t *user, bool discardC4);
 
-   void SayText (const char *text);
-   void TeamSayText (const char *text);
+   void ChatSay(bool teamSay, const char* text);
 
    void ChatMessage (int type, bool isTeamSay = false);
    void RadioMessage (int message);
@@ -1404,7 +1403,7 @@ extern void ChartPrint (const char *format, ...);
 extern void ServerPrintNoTag (const char *format, ...);
 extern void CenterPrint (const char *format, ...);
 extern void ClientPrint (edict_t *ent, int dest, const char *format, ...);
-extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
+//extern void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...);
 
 extern int IsNotAttackLab(edict_t *entity, Vector attackOrigin);
 extern bool IsAntiBlock(edict_t *entity);

@@ -1260,13 +1260,13 @@ void Bot::CheckMessageQueue (void)
 
    // team independent saytext
    case CMENU_SAY:
-      SayText (m_tempStrings);
-      break;
+       ChatSay (false, m_tempStrings);
+       break;
 
    // team dependent saytext
    case CMENU_TEAMSAY:
-      TeamSayText (m_tempStrings);
-      break;
+       ChatSay(true, m_tempStrings);
+       break;
 
    case CMENU_IDLE:
    default:
@@ -5853,14 +5853,14 @@ void Bot::DiscardWeaponForUser (edict_t *user, bool discardC4)
          SelectWeaponByName ("weapon_c4");
          FakeClientCommand (GetEntity (), "drop");
 
-         SayText (FormatBuffer ("Here! %s, and now go and setup it!", GetEntityName (user)));
+         ChatSay(false, FormatBuffer ("Here! %s, and now go and setup it!", GetEntityName (user)));
       }
       else
       {
          SelectBestWeapon ();
          FakeClientCommand (GetEntity (), "drop");
 
-         SayText (FormatBuffer ("Here the weapon! %s, feel free to use it ;)", GetEntityName(user)));
+         ChatSay(false, FormatBuffer ("Here the weapon! %s, feel free to use it ;)", GetEntityName(user)));
       }
 
       m_pickupItem = null;
@@ -5877,7 +5877,7 @@ void Bot::DiscardWeaponForUser (edict_t *user, bool discardC4)
       }
    }
    else
-      SayText (FormatBuffer ("Sorry %s, i don't want discard my %s to you!", GetEntityName(user), discardC4 ? "bomb" : "weapon"));
+       ChatSay (false, FormatBuffer ("Sorry %s, i don't want discard my %s to you!", GetEntityName(user), discardC4 ? "bomb" : "weapon"));
 }
 
 void Bot::ResetDoubleJumpState (void)

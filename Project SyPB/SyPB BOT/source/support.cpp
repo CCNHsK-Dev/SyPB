@@ -1100,6 +1100,7 @@ bool TryFileOpen (char *fileName)
    return false;
 }
 
+/*
 void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...)
 {
    if (!IsValidPlayer (ent) || IsValidBot (ent))
@@ -1115,8 +1116,8 @@ void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ..
    MESSAGE_BEGIN (MSG_ONE, SVC_TEMPENTITY, null, ent);
       WRITE_BYTE (TE_TEXTMESSAGE);
       WRITE_BYTE (1);
-      WRITE_SHORT (FixedSigned16 (-1, 1 << 13));
-      WRITE_SHORT (FixedSigned16 (toCenter ? -1.0f : 0.0f, 1 << 13));
+      WRITE_SHORT (FixedSigned16 (-1.0f, 13.0f));
+      WRITE_SHORT (FixedSigned16 (toCenter ? -1.0f : 0.0f, 13.0f));
       WRITE_BYTE (2);
       WRITE_BYTE (static_cast <int> (rgb.red));
       WRITE_BYTE (static_cast <int> (rgb.green));
@@ -1126,14 +1127,14 @@ void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ..
       WRITE_BYTE (engine->RandomInt (230, 255));
       WRITE_BYTE (engine->RandomInt (230, 255));
       WRITE_BYTE (200);
-      WRITE_SHORT (FixedUnsigned16 (0.0078125, 1 << 8));
-      WRITE_SHORT (FixedUnsigned16 (2, 1 << 8));
-      WRITE_SHORT (FixedUnsigned16 (6, 1 << 8));
-      WRITE_SHORT (FixedUnsigned16 (0.1f, 1 << 8));
+      WRITE_SHORT (FixedUnsigned16 (0.0078125, 8.0f));
+      WRITE_SHORT (FixedUnsigned16 (2.0f, 8.0f));
+      WRITE_SHORT (FixedUnsigned16 (6.0f, 8.0f));
+      WRITE_SHORT (FixedUnsigned16 (0.1f, 8.0f));
       WRITE_STRING (const_cast <const char *> (&buffer[0]));
    MESSAGE_END ();
 }
-
+*/
 void ServerPrint (const char *format, ...)
 {
    va_list ap;
