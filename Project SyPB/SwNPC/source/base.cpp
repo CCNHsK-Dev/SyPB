@@ -206,22 +206,17 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 			{
 				float flNew = 0.5 * damage;
 				float flArmor = (damage - flNew) * 0.5;
-				int armorHit = 0;
 
 				if (flArmor <= victim->v.armorvalue)
 				{
-					armorHit = victim->v.armorvalue;
-
 					if (flArmor < 0)
 						flArmor = 1;
 
 					victim->v.armorvalue -= flArmor;
-					armorHit -= victim->v.armorvalue;
 				}
 				else
 				{
 					flNew = damage - victim->v.armorvalue;
-					armorHit = flArmor;
 					victim->v.armorvalue = 0;
 				}
 

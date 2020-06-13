@@ -113,7 +113,7 @@ void NPC::NewNPCSetting(void)
 		m_npcSound[i][3] = "null";
 	}
 
-	m_findEnemyMode = 0;
+	m_findEnemyMode = 1;
 	m_bloodColor = BLOOD_COLOR_RED;
 	m_damageMultiples = 1.0f;
 	m_missArmor = false;
@@ -466,13 +466,6 @@ void NPC::TaskB_FollowEntity(void)
 
 void NPC::FindEnemy(void)
 {
-	if (m_findEnemyMode == -1)
-	{
-		SetEnemy(null);
-		SetMoveTarget(null);
-		return;
-	}
-
 	int team = GetTeam(GetEntity());
 
 	if (m_enemyAPI != null && (FNullEnt(m_enemyAPI) || !IsAlive(m_enemyAPI) || GetTeam(m_enemyAPI) == team))
@@ -489,6 +482,9 @@ void NPC::FindEnemy(void)
 		if (!IsAlive(m_moveTargetEntity) || GetTeam(m_moveTargetEntity) == team)
 			SetMoveTarget(null);
 	}
+
+	if (m_findEnemyMode == 0)
+		return;
 
 	edict_t *targetEntity = null;
 	edict_t *lastCheckEntity = null;
