@@ -2540,7 +2540,7 @@ void LoadEntityData(void)
 					Vector headOrigin, headAngles;
 					(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
 					g_clients[i].headOrigin = headOrigin;
-					g_clients[i].headOrigin.z = headOrigin.z + 1.2f;
+					g_clients[i].headOrigin.z = headOrigin.z + 0.6f;
 				}
 			}
 

@@ -2402,7 +2402,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		}
 		else
 		{
-			if (movedDistance < 2.0f && m_prevSpeed >= 20.0f)
+			if (movedDistance < 2.0f && m_prevSpeed >= 1.0f)
 			{
 				m_prevTime = engine->GetTime();
 				m_isStuck = true;
