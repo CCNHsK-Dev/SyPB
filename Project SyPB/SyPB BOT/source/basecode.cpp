@@ -3662,7 +3662,7 @@ void Bot::RunTask (void)
 							for (i = 0; i < Const_MaxHostages; i++)
 							{
 								// SyPB Pro P.49 - Base improve 
-								if (m_hostages[i]->v.effects & EF_NODRAW || !IsAlive(m_hostages[i]))
+								if (!IsAlive(m_hostages[i]) || m_hostages[i]->v.effects & EF_NODRAW)
 									m_hostages[i] = null;
 							}
 						}
