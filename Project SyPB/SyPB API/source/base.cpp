@@ -8,13 +8,13 @@
 // Calling the SyPB.dll ****
 typedef void(*_SypbAMXXAPI_Version)(float, int, int, int, int);
 _SypbAMXXAPI_Version AMXX_Check_APIVersion;
-// ****
 
 typedef bool(*_RunSypb)(void);
 _RunSypb Amxx_RunSypb;
 
 typedef float(*_SypbAPIVersion) (void);
 _SypbAPIVersion Amxx_APIVersion;
+// ****
 
 typedef int(*_IsSyPB)(int);
 _IsSyPB Amxx_IsSypb;
@@ -104,6 +104,11 @@ void SyPBDataLoad (void)
 
 	if (!dll)
 	{
+		LogToFile("***************************");
+		LogToFile("Error: Cannot Find SyPB");
+		LogToFile("[Error] SyPB AMXX API CANNOT RUN");
+		LogToFile("***************************");
+
 		ErrorWindows("We cannot find sypb.dll, SyPB API cannot run"
 			"\n\nExit the Game?");
 		return;
@@ -300,6 +305,7 @@ void SyPBDataLoad (void)
 		LogToFile("Load API::Amxx_ZombieModGameStart Failed");
 }
 
+// Check SyPB Available
 static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params)
 {
 	if (!Amxx_RunSypb)
@@ -308,6 +314,7 @@ static cell AMX_NATIVE_CALL amxx_runSypb(AMX *amx, cell *params)
 	return Amxx_RunSypb();
 }
 
+// Check SyPB API Version
 static cell AMX_NATIVE_CALL amxx_apiVersion(AMX *amx, cell *params) 
 {
 	if (!Amxx_APIVersion)
@@ -316,6 +323,7 @@ static cell AMX_NATIVE_CALL amxx_apiVersion(AMX *amx, cell *params)
 	return amx_ftoc(api_version);
 }
 
+// Check Player is SyPB
 static cell AMX_NATIVE_CALL amxx_IsSypb(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_IsSypb || api_version < float(1.30))
@@ -325,6 +333,7 @@ static cell AMX_NATIVE_CALL amxx_IsSypb(AMX *amx, cell *params) // 1.30
 	return Amxx_IsSypb(iType);
 }
 
+// Check SyPB Bot - Enemy ID
 static cell AMX_NATIVE_CALL amxx_CheckEnemy(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_CheckEnemy || api_version < float(1.30))
@@ -334,6 +343,7 @@ static cell AMX_NATIVE_CALL amxx_CheckEnemy(AMX *amx, cell *params) // 1.30
 	return Amxx_CheckEnemy(iType);
 }
 
+// Check SyPB Bot - Move Target ID
 static cell AMX_NATIVE_CALL amxx_CheckMoveTarget(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_CheckMoveTarget || api_version < float(1.30))
@@ -343,6 +353,7 @@ static cell AMX_NATIVE_CALL amxx_CheckMoveTarget(AMX *amx, cell *params) // 1.30
 	return Amxx_CheckMoveTarget(iType);
 }
 
+// Set up SyPB Bot - Enemy
 static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_SetEnemy || api_version < float(1.30))
@@ -354,6 +365,7 @@ static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.30
 	return Amxx_SetEnemy(botId, targetId, blockCheckTime);
 }
 
+// Block SyPB Bot Move AI
 static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_SetBotMove || api_version < float(1.30))
@@ -365,6 +377,7 @@ static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.30
 	return Amxx_SetBotMove(id, moveAIforPlugin);
 }
 
+// Set up SyPB Bot Look UP Origin
 static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_SetBotLookAt || api_version < float(1.30))
@@ -377,6 +390,7 @@ static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.30
 	return Amxx_SetBotLookAt(id, lookAt);
 }
 
+// Set up SyPB Bot Weapon Clip Data (Work on Change Weapon Data Plug-in)
 static cell AMX_NATIVE_CALL amxx_SetWeaponClip(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_SetWeaponClip || api_version < float(1.30))
@@ -388,6 +402,7 @@ static cell AMX_NATIVE_CALL amxx_SetWeaponClip(AMX *amx, cell *params) // 1.30
 	return Amxx_SetWeaponClip(id, weaponClip);
 }
 
+// Set up SyPB Bot Reload Weapon Ai
 static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.30
 {
 	if (!Amxx_BlockWeaponReload || api_version < float(1.30))
@@ -399,6 +414,7 @@ static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.
 	return Amxx_BlockWeaponReload(id, blockReload);
 }
 
+// Set up SyPB Bot Knife Attack Distance
 static cell AMX_NATIVE_CALL amxx_SetKaDistance(AMX *amx, cell *params) // 1.31
 {
 	if (!Amxx_SetKaDistance || api_version < float (1.31))
@@ -411,6 +427,7 @@ static cell AMX_NATIVE_CALL amxx_SetKaDistance(AMX *amx, cell *params) // 1.31
 	return Amxx_SetKaDistance(id, kad1, kad2);
 }
 
+// Add New SyPB Bot on Plug-in, and return new SyPB id
 static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params) // 1.34
 {
 	if (!Amxx_AddSyPB || api_version < float(1.34))
@@ -423,6 +440,7 @@ static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params) // 1.34
 	return Amxx_AddSyPB(name, skill, team);
 }
 
+// Set up SyPB 'use weapon' base distance
 static cell AMX_NATIVE_CALL amxx_SetGunDistance(AMX *amx, cell *params) // 1.35
 {
 	if (!Amxx_SetGunDistance || api_version < float(1.35))
@@ -435,6 +453,7 @@ static cell AMX_NATIVE_CALL amxx_SetGunDistance(AMX *amx, cell *params) // 1.35
 	return Amxx_SetGunDistance(id, minD, maxD);
 }
 
+// Check the SyPB bot is not zombie ai now
 static cell AMX_NATIVE_CALL amxx_IsZombotBot(AMX *amx, cell *params) // 1.38
 {
 	if (!Amxx_IsZombieBot || api_version < float(1.38))
@@ -444,6 +463,7 @@ static cell AMX_NATIVE_CALL amxx_IsZombotBot(AMX *amx, cell *params) // 1.38
 	return Amxx_IsZombieBot(id);
 }
 
+// Set up SyPB bot use zombie ai
 static cell AMX_NATIVE_CALL amxx_SetZombieBot(AMX *amx, cell *params) // 1.38
 {
 	if (!Amxx_SetZombieBot || api_version < float(1.38))
@@ -455,6 +475,7 @@ static cell AMX_NATIVE_CALL amxx_SetZombieBot(AMX *amx, cell *params) // 1.38
 	return Amxx_SetZombieBot(id, zombieBot);
 }
 
+// input the origin, and return the waypoint id
 static cell AMX_NATIVE_CALL amxx_GetOriginPoint(AMX *amx, cell *params) // 1.38
 {
 	if (!Amxx_GetOriginPoint || api_version < float(1.38))
@@ -466,6 +487,7 @@ static cell AMX_NATIVE_CALL amxx_GetOriginPoint(AMX *amx, cell *params) // 1.38
 	return Amxx_GetOriginPoint(origin);
 }
 
+// Check the SyPB Bot waypoint id (mod 0 check bot origin, mod 1 check m_currentWaypointIndex)
 static cell AMX_NATIVE_CALL amxx_GetBotPoint(AMX *amx, cell *params) // 1.38
 {
 	if (!Amxx_GetBotPoint || api_version < float(1.38))
@@ -477,6 +499,7 @@ static cell AMX_NATIVE_CALL amxx_GetBotPoint(AMX *amx, cell *params) // 1.38
 	return Amxx_GetBotPoint(id, mod);
 }
 
+// Check SyPB Bot m_navNode number
 static cell AMX_NATIVE_CALL amxx_GetBotNavNum(AMX *amx, cell *params) // 1.40
 {
 	if (!Amxx_GetBotNavNum || api_version < float(1.40))
@@ -487,6 +510,7 @@ static cell AMX_NATIVE_CALL amxx_GetBotNavNum(AMX *amx, cell *params) // 1.40
 	return Amxx_GetBotNavNum(id);
 }
 
+// Check SyPB Bot m_navNode index
 static cell AMX_NATIVE_CALL amxx_GetBotNavPointId(AMX *amx, cell *params) // 1.40
 {
 	if (!Amxx_GetBotNavPointId || api_version < float(1.40))
@@ -498,6 +522,7 @@ static cell AMX_NATIVE_CALL amxx_GetBotNavPointId(AMX *amx, cell *params) // 1.4
 	return Amxx_GetBotNavPointId(id, pointId);
 }
 
+// Set up SyPB Bot Action for Entity eg. setup npc enemy or more
 static cell AMX_NATIVE_CALL amxx_SetEntityAction(AMX *amx, cell *params) // 1.40
 {
 	if (!Amxx_SetEntityAction || api_version < float(1.40))
@@ -510,6 +535,7 @@ static cell AMX_NATIVE_CALL amxx_SetEntityAction(AMX *amx, cell *params) // 1.40
 	return Amxx_SetEntityAction(id, team, action);
 }
 
+// Set up SyPB Bot m_chosenGoalIndex
 static cell AMX_NATIVE_CALL amxx_SetBotGoal(AMX *amx, cell *params) // 1.42
 {
 	if (!Amxx_SetBotGoal || api_version < float(1.42))
@@ -521,6 +547,7 @@ static cell AMX_NATIVE_CALL amxx_SetBotGoal(AMX *amx, cell *params) // 1.42
 	return Amxx_SetBotGoal(id, goalId);
 }
 
+// Block SyPB Pick the weapon action
 static cell AMX_NATIVE_CALL amxx_BlockWeaponPick(AMX *amx, cell *params) // 1.42
 {
 	if (!Amxx_BlockWeaponPick || api_version < float(1.42))
@@ -532,6 +559,7 @@ static cell AMX_NATIVE_CALL amxx_BlockWeaponPick(AMX *amx, cell *params) // 1.42
 	return Amxx_BlockWeaponPick (id, blockWeaponPick);
 }
 
+// Check Entity Waypoint Id
 static cell AMX_NATIVE_CALL amxx_GetEntityWaypointId(AMX *amx, cell *params) // 1.48
 {
 	if (!Amxx_GetEntityWaypointId || api_version < float(1.48))
@@ -542,6 +570,7 @@ static cell AMX_NATIVE_CALL amxx_GetEntityWaypointId(AMX *amx, cell *params) // 
 	return Amxx_GetEntityWaypointId(id);
 }
 
+// Set the game is zombie mode, 
 static cell AMX_NATIVE_CALL amxx_ZombieModGameStart(AMX* amx, cell* params) // 1.50
 {
 	if (!Amxx_ZombieModGameStart || api_version < float(1.50))

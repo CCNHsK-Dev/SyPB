@@ -1842,7 +1842,7 @@ void Bot::HeadTowardWaypoint (void)
 
 					if (otherBot->m_currentWaypointIndex == destIndex)
 					{
-						PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1.5f, false);
+						PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1.2f, false);
 						return;
 					}
 				}

@@ -907,31 +907,24 @@ lastly:
 
 	float speed = GetDistance2D(pev->velocity);	
 	if (speed > 10.0f || speed < -10.0f)
-		g_npcAS |= ASC_MOVE;
-
-
-	/*
-	float speed = pev->speed;
-	pev->speed = m_moveSpeed;
-
-	if (IsOnFloor(GetEntity ()))
 	{
-		
-		if ((speed >= (pev->maxspeed / 2) || speed <= (-pev->maxspeed / 2)))
+		if (IsOnFloor(GetEntity()))
 		{
-			g_npcAS |= ASC_MOVE;
-
-			if (m_setFootStepSoundTime <= gpGlobals->time)
+			if ((speed >= (pev->maxspeed / 2) || speed <= (-pev->maxspeed / 2)))
 			{
-				m_setFootStepSoundTime = gpGlobals->time + 0.3f;
-				PlayNPCSound(NS_FOOTSTEP);
+				g_npcAS |= ASC_MOVE;
+
+				if (m_setFootStepSoundTime <= gpGlobals->time)
+				{
+					m_setFootStepSoundTime = gpGlobals->time + 0.3f;
+					PlayNPCSound(NS_FOOTSTEP);
+				}
 			}
+			else
+				g_npcAS |= ASC_WALK;
 		}
-		else if (speed >= 10 || speed <= -10)
-			g_npcAS |= ASC_WALK;
-			
 	}
-	*/
+	
 }
 
 void NPC::CheckStuck(float oldSpeed)
