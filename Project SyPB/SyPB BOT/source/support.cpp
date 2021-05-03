@@ -919,12 +919,10 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		float distance = (getWpOrigin - origin).GetLength();
 		if (distance >= 300.0f)
 			needCheckNewWaypoint = true;
-		else if (distance >= 32.0f)
+		else
 		{
 			distance = (g_waypoint->GetPath(wpIndex)->origin - origin).GetLength();
 			float wpRadius = g_waypoint->GetPath(wpIndex)->radius;
-			if (wpRadius < 32.0f)
-				wpRadius += 18.0f;
 
 			if (distance > wpRadius && traceCheckTime + 1.2f <= engine->GetTime())
 				needCheckNewWaypoint = true;

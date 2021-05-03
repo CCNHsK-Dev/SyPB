@@ -100,8 +100,10 @@ struct amxx_module_info_s
         typedef int               int32_t;
         typedef unsigned int      uint32_t;
       #else
-        typedef long int          int32_t;
-        typedef unsigned long int uint32_t;
+        //typedef long int          int32_t;
+        //typedef unsigned long int uint32_t;
+		typedef int          int32_t;
+		typedef unsigned int uint32_t;
       #endif
       #if defined __WIN32__ || defined _WIN32 || defined WIN32
         typedef __int64	          int64_t;

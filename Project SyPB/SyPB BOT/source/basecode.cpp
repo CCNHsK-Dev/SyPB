@@ -6328,7 +6328,7 @@ bool Bot::IsBombDefusing (Vector bombOrigin)
       if (m_team != GetTeam (bot->GetEntity ()) || bot->GetCurrentTask ()->taskID == TASK_ESCAPEFROMBOMB)
          continue; // skip other mess
 
-      if ((bot->pev->origin - bombOrigin).GetLength () < 80 && (bot->GetCurrentTask ()->taskID == TASK_DEFUSEBOMB || bot->m_hasProgressBar))
+      if ((bot->pev->origin - bombOrigin).GetLength () < 60.0f && (bot->GetCurrentTask ()->taskID == TASK_DEFUSEBOMB || bot->m_hasProgressBar))
       {
          defusingInProgress = true;
          break;
@@ -6338,7 +6338,7 @@ bool Bot::IsBombDefusing (Vector bombOrigin)
       if (defusingInProgress || !(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || g_clients[i].team != m_team || IsValidBot (g_clients[i].ent))
          continue;
 
-      if ((GetEntityOrigin (g_clients[i].ent) - bombOrigin).GetLength () < 80)
+      if ((GetEntityOrigin (g_clients[i].ent) - bombOrigin).GetLength () < 60.0f)
       {
          defusingInProgress = true;
          break;
