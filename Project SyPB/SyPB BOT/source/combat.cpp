@@ -1139,17 +1139,22 @@ void Bot::FocusEnemy (void)
 			   m_wantsToFire = false;
 		   else
 		   {
-			   const float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
-
-			   // enemy faces bot?
-			   if (enemyDot >= 0.90f)
-				   m_wantsToFire = true;
+			   if (FNullEnt(m_enemy))
+				   m_wantsToFire = false;
 			   else
 			   {
-				   if (dot > 0.99f)
+				   const float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
+
+				   // enemy faces bot?
+				   if (enemyDot >= 0.90f)
 					   m_wantsToFire = true;
 				   else
-					   m_wantsToFire = false;
+				   {
+					   if (dot > 0.99f)
+						   m_wantsToFire = true;
+					   else
+						   m_wantsToFire = false;
+				   }
 			   }
 		   }
 	   }
