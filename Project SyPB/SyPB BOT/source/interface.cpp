@@ -1,5 +1,5 @@
 // 
-// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// Copyright (c) 2003-2023, by HsK-Dev Blog 
 // https://ccnhsk-dev.blogspot.com/ 
 // 
 // And Thank About Yet Another POD-Bot Development Team.
@@ -2645,9 +2645,7 @@ void StartFrame (void)
 	{
 		g_secondTime = engine->GetTime() + 1.0f;
 
-		g_gameMode = sypb_gamemod.GetInt();
-		if (g_gameMode < MODE_BASE || g_gameMode >= MODE_NONE)
-			SetGameMode(MODE_BASE);
+		SetGameMode(sypb_gamemod.GetInt());
 
 		g_debugMode = sypb_debug.GetInt();
 		if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)

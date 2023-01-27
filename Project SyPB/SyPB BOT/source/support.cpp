@@ -1,5 +1,5 @@
 // 
-// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// Copyright (c) 2003-2023, by HsK-Dev Blog 
 // https://ccnhsk-dev.blogspot.com/ 
 // 
 // And Thank About Yet Another POD-Bot Development Team.
@@ -841,7 +841,16 @@ void SetGameMode(int gamemode)
 	extern ConVar sypb_gamemod;
 	sypb_gamemod.SetInt(gamemode);
 
+	if (gamemode < MODE_BASE || gamemode >= MODE_NONE)
+		gamemode = MODE_BASE;
+
 	g_gameMode = gamemode;
+
+	if (g_gameMode != MODE_BASE)
+	{
+		extern ConVar sypb_radioFunction;
+		sypb_radioFunction.SetInt(0);
+	}
 }
 
 bool IsZombieMode(void)

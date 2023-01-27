@@ -1,5 +1,5 @@
 // 
-// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// Copyright (c) 2003-2023, by HsK-Dev Blog 
 // https://ccnhsk-dev.blogspot.com/ 
 // 
 // And Thank About Yet Another POD-Bot Development Team.

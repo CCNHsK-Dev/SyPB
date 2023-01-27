@@ -1,5 +1,5 @@
 // 
-// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// Copyright (c) 2003-2023, by HsK-Dev Blog 
 // https://ccnhsk-dev.blogspot.com/ 
 // 
 // And Thank About Yet Another POD-Bot Development Team.
@@ -1110,9 +1110,9 @@ void Bot::RadioMessage (int message)
 {
    // this function inserts the radio message into the message queue
    
-   // SyPB Pro P.15
-   if (g_gameMode == MODE_DM)
-   	   return;
+   extern ConVar sypb_radioFunction;
+   if (sypb_radioFunction.GetBool() == false)
+	   return;
 
    if (GetNearbyFriendsNearPosition (pev->origin, 9999) == 0)
       return;

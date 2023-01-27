@@ -1,5 +1,5 @@
 // 
-// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// Copyright (c) 2003-2023, by HsK-Dev Blog 
 // https://ccnhsk-dev.blogspot.com/ 
 // 
 // And Thank About Yet Another POD-Bot Development Team.
@@ -1131,7 +1131,7 @@ void Bot::FocusEnemy (void)
    {
 	   if (m_currentWeapon == WEAPON_KNIFE)
 		   m_wantsToFire = true;
-	   else
+	   else if (!FNullEnt(m_enemy) && m_enemyOrigin != nullvec)
 	   {
 		   const float dot = GetShootingConeDeviation(GetEntity(), &m_enemyOrigin);
 
@@ -1139,25 +1139,22 @@ void Bot::FocusEnemy (void)
 			   m_wantsToFire = false;
 		   else
 		   {
-			   if (FNullEnt(m_enemy))
-				   m_wantsToFire = false;
+			   const float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
+
+			   // enemy faces bot?
+			   if (enemyDot >= 0.90f)
+				   m_wantsToFire = true;
 			   else
 			   {
-				   const float enemyDot = GetShootingConeDeviation(m_enemy, &pev->origin);
-
-				   // enemy faces bot?
-				   if (enemyDot >= 0.90f)
+				   if (dot > 0.99f)
 					   m_wantsToFire = true;
 				   else
-				   {
-					   if (dot > 0.99f)
-						   m_wantsToFire = true;
-					   else
-						   m_wantsToFire = false;
-				   }
+					   m_wantsToFire = false;
 			   }
 		   }
 	   }
+	   else
+		   m_wantsToFire = false;
    }
 }
 

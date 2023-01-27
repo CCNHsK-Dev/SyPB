@@ -1,5 +1,5 @@
 // 
-// Copyright (c) 2003-2019, by HsK-Dev Blog 
+// Copyright (c) 2003-2023, by HsK-Dev Blog 
 // https://ccnhsk-dev.blogspot.com/ 
 // 
 // And Thank About Yet Another POD-Bot Development Team.
@@ -31,6 +31,7 @@
 #include <core.h>
 
 ConVar sypb_chat ("sypb_chat", "1");
+ConVar sypb_radioFunction("sypb_radio", "1");
 
 void StripTags (char *buffer)
 {
