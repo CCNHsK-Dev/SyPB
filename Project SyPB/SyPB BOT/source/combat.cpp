@@ -1161,7 +1161,7 @@ void Bot::FocusEnemy (void)
 void Bot::ActionForEnemy(void)
 {
 	// testtest
-	if (FNullEnt(m_enemy) && FNullEnt(m_lastEnemy))
+	if (FNullEnt(m_lastEnemy))
 	{
 		TaskComplete();
 		return;
@@ -1182,7 +1182,7 @@ void Bot::ActionForEnemy(void)
 		m_checkTerrain = true;
 
 		// if we've got new enemy...
-		if (!FNullEnt(m_enemy) || FNullEnt(m_lastEnemy) || DoWaypointNav())
+		if (FNullEnt(m_lastEnemy) || DoWaypointNav())
 		{
 			// forget about it...
 			TaskComplete();
@@ -1205,10 +1205,10 @@ void Bot::ActionForEnemy(void)
 			GetCurrentTask()->data = destIndex;
 
 			if (destIndex != m_currentWaypointIndex)
-				FindPath(m_currentWaypointIndex, destIndex, m_pathType);
+				FindPath(m_currentWaypointIndex, destIndex, IsZombieEntity (m_lastEnemy) ? 1 : m_pathType);
 		}
 
-		if (m_skill > 60 && engine->IsFootstepsOn())
+		if (g_gameMode == MODE_BASE && m_skill > 60 && engine->IsFootstepsOn())
 		{
 			if (!(m_currentTravelFlags & PATHFLAG_JUMP))
 			{
@@ -1226,7 +1226,9 @@ void Bot::ActionForEnemy(void)
 		TaskComplete();
 
 		m_prevGoalIndex = -1;
-		m_pathType = 1;
+
+		if (g_gameMode != MODE_BASE)
+			return;
 
 		// start hide task
 		PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(5.0f, 15.0f), false);
@@ -1381,9 +1383,8 @@ void Bot::CombatFight(void)
 
 				if (distance <= baseDistance)
 				{
-					GetCurrentTask()->taskID = TASK_ACTIONFORENEMY;
-					GetCurrentTask()->canContinue = true;
-					GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
+					m_moveSpeed = -pev->maxspeed;
+					setStrafe = true;
 				}
 				else if (distance >= (baseDistance + 100.0f))
 				{
@@ -1422,9 +1423,12 @@ void Bot::CombatFight(void)
 			if (approach < 20 && !g_bombPlanted &&
 				(m_isVIP || ::IsInViewCone(GetEntityOrigin (m_enemy), GetEntity ())))
 			{
+				setStrafe = true;
+				m_moveSpeed = -pev->maxspeed;
+
 				GetCurrentTask()->taskID = TASK_ACTIONFORENEMY;
 				GetCurrentTask()->canContinue = true;
-				GetCurrentTask()->desire = TASKPRI_FIGHTENEMY + 1.0f;
+				GetCurrentTask()->desire = TASKPRI_ACTIONFORENEMY;
 			}
 			else
 			{

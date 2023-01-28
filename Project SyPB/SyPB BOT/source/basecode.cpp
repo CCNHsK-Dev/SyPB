@@ -1862,21 +1862,20 @@ void Bot::SetConditions (void)
    else
       g_taskFilters[TASK_FIGHTENEMY].desire = 0.0f;
 
+   // TESTTEST
    m_enemyActionMod = false;
-   if ((FNullEnt(m_enemy) && FNullEnt(m_lastEnemy)) || m_isZombieBot)
-	   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
-   else if (IsZombieEntity(m_lastEnemy))
-	   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
-   else
+   if (IsZombieEntity(m_lastEnemy) && FNullEnt (m_enemy))
    {
-	   if (m_isVIP || m_isReloading || (g_gameMode == MODE_BASE && !g_bombPlanted && pev->health <= 30.0f))
-	   {
-		   if (g_gameMode == MODE_BASE && GetNearbyFriendsNearPosition(GetEntityOrigin(GetEntity()), 200) <
-			   GetNearbyEnemiesNearPosition(GetEntityOrigin(m_enemy), 200))
-			   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
-		   else if (g_gameMode != MODE_BASE && !m_isVIP)
-			   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_FIGHTENEMY + 1.0f;
-	   }
+	   m_enemyActionMod = true;
+	   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
+   }
+   else if (!m_isZombieBot && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec)
+   {
+	   if (m_isVIP || 
+		   (g_gameMode == MODE_BASE && !g_bombPlanted && pev->health <= 30.0f) || 
+		   (m_isReloading && GetNearbyFriendsNearPosition(GetEntityOrigin(GetEntity()), 200) <
+			   GetNearbyEnemiesNearPosition(GetEntityOrigin(m_lastEnemy), 200)))
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
 	   else if (FNullEnt(m_enemy) && (g_gameMode != MODE_BASE || g_timeRoundMid < engine->GetTime()) &&
 		   !m_isUsingGrenade && m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
 	   {
@@ -1908,7 +1907,16 @@ void Bot::SetConditions (void)
 			   g_taskFilters[TASK_ACTIONFORENEMY].desire = desireLevel;
 		   }
 	   }
+	   else if (IsZombieEntity(m_enemy) && m_moveSpeed == -pev->maxspeed)
+	   {
+		   m_enemyActionMod = true;
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
+	   }
+	   else
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
    }
+   else
+	   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
 
    // blinded behaviour
    if (m_blindTime > engine->GetTime ())
@@ -4441,7 +4449,7 @@ void Bot::RunTask (void)
 			   // SyPB Pro P.42 - Move Target improve
 			   int moveMode = 0;
 			   if (pev->health < pev->max_health / 3)
-				   moveMode = 8;
+				   moveMode = engine->RandomInt(6, 8);
 			   else
 			   {
 				   for (i = 0; i < engine->GetMaxClients(); i++)

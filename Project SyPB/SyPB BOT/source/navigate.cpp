@@ -946,7 +946,7 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
 	   hcalc = HF_ZB;
 	   offset = static_cast <float> (m_skill / 20);
    }
-   else if (pathType == 1)
+   else if (pathType == 1 || (!FNullEnt (m_lastEnemy) && IsZombieEntity (m_lastEnemy))) // TESTTEST
    {
       gcalc = HasHostage () ? GF_CostNoHostageDist : GF_CostDist;
       hcalc = HF_NumberNodes;
