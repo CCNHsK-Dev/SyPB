@@ -1314,6 +1314,8 @@ public:
    void Save (void);
    void SaveXML (void);
 
+   void tryDownloadWaypoint(void);
+
    bool Reachable(edict_t *entity, int index);
    bool IsNodeReachable (Vector src, Vector destination);
    void Think (void);

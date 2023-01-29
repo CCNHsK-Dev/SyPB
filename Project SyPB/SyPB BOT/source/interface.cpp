@@ -2416,7 +2416,9 @@ void ServerActivate (edict_t *pentEdictList, int edictCount, int clientMax)
    // do level initialization stuff here...
    g_waypoint->Initialize ();
    g_exp.Unload(); // SyPB Pro P.35 - Debug new maps
-   g_waypoint->Load ();
+
+   if (!g_waypoint->Load())
+	   g_waypoint->tryDownloadWaypoint();
 
    // execute main config
    ServerCommand ("exec addons/sypb/sypb.cfg");

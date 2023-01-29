@@ -1201,110 +1201,123 @@ void Waypoint::InitTypes (int mode)
 			else if (m_paths[i]->flags & WAYPOINT_ZMHMCAMP)
 				m_zmHmPoints.Push(i);
 		}
-		//else if (mode == 1 && m_paths[i]->flags & WAYPOINT_ZMHMCAMP)
-		//	m_zmHmPoints.Push(i);
 	}
 }
 
-bool Waypoint::Load (int mode)
+void Waypoint::tryDownloadWaypoint(void)
 {
-   WaypointHeader header;
-   File fp (CheckSubfolderFile (), "rb");
+	String saveFile = "", downloadURL = "";
+	saveFile = FormatBuffer("%s/%s.pwf", GetWaypointDir(), GetMapName());
+	downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
 
-   m_badMapName = false;
+	ServerPrintNoTag("Try Download Map Waypoint on Github");
+	HRESULT hr = URLDownloadToFile(null, downloadURL, saveFile, 0, null);
+	if (hr == S_OK)
+	{
+		ServerPrintNoTag("Find The Waypoint File");
+		
+		if (Load())
+			ServerPrintNoTag("Reload Waypoint File");
+		else
+			ServerPrintNoTag("Unknow Problem");
 
-   String saveFile = "", downloadURL = "";
-   saveFile = FormatBuffer("%s/%s.test", GetWaypointDir(), GetMapName());
-   downloadURL = FormatBuffer("https://github.com/yapb/graph/raw/master/graph/%s.graph", GetMapName());
+		return;
+	}
 
-   HRESULT hr = URLDownloadToFile(null, downloadURL, saveFile, 0, null);
+	ServerPrintNoTag("We cannot find the Waypoint File");
+}
 
-   if (fp.IsValid ())
-   {
-      fp.Read (&header, sizeof (header));
+bool Waypoint::Load(int mode)
+{
+	m_badMapName = false;
 
-      if (strncmp (header.header, FH_WAYPOINT, strlen (FH_WAYPOINT)) == 0)
-      {
-         if (header.fileVersion != FV_WAYPOINT && mode == 0)
-         {
-			 m_badMapName = true;
-			 sprintf(m_infoBuffer, "%s.pwf - incorrect waypoint file version (expected '%i' found '%i')", GetMapName(), FV_WAYPOINT, static_cast <int> (header.fileVersion));
-			 AddLogEntry(LOG_ERROR, m_infoBuffer);
+	WaypointHeader header;
+	File fp(CheckSubfolderFile(), "rb");
 
-			 fp.Close();
-			 return false;
-         }
-         else if (stricmp (header.mapName, GetMapName ()) && mode == 0)
-         {
-			 m_badMapName = true;
+	if (!fp.IsValid())
+	{
+		sprintf(m_infoBuffer, "%s.pwf does not exist", GetMapName());
+		AddLogEntry(LOG_ERROR, m_infoBuffer);
 
-			 sprintf(m_infoBuffer, "%s.pwf - hacked waypoint file, fileName doesn't match waypoint header information (mapname: '%s', header: '%s')", GetMapName(), GetMapName(), header.mapName);
-			 AddLogEntry(LOG_ERROR, m_infoBuffer);
+		return false;
+	}
 
-			 fp.Close();
-			 return false;
-         }
-         else
-         {
-            Initialize ();
-            g_numWaypoints = header.pointNumber;
+	fp.Read(&header, sizeof(header));
 
-            for (int i = 0; i < g_numWaypoints; i++)
-            {
-               m_paths[i] = new Path;
+	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) == 0)
+	{
+		if (header.fileVersion != FV_WAYPOINT && mode == 0)
+		{
+			m_badMapName = true;
+			sprintf(m_infoBuffer, "%s.pwf - incorrect waypoint file version (expected '%i' found '%i')", GetMapName(), FV_WAYPOINT, static_cast <int> (header.fileVersion));
+			AddLogEntry(LOG_ERROR, m_infoBuffer);
 
-               if (m_paths[i] == null)
-                  TerminateOnMalloc ();
+			fp.Close();
+			return false;
+		}
+		else if (stricmp(header.mapName, GetMapName()) && mode == 0)
+		{
+			m_badMapName = true;
 
-               fp.Read (m_paths[i], sizeof (Path));
-            }
-            m_waypointPaths = true;
-         }
-      }
-      else
-      {
-         sprintf (m_infoBuffer, "%s.pwf is not a sypb waypoint file (header found '%s' needed '%s'", GetMapName (), header.header, FH_WAYPOINT);
-         AddLogEntry (LOG_ERROR, m_infoBuffer);
+			sprintf(m_infoBuffer, "%s.pwf - hacked waypoint file, fileName doesn't match waypoint header information (mapname: '%s', header: '%s')", GetMapName(), GetMapName(), header.mapName);
+			AddLogEntry(LOG_ERROR, m_infoBuffer);
 
-         fp.Close ();
-         return false;
-      }
-      fp.Close ();
-   }
-   else
-   {
-      sprintf (m_infoBuffer, "%s.pwf does not exist", GetMapName ());
-      AddLogEntry (LOG_ERROR, m_infoBuffer);
+			fp.Close();
+			return false;
+		}
+		else
+		{
+			Initialize();
+			g_numWaypoints = header.pointNumber;
 
-      return false;
-   }
+			for (int i = 0; i < g_numWaypoints; i++)
+			{
+				m_paths[i] = new Path;
 
-   if (strncmp (header.author, "official", 7) == 0)
-      sprintf (m_infoBuffer, "Using Official Waypoint File");
-   else
-      sprintf (m_infoBuffer, "Using Waypoint File By: %s", header.author);
+				if (m_paths[i] == null)
+					TerminateOnMalloc();
 
-   for (int i = 0; i < g_numWaypoints; i++)
-      m_waypointDisplayTime[i] = 0.0f;
+				fp.Read(m_paths[i], sizeof(Path));
+			}
+			m_waypointPaths = true;
+		}
+	}
+	else
+	{
+		sprintf(m_infoBuffer, "%s.pwf is not a sypb waypoint file (header found '%s' needed '%s'", GetMapName(), header.header, FH_WAYPOINT);
+		AddLogEntry(LOG_ERROR, m_infoBuffer);
 
-   InitPathMatrix ();
-   InitTypes (0);
+		fp.Close();
+		return false;
+	}
+	fp.Close();
 
-   g_waypointsChanged = false;
-   g_killHistory = 0;
+	if (strncmp(header.author, "official", 7) == 0)
+		sprintf(m_infoBuffer, "Using Official Waypoint File");
+	else
+		sprintf(m_infoBuffer, "Using Waypoint File By: %s", header.author);
 
-   m_pathDisplayTime = 0.0f;
-   m_arrowDisplayTime = 0.0f;
+	for (int i = 0; i < g_numWaypoints; i++)
+		m_waypointDisplayTime[i] = 0.0f;
 
-   g_exp.Load ();
+	InitPathMatrix();
+	InitTypes(0);
 
-   g_botManager->InitQuota ();
-   m_redoneVisibility = true;
+	g_waypointsChanged = false;
+	g_killHistory = 0;
 
-   extern ConVar sypb_debuggoal;
-   sypb_debuggoal.SetInt (-1);
+	m_pathDisplayTime = 0.0f;
+	m_arrowDisplayTime = 0.0f;
 
-   return true;
+	g_exp.Load();
+
+	g_botManager->InitQuota();
+	m_redoneVisibility = true;
+
+	extern ConVar sypb_debuggoal;
+	sypb_debuggoal.SetInt(-1);
+
+	return true;
 }
 
 void Waypoint::Save (void)
