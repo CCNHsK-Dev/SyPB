@@ -41,6 +41,9 @@
 #include <stdio.h>
 #include <memory.h>
 
+#include <urlmon.h>
+#pragma comment(lib, "Urlmon.lib")
+
 #include <engine.h>
 
 using namespace Math;

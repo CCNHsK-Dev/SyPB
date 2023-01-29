@@ -107,15 +107,11 @@ typedef void (*EntityPtr_t) (entvars_t *);
 #error "Platform unrecognized."
 #endif
 
-extern "C" void *__stdcall GetProcAddress(void *,const char *);
-extern "C" void *__stdcall LoadLibraryA (const char *);
-extern "C" int __stdcall FreeLibrary (void *);
-
 // library wrapper
 class Library
 {
 private:
-   void *m_ptr;
+    HMODULE m_ptr;
 
 public:
 

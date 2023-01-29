@@ -1213,6 +1213,12 @@ bool Waypoint::Load (int mode)
 
    m_badMapName = false;
 
+   String saveFile = "", downloadURL = "";
+   saveFile = FormatBuffer("%s/%s.test", GetWaypointDir(), GetMapName());
+   downloadURL = FormatBuffer("https://github.com/yapb/graph/raw/master/graph/%s.graph", GetMapName());
+
+   HRESULT hr = URLDownloadToFile(null, downloadURL, saveFile, 0, null);
+
    if (fp.IsValid ())
    {
       fp.Read (&header, sizeof (header));
