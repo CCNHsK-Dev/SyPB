@@ -33,13 +33,13 @@
 // Variable: MAX_EXPERIENCE_VALUE
 // Maximum damage value for experience.
 //
-const uint16_t MAX_EXPERIENCE_VALUE = 2048;
+constexpr uint16_t MAX_EXPERIENCE_VALUE = 2048;
 
 //
 // Variable: MAX_KHIST_VALUE
 // Maximum kill history for experience.
 //
-const uint16_t MAX_KHIST_VALUE = 16;
+constexpr uint16_t MAX_KHIST_VALUE = 16;
 
 //
 // Class: BotExperience

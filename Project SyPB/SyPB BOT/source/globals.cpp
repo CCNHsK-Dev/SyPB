@@ -146,7 +146,7 @@ SkillDef g_skillTab[6] =
    {0.0f, 0.1f, 20.0f, 30.0f, 20}
 };
 
-int *g_weaponPrefs[] =
+int *g_weaponPrefs[PERSONALITY_CAREFUL+1] =
 {
    g_normalWeaponPrefs,
    g_rusherWeaponPrefs,

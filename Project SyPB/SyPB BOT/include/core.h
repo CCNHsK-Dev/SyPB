@@ -58,9 +58,9 @@ using namespace Math;
 
 #include "runtime.h"
 
-const int entityNum = 256;
-const int checkEntityNum = 36;
-const int checkEnemyNum = 128;
+constexpr int entityNum = 256;
+constexpr int checkEntityNum = 36;
+constexpr int checkEnemyNum = 128;
 
 // defines bots tasks
 enum BotTask
@@ -403,41 +403,41 @@ enum FightStyle
 const char FH_WAYPOINT[] = "PODWAY!";
 const char FH_VISTABLE[] = "PODVIS!";
 
-const int FV_WAYPOINT = 7;
+constexpr int FV_WAYPOINT = 7;
 
 // some hardcoded desire defines used to override calculated ones
-const float TASKPRI_NORMAL = 35.0f;
-const float TASKPRI_PAUSE = 36.0f;
-const float TASKPRI_CAMP  = 37.0f;
-const float TASKPRI_SPRAYLOGO = 38.0f;
-const float TASKPRI_FOLLOWUSER = 39.0f;
-const float TASKPRI_MOVETOPOSITION = 50.0f;
-const float TASKPRI_DEFUSEBOMB = 89.0f;
-const float TASKPRI_PLANTBOMB = 89.0f;
-const float TASKPRI_FIGHTENEMY = 90.0f;
-const float TASKPRI_ACTIONFORENEMY = 91.0f;
-const float TASKPRI_HIDE = 92.0f;
-const float TASKPRI_MOVETOTARGET = 93.0f;
-const float TASKPRI_THROWGRENADE = 99.0f;
-const float TASKPRI_DOUBLEJUMP = 99.0f;
-const float TASKPRI_BLINDED = 100.0f;
-const float TASKPRI_SHOOTBREAKABLE = 100.0f;
-const float TASKPRI_ESCAPEFROMBOMB = 100.0f;
+constexpr float TASKPRI_NORMAL = 35.0f;
+constexpr float TASKPRI_PAUSE = 36.0f;
+constexpr float TASKPRI_CAMP  = 37.0f;
+constexpr float TASKPRI_SPRAYLOGO = 38.0f;
+constexpr float TASKPRI_FOLLOWUSER = 39.0f;
+constexpr float TASKPRI_MOVETOPOSITION = 50.0f;
+constexpr float TASKPRI_DEFUSEBOMB = 89.0f;
+constexpr float TASKPRI_PLANTBOMB = 89.0f;
+constexpr float TASKPRI_FIGHTENEMY = 90.0f;
+constexpr float TASKPRI_ACTIONFORENEMY = 91.0f;
+constexpr float TASKPRI_HIDE = 92.0f;
+constexpr float TASKPRI_MOVETOTARGET = 93.0f;
+constexpr float TASKPRI_THROWGRENADE = 99.0f;
+constexpr float TASKPRI_DOUBLEJUMP = 99.0f;
+constexpr float TASKPRI_BLINDED = 100.0f;
+constexpr float TASKPRI_SHOOTBREAKABLE = 100.0f;
+constexpr float TASKPRI_ESCAPEFROMBOMB = 100.0f;
 
-const int Const_GrenadeTimer = 3;
-const int Const_MaxHostages = 8;
-const int Const_MaxPathIndex = 8;
-const int Const_MaxDamageValue = 2040;
-const int Const_MaxGoalValue = 2040;
-const int Const_MaxKillHistory = 16;
-const int Const_MaxRegMessages = 256;
-const int Const_MaxWaypoints = 1024;
-const int Const_MaxWeapons = 32;
-const int Const_NumWeapons = 26;
+constexpr int Const_GrenadeTimer = 3;
+constexpr int Const_MaxHostages = 8;
+constexpr int Const_MaxPathIndex = 8;
+constexpr int Const_MaxDamageValue = 2040;
+constexpr int Const_MaxGoalValue = 2040;
+constexpr int Const_MaxKillHistory = 16;
+constexpr int Const_MaxRegMessages = 256;
+constexpr int Const_MaxWaypoints = 1024;
+constexpr int Const_MaxWeapons = 32;
+constexpr int Const_NumWeapons = 26;
 
 // weapon masks
-const int WeaponBits_Primary = ((1 << WEAPON_XM1014) | (1 <<WEAPON_M3) | (1 << WEAPON_MAC10) | (1 << WEAPON_UMP45) | (1 << WEAPON_MP5) | (1 << WEAPON_TMP) | (1 << WEAPON_P90) | (1 << WEAPON_AUG) | (1 << WEAPON_M4A1) | (1 << WEAPON_SG552) | (1 << WEAPON_AK47) | (1 << WEAPON_SCOUT) | (1 << WEAPON_SG550) | (1 << WEAPON_AWP) | (1 << WEAPON_G3SG1) | (1 << WEAPON_M249) | (1 << WEAPON_FAMAS) | (1 << WEAPON_GALIL));
-const int WeaponBits_Secondary = ((1 << WEAPON_P228) | (1 << WEAPON_ELITE) | (1 << WEAPON_USP) | (1 << WEAPON_GLOCK18) | (1 << WEAPON_DEAGLE) | (1 << WEAPON_FN57));
+constexpr int WeaponBits_Primary = ((1 << WEAPON_XM1014) | (1 <<WEAPON_M3) | (1 << WEAPON_MAC10) | (1 << WEAPON_UMP45) | (1 << WEAPON_MP5) | (1 << WEAPON_TMP) | (1 << WEAPON_P90) | (1 << WEAPON_AUG) | (1 << WEAPON_M4A1) | (1 << WEAPON_SG552) | (1 << WEAPON_AK47) | (1 << WEAPON_SCOUT) | (1 << WEAPON_SG550) | (1 << WEAPON_AWP) | (1 << WEAPON_G3SG1) | (1 << WEAPON_M249) | (1 << WEAPON_FAMAS) | (1 << WEAPON_GALIL));
+constexpr int WeaponBits_Secondary = ((1 << WEAPON_P228) | (1 << WEAPON_ELITE) | (1 << WEAPON_USP) | (1 << WEAPON_GLOCK18) | (1 << WEAPON_DEAGLE) | (1 << WEAPON_FN57));
 
 // this structure links waypoints returned from pathfinder
 struct PathNode

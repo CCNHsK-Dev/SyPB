@@ -946,7 +946,7 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
 	   hcalc = HF_ZB;
 	   offset = static_cast <float> (m_skill / 20);
    }
-   else if (pathType == 1 || (!FNullEnt (m_lastEnemy) && IsZombieEntity (m_lastEnemy))) // TESTTEST
+   else if (pathType == 1 || (!FNullEnt (m_lastEnemy) && IsZombieEntity (m_lastEnemy)))
    {
       gcalc = HasHostage () ? GF_CostNoHostageDist : GF_CostDist;
       hcalc = HF_NumberNodes;
@@ -1832,7 +1832,6 @@ void Bot::HeadTowardWaypoint (void)
 			if (!IsAntiBlock(GetEntity()) && !IsOnLadder () &&
 				g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER)
 			{
-				// TESTTEST p.50
 				for (int c = 0; c < engine->GetMaxClients(); c++)
 				{
 					Bot* otherBot = g_botManager->GetBot(c);

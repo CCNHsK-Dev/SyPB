@@ -1862,20 +1862,22 @@ void Bot::SetConditions (void)
    else
       g_taskFilters[TASK_FIGHTENEMY].desire = 0.0f;
 
-   // TESTTEST
-   m_enemyActionMod = false;
-   if (IsZombieEntity(m_lastEnemy) && FNullEnt (m_enemy))
+   if (IsZombieEntity(m_lastEnemy))
    {
-	   m_enemyActionMod = true;
-	   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
+	   if ((FNullEnt(m_enemy) || m_enemyActionMod || (IsZombieEntity(m_enemy) && pev->maxspeed == -pev->maxspeed)))
+	   {
+		   m_enemyActionMod = true;
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
+	   }
    }
    else if (!m_isZombieBot && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec)
    {
-	   if (m_isVIP || 
-		   (g_gameMode == MODE_BASE && !g_bombPlanted && pev->health <= 30.0f) || 
-		   (m_isReloading && GetNearbyFriendsNearPosition(GetEntityOrigin(GetEntity()), 200) <
-			   GetNearbyEnemiesNearPosition(GetEntityOrigin(m_lastEnemy), 200)))
+	   if (m_isVIP || m_isReloading ||
+		   (g_gameMode == MODE_BASE && !g_bombPlanted && pev->health <= 30.0f))
+	   {
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
+		   m_enemyActionMod = false;
+	   }
 	   else if (FNullEnt(m_enemy) && (g_gameMode != MODE_BASE || g_timeRoundMid < engine->GetTime()) &&
 		   !m_isUsingGrenade && m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
 	   {
@@ -1907,16 +1909,17 @@ void Bot::SetConditions (void)
 			   g_taskFilters[TASK_ACTIONFORENEMY].desire = desireLevel;
 		   }
 	   }
-	   else if (IsZombieEntity(m_enemy) && m_moveSpeed == -pev->maxspeed)
-	   {
-		   m_enemyActionMod = true;
-		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
-	   }
 	   else
+	   {
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
+		   m_enemyActionMod = false;
+	   }
    }
    else
+   {
 	   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
+	   m_enemyActionMod = false;
+   }
 
    // blinded behaviour
    if (m_blindTime > engine->GetTime ())
@@ -1930,7 +1933,6 @@ void Bot::SetConditions (void)
    m_oldCombatDesire = HysteresisDesire (g_taskFilters[TASK_FIGHTENEMY].desire, 40.0f, 90.0f, m_oldCombatDesire);
    g_taskFilters[TASK_FIGHTENEMY].desire = m_oldCombatDesire;
 
-   // testtest
    Task *taskOffensive = &g_taskFilters[TASK_FIGHTENEMY];
    Task* taskEnemyAction = ThresholdDesire(&g_taskFilters[TASK_ACTIONFORENEMY], 
 	   (m_enemyActionMod ? 40.0f : 60.0f), 0.0f);

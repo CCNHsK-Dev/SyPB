@@ -679,9 +679,10 @@ bool Bot::DoFirePause (float distance)
 	}
 
 	const float angle = (fabsf(pev->punchangle.y) + fabsf(pev->punchangle.x)) * Math::MATH_PI / 360.0f;
+	const int recoilAmount = g_skillTab[m_skill / 20].recoilAmount;
 
 	// check if we need to compensate recoil
-	if (tanf(angle) * (distance + (distance / 4)) > g_skillTab[m_skill / 20].recoilAmount)
+	if (tanf(angle) * (distance + (distance / 4)) > recoilAmount)
 	{
 		if (m_firePause < (engine->GetTime() - 0.4))
 			m_firePause = engine->GetTime() + engine->RandomFloat(0.4f, 0.4f + 1.2f * ((100 - m_skill) / 100.0f));
@@ -1160,10 +1161,10 @@ void Bot::FocusEnemy (void)
 
 void Bot::ActionForEnemy(void)
 {
-	// testtest
 	if (FNullEnt(m_lastEnemy))
 	{
 		TaskComplete();
+		m_enemyActionMod = false;
 		return;
 	}
 
@@ -1171,6 +1172,7 @@ void Bot::ActionForEnemy(void)
 	{
 		RemoveCertainTask(TASK_ACTIONFORENEMY);
 		m_prevGoalIndex = -1;
+		m_enemyActionMod = false;
 		return;
 	}
 
@@ -1189,16 +1191,27 @@ void Bot::ActionForEnemy(void)
 			m_prevGoalIndex = -1;
 
 			SetLastEnemy(null);
+			m_enemyActionMod = false;
 		}
 		else if (!GoalIsValid()) // do we need to calculate a new path?
 		{
 			DeleteSearchNodes();
 
 			// is there a remembered index?
-			if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
+			if (g_gameMode == MODE_ZP && !m_isZombieBot)
+			{
+				if (!g_waypoint->m_zmHmPoints.IsEmpty())
+					destIndex = FindGoal();
+				else
+					destIndex = FindCoverWaypoint(2048.0f);
+			}
+			else if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
 				destIndex = GetCurrentTask()->data;
 			else // no. we need to find a new one
 				destIndex = GetEntityWaypoint(m_lastEnemy);
+
+			if (destIndex < 0 || destIndex >= g_numWaypoints)
+				destIndex = g_waypoint->FindFarest(pev->origin, 1024.0f);
 
 			// remember index
 			m_prevGoalIndex = destIndex;
@@ -1284,6 +1297,8 @@ void Bot::ActionForEnemy(void)
 		// SyPB Pro P.38 - Zombie Mode Camp improve
 		if (g_gameMode == MODE_ZP && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
 			destIndex = FindGoal();
+		else if (g_gameMode == MODE_BASE && m_isReloading && FNullEnt (m_enemy))
+			PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(2.0f, 6.0f), false);
 		else if (GetCurrentTask()->data != -1)
 			destIndex = GetCurrentTask()->data;
 		else

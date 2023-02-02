@@ -198,18 +198,18 @@ public:
 //
 namespace Math
 {
-   const float MATH_ONEPSILON = 0.01f;
-   const float MATH_EQEPSILON = 0.001f;
-   const float MATH_FLEPSILON = 1.192092896e-07f;
+    constexpr float MATH_ONEPSILON = 0.01f;
+    constexpr float MATH_EQEPSILON = 0.001f;
+    constexpr float MATH_FLEPSILON = 1.192092896e-07f;
 
    //
    // Constant: MATH_PI
    // Mathematical PI value.
    //
-   const float MATH_PI = 3.1415926f;
+    constexpr float MATH_PI = 3.1415926f;
 
-   const float MATH_D2R = MATH_PI / 180.0f;
-   const float MATH_R2D = 180.0f / MATH_PI;
+    constexpr float MATH_D2R = MATH_PI / 180.0f;
+    constexpr float MATH_R2D = 180.0f / MATH_PI;
 
    //
    // Function: FltZero
