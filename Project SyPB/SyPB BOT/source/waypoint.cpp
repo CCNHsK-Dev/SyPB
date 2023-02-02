@@ -1206,6 +1206,8 @@ void Waypoint::InitTypes (int mode)
 
 void Waypoint::tryDownloadWaypoint(void)
 {
+	EraseFromHardDisk();
+
 	String saveFile = "", downloadURL = "";
 	saveFile = FormatBuffer("%s/%s.pwf", GetWaypointDir(), GetMapName());
 	downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
@@ -1328,12 +1330,8 @@ void Waypoint::Save (void)
    memset (header.author , 0, sizeof (header.author));
    memset (header.header, 0, sizeof (header.header));
 
-   // SyPB Pro P.40 - SgdWP MSG
    char waypointAuthor[32];
-   if (g_sgdWaypoint)
-	   sprintf(waypointAuthor, "[SgdWP] %s", GetEntityName (g_hostEntity));
-   else
-	   sprintf(waypointAuthor, "%s", GetEntityName(g_hostEntity));
+   sprintf(waypointAuthor, "%s", GetEntityName(g_hostEntity));
 
    strcpy (header.header, FH_WAYPOINT);
    strcpy (header.author, waypointAuthor);
@@ -1359,6 +1357,11 @@ void Waypoint::Save (void)
 
       // save XML version
       SaveXML ();
+
+	  String deletePmtFile;
+	  sprintf(deletePmtFile, "%sdata/%s.pmt", GetWaypointDir(), GetMapName());
+	  if (TryFileOpen(deletePmtFile))
+		  unlink(deletePmtFile);
    }
    else
       AddLogEntry (LOG_ERROR, "Error writing '%s.pwf' waypoint file", GetMapName ());
