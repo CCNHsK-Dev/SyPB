@@ -760,20 +760,10 @@ void AutoLoadGameMode(bool reset)
 
 				// SyPB Pro P.34 - ZP TIME FIXED
 				g_gameStartTime = engine->GetTime() + delayTime;
-
-				goto lastly;
 			}
+
+			goto lastly;
 		}
-	}
-
-	// DM:KD
-	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
-	if (TryFileOpen(Plugin_INI))
-	{
-		if (checkShowTextTime < 3)
-			ServerPrint("*** SyPB Auto Game Mode Setting: DeathMatch: Kill Duty Auto Setting ***");
-
-		goto lastly;
 	}
 
 	// Zombie Hell
@@ -787,6 +777,16 @@ void AutoLoadGameMode(bool reset)
 
 		extern ConVar sypb_quota;
 		sypb_quota.SetInt(static_cast <int> (CVAR_GET_FLOAT("zh_zombie_maxslots")));
+
+		goto lastly;
+	}
+
+	// DM:KD
+	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
+	if (TryFileOpen(Plugin_INI))
+	{
+		if (checkShowTextTime < 3)
+			ServerPrint("*** SyPB Auto Game Mode Setting: DeathMatch: Kill Duty Auto Setting ***");
 
 		goto lastly;
 	}

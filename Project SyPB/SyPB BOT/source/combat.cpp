@@ -1176,12 +1176,18 @@ void Bot::ActionForEnemy(void)
 		return;
 	}
 
-	m_aimFlags |= AIM_NAVPOINT;
 	int destIndex = -1;
 
 	if (m_enemyActionMod)
 	{
 		m_checkTerrain = true;
+		bool loadNewWaypoint = !(GoalIsValid());
+		if (loadNewWaypoint && &m_navNode[0] != null && m_navNode->next != null)
+		{
+			if ((g_waypoint->GetPath(m_navNode->next->index)->origin - m_lastEnemyOrigin).GetLength() <
+				(g_waypoint->GetPath(m_navNode->index)->origin - m_lastEnemyOrigin).GetLength())
+				loadNewWaypoint = true;
+		}
 
 		// if we've got new enemy...
 		if (FNullEnt(m_lastEnemy) || DoWaypointNav())
@@ -1193,7 +1199,7 @@ void Bot::ActionForEnemy(void)
 			SetLastEnemy(null);
 			m_enemyActionMod = false;
 		}
-		else if (!GoalIsValid()) // do we need to calculate a new path?
+		else if (loadNewWaypoint) // do we need to calculate a new path?
 		{
 			DeleteSearchNodes();
 
@@ -1203,7 +1209,7 @@ void Bot::ActionForEnemy(void)
 				if (!g_waypoint->m_zmHmPoints.IsEmpty())
 					destIndex = FindGoal();
 				else
-					destIndex = FindCoverWaypoint(2048.0f);
+					destIndex = FindCoverWaypoint(1024.0f);
 			}
 			else if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
 				destIndex = GetCurrentTask()->data;
@@ -1219,6 +1225,9 @@ void Bot::ActionForEnemy(void)
 
 			if (destIndex != m_currentWaypointIndex)
 				FindPath(m_currentWaypointIndex, destIndex, IsZombieEntity (m_lastEnemy) ? 1 : m_pathType);
+
+			m_moveToGoal = true;
+			m_checkTerrain = true;
 		}
 
 		if (g_gameMode == MODE_BASE && m_skill > 60 && engine->IsFootstepsOn())
@@ -1313,6 +1322,9 @@ void Bot::ActionForEnemy(void)
 
 		if (destIndex != m_currentWaypointIndex)
 			FindPath(m_currentWaypointIndex, destIndex, 2);
+
+		m_moveToGoal = true;
+		m_checkTerrain = true;
 	}
 }
 
@@ -1320,6 +1332,9 @@ void Bot::ActionForEnemy(void)
 void Bot::CombatFight(void)
 {
 	if (FNullEnt(m_enemy))
+		return;
+
+	if (m_enemyActionMod)
 		return;
 
 	m_destOrigin = GetEntityOrigin(m_enemy);
@@ -1398,6 +1413,9 @@ void Bot::CombatFight(void)
 
 				if (distance <= baseDistance)
 				{
+					if (enemyIsZombie)
+						m_enemyActionMod = true;
+
 					m_moveSpeed = -pev->maxspeed;
 					setStrafe = true;
 				}

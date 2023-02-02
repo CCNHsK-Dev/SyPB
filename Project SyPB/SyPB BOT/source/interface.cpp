@@ -3856,6 +3856,7 @@ C_DLLEXPORT int Amxx_ZombieModGameStart(int input) // 1.50
 	}
 
 	g_gameStartTime = engine->GetTime() + (CVAR_GET_FLOAT("mp_roundtime") * 60);
+	AutoLoadGameMode(true);
 	return 0;
 }
 // AMXX SyPB API End

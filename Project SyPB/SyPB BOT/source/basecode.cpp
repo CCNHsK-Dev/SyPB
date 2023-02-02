@@ -1864,7 +1864,7 @@ void Bot::SetConditions (void)
 
    if (IsZombieEntity(m_lastEnemy))
    {
-	   if ((FNullEnt(m_enemy) || m_enemyActionMod || (IsZombieEntity(m_enemy) && pev->maxspeed == -pev->maxspeed)))
+	   if (FNullEnt(m_enemy) || m_enemyActionMod)
 	   {
 		   m_enemyActionMod = true;
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
@@ -4398,7 +4398,8 @@ void Bot::RunTask (void)
 	   m_moveTargetOrigin = GetEntityOrigin(m_moveTargetEntity);
 
 	   // SyPB Pro P.42 - Move Target Fixed 
-	   if (FNullEnt(m_moveTargetEntity) || m_moveTargetOrigin == nullvec)
+	   if (FNullEnt(m_moveTargetEntity) || m_moveTargetOrigin == nullvec || 
+		   (IsValidPlayer(m_moveTargetEntity) && !IsAlive (m_moveTargetEntity)))
 	   {
 		   SetMoveTarget(null);
 		   break;
@@ -5578,8 +5579,16 @@ void Bot::BotAI(void)
 	   (m_skill >= 60 || m_isZombieBot ||
 	   (m_isEnemyReachable && (IsZombieEntity(m_enemy) || !IsValidPlayer(m_enemy)))))
    {
-	   m_moveToGoal = false; // don't move to goal
-	   m_navTimeset = engine->GetTime();
+	   if (!m_enemyActionMod)
+	   {
+		   m_moveToGoal = false; // don't move to goal
+		   m_navTimeset = engine->GetTime();
+	   }
+	   else
+	   {
+		   m_moveToGoal = true;
+		   m_checkTerrain = true;
+	   }
 
 	   if (!FNullEnt(m_enemy))
 		   CombatFight();
