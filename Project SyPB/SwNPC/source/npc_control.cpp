@@ -271,13 +271,14 @@ int NPCControl::SetBloodColor(int npcId, int bloodColor)
 	return 1;
 }
 
-int NPCControl::SetSound(int npcId, int soundClass, const char* sound1, const char* sound2, const char* sound3, const char* sound4)
+int NPCControl::SetSound(int npcId, const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound)
 {
-	NPC *npc = IsSwNPC(npcId);
+	NPC* npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->SetSound(soundClass, sound1, sound2, sound3, sound4);
+	npc->SetSound(attackSound, damageSound, deadSound, footstepSound);
+
 	return 1;
 }
 

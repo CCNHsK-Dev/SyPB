@@ -330,16 +330,6 @@ void Waypoint::SgdWp_Set (const char *modset)
 {
 	if (stricmp (modset, "on") == 0)
 	{
-		// SyPB Pro P.40 - Waypoint Name Change?
-		if (m_badMapName)
-		{
-			Initialize();
-			Load(1);
-			ChartPrint("[SgdWP] I find the bad waypoint data ***");
-			ChartPrint("[SgdWP] And I will load your bad waypoint data now ***");
-			ChartPrint("[SgdWP] If this is bad waypoint, you need delete this ***");
-		}
-
 		ServerCommand ("mp_roundtime 9");
 		ServerCommand ("sv_restart 1");
 		ServerCommand ("mp_timelimit 0");
@@ -1229,10 +1219,8 @@ void Waypoint::tryDownloadWaypoint(void)
 	ServerPrintNoTag("We cannot find the Waypoint File");
 }
 
-bool Waypoint::Load(int mode)
+bool Waypoint::Load(void)
 {
-	m_badMapName = false;
-
 	WaypointHeader header;
 	File fp(CheckSubfolderFile(), "rb");
 
@@ -1248,19 +1236,16 @@ bool Waypoint::Load(int mode)
 
 	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) == 0)
 	{
-		if (header.fileVersion != FV_WAYPOINT && mode == 0)
+		if (header.fileVersion != FV_WAYPOINT)
 		{
-			m_badMapName = true;
 			sprintf(m_infoBuffer, "%s.pwf - incorrect waypoint file version (expected '%i' found '%i')", GetMapName(), FV_WAYPOINT, static_cast <int> (header.fileVersion));
 			AddLogEntry(LOG_ERROR, m_infoBuffer);
 
 			fp.Close();
 			return false;
 		}
-		else if (stricmp(header.mapName, GetMapName()) && mode == 0)
+		else if (stricmp(header.mapName, GetMapName()))
 		{
-			m_badMapName = true;
-
 			sprintf(m_infoBuffer, "%s.pwf - hacked waypoint file, fileName doesn't match waypoint header information (mapname: '%s', header: '%s')", GetMapName(), GetMapName(), header.mapName);
 			AddLogEntry(LOG_ERROR, m_infoBuffer);
 

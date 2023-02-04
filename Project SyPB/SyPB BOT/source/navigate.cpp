@@ -1128,7 +1128,10 @@ void Bot::SetEnemy(edict_t *entity)
 
 	// SyPB Pro P.48 - Base improve
 	if (m_enemy != entity)
+	{
 		m_enemyReachableTimer = 0.0f;
+		m_enemyActionMod = false;
+	}
 
 	m_enemy = entity;
 }

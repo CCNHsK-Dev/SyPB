@@ -68,11 +68,9 @@ native swnpc_set_sequence_name (npcId, const idle[], const move[], const walk[],
 
 native swnpc_set_blood_color (npcId, bloodColor);
 
-//native swnpc_set_sound (npcId, const attackSound[], const damageSound[], const deadSound[]);
 // 1.50 Change 
-// soundClass : 0 is attack / 1 is damage / 2 is dead / 3 is footstep
-native swnpc_set_sound (npcId, soundClass, const sound1[] = "null", const sound2[] = "null"
-						, const sound3[] = "null" , const sound4[] = "null")
+native swnpc_set_sound (npcId, const attackSound[] = "null", const damageSound[] = "null"
+						, const deadSound[] = "null", const footstepSound[] = "null");
 
 native swnpc_set_damage_multiples (npcId, Float:damageMultiples);
 

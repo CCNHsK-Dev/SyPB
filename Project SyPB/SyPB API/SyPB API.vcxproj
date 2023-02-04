@@ -9,10 +9,6 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug_XP|Win32">
-      <Configuration>Debug_XP</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -28,13 +24,6 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>
     </CharacterSet>
-    <CLRSupport>false</CLRSupport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_XP|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140_xp</PlatformToolset>
-    <CharacterSet />
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -53,9 +42,6 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug_XP|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -68,12 +54,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\Project_OutPut_Debug\</OutDir>
     <IntDir>..\Project_OutPut_Debug\SyPB_API\inf\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
-    <TargetName>sypb_amxx</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug_XP|Win32'">
-    <OutDir>..\Project_OutPut_XP_Debug\</OutDir>
-    <IntDir>..\Project_OutPut_XP_Debug\SyPB_API\inf\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>sypb_amxx</TargetName>
   </PropertyGroup>
@@ -103,29 +83,6 @@
     <Xdcmake>
       <OutputFile>$(OutDir)SyPB_API\$(TargetName).xml</OutputFile>
     </Xdcmake>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_XP|Win32'">
-    <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>
-      </SDLCheck>
-      <ConformanceMode>false</ConformanceMode>
-      <AdditionalIncludeDirectories>.\sdk;.\sdk\hlsdk;.\sdk\metamod;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <SupportJustMyCode>
-      </SupportJustMyCode>
-      <PreprocessorDefinitions>_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <OutputFile>$(OutDir)$(TargetFileName)</OutputFile>
-      <ProgramDatabaseFile>$(OutDir)SyPB_API\$(TargetName).pdb</ProgramDatabaseFile>
-      <ProfileGuidedDatabase>$(OutDir)SyPB_API\$(TargetName).pgd</ProfileGuidedDatabase>
-      <ImportLibrary>$(OutDir)SyPB_API\$(TargetName).lib</ImportLibrary>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

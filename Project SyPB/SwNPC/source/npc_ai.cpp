@@ -106,12 +106,7 @@ void NPC::NewNPCSetting(void)
 	//m_gaitSequence[AS_MOVE] = -1;
 
 	for (i = 0; i < NS_ALL; i++)
-	{
-		m_npcSound[i][0] = "null";
-		m_npcSound[i][1] = "null";
-		m_npcSound[i][2] = "null";
-		m_npcSound[i][3] = "null";
-	}
+		m_npcSound[i] = "null";
 
 	m_findEnemyMode = 1;
 	m_bloodColor = BLOOD_COLOR_RED;
@@ -1113,14 +1108,10 @@ void NPC::SetUpPModel(void)
 
 void NPC::PlayNPCSound(int soundClass)
 {
-	int soundNum = -1;
-	for (int i = 3; i >= 0; i--)
-	{
-		if (strcmp(m_npcSound[soundClass][i], "null") != 0)
-			soundNum = RANDOM_LONG(0, i);
-	}
+	if (strcmp(m_npcSound[soundClass], "null") == 0)
+		return;
 
-	if (soundNum == -1)
+	if (strcmp(&m_npcSound[soundClass][strlen(m_npcSound[soundClass]) - 4], ".wav") != 0)
 		return;
 
 	int soundChannel = CHAN_VOICE;
@@ -1129,7 +1120,7 @@ void NPC::PlayNPCSound(int soundClass)
 	else if (soundClass == NS_FOOTSTEP)
 		soundChannel = CHAN_BODY;
 
-	EMIT_SOUND_DYN(GetEntity(), soundChannel, m_npcSound[soundClass][soundNum], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
+	EMIT_SOUND_DYN(GetEntity(), soundChannel, m_npcSound[soundClass], 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
 }
 
 void NPC::DeleteSearchNodes(void)
@@ -1365,15 +1356,12 @@ void NPC::SetSequence(const char *idle, const char *move, const char *walk, cons
 	SetUpPModel();
 }
 
-void NPC::SetSound(int soundClass, const char *sound1, const char *sound2, const char* sound3, const char* sound4)
+void NPC::SetSound(const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound)
 {
-	if (soundClass < 0 || soundClass >= NS_ALL)
-		return;
-
-	m_npcSound[soundClass][0] = (char*)sound1;
-	m_npcSound[soundClass][1] = (char*)sound2;
-	m_npcSound[soundClass][2] = (char*)sound3;
-	m_npcSound[soundClass][3] = (char*)sound4;
+	m_npcSound[NS_ATTACK] = (char*)attackSound;
+	m_npcSound[NS_DAMAGE] = (char*)damageSound;
+	m_npcSound[NS_DEAD] = (char*)deadSound;
+	m_npcSound[NS_FOOTSTEP] = (char*)footstepSound;
 }
 
 void NPC::DebugModeMsg(void)

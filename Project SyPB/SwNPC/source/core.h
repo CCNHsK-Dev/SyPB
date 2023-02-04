@@ -165,7 +165,7 @@ public:
 	int g_npcAS;
 	Vector g_npcSize[2];
 	char *m_ASName[AS_ALL];
-	char *m_npcSound[NS_ALL][4];
+	char *m_npcSound[NS_ALL];
 
 	int m_actionSequence[AS_ALL];
 	float m_actionTime [AS_ALL];
@@ -244,8 +244,7 @@ public:
 
 	void SetSequence(const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
-	void SetSound (int soundClass, const char* sound1, const char* sound2, const char* sound3, 
-		const char* sound4);
+	void SetSound(const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound);
 };
 
 class NPCControl : public Singleton <NPCControl>
@@ -282,8 +281,9 @@ public:
 	int SetFEMode(int npcId, int feMode);
 	int SetSequence(int npcId, const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
-	int SetSound(int npcId, int soundClass, const char *sound1, const char *sound2, const char* sound3, 
-		const char* sound4);
+
+	int SetSound(int npcId, const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound);
+
 	int SetBloodColor(int npcId, int bloodColor);
 	int SetDamageMissArmor(int npcId, bool missArmor);
 	int SetDamageMultiples(int npcId, float damageMultiples);

@@ -1219,9 +1219,6 @@ class Waypoint : public Singleton <Waypoint>
 private:
    Path *m_paths[Const_MaxWaypoints];
 
-   // SyPB Pro P.40 - Waypoint Name Change?
-   bool m_badMapName;
-
    bool m_waypointPaths;
    bool m_isOnLadder;
    bool m_endJumpPoint;
@@ -1310,7 +1307,7 @@ public:
    bool IsDuckVisible (int srcIndex, int destIndex);
    void CalculateWayzone (int index);
 
-   bool Load (int mode = 0);
+   bool Load(void);
    void Save (void);
    void SaveXML (void);
 

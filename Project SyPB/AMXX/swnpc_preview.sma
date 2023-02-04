@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.5414.125
+* Support Build: 1.50.45116.130
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.5337.769 or new
+* Support SyPB Build: 1.50.45115.788 or new
 *
-* Date: 2/5/2019
+* Date: 4/2/2023
 */
 
 #include <amxmodx>
@@ -16,13 +16,13 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.5414.125"
+#define VERSION	"1.50.45116.130"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
 new Float:g_spawns[128][3], g_spawnCount; // Random Spawn Point
 
-new const team1_model[] = "models/player/vip/vip.mdl"
+new const team1_model[] = "models/player/zombie_source/zombie_source.mdl"
 new const team2_model[] = "models/player/vip/vip.mdl"
 
 public plugin_init() 
@@ -71,7 +71,7 @@ public event_new_round()
 	if (!g_testStart)
 	{
 		g_testStart = true;
-		//set_task (0.5, "add_swnpc_team1");
+		set_task (0.5, "add_swnpc_team1");
 		set_task (0.5, "add_swnpc_team2");
 	}
 }
@@ -83,18 +83,15 @@ public add_swnpc_team1 ()
 	
 	new ent = swnpc_add_npc ("npc_team1", team1_model, 200.0, 240.0, 0, origin);
 
-	swnpc_set_sound (ent, 0, "weapon/knife_slash1.wav");
-	swnpc_set_sound (ent, 1, "player/bhit_flesh-1.wav", "player/bhit_flesh-2.wav");
-	swnpc_set_sound (ent, 2, "player/die3.wav", "player/die2.wav");
-	swnpc_set_sound (ent, 3, "player/pl_step1.wav", "player/pl_step2.wav");
+	swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
 	swnpc_set_sequence_name (ent, "idle1", "run", "walk", "ref_shoot_knife", "gut_flinch", "death1");
 	
 	swnpc_set_attack_damage (ent, 10.0);
 	
-	swnpc_set_add_frags (ent, 2);
+	swnpc_set_add_frags (ent, 1);
 	swnpc_set_dead_remove_time (ent, 10.0);
 
-	set_task (2.0, "add_swnpc_team1");
+	set_task (5.0, "add_swnpc_team1");
 }
 
 public add_swnpc_team2 ()
@@ -104,10 +101,7 @@ public add_swnpc_team2 ()
 	
 	new ent = swnpc_add_npc ("npc_team2", team2_model, 200.0, 240.0, 1, origin);
 
-	swnpc_set_sound (ent, 0, "weapon/knife_slash1.wav");
-	swnpc_set_sound (ent, 1, "player/bhit_flesh-1.wav", "player/bhit_flesh-2.wav");
-	swnpc_set_sound (ent, 2, "player/die3.wav", "player/die2.wav");
-	swnpc_set_sound (ent, 3, "player/pl_step1.wav", "player/pl_step2.wav");
+	swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
 	swnpc_set_sequence_name (ent, "idle1", "run", "walk", "ref_shoot_knife", "gut_flinch", "death1");
 	
 	swnpc_set_attack_damage (ent, 10.0);
@@ -115,7 +109,7 @@ public add_swnpc_team2 ()
 	swnpc_set_add_frags (ent, 2);
 	swnpc_set_dead_remove_time (ent, 10.0);
 	
-	set_task (2.0, "add_swnpc_team2");
+	set_task (5.0, "add_swnpc_team2");
 }
 
 
