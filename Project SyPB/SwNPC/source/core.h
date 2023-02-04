@@ -120,6 +120,8 @@ private:
 	float m_checkStuckTime;
 	Vector m_prevOrigin;
 
+	bool m_fakeCrouch;
+
 	// For check enemy only
 	int m_allEnemyId[checkEnemyNum];
 	float m_allEnemyDistance[checkEnemyNum];
@@ -242,8 +244,10 @@ public:
 	void SetWaypointOrigin(void);
 	int CheckGoalWaypoint(void) { return m_goalWaypoint; };
 
+	void BaseSequence(int baseSequence);
 	void SetSequence(const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
+
 	void SetSound(const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound);
 };
 
@@ -279,6 +283,8 @@ public:
 	int SetTeam(int npcId, int team);
 	int SetSize(int npcId, Vector minSize, Vector maxSize);
 	int SetFEMode(int npcId, int feMode);
+
+	int BaseSequence(int npcId, int baseSequence);
 	int SetSequence(int npcId, const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
 

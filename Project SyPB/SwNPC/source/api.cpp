@@ -22,9 +22,8 @@ static cell AMX_NATIVE_CALL amxx_checkIsSwNPC(AMX *amx, cell *params) // 1.42
 
 static cell AMX_NATIVE_CALL amxx_addNPC(AMX *amx, cell *params) // 1.42
 {
-	int len;
-	const char *className = MF_GetAmxString(amx, params[1], apiBuffer++, &len);
-	const char *modelName = MF_GetAmxString(amx, params[2], apiBuffer++, &len);
+	const char *className = MF_GetAmxString(amx, params[1], apiBuffer++, null);
+	const char *modelName = MF_GetAmxString(amx, params[2], apiBuffer++, null);
 	float maxHealth = amx_ctof(params[3]);
 	float maxSpeed = amx_ctof(params[4]);
 	int team = params[5];
@@ -69,16 +68,24 @@ static cell AMX_NATIVE_CALL amxx_findEnemyMode(AMX *amx, cell *params) // 1.42
 	return g_npcManager->SetFEMode(npcId, feMode);
 }
 
+static cell AMX_NATIVE_CALL amxx_baseSequence(AMX* amx, cell* params) // 1.50
+{
+	int npcId = params[1];
+	int baseSequence = params[2];
+
+	return g_npcManager->BaseSequence(npcId, baseSequence);
+}
+
 static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 {
 	int npcId = params[1];
-	int len;
-	char *idle = MF_GetAmxString(amx, params[2], apiBuffer++, &len);
-	char *move = MF_GetAmxString(amx, params[3], apiBuffer++, &len);
-	char *walk = MF_GetAmxString(amx, params[4], apiBuffer++, &len);
-	char *attack = MF_GetAmxString(amx, params[5], apiBuffer++, &len);
-	char *damage = MF_GetAmxString(amx, params[6], apiBuffer++, &len);
-	char *dead = MF_GetAmxString(amx, params[7], apiBuffer++, &len);
+
+	char *idle = MF_GetAmxString(amx, params[2], apiBuffer++, null);
+	char *move = MF_GetAmxString(amx, params[3], apiBuffer++, null);
+	char *walk = MF_GetAmxString(amx, params[4], apiBuffer++, null);
+	char *attack = MF_GetAmxString(amx, params[5], apiBuffer++, null);
+	char *damage = MF_GetAmxString(amx, params[6], apiBuffer++, null);
+	char *dead = MF_GetAmxString(amx, params[7], apiBuffer++, null);
 
 	return g_npcManager->SetSequence(npcId, idle, move, walk, attack, damage, dead);
 }
@@ -110,12 +117,11 @@ static cell AMX_NATIVE_CALL amxx_setBloodColor(AMX *amx, cell *params) // 1.42
 static cell AMX_NATIVE_CALL amxx_setSound(AMX* amx, cell* params) // 1.50
 {
 	int npcId = params[1];
-	int len;
 
-	char* attackSound = MF_GetAmxString(amx, params[2], apiBuffer++, &len);
-	char* damageSound = MF_GetAmxString(amx, params[3], apiBuffer++, &len);
-	char* deadSound = MF_GetAmxString(amx, params[4], apiBuffer++, &len);
-	char* footstepSound = MF_GetAmxString(amx, params[5], apiBuffer++, &len);
+	char* attackSound = MF_GetAmxString(amx, params[2], apiBuffer++, null);
+	char* damageSound = MF_GetAmxString(amx, params[3], apiBuffer++, null);
+	char* deadSound = MF_GetAmxString(amx, params[4], apiBuffer++, null);
+	char* footstepSound = MF_GetAmxString(amx, params[5], apiBuffer++, null);
 
 	return g_npcManager->SetSound(npcId, attackSound, damageSound, deadSound, footstepSound);
 }
@@ -329,6 +335,8 @@ AMX_NATIVE_INFO swnpc_natives[] =
 	// SwNPC Base Setting
 	{ "swnpc_set_team", amxx_setTeam },
 	{ "swnpc_set_size", amxx_setSize }, 
+
+	{ "swnpc_use_base_sequence", amxx_baseSequence },
 	{ "swnpc_set_sequence_name", amxx_setSequenceName },
 
 	{ "swnpc_set_sound", amxx_setSound },

@@ -215,6 +215,16 @@ int NPCControl::SetFEMode(int npcId, int feMode)
 	return 1;
 }
 
+int NPCControl::BaseSequence(int npcId, int baseSequence)
+{
+	NPC* npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	npc->BaseSequence(baseSequence);
+	return 1;
+}
+
 int NPCControl::SetSequence(int npcId, const char *idle, const char *move, const char *walk, 
 	const char *attack, const char *damage, const char *dead)
 {

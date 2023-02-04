@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.5414.125
+* Support Build: 1.50.45116.131
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.5337.769 or new
+* Support SyPB Build: 1.50.45115.788 or new
 *
-* Date: 2/5/2019
+* Date: 4/2/2023
 */
 
 /* -----------------------------------------------------------------------
@@ -65,6 +65,8 @@ native swnpc_set_find_enemy_mode (npcId, feMode);
 //native swnpc_set_sequence_name (npcId, const idle[], const move[], const attack[], const damage[], const dead[]);
 // 1.50 Change
 native swnpc_set_sequence_name (npcId, const idle[], const move[], const walk[], const attack[], const damage[], const dead[]);
+
+native swnpc_use_base_sequence (npcId, humanSequence);
 
 native swnpc_set_blood_color (npcId, bloodColor);
 

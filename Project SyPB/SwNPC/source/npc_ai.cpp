@@ -96,12 +96,7 @@ void NPC::NewNPCSetting(void)
 	m_navNode = null;
 	m_navNodeStart = null;
 
-	for (i = 0; i < AS_ALL; i++)
-	{
-		m_actionSequence[i] = -1;
-		m_actionTime[i] = -1.0f;
-		m_ASName[i] = "null";
-	}
+	BaseSequence(0);
 	//m_gaitSequence[AS_IDLE] = -1;
 	//m_gaitSequence[AS_MOVE] = -1;
 
@@ -237,6 +232,7 @@ void NPC::Spawn(Vector origin)
 	pev->health = pev->max_health;
 	pev->fixangle = true;
 
+	m_fakeCrouch = false;
 	SET_SIZE(GetEntity(), g_npcSize[0], g_npcSize[1]);
 	SET_ORIGIN(GetEntity(), origin);
 
@@ -949,6 +945,19 @@ void NPC::CheckStuck(float oldSpeed)
 
 	if (isStuck)
 	{
+		if (!m_fakeCrouch)
+		{
+			if (g_waypoint->g_waypointPointFlag[m_currentWaypointIndex] & WAYPOINT_CROUCH)
+			{
+				m_fakeCrouch = true;
+
+				Vector crouchSize = g_npcSize[1];
+				crouchSize.z = 0.0f;
+				SET_SIZE(GetEntity(), g_npcSize[0], crouchSize);
+				return;
+			}
+		}
+
 		MakeVectors(pev->angles);
 
 		TraceResult tr;
@@ -1233,6 +1242,8 @@ void NPC::HeadTowardWaypoint(void)
 	if (m_navNode == null)
 		return;
 
+	bool needFakeCrouch = false;
+
 	m_jumpAction = false;
 
 	if (m_navNode->next != null)
@@ -1241,6 +1252,14 @@ void NPC::HeadTowardWaypoint(void)
 		{
 			if (g_waypoint->g_wpConnectionIndex[m_navNode->index][j] != m_navNode->next->index)
 				continue;
+
+			if (g_waypoint->g_waypointPointFlag[m_navNode->index] & (WAYPOINT_CROUCH | WAYPOINT_NOHOSTAGE) || 
+				g_waypoint->g_waypointPointFlag[m_navNode->next->index] & (WAYPOINT_CROUCH | WAYPOINT_NOHOSTAGE))
+				needFakeCrouch = true;
+
+			if (g_waypoint->g_waypointPointFlag[m_navNode->index] & (WAYPOINT_LADDER) ||
+				g_waypoint->g_waypointPointFlag[m_navNode->next->index] & (WAYPOINT_LADDER))
+				needFakeCrouch = false;
 
 			if (g_waypoint->g_wpConnectionFlags[m_navNode->index][j] & PATHFLAG_JUMP)
 			{
@@ -1254,6 +1273,19 @@ void NPC::HeadTowardWaypoint(void)
 	m_navNode = m_navNode->next;
 	if (m_navNode != null)
 		m_currentWaypointIndex = m_navNode->index;
+
+	if (needFakeCrouch && !m_fakeCrouch)
+	{
+		m_fakeCrouch = true;
+		Vector crouchSize = g_npcSize[1];
+		crouchSize.z = 0.0f;
+		SET_SIZE(GetEntity(), g_npcSize[0], crouchSize);
+	}
+	else if (!needFakeCrouch && m_fakeCrouch)
+	{
+		SET_SIZE(GetEntity(), g_npcSize[0], g_npcSize[1]);
+		m_fakeCrouch = false;
+	}
 
 	SetWaypointOrigin();
 	m_navTime = gpGlobals->time + 5.0f;
@@ -1341,6 +1373,31 @@ int NPC::GetNavDataAPI(int data)
 		return pointNum;
 
 	return -1;
+}
+
+void NPC::BaseSequence(int baseSequence)
+{
+	if (baseSequence == 0)
+	{
+		for (int i = 0; i < AS_ALL; i++)
+		{
+			m_actionSequence[i] = -1;
+			m_actionTime[i] = -1.0f;
+			m_ASName[i] = "null";
+		}
+
+		return;
+	}
+
+	m_ASName[AS_IDLE] = "idle1";
+	m_ASName[AS_MOVE] = "run";
+	m_ASName[AS_WALK] = "walk";
+	m_ASName[AS_ATTACK] = "ref_shoot_knife";
+	m_ASName[AS_DAMAGE] = "gut_flinch";
+	m_ASName[AS_DEAD] = "death1";
+
+	m_pmodel = null;
+	SetUpPModel();
 }
 
 void NPC::SetSequence(const char *idle, const char *move, const char *walk, const char *attack, const char *damage, const char *dead)
@@ -1447,15 +1504,15 @@ void NPC::DebugModeMsg(void)
 		"CWI: %d  GI: %d\n"
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
-		"Attack Distance : %.2f"
-		"",
+		"Attack Distance : %.2f\n"
+		"Fake Crouch: %s",
 		gamemodName,
 		GetEntityName(GetEntity()), taskName,
 		enemyName, npcTeam,
 		m_currentWaypointIndex, m_goalWaypoint,
 		navIndex[0], navIndex[1],
 		m_moveSpeed, GetDistance2D(pev->velocity),
-		m_attackDistance);
+		m_attackDistance, m_fakeCrouch ? "Yes" : "No");
 
 	MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
 	WRITE_BYTE(TE_TEXTMESSAGE);
