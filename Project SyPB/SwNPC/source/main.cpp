@@ -12,6 +12,7 @@ int g_callRemoveNPC = -1;
 int g_callThink_Pre = -1;
 int g_callTakeDamage_Pre = -1;
 int g_callKill_Pre = -1;
+int g_callPlaySound_Pre = -1;
 
 int g_callThink_Post = -1;
 int g_callTakeDamage_Post = -1;
@@ -66,6 +67,8 @@ void OnPluginsLoaded()
 		g_callTakeDamage_Pre = MF_RegisterForward("SwNPC_TakeDamage_Pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_DONE);
 		// SwNPC_Kill_Pre (victimId, killerId)
 		g_callKill_Pre = MF_RegisterForward("SwNPC_Kill_Pre", ET_CONTINUE, FP_CELL, FP_CELL, FP_DONE);
+		// SwNPC_PlaySound (npcId, soundClass, soundChannel)
+		g_callPlaySound_Pre = MF_RegisterForward("SwNPC_PlaySound", ET_CONTINUE, FP_CELL, FP_CELL, FP_CELL, FP_DONE);
 
 
 		// SwNPC_Think_Post (npcId)
@@ -96,6 +99,7 @@ void AllReLoad(void)
 	g_callThink_Pre = -1;
 	g_callTakeDamage_Pre = -1;
 	g_callKill_Pre = -1;
+	g_callPlaySound_Pre = -1;
 
 	g_callThink_Post = -1;
 	g_callTakeDamage_Post = -1;

@@ -188,8 +188,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 	g_TDP_damageValue = -1;
 	g_TDP_cvOn = true;
 
-	int block = MF_ExecuteForward(g_callTakeDamage_Pre, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
-	if (block)
+	if (MF_ExecuteForward(g_callTakeDamage_Pre, (cell)ENTINDEX(victim), (cell)attackId, int(damage)))
 		return;
 
 	if (g_TDP_damageValue >= 0)
@@ -266,11 +265,12 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 
 	if (damage < victim->v.health)
 	{
-		victim->v.health = victim->v.health - damage;
+		victim->v.health -= damage;
 		MF_ExecuteForward(g_callTakeDamage_Post, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
 	}
 	else
 	{
+		victim->v.health = 1;
 		MF_ExecuteForward(g_callTakeDamage_Post, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
 		KillAction(victim, attacker);
 	}
@@ -287,14 +287,13 @@ void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 
 	if (IsValidPlayer(victim))
 	{
-		int block = MF_ExecuteForward(g_callKill_Pre, (cell)ENTINDEX(victim), (cell)killerId);
-		if (block && canBlock)
+		if (MF_ExecuteForward(g_callKill_Pre, (cell)ENTINDEX(victim), (cell)killerId) && canBlock)
 		{
 			victim->v.health = 1;
 			return;
 		}
 
-		victim->v.frags = victim->v.frags + 1;
+		victim->v.frags += 1;
 		MDLL_ClientKill(victim);
 		MF_ExecuteForward(g_callKill_Post, (cell)ENTINDEX(victim), (cell)killerId);
 
@@ -305,8 +304,7 @@ void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 	if (SwNPC == null)
 		return;
 
-	int block = MF_ExecuteForward(g_callKill_Pre, (cell)ENTINDEX(victim), (cell)killerId);
-	if (block && canBlock)
+	if (MF_ExecuteForward(g_callKill_Pre, (cell)ENTINDEX(victim), (cell)killerId) && canBlock)
 	{
 		SwNPC->pev->health = 1;
 		return;
@@ -698,15 +696,6 @@ float GetDistance2D(Vector origin1, Vector origin2)
 		forDistance = origin1;
 
 	return sqrtf(forDistance.x * forDistance.x + forDistance.y * forDistance.y);
-}
-
-Vector GetSpeedVector(Vector origin1, Vector origin2, float speed)
-{
-	Vector vecVelocity = origin2 - origin1;
-	float num = sqrt(speed*speed / (vecVelocity.x * vecVelocity.x + vecVelocity.y * vecVelocity.y + vecVelocity.z * vecVelocity.z));
-
-	vecVelocity = vecVelocity * num;
-	return vecVelocity;
 }
 
 void EMIT_SOUND_DYN(edict_t *entity, int channel, const char *sample, float volume, float attenuation,

@@ -144,8 +144,6 @@ int GetEntityWaypointPoint(edict_t *entity)
 
 void LoadEntityWaypointPoint(edict_t *getEntity, edict_t *targetEntity)
 {
-	// Pro P.45
-
 	SwNPCAPI_SyPBLoadEntityWaypointPoint(getEntity, targetEntity);
 }
 

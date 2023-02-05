@@ -62,17 +62,12 @@ native swnpc_set_size (npcId, Float:minSize[3], Float:maxSize[3]);
 
 native swnpc_set_find_enemy_mode (npcId, feMode);
 
-//native swnpc_set_sequence_name (npcId, const idle[], const move[], const attack[], const damage[], const dead[]);
 // 1.50 Change
 native swnpc_set_sequence_name (npcId, const idle[], const move[], const walk[], const attack[], const damage[], const dead[]);
 
 native swnpc_use_base_sequence (npcId, humanSequence);
 
 native swnpc_set_blood_color (npcId, bloodColor);
-
-// 1.50 Change 
-native swnpc_set_sound (npcId, const attackSound[] = "null", const damageSound[] = "null"
-						, const deadSound[] = "null", const footstepSound[] = "null");
 
 native swnpc_set_damage_multiples (npcId, Float:damageMultiples);
 
@@ -130,3 +125,5 @@ forward SwNPC_TakeDamage_Post(victim, attack, damage);
 native SwNPC_FakeTakeDamage (victim, attack, damage);
 native SetDamageValue (damage); // For SwNPC_TakeDamage_Pre Only
 
+// About NPC Sound
+forward SwNPC_PlaySound (npcId, soundClass, soundChannel);

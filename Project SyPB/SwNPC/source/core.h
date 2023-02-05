@@ -167,7 +167,6 @@ public:
 	int g_npcAS;
 	Vector g_npcSize[2];
 	char *m_ASName[AS_ALL];
-	char *m_npcSound[NS_ALL];
 
 	int m_actionSequence[AS_ALL];
 	float m_actionTime [AS_ALL];
@@ -244,11 +243,9 @@ public:
 	void SetWaypointOrigin(void);
 	int CheckGoalWaypoint(void) { return m_goalWaypoint; };
 
-	void BaseSequence(int baseSequence);
+	void BaseSequence(int baseSequence = 1);
 	void SetSequence(const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
-
-	void SetSound(const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound);
 };
 
 class NPCControl : public Singleton <NPCControl>
@@ -287,8 +284,6 @@ public:
 	int BaseSequence(int npcId, int baseSequence);
 	int SetSequence(int npcId, const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
-
-	int SetSound(int npcId, const char* attackSound, const char* damageSound, const char* deadSound, const char* footstepSound);
 
 	int SetBloodColor(int npcId, int bloodColor);
 	int SetDamageMissArmor(int npcId, bool missArmor);
@@ -350,6 +345,7 @@ extern int g_callRemoveNPC;
 extern int g_callThink_Pre;
 extern int g_callTakeDamage_Pre;
 extern int g_callKill_Pre;
+extern int g_callPlaySound_Pre;
 // Post
 extern int g_callThink_Post;
 extern int g_callTakeDamage_Post;
@@ -413,7 +409,6 @@ extern int __fastcall HookTakeDamage(void *pthis, int i, entvars_t *pevInflictor
 // For check Distanace
 extern float GetDistance(Vector origin1, Vector origin2 = nullvec);
 extern float GetDistance2D(Vector origin, Vector origin2 = nullvec);
-extern Vector GetSpeedVector(Vector origin1, Vector origin2, float speed);
 
 // SyPB Load
 extern void SyPB_GetHostEntity(void);

@@ -114,18 +114,6 @@ static cell AMX_NATIVE_CALL amxx_setBloodColor(AMX *amx, cell *params) // 1.42
 	return g_npcManager->SetBloodColor(npcId, bloodColor);
 }
 
-static cell AMX_NATIVE_CALL amxx_setSound(AMX* amx, cell* params) // 1.50
-{
-	int npcId = params[1];
-
-	char* attackSound = MF_GetAmxString(amx, params[2], apiBuffer++, null);
-	char* damageSound = MF_GetAmxString(amx, params[3], apiBuffer++, null);
-	char* deadSound = MF_GetAmxString(amx, params[4], apiBuffer++, null);
-	char* footstepSound = MF_GetAmxString(amx, params[5], apiBuffer++, null);
-
-	return g_npcManager->SetSound(npcId, attackSound, damageSound, deadSound, footstepSound);
-}
-
 static cell AMX_NATIVE_CALL amxx_setDamageMultiples(AMX *amx, cell *params) // 1.42
 {
 	int npcId = params[1];
@@ -338,8 +326,6 @@ AMX_NATIVE_INFO swnpc_natives[] =
 
 	{ "swnpc_use_base_sequence", amxx_baseSequence },
 	{ "swnpc_set_sequence_name", amxx_setSequenceName },
-
-	{ "swnpc_set_sound", amxx_setSound },
 
 	{ "swnpc_set_blood_color", amxx_setBloodColor },
 	{ "swnpc_set_find_enemy_mode", amxx_findEnemyMode }, 

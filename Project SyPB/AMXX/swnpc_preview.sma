@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45116.131
+* Support Build: 1.50.45117.132
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45115.788 or new
 *
-* Date: 4/2/2023
+* Date: 5/2/2023
 */
 
 #include <amxmodx>
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45116.131"
+#define VERSION	"1.50.45117.132"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -72,7 +72,7 @@ public event_new_round()
 	{
 		g_testStart = true;
 		set_task (0.5, "add_swnpc_team1");
-		set_task (0.5, "add_swnpc_team2");
+		//set_task (0.5, "add_swnpc_team2");
 	}
 }
 
@@ -83,7 +83,7 @@ public add_swnpc_team1 ()
 	
 	new ent = swnpc_add_npc ("npc_team1", team1_model, 200.0, 240.0, 0, origin);
 
-	swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
+	//swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
 	//swnpc_set_sequence_name (ent, "idle1", "run", "walk", "ref_shoot_knife", "gut_flinch", "death1");
 	swnpc_use_base_sequence (ent, 1);
 	
@@ -102,7 +102,7 @@ public add_swnpc_team2 ()
 	
 	new ent = swnpc_add_npc ("npc_team2", team2_model, 200.0, 240.0, 1, origin);
 
-	swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
+	//swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
 	//swnpc_set_sequence_name (ent, "idle1", "run", "walk", "ref_shoot_knife", "gut_flinch", "death1");
 	swnpc_use_base_sequence (ent, 1);
 	
