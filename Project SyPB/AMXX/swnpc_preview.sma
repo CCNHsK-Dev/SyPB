@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45117.132
+* Support Build: 1.50.45118.133
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.45115.788 or new
+* Support SyPB Build: 1.50.45118.789 or new
 *
-* Date: 5/2/2023
+* Date: 6/2/2023
 */
 
 #include <amxmodx>
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45117.132"
+#define VERSION	"1.50.45118.133"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -38,10 +38,7 @@ public plugin_precache()
 {
 	precache_model(team1_model);
 	precache_model(team2_model);
-	precache_sound ("weapon/knife_slash1.wav");
-	precache_sound ("player/bhit_flesh-1.wav");
-	precache_sound ("player/bhit_flesh-2.wav");
-	precache_sound ("player/die3.wav");
+	precache_sound ("zombie_plague/zombie_die3.wav");
 }
 
 public SwNPC_Add (npcId)
@@ -66,52 +63,62 @@ public SwNPC_TakeDamage_Pre(victim, attack, damage)
 	return PLUGIN_CONTINUE;
 }
 
+public SwNPC_PlaySound (npcId, soundClass, soundChannel)
+{
+	// if tr swnpc play dead sound, block it
+	// and play new sound
+	if (soundClass == NS_DEAD && swnpc_get_team (npcId) == TEAM_TR)
+	{
+		swnpc_emit_sound (npcId, soundChannel, "zombie_plague/zombie_die3.wav");
+		// emit_sound(npcId, soundChannel, zombie_plague/zombie_die3.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
+		return PLUGIN_HANDLED;
+	}
+	
+	// Blcok all damage sound
+	//if (soundClass == NS_DAMAGE)
+	//	return PLUGIN_HANDLED;
+	
+	return PLUGIN_CONTINUE;
+}
+
 public event_new_round()
 {
 	if (!g_testStart)
 	{
 		g_testStart = true;
-		set_task (0.5, "add_swnpc_team1");
-		//set_task (0.5, "add_swnpc_team2");
+		set_task (0.5, "add_swnpc_team_tr");
+		set_task (0.5, "add_swnpc_team_ct");
 	}
 }
 
-public add_swnpc_team1 ()
+public add_swnpc_team_tr ()
 {
 	new Float:origin[3];
 	origin = g_spawns[random_num(0, g_spawnCount - 1)];
 	
-	new ent = swnpc_add_npc ("npc_team1", team1_model, 200.0, 240.0, 0, origin);
+	new ent = swnpc_add_npc ("swnpc_team_tr", team1_model, 200.0, 240.0, TEAM_TR, origin);
 
-	//swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
-	//swnpc_set_sequence_name (ent, "idle1", "run", "walk", "ref_shoot_knife", "gut_flinch", "death1");
-	swnpc_use_base_sequence (ent, 1);
-	
 	swnpc_set_attack_damage (ent, 10.0);
 	
 	swnpc_set_add_frags (ent, 1);
 	swnpc_set_dead_remove_time (ent, 10.0);
 
-	set_task (5.0, "add_swnpc_team1");
+	set_task (5.0, "add_swnpc_team_tr");
 }
 
-public add_swnpc_team2 ()
+public add_swnpc_team_ct ()
 {
 	new Float:origin[3];
 	origin = g_spawns[random_num(0, g_spawnCount - 1)];
 	
-	new ent = swnpc_add_npc ("npc_team2", team2_model, 200.0, 240.0, 1, origin);
+	new ent = swnpc_add_npc ("swnpc_team_ct", team2_model, 200.0, 240.0, TEAM_CT, origin);
 
-	//swnpc_set_sound (ent, "weapon/knife_slash1.wav", "player/bhit_flesh-1.wav", "player/die3.wav", "player/pl_step1.wav");
-	//swnpc_set_sequence_name (ent, "idle1", "run", "walk", "ref_shoot_knife", "gut_flinch", "death1");
-	swnpc_use_base_sequence (ent, 1);
-	
 	swnpc_set_attack_damage (ent, 10.0);
 	
 	swnpc_set_add_frags (ent, 2);
 	swnpc_set_dead_remove_time (ent, 10.0);
 	
-	set_task (5.0, "add_swnpc_team2");
+	set_task (5.0, "add_swnpc_team_ct");
 }
 
 

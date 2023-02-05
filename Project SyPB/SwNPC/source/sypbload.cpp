@@ -25,6 +25,9 @@ _SyPBGetEntityWaypointPoint SwNPCAPI_SyPBGetEntityWaypointPoint;
 typedef void(*_SyPBLoadEntityWaypointPoint) (edict_t *, edict_t *);
 _SyPBLoadEntityWaypointPoint SwNPCAPI_SyPBLoadEntityWaypointPoint;
 
+typedef void(*_SyPBSetNPCNewWaypointPoint) (edict_t*, int);
+_SyPBSetNPCNewWaypointPoint SwNPCAPI_SyPBSetNPCNewWaypointPoint;
+
 void SyPBDataLoad(void)
 {
 	HMODULE dll = GetModuleHandle("sypb.dll");
@@ -108,6 +111,13 @@ void SyPBDataLoad(void)
 		return;
 	}
 
+	SwNPCAPI_SyPBSetNPCNewWaypointPoint = (_SyPBSetNPCNewWaypointPoint)GetProcAddress(dll, "SwNPCAPI_SetNPCNewWaypointPoint");
+	if (!SwNPCAPI_SyPBSetNPCNewWaypointPoint)
+	{
+		LogToFile("Loading Fail, Pls Try upgrade your SyPB Version");
+		return;
+	}
+
 	g_swnpcRun = true;
 }
 
@@ -145,6 +155,11 @@ int GetEntityWaypointPoint(edict_t *entity)
 void LoadEntityWaypointPoint(edict_t *getEntity, edict_t *targetEntity)
 {
 	SwNPCAPI_SyPBLoadEntityWaypointPoint(getEntity, targetEntity);
+}
+
+void SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint)
+{
+	SwNPCAPI_SyPBSetNPCNewWaypointPoint(entity, waypointPoint);
 }
 
 int LogToFile(char *szLogText, ...)

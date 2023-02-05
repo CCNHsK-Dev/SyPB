@@ -3964,6 +3964,21 @@ C_DLLEXPORT void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targ
 {
 	SetEntityWaypoint(getEntity, GetEntityWaypoint(targetEntity));
 }
+
+C_DLLEXPORT void SwNPCAPI_SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint)
+{
+	for (int i = 0; i < entityNum; i++)
+	{
+		if (g_entityId[i] == -1 || entity != INDEXENT(g_entityId[i]))
+			continue;
+
+		g_entityWpIndex[i] = waypointPoint;
+		g_entityGetWpOrigin[i] = entity->v.origin;
+		g_entityGetWpTime[i] = engine->GetTime() + 1.5f;
+
+		break;
+	}
+}
 // SwNPC API End
 
 DLL_GIVEFNPTRSTODLL GiveFnptrsToDll (enginefuncs_t *functionTable, globalvars_t *pGlobals)

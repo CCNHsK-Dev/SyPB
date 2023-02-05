@@ -417,7 +417,7 @@ extern void GetWaypointData(void);
 extern void SetEntityAction(int index, int team, int action);
 extern int GetEntityWaypointPoint(edict_t *entity);
 extern void LoadEntityWaypointPoint(edict_t *getEntity, edict_t *targetEntity = null);
-
+extern void SetNPCNewWaypointPoint(edict_t *entity, int waypointPoint);
 
 inline void MakeVectors(const Vector &in)
 {

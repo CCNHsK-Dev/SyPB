@@ -384,8 +384,16 @@ void NPC::TaskMoveTarget(void)
 					srcIndex = g_waypoint->GetEntityWpIndex(GetEntity());
 			}
 
+			if (&m_navNode[0] != null && m_navNode->next != null)
+			{
+				if (*(g_waypoint->m_distMatrix + (m_navNode->next->index * g_numWaypoints) + destIndex) <=
+					*(g_waypoint->m_distMatrix + (srcIndex * g_numWaypoints) + destIndex))
+					srcIndex = m_navNode->next->index;
+			}
+
 			DeleteSearchNodes();
 			m_currentWaypointIndex = srcIndex;
+			SetNPCNewWaypointPoint(GetEntity (), srcIndex);
 			m_navTime = gpGlobals->time + 5.0f;
 			SetWaypointOrigin();
 
@@ -441,6 +449,7 @@ void NPC::TaskB_FollowEntity(void)
 
 			DeleteSearchNodes();
 			m_currentWaypointIndex = srcIndex;
+			SetNPCNewWaypointPoint(GetEntity (), srcIndex);
 			m_navTime = gpGlobals->time + 5.0f;
 			SetWaypointOrigin();
 
@@ -1122,7 +1131,7 @@ void NPC::PlayNPCSound(int soundClass)
 		return;
 
 	char playSound[80];
-	if (soundClass == NS_ATTACK) sprintf(playSound, "weapon/knife_slash1.wav");
+	if (soundClass == NS_ATTACK) sprintf(playSound, "weapons/knife_slash1.wav");
 	else if (soundClass == NS_DAMAGE) sprintf(playSound, "player/bhit_flesh-1.wav");
 	else if (soundClass == NS_DEAD) sprintf(playSound, "player/die3.wav");
 	else if (soundClass == NS_FOOTSTEP) sprintf(playSound, "player/pl_step1.wav");
@@ -1270,7 +1279,10 @@ void NPC::HeadTowardWaypoint(void)
 	m_oldNavIndex = m_navNode->index;
 	m_navNode = m_navNode->next;
 	if (m_navNode != null)
+	{
 		m_currentWaypointIndex = m_navNode->index;
+		SetNPCNewWaypointPoint(GetEntity(), m_navNode->index);
+	}
 
 	if (needFakeCrouch && !m_fakeCrouch)
 	{
