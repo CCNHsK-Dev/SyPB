@@ -1311,7 +1311,7 @@ public:
    void Save (void);
    void SaveXML (void);
 
-   void tryDownloadWaypoint(void);
+   void tryDownloadWaypoint (void);
 
    bool Reachable(edict_t *entity, int index);
    bool IsNodeReachable (Vector src, Vector destination);
@@ -1319,7 +1319,7 @@ public:
    void ShowWaypointMsg(void); // SyPB Pro P.38 - Show Waypoint Msg
    bool NodesValid (void);
    void CreateBasic (void);
-   void EraseFromHardDisk (void);
+   void EraseFromHardDisk (bool needLog = true);
 
    void InitPathMatrix (void);
    void SavePathMatrix (void);

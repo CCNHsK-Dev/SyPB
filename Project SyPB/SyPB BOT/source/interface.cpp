@@ -243,13 +243,14 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       ClientPrint (ent, print_console, "sypb weaponmode         - select bot weapon mode.");
       ClientPrint (ent, print_console, "sypb votemap            - allows dead bots to vote for specific map.");
       ClientPrint (ent, print_console, "sypb cmenu              - displaying bots command menu.");
-
-
-	  ClientPrint(ent, print_console, "sypb_add                - create a bot in current game.");
+	  ClientPrint(ent, print_console, " sypb_add                - create a bot in current game.");
 
       // SyPB Pro P.23 - SgdWP
-      if (!IsDedicatedServer ())
-      	  ServerPrintNoTag ("sypb sgdwp on           - New making waypoint system from SyPB");
+	  if (!IsDedicatedServer())
+	  {
+		  ServerPrintNoTag(" sypb sgdwp on         - New making waypoint system from SyPB");
+		  ServerPrintNoTag(" sypb dlwp             - Download waypoint file on GitHub");
+	  }
 
       if (stricmp (arg1, "full") == 0 || stricmp (arg1, "f") == 0 || stricmp (arg1, "?") == 0)
       {
@@ -560,6 +561,14 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    	   	   return 2;
 
 	   g_waypoint->SgdWp_Set (arg1);
+   }
+
+   else if (stricmp(arg0, "dlwp") == 0)
+   {
+	   if (IsDedicatedServer() || FNullEnt(g_hostEntity))
+		   return 2;
+
+	   g_waypoint->tryDownloadWaypoint();
    }
 
    // experience system handling (supported only on listen server)

@@ -1196,27 +1196,54 @@ void Waypoint::InitTypes (int mode)
 
 void Waypoint::tryDownloadWaypoint(void)
 {
-	EraseFromHardDisk();
-
 	String saveFile = "", downloadURL = "";
-	saveFile = FormatBuffer("%s/%s.pwf", GetWaypointDir(), GetMapName());
+	saveFile = FormatBuffer("%s%s.test", GetWaypointDir(), GetMapName());
 	downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
 
-	ServerPrintNoTag("Try Download Map Waypoint on Github");
-	HRESULT hr = URLDownloadToFile(null, downloadURL, saveFile, 0, null);
-	if (hr == S_OK)
+	ServerPrint("Try to Download Waypoint.....");
+	if (URLDownloadToFile(null, downloadURL, saveFile, 0, null) != S_OK)
 	{
-		ServerPrintNoTag("Find The Waypoint File");
-		
-		if (Load())
-			ServerPrintNoTag("Reload Waypoint File");
-		else
-			ServerPrintNoTag("Unknow Problem");
-
+		ServerPrint("Don't Find Waypoint.");
 		return;
 	}
 
-	ServerPrintNoTag("We cannot find the Waypoint File");
+	WaypointHeader header;
+	File fp(saveFile, "rb");
+	if (!fp.IsValid())
+	{
+		ServerPrint("Don't Find Waypoint.");
+		return;
+	}
+
+	fp.Read(&header, sizeof(header));
+	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) != 0 || 
+		header.fileVersion != FV_WAYPOINT || stricmp(header.mapName, GetMapName()))
+	{
+		ServerPrint("On GitHub Waypoint is Error");
+		sprintf(m_infoBuffer, "GitHub: %s.pwf has the problem | header: %s | wpVersion: %i", GetMapName(), header.header, static_cast <int> (header.fileVersion));
+		AddLogEntry(LOG_WARNING, m_infoBuffer);
+
+		fp.Close();
+		unlink(saveFile);
+		
+		return;
+	}
+	fp.Close();
+	unlink(saveFile);
+
+	EraseFromHardDisk(false);
+	saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
+
+	if (URLDownloadToFile(null, downloadURL, saveFile, 0, null) == S_OK)
+	{
+		ServerPrint("Download Waypoint.....");
+		
+		Load();
+		ServerPrint("Finish. And Load The Waypoint File Now.");
+
+		sprintf(m_infoBuffer, "Download %s.pwf on GitHub", GetMapName());
+		AddLogEntry(LOG_DEFAULT, m_infoBuffer);
+	}
 }
 
 bool Waypoint::Load(void)
@@ -1244,7 +1271,7 @@ bool Waypoint::Load(void)
 			fp.Close();
 			return false;
 		}
-		else if (stricmp(header.mapName, GetMapName()))
+		if (stricmp(header.mapName, GetMapName()))
 		{
 			sprintf(m_infoBuffer, "%s.pwf - hacked waypoint file, fileName doesn't match waypoint header information (mapname: '%s', header: '%s')", GetMapName(), GetMapName(), header.mapName);
 			AddLogEntry(LOG_ERROR, m_infoBuffer);
@@ -1252,22 +1279,20 @@ bool Waypoint::Load(void)
 			fp.Close();
 			return false;
 		}
-		else
+
+		Initialize();
+		g_numWaypoints = header.pointNumber;
+
+		for (int i = 0; i < g_numWaypoints; i++)
 		{
-			Initialize();
-			g_numWaypoints = header.pointNumber;
+			m_paths[i] = new Path;
 
-			for (int i = 0; i < g_numWaypoints; i++)
-			{
-				m_paths[i] = new Path;
+			if (m_paths[i] == null)
+				TerminateOnMalloc();
 
-				if (m_paths[i] == null)
-					TerminateOnMalloc();
-
-				fp.Read(m_paths[i], sizeof(Path));
-			}
-			m_waypointPaths = true;
+			fp.Read(m_paths[i], sizeof(Path));
 		}
+		m_waypointPaths = true;
 	}
 	else
 	{
@@ -2699,7 +2724,7 @@ Path *Waypoint::GetPath (int id)
    return path;
 }
 
-void Waypoint::EraseFromHardDisk (void)
+void Waypoint::EraseFromHardDisk (bool needLog)
 {
    // this function removes waypoint file from the hard disk
 
@@ -2715,9 +2740,10 @@ void Waypoint::EraseFromHardDisk (void)
       if (TryFileOpen (deleteList[i]))
       {
          unlink (deleteList[i]);
-         AddLogEntry (LOG_DEFAULT, "File %s, has been deleted from the hard disk", &deleteList[i][0]);
+		 if (needLog)
+			 AddLogEntry (LOG_DEFAULT, "File %s, has been deleted from the hard disk", &deleteList[i][0]);
       }
-      else
+      else if (needLog)
          AddLogEntry (LOG_ERROR, "Unable to open %s", &deleteList[i][0]);
    }
    Initialize (); // reintialize points
