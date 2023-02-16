@@ -1234,6 +1234,7 @@ private:
    Vector m_learnVelocity;
    Vector m_learnPosition;
    Vector m_foundBombOrigin;
+   edict_t *m_foundBomb;
    Vector m_fallPosition;
 
    int m_cacheWaypointIndex;

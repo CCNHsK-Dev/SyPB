@@ -79,6 +79,7 @@ extern unsigned short g_killHistory;
 extern int g_gameMode;
 extern int g_debugMode;
 extern bool g_botActionStop;
+extern bool g_ignoreEnemies;
 
 extern int g_normalWeaponPrefs[Const_NumWeapons];
 extern int g_rusherWeaponPrefs[Const_NumWeapons];

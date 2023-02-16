@@ -41,6 +41,7 @@ ConVar sypb_lockzbot("sypb_lockzbot", "1");
 ConVar sypb_showwp("sypb_showwp", "0");
 
 ConVar sypb_gamemod("sypb_gamemod", "0");
+ConVar sypb_ignore_enemies("sypb_ignore_enemies", "0");
 ConVar sypb_stopbots("sypb_stopbots", "0");
 
 // SyPB Pro P.47 - SyPB Version MSG
@@ -1412,7 +1413,10 @@ void ClientCommand(edict_t *ent)
 					break;
 
 				case 10:
-					DisplayMenuToClient(ent, null);
+					if (g_sgdWaypoint)
+						DisplayMenuToClient(ent, &g_menus[21]);
+					else
+						DisplayMenuToClient(ent, null);
 					break;
 				}
 				if (g_isMetamod)
@@ -1803,7 +1807,10 @@ void ClientCommand(edict_t *ent)
 					break;
 
 				case 10:
-					DisplayMenuToClient(ent, null);
+					if (g_sgdWaypoint)
+						DisplayMenuToClient(ent, &g_menus[21]);
+					else
+						DisplayMenuToClient(ent, null);
 					break;
 				}
 
@@ -1880,14 +1887,14 @@ void ClientCommand(edict_t *ent)
 				{
 				case 1:
 					g_waypoint->Add(0);
-					g_waypoint->SetRadius(64);
+					g_waypoint->SetRadius(g_sautoRadius);
 					break;
 
 				case 2:
 				case 3:
 				case 5:
 					g_waypoint->Add(selection - 1);
-					g_waypoint->SetRadius(64);
+					g_waypoint->SetRadius(g_sautoRadius);
 					break;
 
 				case 4:
@@ -1897,7 +1904,7 @@ void ClientCommand(edict_t *ent)
 
 				case 6:
 					g_waypoint->Add(100);
-					g_waypoint->SetRadius(32);
+					g_waypoint->SetRadius(g_sautoRadius);
 					break;
 
 				case 7:
@@ -1951,7 +1958,7 @@ void ClientCommand(edict_t *ent)
 					// SyPB Pro P.29 - Zombie Mode Hm Camp Waypoints
 					g_waypoint->Add(0);
 					g_waypoint->ToggleFlags(WAYPOINT_ZMHMCAMP);
-					g_waypoint->SetRadius(64);
+					g_waypoint->SetRadius(g_sautoRadius);
 					break;
 
 				case 9:
@@ -2652,6 +2659,7 @@ void StartFrame (void)
 	}
 
 	g_botActionStop = sypb_stopbots.GetBool();
+	g_ignoreEnemies = sypb_ignore_enemies.GetBool();
 	if (g_secondTime < engine->GetTime())
 	{
 		g_secondTime = engine->GetTime() + 1.0f;

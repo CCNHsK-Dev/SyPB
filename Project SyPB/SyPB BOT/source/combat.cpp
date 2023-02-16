@@ -177,7 +177,7 @@ bool Bot::LookupEnemy(void)
 	m_visibility = 0;
 	m_enemyOrigin = nullvec;
 
-	if (m_blindTime > engine->GetTime())
+	if (g_ignoreEnemies || m_blindTime > engine->GetTime())
 		return false;
 
 	int i;

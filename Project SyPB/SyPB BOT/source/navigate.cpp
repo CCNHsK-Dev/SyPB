@@ -512,7 +512,7 @@ bool Bot::DoWaypointNav (void)
 			   {
 				   if (IsValidPlayer(ent) && IsAlive (ent))
 				   {
-					   if (m_team != GetTeam(ent))
+					   if (!g_ignoreEnemies && m_team != GetTeam(ent))
 					   {
 						   if (IsShootableThruObstacle(ent))
 						   {
@@ -1112,7 +1112,7 @@ void Bot::CheckTouchEntity(edict_t *entity)
 // SyPB Pro P.47 - Base improve
 void Bot::SetEnemy(edict_t *entity)
 {
-	if (FNullEnt(entity) || !IsAlive(entity))
+	if (g_ignoreEnemies || FNullEnt(entity) || !IsAlive(entity))
 	{
 		if (!FNullEnt(m_enemy) && &m_navNode[0] == null)
 		{
@@ -1139,7 +1139,7 @@ void Bot::SetEnemy(edict_t *entity)
 // SyPB Pro P.42 - NPC Fixed
 void Bot::SetLastEnemy(edict_t *entity)
 {
-	if (FNullEnt (entity) || !IsValidPlayer(entity) || !IsAlive (entity) || 
+	if (g_ignoreEnemies || FNullEnt (entity) || !IsValidPlayer(entity) || !IsAlive (entity) ||
 		// SyPB Pro P.49 - AMXX API improve
 		((!FNullEnt(m_enemyAPI) && m_enemyAPI != entity)))
 	{
@@ -1159,7 +1159,7 @@ void Bot::SetLastEnemy(edict_t *entity)
 void Bot::SetMoveTarget (edict_t *entity)
 {
 	m_moveTargetOrigin = GetEntityOrigin(entity);
-	if (FNullEnt(entity) || m_moveTargetOrigin == nullvec)
+	if (g_ignoreEnemies || FNullEnt(entity) || m_moveTargetOrigin == nullvec)
 	{
 		m_moveTargetEntity = null;
 		m_moveTargetOrigin = nullvec;

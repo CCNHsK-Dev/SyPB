@@ -81,6 +81,7 @@ unsigned short g_killHistory = 0;
 int g_debugMode = DEBUG_NONE;
 int g_gameMode = MODE_BASE;
 bool g_botActionStop = false;
+bool g_ignoreEnemies = false;
 
 int g_modelIndexLaser = 0;
 int g_modelIndexArrow = 0;

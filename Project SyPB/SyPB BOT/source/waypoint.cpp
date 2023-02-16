@@ -173,7 +173,7 @@ bool Waypoint::IsZBCampPoint(int pointID)
 
 int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *entity, int *findWaypointPoint, int mode)
 {
-	const int checkPoint = 20;
+	constexpr int checkPoint = 20;
 
 	// SyPB Pro P.41 - Base Change for Waypoint OS
 	float wpDistance[checkPoint];
@@ -272,7 +272,7 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 			if (wpIndex[i] < 0 || wpIndex[i] >= g_numWaypoints)
 				continue;
 
-			if (wpDistance[i] > g_waypoint->GetPath (wpIndex[i])->radius && !Reachable(entity, wpIndex[i]))
+			if (!Reachable(entity, wpIndex[i]))
 				continue;
 
 			if (findWaypointPoint == (int *)-2)
@@ -847,11 +847,9 @@ void Waypoint::SetRadius(int radius)
 	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
 
 	// SyPB Pro P.37 - SgdWP
+	g_sautoRadius = radius;
 	if (g_sautoWaypoint)
-	{
-		g_sautoRadius = radius;
 		ChartPrint("[SgdWP Auto] Waypoint Radius is: %d ", g_sautoRadius);
-	}
 
 	if (index != -1)
 	{
@@ -2779,7 +2777,7 @@ int Waypoint::GetBombPoint(void)
 		return bombPoint = -1;
 
 	if (bombPoint == -1)
-		bombPoint = FindNearest(bombOrigin);
+		bombPoint = FindNearest(bombOrigin, 9999.0f, -1, m_foundBomb);
 
 	return bombPoint;
 }
@@ -2791,6 +2789,7 @@ void Waypoint::SetBombPosition (bool shouldReset)
    if (shouldReset)
    {
       m_foundBombOrigin = nullvec;
+	  m_foundBomb = null;
       g_bombPlanted = false;
 	  GetBombPoint();
 
@@ -2803,8 +2802,9 @@ void Waypoint::SetBombPosition (bool shouldReset)
    {
       if (strcmp (STRING (ent->v.model) + 9, "c4.mdl") == 0)
       {
-         m_foundBombOrigin = GetEntityOrigin (ent);
-         break;
+		  m_foundBombOrigin = GetEntityOrigin (ent);
+		  m_foundBomb = ent;
+		  break;
       }
    }
 

@@ -663,8 +663,8 @@ void AutoLoadGameMode(bool reset)
 		// SyPB Pro P.45 - BTE Facebook Version Support
 		TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_config/bte_blockresource.txt", GetModName())))
 	{
-		const int Const_GameModes = 13;
-		int bteGameModAi[Const_GameModes] =
+		constexpr int Const_GameModes = 13;
+		const int bteGameModAi[Const_GameModes] =
 		{
 			MODE_BASE,		//1
 			MODE_BASE,		//2
@@ -681,7 +681,7 @@ void AutoLoadGameMode(bool reset)
 			MODE_ZP			//13
 		};
 
-		char *bteGameINI[Const_GameModes] =
+		const char *bteGameINI[Const_GameModes] =
 		{
 			"plugins-none", //1
 			"plugins-td",   //2
@@ -705,19 +705,13 @@ void AutoLoadGameMode(bool reset)
 				if (bteGameModAi[i] == 2 && i != 5)
 					g_gameStartTime = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
 
-				if (g_gameMode != bteGameModAi[i])
+				if (g_gameMode != bteGameModAi[i] || checkShowTextTime == 1)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
 
-				if (i == 3 || i == 9)
-				{
+				if ((i == 3 || i == 9) && checkShowTextTime == 1)
 					ServerPrint("***** SyPB not support the mode now :( *****");
-					ServerPrint("***** SyPB not support the mode now :( *****");
-					ServerPrint("***** SyPB not support the mode now :( *****");
-
-					SetGameMode(MODE_BASE);
-				}
-				else
-					SetGameMode(bteGameModAi[i]);
+				
+				SetGameMode(bteGameModAi[i]);
 
 				// SyPB Pro P.36 - bte support 
 				g_gameVersion = CSVER_CZERO;
@@ -734,27 +728,41 @@ void AutoLoadGameMode(bool reset)
 		goto lastly;
 	}
 
-	// ZP
-	char *zpGameVersion[] =
+	// Zombie Mode
+	constexpr int Const_GameModes = 11;
+	const char* zombieGameMode[Const_GameModes] =
 	{
-		"plugins-zplague",  // ZP4.3
-		"plugins-zp50_ammopacks", // ZP5.0
-		"plugins-zp50_money" //ZP5.0
+		"plugins-zplague",  // ZP 4.3
+		"plugins-zp50_ammopacks", // ZP 5.0
+		"plugins-zp50_money", // ZP 5.0
+		"plugins-ze", // ZE
+		"plugins-zp", // ZP
+		"plugins-zescape", // ZE
+		"plugins-escape", // ZE
+		"plugins-plague", // ZP
+		"plugins-biohazard", // Biohazard Mode?
+		"plugins-bio", // Biohazard Mode?
+		"plugins-bh" // Biohazard Mode?
 	};
 
-	for (int i = 0; i < 3; i++)
+
+	for (int i = 0; i < Const_GameModes; i++)
 	{
-		Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zpGameVersion[i]);
+		Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zombieGameMode[i]);
 		if (TryFileOpen(Plugin_INI))
 		{
-			float delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
-			if (i != 0)
+			float delayTime = 0.0f;
+			if (i == 0)
+				delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
+			else if (i >= 8)
+				delayTime = CVAR_GET_FLOAT("bh_starttime") + 0.5f;
+			else
 				delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
 
-			if (delayTime > 0)
+			if (delayTime > 0.0f)
 			{
-				if (g_gameMode != MODE_ZP)
-					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (ZP) ***");
+				if (g_gameMode != MODE_ZP || checkShowTextTime == 1)
+					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (%s)***", zombieGameMode[i]);
 
 				SetGameMode(MODE_ZP);
 
@@ -770,7 +778,7 @@ void AutoLoadGameMode(bool reset)
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
 	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
 	{
-		if (g_gameMode != MODE_ZH)
+		if (g_gameMode != MODE_ZH || checkShowTextTime == 1)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
 
 		SetGameMode(MODE_ZH);
@@ -785,7 +793,7 @@ void AutoLoadGameMode(bool reset)
 	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
 	if (TryFileOpen(Plugin_INI))
 	{
-		if (checkShowTextTime < 3)
+		if (checkShowTextTime == 1)
 			ServerPrint("*** SyPB Auto Game Mode Setting: DeathMatch: Kill Duty Auto Setting ***");
 
 		goto lastly;
@@ -804,14 +812,14 @@ void AutoLoadGameMode(bool reset)
 		{
 			if (freeForAll->value > 0.0f)
 			{
-				if (g_gameMode != MODE_DM)
+				if (g_gameMode != MODE_DM || checkShowTextTime == 1)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-DM ***");
 
 				SetGameMode(MODE_DM);
 			}
 			else
 			{
-				if (g_gameMode != MODE_BASE)
+				if (g_gameMode != MODE_BASE || checkShowTextTime == 1)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-TDM ***");
 
 				SetGameMode(MODE_BASE);
@@ -821,13 +829,8 @@ void AutoLoadGameMode(bool reset)
 		goto lastly;
 	}
 
-	if (checkShowTextTime < 3)
-	{
-		if (g_gameMode == MODE_BASE)
-			ServerPrint("*** SyPB Auto Game Mode Setting: Base Mode ***");
-		else
-			ServerPrint("*** SyPB Auto Game Mode Setting: N/A ***");
-	}
+	if (checkShowTextTime == 1 && g_gameMode == MODE_BASE)
+		ServerPrint("*** SyPB Auto Game Mode Setting: Base Mode ***");
 
 lastly:
 	if (g_gameMode != MODE_BASE)
@@ -926,7 +929,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	else
 	{
 		float distance = (getWpOrigin - origin).GetLength();
-		if (distance >= 300.0f)
+		if (distance >= 120.0f)
 			needCheckNewWaypoint = true;
 		else
 		{
@@ -1060,7 +1063,7 @@ bool IsAntiBlock(edict_t *entity)
 
 int IsNotAttackLab(edict_t *entity, Vector attackOrigin)
 {
-	if (FNullEnt(entity))
+	if (g_ignoreEnemies || FNullEnt(entity))
 		return true;
 
 	// SyPB Pro P.48 - Base improve

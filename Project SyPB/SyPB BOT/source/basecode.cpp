@@ -171,7 +171,7 @@ bool Bot::EntityWaypointVisible(edict_t *entity)
 // SyPB Pro P.41 - Look up enemy improve
 bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool checkOnly)
 {
-	if (FNullEnt(entity) || !IsAlive (entity))
+	if (g_ignoreEnemies || FNullEnt(entity) || !IsAlive (entity))
 		return false;
 
 	if (IsNotAttackLab(entity, pev->origin) == 2)
@@ -300,7 +300,7 @@ void Bot::ZombieModeAi(void)
 	edict_t *entity = null;
 	if (m_isZombieBot)
 	{
-		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity) && !m_isStuck)
+		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity) && !m_isStuck && !g_ignoreEnemies)
 		{
 			edict_t *targetEnt = null;
 			float targetDistance = 9999.9f;
@@ -719,10 +719,7 @@ edict_t *Bot::FindBreakable(void)
 // SyPB Pro P.42 - Find Item 
 void Bot::FindItem(void)
 {
-	if ((GetCurrentTask()->taskID == TASK_ESCAPEFROMBOMB || GetCurrentTask()->taskID == TASK_PLANTBOMB))
-		return;
-
-	if (IsOnLadder())
+	if (GetCurrentTask()->taskID == TASK_ESCAPEFROMBOMB || GetCurrentTask()->taskID == TASK_PLANTBOMB || IsOnLadder() || !FNullEnt (m_enemy))
 	{
 		m_pickupItem = null;
 		m_pickupType = PICKTYPE_NONE;
@@ -736,10 +733,10 @@ void Bot::FindItem(void)
 		// SyPB Pro P.48 - Base improve
 		while (!FNullEnt(ent = FIND_ENTITY_IN_SPHERE(ent, pev->origin, 400.0f)))
 		{
-			if (ent != m_pickupItem || (ent->v.effects & EF_NODRAW) || IsValidPlayer(ent->v.owner))
-				continue; // someone owns this weapon or it hasn't re spawned yet
+			if (ent->v.effects & EF_NODRAW || IsValidPlayer(ent->v.owner))
+				continue;
 
-			if (ItemIsVisible(GetEntityOrigin(ent), const_cast <char *> (STRING(ent->v.classname))))
+			if (ent == m_pickupItem && ItemIsVisible(GetEntityOrigin(ent), const_cast <char*> (STRING(ent->v.classname))))
 				return;
 
 			break;
@@ -1778,7 +1775,7 @@ void Bot::SetConditions (void)
    if (!FNullEnt(m_lastEnemy))
    {
 		// SyPB Pro P.26 - DM Mod Protect Time
-	   if ((IsAlive (m_enemy) && m_enemy != m_lastEnemy) ||  !IsAlive(m_lastEnemy) ||
+	   if ((IsAlive (m_enemy) && m_enemy != m_lastEnemy) || !IsAlive(m_lastEnemy) ||
 		   IsNotAttackLab(m_lastEnemy, pev->origin))
 		   SetLastEnemy(null);
    }
@@ -5747,7 +5744,7 @@ int Bot::GetAmmo (void)
 // SyPB Pro P.28 - New Damage Msg
 void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits)
 {
-	if (FNullEnt(inflictor) || inflictor == GetEntity())
+	if (g_ignoreEnemies || FNullEnt(inflictor) || inflictor == GetEntity())
 		return;
 
 	if (m_blindTime > engine->GetTime()) // SyPB Pro P.34 - Flash Fixed
@@ -6209,7 +6206,7 @@ bool Bot::OutOfBombTimer (void)
 // SyPB Pro P.48 - React Sound improve
 void Bot::ReactOnSound (void)
 {
-	if (g_gameMode != MODE_BASE)
+	if (g_ignoreEnemies || g_gameMode != MODE_BASE)
 		return;
 
 	// SyPB Pro P.30 - AMXX API
