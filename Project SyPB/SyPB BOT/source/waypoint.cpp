@@ -1194,6 +1194,10 @@ void Waypoint::InitTypes (int mode)
 
 void Waypoint::tryDownloadWaypoint(void)
 {
+	extern ConVar sypb_download_waypoint;
+	if (sypb_download_waypoint.GetBool() == false)
+		return;
+
 	String saveFile = "", downloadURL = "";
 	saveFile = FormatBuffer("%s%s.test", GetWaypointDir(), GetMapName());
 	downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());

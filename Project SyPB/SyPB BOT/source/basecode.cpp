@@ -32,7 +32,6 @@
 ConVar sypb_debuggoal("sypb_debuggoal", "-1");
 ConVar sypb_followuser ("sypb_followuser", "3");
 ConVar sypb_knifemode ("sypb_knifemode", "0");
-ConVar sypb_walkallow ("sypb_walkallow", "1");
 ConVar sypb_spraypaints ("sypb_spraypaints", "1");
 ConVar sypb_restrictweapons ("sypb_restrictweapons", "ump45;p90;elite;tmp;mac10;m3;xm1014");
 

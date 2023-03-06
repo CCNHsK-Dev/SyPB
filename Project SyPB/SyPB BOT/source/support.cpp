@@ -655,6 +655,7 @@ void AutoLoadGameMode(bool reset)
 		return;
 	}
 
+	extern ConVar sypb_zmdelay_time;
 	checkShowTextTime++;
 
 	// CS:BTE Support 
@@ -752,23 +753,21 @@ void AutoLoadGameMode(bool reset)
 		if (TryFileOpen(Plugin_INI))
 		{
 			float delayTime = 0.0f;
-			if (i == 0)
-				delayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
-			else if (i >= 8)
+
+			if (CVAR_GET_FLOAT("zp_delay") > 0.0f)
+				delayTime = CVAR_GET_FLOAT("zp_delay") + 1.9f;
+			else if (CVAR_GET_FLOAT("bh_starttime") > 0.0f)
 				delayTime = CVAR_GET_FLOAT("bh_starttime") + 0.5f;
-			else
+			else if (CVAR_GET_FLOAT("zp_gamemode_delay") > 0.0f)
 				delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
+			
+			if (delayTime != 0.0f)
+				sypb_zmdelay_time.SetFloat(delayTime);
+			
+			if (g_gameMode != MODE_ZP || checkShowTextTime == 1)
+				ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (%s)***", zombieGameMode[i]);
 
-			if (delayTime > 0.0f)
-			{
-				if (g_gameMode != MODE_ZP || checkShowTextTime == 1)
-					ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (%s)***", zombieGameMode[i]);
-
-				SetGameMode(MODE_ZP);
-
-				// SyPB Pro P.34 - ZP TIME FIXED
-				g_gameStartTime = engine->GetTime() + delayTime;
-			}
+			SetGameMode(MODE_ZP);
 
 			goto lastly;
 		}
@@ -834,7 +833,12 @@ void AutoLoadGameMode(bool reset)
 
 lastly:
 	if (g_gameMode != MODE_BASE)
+	{
 		g_mapType |= MAP_DE;
+
+		if (g_gameMode == MODE_ZP)
+			g_gameStartTime = engine->GetTime() + sypb_zmdelay_time.GetFloat();
+	}
 	else
 		g_exp.UpdateGlobalKnowledge(); // update experience data on round start
 }

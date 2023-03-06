@@ -36,8 +36,6 @@ ConVar sypb_auto_players ("sypb_auto_players", "-1");
 ConVar sypb_quota_save("sypb_quota_save", "-1");
 
 ConVar sypb_difficulty ("sypb_difficulty", "4");
-ConVar sypb_minskill ("sypb_minskill", "60");
-ConVar sypb_maxskill ("sypb_maxskill", "100"); 
 
 ConVar sypb_latencytag ("sypb_tagbots", "0");
 ConVar sypb_nametag("sypb_nametag", "1");
@@ -144,18 +142,8 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		else if (sypb_difficulty.GetInt() == 0)
 			skill = engine->RandomInt(1, 29);
 		// SyPB Pro P.45 - Bot Skill Level improve
-		else  if (sypb_difficulty.GetInt() == -2)
-			skill = engine->RandomInt(1, 100);
 		else
-		{
-			int maxSkill = sypb_maxskill.GetInt();
-			int minSkill = (sypb_minskill.GetInt() == 0) ? 1 : sypb_minskill.GetInt();
-
-			if (maxSkill <= 100 && minSkill > 0)
-				skill = engine->RandomInt(minSkill, maxSkill);
-			else
-				skill = engine->RandomInt(0, 100);
-		}
+			skill = engine->RandomInt(1, 100);
 	}
 
 

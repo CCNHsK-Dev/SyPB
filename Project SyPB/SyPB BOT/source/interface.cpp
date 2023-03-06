@@ -34,15 +34,20 @@ ConVar sypb_debug("sypb_debug", "0");
 ConVar sypb_password ("sypb_password", "", VARTYPE_PASSWORD);
 ConVar sypb_password_key ("sypb_password_key", "_sypb_wp");
 
+ConVar sypb_download_waypoint("sypb_download_waypoint", "1");
+
 ConVar sypb_language ("sypb_language", "en");
 ConVar sypb_version ("sypb_version", SYPB_VERSION, VARTYPE_READONLY);
 
 ConVar sypb_lockzbot("sypb_lockzbot", "1");
-ConVar sypb_showwp("sypb_showwp", "0");
 
 ConVar sypb_gamemod("sypb_gamemod", "0");
 ConVar sypb_ignore_enemies("sypb_ignore_enemies", "0");
 ConVar sypb_stopbots("sypb_stopbots", "0");
+
+ConVar sypb_zmdelay_time("sypb_zmdelay_time", "0.0");
+
+ConVar sypb_showwp("sypb_showwp", "0");
 
 // SyPB Pro P.47 - SyPB Version MSG
 void SyPBVersionMSG(edict_t *entity = null)
