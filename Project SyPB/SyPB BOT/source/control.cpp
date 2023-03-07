@@ -55,20 +55,6 @@ BotControl::BotControl (void)
    InitQuota ();
 }
 
-BotControl::~BotControl (void)
-{
-   // this is a bot manager class destructor, do not use engine->GetMaxClients () here !!
-
-   for (int i = 0; i < 32; i++)
-   {
-      if (m_bots[i])
-      {
-         delete m_bots[i];
-         m_bots[i] = null;
-      }
-   }
-}
-
 void BotControl::CallGameEntity (entvars_t *vars)
 {
    // this function calls gamedll player() function, in case to create player entity in game
@@ -163,6 +149,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 	}
 
 	char outputName[33];
+	int nameId = -1;
 	if (name.GetLength() <= 0)  // SyPB Pro P.30 - Set Bot Name
 	{
 		bool getName = false;
@@ -170,7 +157,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		{
 			ITERATE_ARRAY(g_botNames, j)
 			{
-				if (!g_botNames[j].isUsed)
+				if (g_botNames[j].usedBy == -1)
 				{
 					getName = true;
 					break;
@@ -184,12 +171,11 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 
 			while (nameUse)
 			{
-				NameItem &botName = g_botNames.GetRandomElement();
-				if (!botName.isUsed)
+				nameId = (*g_engfuncs.pfnRandomLong) (0, g_botNames.GetElementNumber() - 1);
+				if (g_botNames[nameId].usedBy == -1)
 				{
 					nameUse = false;
-					botName.isUsed = true;
-					sprintf(outputName, "%s", (char *)botName.name);
+					sprintf(outputName, "%s", (char*)g_botNames[nameId].name);
 				}
 			}
 		}
@@ -220,6 +206,9 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		TerminateOnMalloc();
 
 	ServerPrint("Connecting SyPB Bot - [%s] Skill [%d]", GetEntityName(bot), skill);
+
+	if (nameId != -1)
+		g_botNames[nameId].usedBy = index;
 
 	return index;
 }
@@ -898,6 +887,15 @@ void BotControl::Free (int index)
 {
    // this function frees one bot selected by index (used on bot disconnect)
 
+	ITERATE_ARRAY(g_botNames, j)
+	{
+		if (g_botNames[j].usedBy == GetIndex(m_bots[index]->GetEntity ()))
+		{
+			g_botNames[j].usedBy = -1;
+			break;
+		}
+	}
+
    delete m_bots[index];
    m_bots[index] = null;
 }
@@ -996,28 +994,6 @@ Bot::Bot(edict_t* bot, int skill, int personality, int team, int member)
     m_wantedClass = member;
 
     NewRound();
-}
-
-Bot::~Bot (void)
-{
-   // this is bot destructor
-
-   DeleteSearchNodes ();
-   ResetTasks ();
-
-   // SyPB Pro P.43 - Bot Name Fixed
-   char botName[64];
-   ITERATE_ARRAY(g_botNames, j)
-   {
-	   sprintf(botName, "[SyPB] %s", (char *)g_botNames[j].name);
-
-	   if (strcmp(g_botNames[j].name, GetEntityName(GetEntity())) == 0 || 
-		   strcmp(botName, GetEntityName(GetEntity())) == 0)
-	   {
-		   g_botNames[j].isUsed = false;
-		   break;
-	   }
-   }
 }
 
 void Bot::NewRound (void)
@@ -1279,7 +1255,17 @@ void Bot::Kick (void)
 	if (!(pev->flags & FL_FAKECLIENT) || IsNullString(GetEntityName(GetEntity())))
 		return;
 
+	ITERATE_ARRAY(g_botNames, j)
+	{
+		if (g_botNames[j].usedBy == GetIndex())
+		{
+			g_botNames[j].usedBy = -1;
+			break;
+		}
+	}
+
 	pev->flags &= ~FL_FAKECLIENT;
+	pev->flags |= FL_DORMANT;
 
 	CenterPrint("SyPB '%s' kicked", GetEntityName(GetEntity()));
 	ServerCommand("kick \"%s\"", GetEntityName(GetEntity()));

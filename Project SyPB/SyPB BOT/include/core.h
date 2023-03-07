@@ -470,7 +470,7 @@ struct Task
 struct NameItem
 {
    String name;
-   bool isUsed;
+   int usedBy;
 };
 
 // language config structure definition
@@ -1045,7 +1045,7 @@ public:
    int m_ammo[MAX_AMMO_SLOTS]; // total ammo amounts
 
    Bot (edict_t *bot, int skill, int personality, int team, int member);
-  ~Bot (void);
+   ~Bot () = default;;
 
    int GetAmmo (void);
    inline int GetAmmoInClip (void) { return m_ammoInClip[m_currentWeapon]; }
@@ -1130,7 +1130,7 @@ protected:
 
 public:
    BotControl (void);
-  ~BotControl (void);
+  ~BotControl () = default;;
 
    bool EconomicsValid (int team) { return m_economicsGood[team]; }
 
@@ -1181,7 +1181,7 @@ public:
 
 public:
    Localizer (void) { m_langTab.RemoveAll (); }
-  ~Localizer (void) { m_langTab.RemoveAll (); }
+  ~Localizer () = default;
 
    char *TranslateInput (const char *input);
 };
@@ -1198,7 +1198,7 @@ private:
 
 public:
    NetworkMsg (void);
-  ~NetworkMsg   (void) { };
+  ~NetworkMsg () = default;
 
    void Execute (void *p);
    void Reset (void) { m_message = NETMSG_UNDEFINED; m_state = 0; m_bot = null; };
@@ -1269,7 +1269,7 @@ public:
    bool m_redoneVisibility;
 
    Waypoint (void);
-  ~Waypoint (void);
+  ~Waypoint () = default;
 
    void Initialize (void);
 

@@ -683,10 +683,6 @@ void InitConfig (void)
    char command[80], line[256];
 
    KwChat replyKey;
-   int chatType = -1;
-
-   // fixes for crashing if configs couldn't be accessed
-   g_chatFactory.SetSize (CHAT_NUM);
 
    #define SKIP_COMMENTS() if ((line[0] == '/') || (line[0] == '\r') || (line[0] == '\n') || (line[0] == 0) || (line[0] == ' ') || (line[0] == '\t')) continue;
 
@@ -694,7 +690,7 @@ void InitConfig (void)
    if (!g_botNames.IsEmpty())
    {
 	   ITERATE_ARRAY(g_botNames, j)
-		   g_botNames[j].isUsed = false;
+		   g_botNames[j].usedBy = -1;
    }
 
    // NAMING SYSTEM INITIALIZATION
@@ -711,124 +707,132 @@ void InitConfig (void)
          sprintf (Name, "%s", line);
 
          item.name = Name;
-         item.isUsed = false;
+         item.usedBy = -1;
 
          g_botNames.Push (item);
       }
       fp.Close ();
    }
 
-   // CHAT SYSTEM CONFIG INITIALIZATION
-   if (OpenConfig ("chat.cfg", "Chat file not found.", &fp, true))
+   int chatType = -1;
+
+   // fixes for crashing if configs couldn't be accessed
+   if (g_chatFactory.IsEmpty())
    {
-      while (fp.GetBuffer (line, 255))
-      {
-         SKIP_COMMENTS ();
-         strcpy (command, GetField (line, 0, 1));
+	   g_chatFactory.SetSize(CHAT_NUM);
 
-         if (strcmp (command, "[KILLED]") == 0)
-         {
-            chatType = 0;
-            continue;
-         }
-         else if (strcmp (command, "[BOMBPLANT]") == 0)
-         {
-            chatType = 1;
-            continue;
-         }
-         else if (strcmp (command, "[DEADCHAT]") == 0)
-         {
-            chatType = 2;
-            continue;
-         }
-         else if (strcmp (command, "[REPLIES]") == 0)
-         {
-            chatType = 3;
-            continue;
-         }
-         else if (strcmp (command, "[UNKNOWN]") == 0)
-         {
-            chatType = 4;
-            continue;
-         }
-         else if (strcmp (command, "[TEAMATTACK]") == 0)
-         {
-            chatType = 5;
-            continue;
-         }
-         else if (strcmp (command, "[WELCOME]") == 0)
-         {
-            chatType = 6;
-            continue;
-         }
-         else if (strcmp (command, "[TEAMKILL]") == 0)
-         {
-            chatType = 7;
-            continue;
-         }
+	   // CHAT SYSTEM CONFIG INITIALIZATION
+	   if (OpenConfig("chat.cfg", "Chat file not found.", &fp, true))
+	   {
+		   while (fp.GetBuffer(line, 255))
+		   {
+			   SKIP_COMMENTS();
+			   strcpy(command, GetField(line, 0, 1));
 
-         if (chatType != 3)
-            line[79] = 0;
+			   if (strcmp(command, "[KILLED]") == 0)
+			   {
+				   chatType = 0;
+				   continue;
+			   }
+			   else if (strcmp(command, "[BOMBPLANT]") == 0)
+			   {
+				   chatType = 1;
+				   continue;
+			   }
+			   else if (strcmp(command, "[DEADCHAT]") == 0)
+			   {
+				   chatType = 2;
+				   continue;
+			   }
+			   else if (strcmp(command, "[REPLIES]") == 0)
+			   {
+				   chatType = 3;
+				   continue;
+			   }
+			   else if (strcmp(command, "[UNKNOWN]") == 0)
+			   {
+				   chatType = 4;
+				   continue;
+			   }
+			   else if (strcmp(command, "[TEAMATTACK]") == 0)
+			   {
+				   chatType = 5;
+				   continue;
+			   }
+			   else if (strcmp(command, "[WELCOME]") == 0)
+			   {
+				   chatType = 6;
+				   continue;
+			   }
+			   else if (strcmp(command, "[TEAMKILL]") == 0)
+			   {
+				   chatType = 7;
+				   continue;
+			   }
 
-         strtrim (line);
+			   if (chatType != 3)
+				   line[79] = 0;
 
-         switch (chatType)
-         {
-         case 0:
-            g_chatFactory[CHAT_KILL].Push (line);
-            break;
+			   strtrim(line);
 
-         case 1:
-            g_chatFactory[CHAT_PLANTBOMB].Push (line);
-            break;
+			   switch (chatType)
+			   {
+			   case 0:
+				   g_chatFactory[CHAT_KILL].Push(line);
+				   break;
 
-         case 2:
-            g_chatFactory[CHAT_DEAD].Push (line);
-            break;
+			   case 1:
+				   g_chatFactory[CHAT_PLANTBOMB].Push(line);
+				   break;
 
-         case 3:
-            if (strstr (line, "@KEY") != null)
-            {
-               if (!replyKey.keywords.IsEmpty () && !replyKey.replies.IsEmpty ())
-               {
-                  g_replyFactory.Push (replyKey);
-                  replyKey.replies.RemoveAll ();
-               }
+			   case 2:
+				   g_chatFactory[CHAT_DEAD].Push(line);
+				   break;
 
-               replyKey.keywords.RemoveAll ();
-               replyKey.keywords = String (&line[4]).Split (",");
+			   case 3:
+				   if (strstr(line, "@KEY") != null)
+				   {
+					   if (!replyKey.keywords.IsEmpty() && !replyKey.replies.IsEmpty())
+					   {
+						   g_replyFactory.Push(replyKey);
+						   replyKey.replies.RemoveAll();
+					   }
 
-               ITERATE_ARRAY (replyKey.keywords, i)
-                  replyKey.keywords[i].Trim ().TrimQuotes ();
-            }
-            else if (!replyKey.keywords.IsEmpty ())
-               replyKey.replies.Push (line);
+					   replyKey.keywords.RemoveAll();
+					   replyKey.keywords = String(&line[4]).Split(",");
 
-            break;
+					   ITERATE_ARRAY(replyKey.keywords, i)
+						   replyKey.keywords[i].Trim().TrimQuotes();
+				   }
+				   else if (!replyKey.keywords.IsEmpty())
+					   replyKey.replies.Push(line);
 
-         case 4:
-            g_chatFactory[CHAT_NOKW].Push (line);
-            break;
+				   break;
 
-         case 5:
-            g_chatFactory[CHAT_TEAMATTACK].Push (line);
-            break;
+			   case 4:
+				   g_chatFactory[CHAT_NOKW].Push(line);
+				   break;
 
-         case 6:
-            g_chatFactory[CHAT_HELLO].Push (line);
-            break;
+			   case 5:
+				   g_chatFactory[CHAT_TEAMATTACK].Push(line);
+				   break;
 
-         case 7:
-            g_chatFactory[CHAT_TEAMKILL].Push (line);
-            break;
-         }
-      }
-      fp.Close ();
-   }
-   else
-   {
-      extern ConVar sypb_chat;
-      sypb_chat.SetInt (0);
+			   case 6:
+				   g_chatFactory[CHAT_HELLO].Push(line);
+				   break;
+
+			   case 7:
+				   g_chatFactory[CHAT_TEAMKILL].Push(line);
+				   break;
+			   }
+		   }
+		   fp.Close();
+	   }
+	   else
+	   {
+		   extern ConVar sypb_chat;
+		   sypb_chat.SetInt(0);
+	   }
    }
    
    // GENERAL DATA INITIALIZATION

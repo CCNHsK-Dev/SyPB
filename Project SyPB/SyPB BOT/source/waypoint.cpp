@@ -2903,15 +2903,3 @@ Waypoint::Waypoint (void)
    m_distMatrix = null;
    m_pathMatrix = null;
 }
-
-Waypoint::~Waypoint (void)
-{
-   if (m_distMatrix != null)
-      delete [] m_distMatrix;
-
-   if (m_pathMatrix != null)
-      delete [] m_pathMatrix;
-
-   m_distMatrix = null;
-   m_pathMatrix = null;
-}

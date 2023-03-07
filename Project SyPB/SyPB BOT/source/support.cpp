@@ -730,6 +730,13 @@ void AutoLoadGameMode(bool reset)
 	}
 
 	// Zombie Mode
+	if (CVAR_GET_FLOAT("amx_zmod_enabled") > 0)
+	{
+		sypb_zmdelay_time.SetFloat(8);
+		SetGameMode(MODE_ZP);
+		goto lastly;
+	}
+
 	constexpr int Const_GameModes = 11;
 	const char* zombieGameMode[Const_GameModes] =
 	{
