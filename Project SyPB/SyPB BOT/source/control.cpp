@@ -575,23 +575,22 @@ void BotControl::FillServer (int selection, int personality, int skill, int numT
    CenterPrint ("Fill Server with %s bots...", &teamDescs[selection][0]);
 }
 
-void BotControl::RemoveAll (bool gameOn)
+void BotControl::RemoveAll (void)
 {
-   // this function drops all bot clients from server (this function removes only sypb's)`q
+	// this function drops all bot clients from server (this function removes only sypb's)`q
 
-   if (gameOn)
-	   CenterPrint ("Bots are removed from server.");
+	CenterPrint ("Bots are removed from server.");
 
-   for (int i = 0; i < engine->GetMaxClients (); i++)
-   {
-      if (m_bots[i] != null)  // is this slot used?
-         m_bots[i]->Kick ();
-   }
-   m_creationTab.RemoveAll ();
+	for (int i = 0; i < engine->GetMaxClients(); i++)
+	{
+		if (m_bots[i] != null)  // is this slot used?
+			m_bots[i]->Kick();
+	}
+	m_creationTab.RemoveAll();
 
-   // reset cvars
-   sypb_quota.SetInt (0);
-   sypb_auto_players.SetInt(-1);
+	// reset cvars
+	sypb_quota.SetInt(0);
+	sypb_auto_players.SetInt(-1);
 }
 
 void BotControl::RemoveFromTeam (Team team, bool removeAll)

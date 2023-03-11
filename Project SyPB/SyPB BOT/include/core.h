@@ -1156,7 +1156,7 @@ public:
    void AddBot (const String &name, const String &skill, const String &personality, const String &team, const String &member);
    void FillServer (int selection, int personality = PERSONALITY_NORMAL, int skill = -1, int numToAdd = -1);
 
-   void RemoveAll (bool gameOn = true);
+   void RemoveAll (void);
    void RemoveRandom (void);
    void RemoveFromTeam (Team team, bool removeAll = false);
    void RemoveMenu (edict_t *ent, int selection);
