@@ -7,21 +7,6 @@ NPCControl::NPCControl(void)
 	memset(m_npcs, 0, sizeof(m_npcs));
 }
 
-NPCControl::~NPCControl(void)
-{
-	for (int i = 0; i < MAX_NPC; i++)
-	{
-		if (m_npcs[i] == null)
-			continue;
-
-		delete m_npcs[i];
-		m_npcs[i] = null;
-	}
-
-	g_SwNPCNum = 0;
-	AllReLoad();
-}
-
 void NPCControl::Think(void)
 {
 	if (g_SwNPCNum <= 0)
@@ -155,6 +140,8 @@ int NPCControl::RemoveNPC(NPC *npc)
 			if (g_debugNPC == npc)
 				g_debugNPC = null;
 
+			MF_ExecuteForward(g_callRemoveNPC, (cell)ENTINDEX(npc->GetEntity()));
+
 			npc->Remove();
 
 			delete m_npcs[i];
@@ -163,6 +150,8 @@ int NPCControl::RemoveNPC(NPC *npc)
 			return 1;
 		}
 	}
+
+	UpdateNPCNum();
 
 	return 0;
 }
@@ -200,7 +189,7 @@ int NPCControl::SetSize(int npcId, Vector minSize, Vector maxSize)
 	npc->g_npcSize[0] = minSize;
 	npc->g_npcSize[1] = maxSize;
 
-	SET_SIZE (npc->GetEntity (), npc->g_npcSize[0], npc->g_npcSize[1]);
+	npc->SetNPCSize();
 
 	return 1;
 }

@@ -18,7 +18,7 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 
 	pev->flags |= (FL_MONSTER | FL_MONSTERCLIP);
 
-	pev->movetype = MOVETYPE_STEP;
+	pev->movetype = MOVETYPE_PUSHSTEP;
 	pev->solid = SOLID_BBOX;
 	pev->takedamage = DAMAGE_NO;
 	pev->deadflag = DEAD_DEAD;
@@ -31,25 +31,12 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 	pev->framerate = 1.0;
 	pev->frame = 0;
 
-	g_npcSize[0] = Vector(-16.0f, -16.0f, -32.0f);
-	g_npcSize[1] = Vector(16.0f, 16.0f, 32.0f);
+	g_npcSize[0] = Vector(-16.0f, -16.0f, -36.0f);
+	g_npcSize[1] = Vector(16.0f, 16.0f, 36.0f);
 
 	m_npcTeam = team;
 
 	MF_ExecuteForward(g_callAddNPC, (cell)ENTINDEX(GetEntity()));
-}
-
-NPC::~NPC(void)
-{		
-	DeleteSearchNodes();
-	m_pmodel = null;
-
-	MF_ExecuteForward(g_callRemoveNPC, (cell)ENTINDEX(GetEntity()));
-
-	pev = null;
-	pvData = null;
-
-	g_npcManager->UpdateNPCNum();
 }
 
 void NPC::Remove()
@@ -227,8 +214,9 @@ void NPC::Spawn(Vector origin)
 	pev->health = pev->max_health;
 	pev->fixangle = true;
 
+	m_testValue = -1;
 	m_fakeCrouch = false;
-	SET_SIZE(GetEntity(), g_npcSize[0], g_npcSize[1]);
+	SetNPCSize();
 	SET_ORIGIN(GetEntity(), origin);
 
 	m_pmodel = null;
@@ -862,20 +850,22 @@ void NPC::MoveAction(void)
 	else
 		pev->movetype = MOVETYPE_PUSHSTEP;
 
+	m_testValue = -1;
+
 	float oldSpeed = pev->speed;
 	if (m_moveSpeed == 0.0f || !IsAlive (GetEntity ()))
 	{
 		pev->speed = m_moveSpeed;
-		if (!IsOnLadder(GetEntity()) && pev->solid != SOLID_NOT)
+		if (!IsOnLadder(GetEntity()))
 			DROP_TO_FLOOR(GetEntity());
 		return;
 	}
 
 	Vector oldVelocity = pev->velocity;
-	
+	Vector vecMove = m_destOrigin - pev->origin;
+
 	if (IsOnLadder(GetEntity()))
 	{
-		Vector vecMove = m_destOrigin - pev->origin;
 		if (m_destOrigin.z > pev->origin.z)
 			vecMove.z += g_npcSize[1].z * 2.0f;
 
@@ -883,7 +873,6 @@ void NPC::MoveAction(void)
 	}
 	else
 	{
-		Vector vecMove = m_destOrigin - pev->origin;
 		Vector vecFwd, vecAng;
 		VEC_TO_ANGLES(vecMove, vecAng);
 		vecAng = Vector(0.0f, vecAng.y, 0.0f);
@@ -893,10 +882,33 @@ void NPC::MoveAction(void)
 		pev->velocity.y = vecFwd.y * m_moveSpeed;
 	}
 
-	if (m_jumpAction && pev->solid != SOLID_NOT)
+	if (m_jumpAction)
 	{
 		pev->velocity.z = (270.0f * pev->gravity) + 32.0f; // client gravity 1 = 270.0f , and jump+duck + 32.0f
 		m_jumpAction = false;
+	}
+
+	if (IsOnFloor(GetEntity()))
+	{
+		MakeVectors(pev->angles);
+
+		Vector dest = pev->origin;
+		Vector src = GetBottomOrigin(GetEntity()) + gpGlobals->v_forward * 8;
+		src.z += 2;
+
+		TraceResult tr;
+		UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
+		if (tr.flFraction <= 0.9f && !tr.fAllSolid && !tr.fStartSolid && FNullEnt(tr.pHit))
+		{
+			m_testValue = 1;
+			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity()).z) - 18;
+
+			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 18)
+			{
+				pev->origin.z = newOriginZ + 0.1f;
+				m_testValue = 2;
+			}
+		}
 	}
 
 	CheckStuck(oldSpeed);
@@ -928,9 +940,6 @@ void NPC::CheckStuck(float oldSpeed)
 	if (!IsOnFloor(GetEntity()) || IsOnLadder (GetEntity ()))
 		return;
 
-	if (WalkMove())
-		return;
-
 	if (pev->solid == SOLID_NOT)
 		return;
 
@@ -958,7 +967,7 @@ void NPC::CheckStuck(float oldSpeed)
 
 				Vector crouchSize = g_npcSize[1];
 				crouchSize.z = 0.0f;
-				SET_SIZE(GetEntity(), g_npcSize[0], crouchSize);
+				SetNPCSize(g_npcSize[0], crouchSize);
 				return;
 			}
 		}
@@ -987,38 +996,6 @@ void NPC::CheckStuck(float oldSpeed)
 	}
 
 	m_prevOrigin = pev->origin;
-}
-
-bool NPC::WalkMove(void)
-{
-	if (!IsOnFloor(GetEntity()))
-		return false;
-
-	// P.45 - Walk Move improve
-	if (pev->speed == 0.0f)
-		return false;
-
-	int stepSize = 18;
-	MakeVectors(pev->angles);
-
-	Vector dest = pev->origin;
-	dest.z += stepSize;
-	Vector src = pev->origin + gpGlobals->v_forward * 8;
-
-	TraceResult tr;
-	UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
-	if (tr.flFraction != 1.0f)
-	{
-		float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin (GetEntity ()).z) - stepSize + 0.5f;
-
-		if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= stepSize)
-		{
-			pev->origin.z = newOriginZ;
-			return true;
-		} 
-	}
-	
-	return false;
 }
 
 void NPC::ChangeAnim()
@@ -1289,11 +1266,11 @@ void NPC::HeadTowardWaypoint(void)
 		m_fakeCrouch = true;
 		Vector crouchSize = g_npcSize[1];
 		crouchSize.z = 0.0f;
-		SET_SIZE(GetEntity(), g_npcSize[0], crouchSize);
+		SetNPCSize(g_npcSize[0], crouchSize);
 	}
 	else if (!needFakeCrouch && m_fakeCrouch)
 	{
-		SET_SIZE(GetEntity(), g_npcSize[0], g_npcSize[1]);
+		SetNPCSize();
 		m_fakeCrouch = false;
 	}
 
@@ -1417,6 +1394,16 @@ void NPC::SetSequence(const char *idle, const char *move, const char *walk, cons
 	m_ASName[AS_DEAD] = (char *)dead;
 }
 
+void NPC::SetNPCSize(Vector mins, Vector maxs)
+{
+	if (mins == nullvec)
+		mins = g_npcSize[0];
+	if (maxs == nullvec)
+		maxs = g_npcSize[1];
+
+	SET_SIZE(GetEntity(), mins, maxs);
+}
+
 void NPC::DebugModeMsg(void)
 {
 	if (IsValidPlayer(INDEXENT(g_hostEntity->v.iuser2)))
@@ -1501,14 +1488,16 @@ void NPC::DebugModeMsg(void)
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
 		"Attack Distance : %.2f\n"
-		"Fake Crouch: %s",
+		"Fake Crouch: %s\n"
+		"Testing: %d", 
 		gamemodName,
 		GetEntityName(GetEntity()), taskName,
 		enemyName, npcTeam,
 		m_currentWaypointIndex, m_goalWaypoint,
 		navIndex[0], navIndex[1],
 		m_moveSpeed, GetDistance2D(pev->velocity),
-		m_attackDistance, m_fakeCrouch ? "Yes" : "No");
+		m_attackDistance, m_fakeCrouch ? "Yes" : "No", 
+		m_testValue);
 
 	MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
 	WRITE_BYTE(TE_TEXTMESSAGE);

@@ -14,18 +14,6 @@ Waypoint::Waypoint(void)
 	m_distMatrix = null;
 }
 
-Waypoint::~Waypoint(void)
-{
-	if (m_pathMatrix != null)
-		delete[] m_pathMatrix;
-
-	if (m_distMatrix != null)
-		delete[] m_distMatrix;
-
-	m_pathMatrix = null;
-	m_distMatrix = null;
-}
-
 void Waypoint::LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance)
 {
 	int i, j, k;

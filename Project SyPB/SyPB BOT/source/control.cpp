@@ -575,11 +575,12 @@ void BotControl::FillServer (int selection, int personality, int skill, int numT
    CenterPrint ("Fill Server with %s bots...", &teamDescs[selection][0]);
 }
 
-void BotControl::RemoveAll (void)
+void BotControl::RemoveAll (bool gameOn)
 {
    // this function drops all bot clients from server (this function removes only sypb's)`q
 
-   CenterPrint ("Bots are removed from server.");
+   if (gameOn)
+	   CenterPrint ("Bots are removed from server.");
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
@@ -881,6 +882,9 @@ void BotControl::Free (void)
          m_bots[i] = null;
       }
    }
+
+   ITERATE_ARRAY(g_botNames, j)
+	   g_botNames[j].usedBy = -1;
 }
 
 void BotControl::Free (int index)

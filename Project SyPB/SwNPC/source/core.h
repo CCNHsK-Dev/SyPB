@@ -2,7 +2,7 @@
 
 #include "main.h"
 
-#define MAX_NPC 64
+#define MAX_NPC 128
 
 #define null 0
 #define nullvec Vector (0.0f, 0.0f, 0.0f)
@@ -121,6 +121,7 @@ private:
 	Vector m_prevOrigin;
 
 	bool m_fakeCrouch;
+	int m_testValue;
 
 	// For check enemy only
 	int m_allEnemyId[checkEnemyNum];
@@ -147,7 +148,6 @@ private:
 	void FacePosition(void);
 	void MoveAction(void);
 	void CheckStuck(float oldSpeed);
-	bool WalkMove(void);
 
 	bool DoWaypointNav(void);
 	bool GoalIsValid(void);
@@ -210,7 +210,7 @@ public:
 	void *vFcTakeDamage;
 
 	NPC(const char *className, const char *modelName, float maxHealth, float maxSpeed, int team);
-	~NPC(void);
+	~NPC() = default;
 
 	void Remove(void);
 
@@ -246,6 +246,7 @@ public:
 	void BaseSequence(int baseSequence = 1);
 	void SetSequence(const char *idle, const char *move, const char *walk, const char *attack, 
 		const char *damage, const char *dead);
+	void SetNPCSize(Vector mins = nullvec, Vector maxs = nullvec);
 };
 
 class NPCControl : public Singleton <NPCControl>
@@ -256,7 +257,7 @@ private:
 
 public:
 	NPCControl(void);
-	~NPCControl(void);
+	~NPCControl() = default;
 
 	NPC *g_debugNPC;
 
@@ -307,7 +308,7 @@ class Waypoint : public Singleton <Waypoint>
 
 public:
 	Waypoint(void);
-	~Waypoint(void);
+	~Waypoint() = default;
 
 	Vector g_waypointPointOrigin[Const_MaxWaypoints];
 	float g_waypointPointRadius[Const_MaxWaypoints];
@@ -426,6 +427,7 @@ inline void MakeVectors(const Vector &in)
 
 extern void DrawLine(edict_t *client, Vector start, Vector end, Color color, int width, int noise, int speed, int life, int lineType);
 
+/*
 typedef enum
 {
 	HITGROUP_GENERIC,
@@ -439,4 +441,4 @@ typedef enum
 	HITGROUP_SHIELD,
 	NUM_HITGROUPS
 }
-HitBoxGroup;
+HitBoxGroup; */
