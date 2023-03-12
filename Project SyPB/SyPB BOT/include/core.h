@@ -60,7 +60,7 @@ using namespace Math;
 
 constexpr int entityNum = 256;
 constexpr int checkEntityNum = 36;
-constexpr int checkEnemyNum = 128;
+constexpr int checkEnemyNum = 128+32;
 
 // defines bots tasks
 enum BotTask
@@ -1045,7 +1045,11 @@ public:
    int m_ammo[MAX_AMMO_SLOTS]; // total ammo amounts
 
    Bot (edict_t *bot, int skill, int personality, int team, int member);
-   ~Bot () = default;;
+   ~Bot()
+   {
+	   DeleteSearchNodes();
+	   ResetTasks();
+   }
 
    int GetAmmo (void);
    inline int GetAmmoInClip (void) { return m_ammoInClip[m_currentWeapon]; }
@@ -1130,7 +1134,17 @@ protected:
 
 public:
    BotControl (void);
-  ~BotControl () = default;;
+   ~BotControl(void)
+   {
+	   for (int i = 0; i < 32; i++)
+	   {
+		   if (m_bots[i])
+		   {
+			   delete m_bots[i];
+			   m_bots[i] = null;
+		   }
+	   }
+   }
 
    bool EconomicsValid (int team) { return m_economicsGood[team]; }
 
@@ -1181,7 +1195,7 @@ public:
 
 public:
    Localizer (void) { m_langTab.RemoveAll (); }
-  ~Localizer () = default;
+  ~Localizer (void) { m_langTab.RemoveAll(); }
 
    char *TranslateInput (const char *input);
 };
@@ -1268,8 +1282,18 @@ private:
 public:
    bool m_redoneVisibility;
 
-   Waypoint (void);
-  ~Waypoint () = default;
+   Waypoint(void);
+   ~Waypoint()
+   {
+	   if (m_distMatrix != null)
+		   delete[] m_distMatrix;
+
+	   if (m_pathMatrix != null)
+		   delete[] m_pathMatrix;
+
+	   m_distMatrix = null;
+	   m_pathMatrix = null;
+   }
 
    void Initialize (void);
 

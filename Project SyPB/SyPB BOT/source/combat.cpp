@@ -60,7 +60,7 @@ int Bot::GetNearbyEnemiesNearPosition (Vector origin, int radius)
 
 void Bot::ResetCheckEnemy()
 {
-	int i;
+	int i, y, z;
 	edict_t *entity = null;
 	m_checkEnemyNum = 0;
 	for (i = 0; i < checkEnemyNum; i++)
@@ -85,6 +85,9 @@ void Bot::ResetCheckEnemy()
 
 	for (i = 0; i < entityNum; i++)
 	{
+		if (m_checkEnemyNum >= checkEnemyNum)
+			break;
+		
 		if (g_entityId[i] == -1 || g_entityAction[i] != 1 || m_team == g_entityTeam[i])
 			continue;
 
@@ -99,7 +102,7 @@ void Bot::ResetCheckEnemy()
 
 	for (i = 0; i < m_checkEnemyNum; i++)
 	{
-		for (int y = 0; y < checkEnemyNum; y++)
+		for (y = 0; y < m_checkEnemyNum; y++)
 		{
 			if (m_allEnemyDistance[i] > m_checkEnemyDistance[y])
 				continue;
@@ -111,13 +114,16 @@ void Bot::ResetCheckEnemy()
 					continue;
 			}
 
-			for (int z = m_checkEnemyNum - 1; z >= y; z--)
+			for (z = m_checkEnemyNum - 1; z >= y; z--)
 			{
-				if (z == m_checkEnemyNum - 1 || m_checkEnemy[z] == null)
+				if (z == m_checkEnemyNum - 1)
 					continue;
 
-				m_checkEnemy[z + 1] = m_checkEnemy[z];
-				m_checkEnemyDistance[z + 1] = m_checkEnemyDistance[z];
+				if (m_checkEnemy[z] != null && (z+1) < checkEnemyNum)
+				{
+					m_checkEnemy[z + 1] = m_checkEnemy[z];
+					m_checkEnemyDistance[z + 1] = m_checkEnemyDistance[z];
+				}
 			}
 
 			m_checkEnemy[y] = m_allEnemy[i];

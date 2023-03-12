@@ -2089,7 +2089,8 @@ void Bot::PushTask (Task *task)
          return;
       }
    }
-   else if (task == null)
+   
+   if (task == null)
       return;
 
    // it shouldn't happen this condition now as false...

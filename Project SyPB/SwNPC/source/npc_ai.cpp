@@ -486,92 +486,31 @@ void NPC::FindEnemy(void)
 		enemy_distance = GetEntityDistance(targetEntity);
 	}
 
-	int i, allEnemy = 0;
-	edict_t *entity = null;
-
-	if (FNullEnt(m_enemyAPI))
+	edict_t* entity = null;
+	if (!FNullEnt(m_enemyAPI))
 	{
-		for (i = 0; i < checkEnemyNum; i++)
-		{
-			m_allEnemyId[i] = -1;
-			m_allEnemyDistance[i] = 9999.9f;
+		targetEntity = m_enemyAPI;
+		enemy_distance = GetEntityDistance(m_enemyAPI);
+	}
+	else
+	{
+		ResetCheckEnemy();
 
-			m_enemyEntityId[i] = -1;
-			m_enemyEntityDistance[i] = 9999.9f;
-		}
-
-		for (i = 0; i < gpGlobals->maxClients; i++)
+		for (int i = 0; i < checkEnemyNum; i++)
 		{
-			entity = INDEXENT(i + 1);
-			if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team)
+			if (m_checkEnemy[i] == null)
 				continue;
 
-			m_allEnemyId[allEnemy] = i + 1;
-			m_allEnemyDistance[allEnemy] = GetEntityDistance(entity);
-			allEnemy++;
-		}
-
-		for (i = 0; i < MAX_NPC; i++)
-		{
-			NPC *npc = g_npcManager->IsSwNPCForNum(i);
-			if (npc == null)
-				continue;
-
-			entity = npc->GetEntity();
-			if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team)
-				continue;
-
-			if (entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
-				continue;
-
-			m_allEnemyId[allEnemy] = npc->GetIndex();
-			m_allEnemyDistance[allEnemy] = GetEntityDistance(entity);
-			allEnemy++;
-		}
-
-		for (i = 0; i < allEnemy; i++)
-		{
-			for (int y = 0; y < checkEnemyNum; y++)
-			{
-				if (m_allEnemyDistance[i] >= m_enemyEntityDistance[y])
-					continue;
-
-				for (int z = allEnemy - 1; z >= y; z--)
-				{
-					if (z == allEnemy - 1 || m_enemyEntityId[z] == -1)
-						continue;
-
-					m_enemyEntityId[z + 1] = m_enemyEntityId[z];
-					m_enemyEntityDistance[z + 1] = m_enemyEntityDistance[z];
-				}
-
-				m_enemyEntityId[y] = m_allEnemyId[i];
-				m_enemyEntityDistance[y] = m_allEnemyDistance[i];
-
-				break;
-			}
-		}
-
-		for (i = 0; i < checkEnemyNum; i++)
-		{
-			if (m_enemyEntityId[i] == -1)
-				continue;
-
-			entity = INDEXENT(m_enemyEntityId[i]);
+			entity = m_checkEnemy[i];
 			if (IsEnemyViewable(entity))
 			{
-				enemy_distance = m_enemyEntityDistance[i];
+				enemy_distance = m_checkEnemyDistance[i];
 				targetEntity = entity;
 				lastCheckEntity = entity;
 
 				break;
 			}
 		}
-	}
-	else
-	{
-		targetEntity = m_enemyAPI;
-		enemy_distance = GetEntityDistance(m_enemyAPI);
 	}
 
 	if (!FNullEnt(m_moveTargetEntity) && m_moveTargetEntity != targetEntity)
@@ -657,6 +596,85 @@ void NPC::FindEnemy(void)
 		}
 		else
 			SetEnemy(targetEntity);
+	}
+}
+
+void NPC::ResetCheckEnemy(void)
+{
+	int team = GetTeam(GetEntity());
+
+	int i, y, z;
+	edict_t* entity = null;
+	m_checkEnemyNum = 0;
+	for (i = 0; i < checkEnemyNum; i++)
+	{
+		m_allEnemy[i] = null;
+		m_allEnemyDistance[i] = 9999.9f;
+
+		m_checkEnemy[i] = null;
+		m_checkEnemyDistance[i] = 9999.9f;
+	}
+
+	for (i = 0; i < gpGlobals->maxClients; i++)
+	{
+		entity = INDEXENT(i + 1);
+		if (!IsAlive(entity) || GetTeam(entity) == team || GetEntity() == entity)
+			continue;
+
+		m_allEnemy[m_checkEnemyNum] = entity;
+		m_allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
+		m_checkEnemyNum++;
+	}
+
+	for (i = 0; i < MAX_NPC; i++)
+	{
+		NPC* npc = g_npcManager->IsSwNPCForNum(i);
+		if (npc == null)
+			continue;
+
+		entity = npc->GetEntity();
+		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team)
+			continue;
+
+		if (entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
+			continue;
+
+		m_allEnemy[m_checkEnemyNum] = entity;
+		m_allEnemyDistance[m_checkEnemyNum] = GetEntityDistance(entity);
+		m_checkEnemyNum++;
+	}
+
+	for (i = 0; i < m_checkEnemyNum; i++)
+	{
+		for (y = 0; y < m_checkEnemyNum; y++)
+		{
+			if (m_allEnemyDistance[i] > m_checkEnemyDistance[y])
+				continue;
+
+			if (m_allEnemyDistance[i] == m_checkEnemyDistance[y])
+			{
+				if (GetDistance(pev->origin, GetEntityOrigin(m_allEnemy[i])) >
+					GetDistance(pev->origin, GetEntityOrigin(m_checkEnemy[y])))
+					continue;
+			}
+
+			for (z = m_checkEnemyNum - 1; z >= y; z--)
+			{
+				if (z == m_checkEnemyNum - 1)
+					continue;
+
+				if (m_checkEnemy[z] != null && (z + 1) < checkEnemyNum)
+				{
+					m_checkEnemy[z + 1] = m_checkEnemy[z];
+					m_checkEnemyDistance[z + 1] = m_checkEnemyDistance[z];
+				}
+			}
+
+			m_checkEnemy[y] = m_allEnemy[i];
+			m_checkEnemyDistance[y] = m_allEnemyDistance[i];
+
+			break;
+		}
 	}
 }
 

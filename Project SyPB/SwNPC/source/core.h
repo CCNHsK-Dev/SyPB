@@ -7,7 +7,7 @@
 #define null 0
 #define nullvec Vector (0.0f, 0.0f, 0.0f)
 
-const int checkEnemyNum = 128;
+const int checkEnemyNum = 128+32;
 const int Const_MaxWaypoints = 1024;
 const int Const_MaxPathIndex = 8;
 
@@ -124,10 +124,11 @@ private:
 	int m_testValue;
 
 	// For check enemy only
-	int m_allEnemyId[checkEnemyNum];
+	edict_t *m_allEnemy[checkEnemyNum];
 	float m_allEnemyDistance[checkEnemyNum];
-	int m_enemyEntityId[checkEnemyNum];
-	float m_enemyEntityDistance[checkEnemyNum];
+	int m_checkEnemyNum;
+	edict_t *m_checkEnemy[checkEnemyNum];
+	float m_checkEnemyDistance[checkEnemyNum];
 
 	void TaskBase(void);
 	void TaskEnemy(void);
@@ -138,6 +139,8 @@ private:
 	void NPCTask(void);
 
 	void FindEnemy(void);
+	void ResetCheckEnemy(void);
+
 	float GetEntityDistance(edict_t *entity);
 	bool IsEnemyViewable(edict_t *entity);
 	bool IsOnAttackDistance(edict_t *targetEntity, float distance);
@@ -210,7 +213,10 @@ public:
 	void *vFcTakeDamage;
 
 	NPC(const char *className, const char *modelName, float maxHealth, float maxSpeed, int team);
-	~NPC() = default;
+	~NPC()
+	{
+		DeleteSearchNodes();
+	}
 
 	void Remove(void);
 
@@ -257,7 +263,17 @@ private:
 
 public:
 	NPCControl(void);
-	~NPCControl() = default;
+	~NPCControl()
+	{
+		for (int i = 0; i < MAX_NPC; i++)
+		{
+			if (m_npcs[i])
+			{
+				delete m_npcs[i];
+				m_npcs[i] = null;
+			}
+		}
+	}
 
 	NPC *g_debugNPC;
 
@@ -308,7 +324,17 @@ class Waypoint : public Singleton <Waypoint>
 
 public:
 	Waypoint(void);
-	~Waypoint() = default;
+	~Waypoint()
+	{
+		if (m_pathMatrix != null)
+			delete[] m_pathMatrix;
+
+		if (m_distMatrix != null)
+			delete[] m_distMatrix;
+
+		m_pathMatrix = null;
+		m_distMatrix = null;
+	}
 
 	Vector g_waypointPointOrigin[Const_MaxWaypoints];
 	float g_waypointPointRadius[Const_MaxWaypoints];

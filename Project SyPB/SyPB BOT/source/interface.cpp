@@ -4119,7 +4119,7 @@ DLL_ENTRYPOINT
    // dynamic library detaching ??
    if (DLL_DETACHING)
    {
-	   //g_botManager->RemoveAll(false);
+	   //g_botManager->RemoveAll();
 	   FreeLibraryMemory();
 
 	   if (g_gameLib != null)
