@@ -2,21 +2,22 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45118.133
+* Support Build: 1.50.45228.136
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.45118.789 or new
+* Support SyPB Build: 1.50.45225.794 or new
 *
-* Date: 6/2/2023
+* Date: 16/3/2023
 */
 
 #include <amxmodx>
 #include <amxmisc>
 #include <sypb>
 #include <swnpc>
+#include <engine>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45118.133"
+#define VERSION	"1.50.45228.136"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -49,6 +50,14 @@ public SwNPC_Add (npcId)
 public SwNPC_Remove (npcId)
 {
 	client_print(0, print_chat, "remove npc %d", npcId);
+}
+
+public SwNPC_Set_Weapon_Model (npcId, pModelId)
+{
+	new classname[32];
+	entity_get_string(pModelId, EV_SZ_classname, classname, 31);
+	
+	client_print(0, print_chat, "npc %d setup pmodel %d _ %s", npcId, pModelId, classname);
 }
 
 public SwNPC_TakeDamage_Pre(victim, attack, damage)
@@ -117,6 +126,7 @@ public add_swnpc_team_ct ()
 	
 	swnpc_set_add_frags (ent, 2);
 	swnpc_set_dead_remove_time (ent, 10.0);
+	swnpc_set_has_weapon (ent, 1);
 	
 	set_task (5.0, "add_swnpc_team_ct");
 }

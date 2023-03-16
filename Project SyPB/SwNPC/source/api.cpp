@@ -106,6 +106,14 @@ static cell AMX_NATIVE_CALL amxx_setDeadRemoveTime(AMX *amx, cell *params) // 1.
 	return g_npcManager->SetDeadRemoveTime(npcId, deadRemoveTime);
 }
 
+static cell AMX_NATIVE_CALL amxx_setHasWeapon(AMX* amx, cell* params)
+{
+	int npcId = params[1];
+	int hasWeapon = params[2];
+
+	return g_npcManager->SetHasWeapon(npcId, hasWeapon);
+}
+
 static cell AMX_NATIVE_CALL amxx_setBloodColor(AMX *amx, cell *params) // 1.42
 {
 	int npcId = params[1];
@@ -332,6 +340,8 @@ AMX_NATIVE_INFO swnpc_natives[] =
 	{ "swnpc_set_add_frags", amxx_setAddFrags }, 
 	{ "swnpc_set_dead_remove_time", amxx_setDeadRemoveTime }, 
 
+	{ "swnpc_set_has_weapon", amxx_setHasWeapon }, 
+	
 	// Attack and Damage
 	{ "swnpc_set_damage_multiples", amxx_setDamageMultiples },
 	{ "swnpc_set_damage_miss_armor", amxx_setDamageMissArmor },

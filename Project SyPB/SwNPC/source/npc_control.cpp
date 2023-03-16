@@ -12,7 +12,9 @@ void NPCControl::Think(void)
 	if (g_SwNPCNum <= 0)
 		return;
 
+	g_gameMode = int(CVAR_GET_FLOAT("sypb_gamemod"));
 	g_debugNPC = null;
+
 	if (CVAR_GET_FLOAT("sypb_debug") >= 2 && IsValidPlayer(g_hostEntity))
 		DebugModeMsg();
 
@@ -256,6 +258,17 @@ int NPCControl::SetDeadRemoveTime(int npcId, float deadRemoveTime)
 		deadRemoveTime = 999.9f;
 
 	npc->m_deadRemoveTime = deadRemoveTime;
+
+	return 1;
+}
+
+int NPCControl::SetHasWeapon(int npcId, int hasWeapon)
+{
+	NPC* npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	npc->SetUpNPCWeapon(hasWeapon > 0);
 
 	return 1;
 }

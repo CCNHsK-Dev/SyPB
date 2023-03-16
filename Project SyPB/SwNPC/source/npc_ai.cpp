@@ -16,7 +16,7 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 	pev->classname = ALLOC_STRING(className);
 	pev->model = MAKE_STRING(modelName);
 
-	pev->flags |= (FL_MONSTER | FL_MONSTERCLIP);
+	pev->flags |= FL_MONSTER;
 
 	pev->movetype = MOVETYPE_PUSHSTEP;
 	pev->solid = SOLID_BBOX;
@@ -42,6 +42,8 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 void NPC::Remove()
 {
 	m_workNPC = false;
+
+	SetUpNPCWeapon(false);
 
 	if (vtable != null)
 	{
@@ -77,6 +79,7 @@ void NPC::NewNPCSetting(void)
 	m_workNPC = false;
 	m_nextThinkTime = gpGlobals->time + 999.9f;
 	m_pmodel = null;
+	m_weaponModel = null;
 
 	m_navNode = null;
 	m_navNodeStart = null;
@@ -170,7 +173,7 @@ void NPC::Think(void)
 	NPCAi();
 	NPCAction();
 
-	if (CVAR_GET_FLOAT("sypb_debug") >= 2 && IsValidPlayer(g_hostEntity) && g_npcManager->g_debugNPC == this)
+	if (CVAR_GET_FLOAT("sypb_debug") >= DEBUG_SWNPC && IsValidPlayer(g_hostEntity) && g_npcManager->g_debugNPC == this)
 		DebugModeMsg();
 
 	pev->nextthink = m_nextThinkTime;
@@ -218,6 +221,11 @@ void NPC::Spawn(Vector origin)
 	m_fakeCrouch = false;
 	SetNPCSize();
 	SET_ORIGIN(GetEntity(), origin);
+
+	pev->controller[0] = 125;
+	pev->controller[1] = 125;
+	pev->controller[2] = 125;
+	pev->controller[3] = 125;
 
 	m_pmodel = null;
 
@@ -1134,6 +1142,42 @@ void NPC::PlayNPCSound(int soundClass)
 	EMIT_SOUND_DYN(GetEntity(), soundChannel, playSound, 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
 }
 
+void NPC::SetUpNPCWeapon(bool giveWeapon)
+{
+	if (!giveWeapon)
+	{
+		if (!FNullEnt(m_weaponModel))
+			REMOVE_ENTITY(m_weaponModel);
+
+		m_weaponModel = null;
+		return;
+	}
+
+	if (!FNullEnt(m_weaponModel))
+	{
+		MF_ExecuteForward(g_callSetWeapon, (cell)ENTINDEX(GetEntity()), (cell)ENTINDEX(m_weaponModel));
+		return;
+	}
+
+	m_weaponModel = CREATE_NAMED_ENTITY(MAKE_STRING("info_target"));
+	if (FNullEnt(m_weaponModel))
+	{
+		m_weaponModel = null;
+		return;
+	}
+
+	VARS(m_weaponModel)->classname = ALLOC_STRING("SwNPC_WeaponEntity");
+
+	VARS(m_weaponModel)->model = MAKE_STRING("models/p_ak47.mdl");
+	SET_MODEL(m_weaponModel, (char*)STRING(VARS(m_weaponModel)->model));
+
+	VARS(m_weaponModel)->movetype = MOVETYPE_FOLLOW;
+	VARS(m_weaponModel)->aiment = GetEntity();
+	VARS(m_weaponModel)->owner = GetEntity();
+
+	MF_ExecuteForward(g_callSetWeapon, (cell)ENTINDEX(GetEntity()), (cell)ENTINDEX(m_weaponModel));
+}
+
 void NPC::DeleteSearchNodes(void)
 {
 	PathNode *deletingNode = null;
@@ -1428,25 +1472,25 @@ void NPC::DebugModeMsg(void)
 		return;
 
 	char gamemodName[80];
-	switch (GetGameMode())
+	switch (g_gameMode)
 	{
-	case 0:
+	case MODE_BASE:
 		sprintf(gamemodName, "Normal");
 		break;
 
-	case 1:
-		sprintf(gamemodName, "DeathMatch");
+	case MODE_DM:
+		printf(gamemodName, "DeathMatch");
 		break;
 
-	case 2:
+	case MODE_ZP:
 		sprintf(gamemodName, "Zombie");
 		break;
 
-	case 3:
+	case MODE_NOTEAM:
 		sprintf(gamemodName, "No Team");
 		break;
 
-	case 4:
+	case MODE_ZH:
 		sprintf(gamemodName, "Zombie Hell");
 		break;
 

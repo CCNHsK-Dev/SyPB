@@ -150,9 +150,9 @@ enum CollisionProbe
 // counter-strike team id's
 enum Team
 {
-   TEAM_TERRORIST = 0,
-   TEAM_COUNTER,
-   TEAM_COUNT
+	TEAM_TERRORIST = 0,
+	TEAM_COUNTER,
+	TEAM_COUNT
 };
 
 // client flags
@@ -340,56 +340,12 @@ enum MapType
    MAP_AWP = (1 << 6)
 };
 
-// defines for waypoint flags field (32 bits are available)
-enum WaypointFlag
-{
-   WAYPOINT_LIFT = (1 << 1), // wait for lift to be down before approaching this waypoint
-   WAYPOINT_CROUCH = (1 << 2), // must crouch to reach this waypoint
-   WAYPOINT_CROSSING = (1 << 3), // a target waypoint
-   WAYPOINT_GOAL = (1 << 4), // mission goal point (bomb, hostage etc.)
-   WAYPOINT_LADDER = (1 << 5), // waypoint is on ladder
-   WAYPOINT_RESCUE = (1 << 6), // waypoint is a hostage rescue point
-   WAYPOINT_CAMP = (1 << 7), // waypoint is a camping point
-   WAYPOINT_NOHOSTAGE = (1 << 8), // only use this waypoint if no hostage
-   WAYPOINT_DJUMP = (1 << 9), // bot help's another bot (requster) to get somewhere (using djump)
-   WAYPOINT_ZMHMCAMP = (1 << 10), // SyPB Pro P.24 - Zombie Mod Human Camp
-   WAYPOINT_SNIPER = (1 << 28), // it's a specific sniper point
-   WAYPOINT_TERRORIST = (1 << 29), // it's a specific terrorist point
-   WAYPOINT_COUNTER = (1 << 30)  // it's a specific ct point
-};
-
-// defines for waypoint connection flags field (16 bits are available)
-enum PathFlag
-{
-   PATHFLAG_JUMP = (1 << 0), // must jump for this connection
-   PATHFLAG_DOUBLE = (1 << 1) // must use friend for this connection
-};
-
 // defines waypoint connection types
 enum PathConnection
 {
    PATHCON_OUTGOING = 0,
    PATHCON_INCOMING,
    PATHCON_BOTHWAYS
-};
-
-// SyPB Support Game Mode
-enum GameMode
-{
-	MODE_BASE = 0,
-	MODE_DM = 1,
-	MODE_ZP = 2,
-	MODE_NOTEAM = 3,
-	MODE_ZH = 4,
-	MODE_NONE
-};
-
-enum DebugMode
-{
-	DEBUG_NONE = 0,
-	DEBUG_PLAYER = 1,
-	DEBUG_SWNPC = 2,
-	DEBUG_ALL
 };
 
 enum FightStyle

@@ -64,30 +64,6 @@ struct PathNode
 	PathNode *next;
 };
 
-// SyPB Waypoint Flag 
-enum WaypointFlag
-{
-	WAYPOINT_LIFT = (1 << 1), // wait for lift to be down before approaching this waypoint
-	WAYPOINT_CROUCH = (1 << 2), // must crouch to reach this waypoint
-	WAYPOINT_CROSSING = (1 << 3), // a target waypoint
-	WAYPOINT_GOAL = (1 << 4), // mission goal point (bomb, hostage etc.)
-	WAYPOINT_LADDER = (1 << 5), // waypoint is on ladder
-	WAYPOINT_RESCUE = (1 << 6), // waypoint is a hostage rescue point
-	WAYPOINT_CAMP = (1 << 7), // waypoint is a camping point
-	WAYPOINT_NOHOSTAGE = (1 << 8), // only use this waypoint if no hostage
-	WAYPOINT_DJUMP = (1 << 9), // bot help's another bot (requster) to get somewhere (using djump)
-	WAYPOINT_ZMHMCAMP = (1 << 10), // Zombie Mod Human Camp for SyPB
-	WAYPOINT_SNIPER = (1 << 28), // it's a specific sniper point
-	WAYPOINT_TERRORIST = (1 << 29), // it's a specific terrorist point
-	WAYPOINT_COUNTER = (1 << 30)  // it's a specific ct point
-};
-
-enum PathFlag
-{
-	PATHFLAG_JUMP = (1 << 0), // must jump for this connection
-	PATHFLAG_DOUBLE = (1 << 1) // must use friend for this connection
-};
-
 #define g_npcManager NPCControl::GetObjectPtr ()
 #define g_waypoint Waypoint::GetObjectPtr ()
 
@@ -99,6 +75,7 @@ private:
 	int m_task;
 
 	void *m_pmodel;
+	edict_t *m_weaponModel;
 
 	float m_nextThinkTime;
 	float m_lastThinkTime;
@@ -235,6 +212,8 @@ public:
 	void NPCAi(void);
 	void NPCAction(void);
 
+	void SetUpNPCWeapon(bool giveWeapon);
+
 	void SetEnemy(edict_t *entity);
 	void SetMoveTarget(edict_t *entity);
 
@@ -311,6 +290,8 @@ public:
 	int SetAddFrags(int npcId, int addFrags);
 	int SetDeadRemoveTime(int npcId, float deadRemoveTime);
 
+	int SetHasWeapon(int npcId, int hasWeapon);
+
 	int SetGoalWaypoint(int npcId, int goal);
 	int SetEnemy(int npcId, int enemyId);
 
@@ -368,6 +349,9 @@ extern AMX_NATIVE_INFO swnpc_natives[];
 // For Add new SwNPC / Remove SwNPC
 extern int g_callAddNPC;
 extern int g_callRemoveNPC;
+
+extern int g_callSetWeapon;
+
 // Pre
 extern int g_callThink_Pre;
 extern int g_callTakeDamage_Pre;
@@ -382,6 +366,9 @@ extern int g_callKill_Post;
 extern int g_TDP_damageValue;
 extern bool g_TDP_cvOn;
 
+// SyPB Game Mode
+extern int g_gameMode;
+
 // About Blood
 extern int g_sModelIndexBloodDrop;
 extern int g_sModelIndexBloodSpray;
@@ -394,8 +381,6 @@ extern int g_modelIndexArrow;
 extern int apiBuffer;
 
 void AllReLoad(void);
-
-extern int GetGameMode(void);
 
 extern int GetTeam(edict_t *entity);
 extern int GetTeam(int index);

@@ -3,11 +3,6 @@
 #include "core.h"
 #include "studio.h"
 
-int GetGameMode(void)
-{
-	return int(CVAR_GET_FLOAT("sypb_gamemod"));
-}
-
 bool IsAlive(edict_t *entity)
 {
 	if (FNullEnt(entity))
@@ -29,7 +24,6 @@ bool IsValidPlayer(edict_t *entity)
 
 int GetTeam(edict_t *entity)
 {
-	int gameMode = GetGameMode ();
 	if (!IsValidPlayer(entity))
 	{
 		NPC *npc = g_npcManager->IsSwNPC(entity);
@@ -40,9 +34,9 @@ int GetTeam(edict_t *entity)
 	}
 
 	int player_team;
-	if (gameMode == 1)
+	if (g_gameMode == MODE_DM)
 		player_team = ENTINDEX(entity) - 1 + 10;
-	else if (gameMode == 3)
+	else if (g_gameMode == MODE_NOTEAM)
 		player_team = 2;
 	else
 	{

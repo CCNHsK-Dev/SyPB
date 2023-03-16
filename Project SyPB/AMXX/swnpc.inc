@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45118.133
+* Support Build: 1.50.45228.136
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.45118.789 or new
+* Support SyPB Build: 1.50.45225.794 or new
 *
-* Date: 6/2/2023
+* Date: 16/3/2023
 */
 
 /* -----------------------------------------------------------------------
@@ -168,3 +168,7 @@ enum // for SwNPC_PlaySound > soundClass
 	NS_FOOTSTEP,
 	NS_ALL,
 };
+
+// NPC Need p_model Weapon?
+native swnpc_set_has_weapon (npcId, hasWeapon);
+forward SwNPC_Set_Weapon_Model (npcId, pModelId);
