@@ -9,8 +9,6 @@ edict_t *g_hostEntity = null;
 int g_callAddNPC = -1;
 int g_callRemoveNPC = -1;
 
-int g_callSetWeapon = -1;
-
 int g_callThink_Pre = -1;
 int g_callTakeDamage_Pre = -1;
 int g_callKill_Pre = -1;
@@ -65,9 +63,6 @@ void OnPluginsLoaded()
 		g_callAddNPC = MF_RegisterForward("SwNPC_Add", ET_IGNORE, FP_CELL, FP_DONE);
 		g_callRemoveNPC = MF_RegisterForward("SwNPC_Remove", ET_IGNORE, FP_CELL, FP_DONE);
 
-		// SwNPC_Set_Weapon_Model (npcId, pModelId)
-		g_callSetWeapon = MF_RegisterForward("SwNPC_Set_Weapon_Model", ET_CONTINUE, FP_CELL, FP_CELL, FP_DONE);
-
 		// SwNPC_Think_Pre (npcId)
 		g_callThink_Pre = MF_RegisterForward("SwNPC_Think_Pre", ET_CONTINUE, FP_CELL, FP_DONE);
 		// SwNPC_TakeDamage_Pre (victimId, attackId, damage)
@@ -102,8 +97,6 @@ void AllReLoad(void)
 
 	g_callAddNPC = -1;
 	g_callRemoveNPC = -1;
-
-	g_callSetWeapon = -1;
 
 	g_callThink_Pre = -1;
 	g_callTakeDamage_Pre = -1;

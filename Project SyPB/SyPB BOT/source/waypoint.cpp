@@ -1198,8 +1198,10 @@ void Waypoint::tryDownloadWaypoint(void)
 	if (sypb_download_waypoint.GetBool() == false)
 		return;
 
+	EraseFromHardDisk(false);
+
 	String saveFile = "", downloadURL = "";
-	saveFile = FormatBuffer("%s%s.test", GetWaypointDir(), GetMapName());
+	saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
 	downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
 
 	ServerPrint("Try to Download Waypoint.....");
@@ -1217,8 +1219,10 @@ void Waypoint::tryDownloadWaypoint(void)
 		return;
 	}
 
+	ServerPrint("Download Waypoint.....");
+
 	fp.Read(&header, sizeof(header));
-	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) != 0 || 
+	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) != 0 ||
 		header.fileVersion != FV_WAYPOINT || stricmp(header.mapName, GetMapName()))
 	{
 		ServerPrint("On GitHub Waypoint is Error");
@@ -1227,25 +1231,16 @@ void Waypoint::tryDownloadWaypoint(void)
 
 		fp.Close();
 		unlink(saveFile);
-		
+
 		return;
 	}
 	fp.Close();
-	unlink(saveFile);
 
-	EraseFromHardDisk(false);
-	saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
+	Load();
+	ServerPrint("Finish. And Load The Waypoint File Now.");
 
-	if (URLDownloadToFile(null, downloadURL, saveFile, 0, null) == S_OK)
-	{
-		ServerPrint("Download Waypoint.....");
-		
-		Load();
-		ServerPrint("Finish. And Load The Waypoint File Now.");
-
-		sprintf(m_infoBuffer, "Download %s.pwf on GitHub", GetMapName());
-		AddLogEntry(LOG_DEFAULT, m_infoBuffer);
-	}
+	sprintf(m_infoBuffer, "Download %s.pwf on GitHub", GetMapName());
+	AddLogEntry(LOG_DEFAULT, m_infoBuffer);
 }
 
 bool Waypoint::Load(void)

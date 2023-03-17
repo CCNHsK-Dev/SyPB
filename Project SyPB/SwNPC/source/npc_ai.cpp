@@ -217,7 +217,6 @@ void NPC::Spawn(Vector origin)
 	pev->health = pev->max_health;
 	pev->fixangle = true;
 
-	m_testValue = -1;
 	m_fakeCrouch = false;
 	SetNPCSize();
 	SET_ORIGIN(GetEntity(), origin);
@@ -876,8 +875,6 @@ void NPC::MoveAction(void)
 	else
 		pev->movetype = MOVETYPE_PUSHSTEP;
 
-	m_testValue = -1;
-
 	float oldSpeed = pev->speed;
 	if (m_moveSpeed == 0.0f || !IsAlive (GetEntity ()))
 	{
@@ -914,7 +911,8 @@ void NPC::MoveAction(void)
 		m_jumpAction = false;
 	}
 
-	if (IsOnFloor(GetEntity()))
+	bool onFloor = IsOnFloor(GetEntity());
+	if (onFloor)
 	{
 		MakeVectors(pev->angles);
 
@@ -924,15 +922,15 @@ void NPC::MoveAction(void)
 
 		TraceResult tr;
 		UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
-		if (tr.flFraction <= 0.9f && !tr.fAllSolid && !tr.fStartSolid && FNullEnt(tr.pHit))
+		m_testValue = tr.flFraction;
+		if (tr.flFraction > 0.0f && tr.flFraction < 0.9f && !tr.fAllSolid && !tr.fStartSolid && FNullEnt(tr.pHit))
 		{
-			m_testValue = 1;
 			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity()).z) - 18;
 
-			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 18)
+			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 18.0f)
 			{
-				pev->origin.z = newOriginZ + 0.1f;
-				m_testValue = 2;
+				pev->origin.z = newOriginZ;
+				m_testValue = tr.flFraction + 10.0f;
 			}
 		}
 	}
@@ -940,10 +938,10 @@ void NPC::MoveAction(void)
 	CheckStuck(oldSpeed);
 	pev->speed = m_moveSpeed;
 
-	float speed = GetDistance2D(oldVelocity);
-	if (speed > 10.0f || speed < -10.0f)
+	if (onFloor)
 	{
-		if (IsOnFloor(GetEntity()))
+		float speed = GetDistance2D(oldVelocity);
+		if (speed > 10.0f || speed < -10.0f)
 		{
 			if ((speed >= (pev->maxspeed / 2) || speed <= (-pev->maxspeed / 2)))
 			{
@@ -1142,9 +1140,9 @@ void NPC::PlayNPCSound(int soundClass)
 	EMIT_SOUND_DYN(GetEntity(), soundChannel, playSound, 1.0, VOL_NORM, 0, PITCH_NORM + RANDOM_LONG(-10, 10));
 }
 
-void NPC::SetUpNPCWeapon(bool giveWeapon)
+void NPC::SetUpNPCWeapon(const char* pmodelName)
 {
-	if (!giveWeapon)
+	if (strcmp(pmodelName, "null") == 0 || !pmodelName)
 	{
 		if (!FNullEnt(m_weaponModel))
 			REMOVE_ENTITY(m_weaponModel);
@@ -1155,7 +1153,8 @@ void NPC::SetUpNPCWeapon(bool giveWeapon)
 
 	if (!FNullEnt(m_weaponModel))
 	{
-		MF_ExecuteForward(g_callSetWeapon, (cell)ENTINDEX(GetEntity()), (cell)ENTINDEX(m_weaponModel));
+		VARS(m_weaponModel)->model = MAKE_STRING(pmodelName);
+		SET_MODEL(m_weaponModel, (char*)STRING(VARS(m_weaponModel)->model));
 		return;
 	}
 
@@ -1168,14 +1167,12 @@ void NPC::SetUpNPCWeapon(bool giveWeapon)
 
 	VARS(m_weaponModel)->classname = ALLOC_STRING("SwNPC_WeaponEntity");
 
-	VARS(m_weaponModel)->model = MAKE_STRING("models/p_ak47.mdl");
+	VARS(m_weaponModel)->model = MAKE_STRING(pmodelName);
 	SET_MODEL(m_weaponModel, (char*)STRING(VARS(m_weaponModel)->model));
 
 	VARS(m_weaponModel)->movetype = MOVETYPE_FOLLOW;
 	VARS(m_weaponModel)->aiment = GetEntity();
 	VARS(m_weaponModel)->owner = GetEntity();
-
-	MF_ExecuteForward(g_callSetWeapon, (cell)ENTINDEX(GetEntity()), (cell)ENTINDEX(m_weaponModel));
 }
 
 void NPC::DeleteSearchNodes(void)
@@ -1424,36 +1421,22 @@ int NPC::GetNavDataAPI(int data)
 	return -1;
 }
 
-void NPC::BaseSequence(int baseSequence)
+void NPC::BaseSequence()
 {
-	if (baseSequence == 0)
-	{
-		for (int i = 0; i < AS_ALL; i++)
-		{
-			m_actionSequence[i] = -1;
-			m_actionTime[i] = -1.0f;
-			m_ASName[i] = "null";
-		}
-
-		return;
-	}
-
+	m_pmodel = null;
 	m_ASName[AS_IDLE] = "idle1";
 	m_ASName[AS_MOVE] = "run";
-	m_ASName[AS_WALK] = "walk";
+	//m_ASName[AS_WALK] = "walk";
+	m_ASName[AS_WALK] = "run";
 	m_ASName[AS_ATTACK] = "ref_shoot_knife";
 	m_ASName[AS_DAMAGE] = "gut_flinch";
 	m_ASName[AS_DEAD] = "death1";
 }
 
-void NPC::SetSequence(const char *idle, const char *move, const char *walk, const char *attack, const char *damage, const char *dead)
+void NPC::SetSequence(int ASClass, const char *ASName)
 {
-	m_ASName[AS_IDLE] = (char *)idle;
-	m_ASName[AS_MOVE] = (char *)move;
-	m_ASName[AS_WALK] = (char *)walk;
-	m_ASName[AS_ATTACK] = (char *)attack;
-	m_ASName[AS_DAMAGE] = (char *)damage;
-	m_ASName[AS_DEAD] = (char *)dead;
+	m_pmodel = null;
+	m_ASName[ASClass] = (char*)ASName;
 }
 
 void NPC::SetNPCSize(Vector mins, Vector maxs)
@@ -1551,7 +1534,7 @@ void NPC::DebugModeMsg(void)
 		"Move Speed: %.2f  Speed: %.2f\n"
 		"Attack Distance : %.2f\n"
 		"Fake Crouch: %s\n"
-		"Testing: %d", 
+		"Testing: %.2f", 
 		gamemodName,
 		GetEntityName(GetEntity()), taskName,
 		enemyName, npcTeam,

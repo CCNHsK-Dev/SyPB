@@ -71,23 +71,17 @@ static cell AMX_NATIVE_CALL amxx_findEnemyMode(AMX *amx, cell *params) // 1.42
 static cell AMX_NATIVE_CALL amxx_baseSequence(AMX* amx, cell* params) // 1.50
 {
 	int npcId = params[1];
-	int baseSequence = params[2];
 
-	return g_npcManager->BaseSequence(npcId, baseSequence);
+	return g_npcManager->BaseSequence(npcId);
 }
 
 static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 {
 	int npcId = params[1];
+	int ASClass = params[2];
+	const char *ASName = MF_GetAmxString(amx, params[3], apiBuffer++, null);
 
-	char *idle = MF_GetAmxString(amx, params[2], apiBuffer++, null);
-	char *move = MF_GetAmxString(amx, params[3], apiBuffer++, null);
-	char *walk = MF_GetAmxString(amx, params[4], apiBuffer++, null);
-	char *attack = MF_GetAmxString(amx, params[5], apiBuffer++, null);
-	char *damage = MF_GetAmxString(amx, params[6], apiBuffer++, null);
-	char *dead = MF_GetAmxString(amx, params[7], apiBuffer++, null);
-
-	return g_npcManager->SetSequence(npcId, idle, move, walk, attack, damage, dead);
+	return g_npcManager->SetSequence(npcId, ASClass, ASName);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAddFrags(AMX *amx, cell *params) // 1.48
@@ -109,9 +103,9 @@ static cell AMX_NATIVE_CALL amxx_setDeadRemoveTime(AMX *amx, cell *params) // 1.
 static cell AMX_NATIVE_CALL amxx_setHasWeapon(AMX* amx, cell* params)
 {
 	int npcId = params[1];
-	int hasWeapon = params[2];
+	const char* pmodelName = MF_GetAmxString(amx, params[2], apiBuffer++, null);
 
-	return g_npcManager->SetHasWeapon(npcId, hasWeapon);
+	return g_npcManager->SetHasWeapon(npcId, pmodelName);
 }
 
 static cell AMX_NATIVE_CALL amxx_setBloodColor(AMX *amx, cell *params) // 1.42

@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45228.136
+* Support Build: 1.50.45229.137
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.45225.794 or new
+* Support SyPB Build: 1.50.45229.794 or new
 *
-* Date: 16/3/2023
+* Date: 17/3/2023
 */
 
 /* -----------------------------------------------------------------------
@@ -71,12 +71,6 @@ native swnpc_set_size (npcId, Float:minSize[3], Float:maxSize[3]);
 
 // feMode = 0: SwNPC Will Not Check Enemy, Base on 1
 native swnpc_set_find_enemy_mode (npcId, feMode);
-
-// Set Model Sequence , Use the sequence name
-native swnpc_set_sequence_name (npcId, const idle[], const move[], const walk[], const attack[], const damage[], const dead[]);
-
-// Use Player Model Sequence Setting, Base on 1
-native swnpc_use_base_sequence (npcId, humanSequence);
 
 // 247=Red,-1=No Blood, Base on 247
 native swnpc_set_blood_color (npcId, bloodColor);
@@ -169,6 +163,22 @@ enum // for SwNPC_PlaySound > soundClass
 	NS_ALL,
 };
 
+// Use Player Model Sequence Setting
+native swnpc_use_base_sequence (npcId);
+
+// Set Model Sequence , Use the sequence name
+native swnpc_set_sequence_name (npcId, asClass, const asName[]);
+
+enum // asClass
+{
+	AS_IDLE = 0,
+	AS_MOVE,
+	AS_WALK, 
+	AS_ATTACK,
+	AS_DAMAGE, 
+	AS_DEAD,
+	AS_ALL, 
+};
+
 // NPC Need p_model Weapon?
-native swnpc_set_has_weapon (npcId, hasWeapon);
-forward SwNPC_Set_Weapon_Model (npcId, pModelId);
+native swnpc_set_has_weapon (npcId, const pmodelName[]);

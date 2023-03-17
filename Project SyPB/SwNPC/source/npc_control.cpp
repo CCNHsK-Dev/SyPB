@@ -206,24 +206,27 @@ int NPCControl::SetFEMode(int npcId, int feMode)
 	return 1;
 }
 
-int NPCControl::BaseSequence(int npcId, int baseSequence)
+int NPCControl::BaseSequence(int npcId)
 {
 	NPC* npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->BaseSequence(baseSequence);
+	npc->BaseSequence();
 	return 1;
 }
 
-int NPCControl::SetSequence(int npcId, const char *idle, const char *move, const char *walk, 
-	const char *attack, const char *damage, const char *dead)
+int NPCControl::SetSequence(int npcId, int ASClass, const char *ASName)
 {
+	if (ASClass < 0 || ASClass >= AS_ALL)
+		return -1;
+
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->SetSequence(idle, move, walk, attack, damage, dead);
+	npc->SetSequence(ASClass, ASName);
+
 	return 1;
 }
 
@@ -262,13 +265,13 @@ int NPCControl::SetDeadRemoveTime(int npcId, float deadRemoveTime)
 	return 1;
 }
 
-int NPCControl::SetHasWeapon(int npcId, int hasWeapon)
+int NPCControl::SetHasWeapon(int npcId, const char* pmodelName)
 {
 	NPC* npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->SetUpNPCWeapon(hasWeapon > 0);
+	npc->SetUpNPCWeapon(pmodelName);
 
 	return 1;
 }

@@ -2,22 +2,20 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45228.136
+* Support Build: 1.50.45229.137
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.45225.794 or new
+* Support SyPB Build: 1.50.45229.794 or new
 *
-* Date: 16/3/2023
+* Date: 17/3/2023
 */
 
 #include <amxmodx>
 #include <amxmisc>
-#include <sypb>
 #include <swnpc>
-#include <engine>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45228.136"
+#define VERSION	"1.50.45229.137"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -52,14 +50,6 @@ public SwNPC_Remove (npcId)
 	client_print(0, print_chat, "remove npc %d", npcId);
 }
 
-public SwNPC_Set_Weapon_Model (npcId, pModelId)
-{
-	new classname[32];
-	entity_get_string(pModelId, EV_SZ_classname, classname, 31);
-	
-	client_print(0, print_chat, "npc %d setup pmodel %d _ %s", npcId, pModelId, classname);
-}
-
 public SwNPC_TakeDamage_Pre(victim, attack, damage)
 {
 	//client_print(0, print_chat, "TakeDamage_Pre | attack:%d | victim:%d | damage:%d", attack, victim, damage);
@@ -79,7 +69,6 @@ public SwNPC_PlaySound (npcId, soundClass, soundChannel)
 	if (soundClass == NS_DEAD && swnpc_get_team (npcId) == TEAM_TR)
 	{
 		swnpc_emit_sound (npcId, soundChannel, "zombie_plague/zombie_die3.wav");
-		// emit_sound(npcId, soundChannel, zombie_plague/zombie_die3.wav", 1.0, ATTN_NORM, 0, PITCH_NORM);
 		return PLUGIN_HANDLED;
 	}
 	
@@ -111,6 +100,7 @@ public add_swnpc_team_tr ()
 	
 	swnpc_set_add_frags (ent, 1);
 	swnpc_set_dead_remove_time (ent, 10.0);
+	swnpc_set_sequence_name (ent, AS_MOVE, "walk");
 
 	set_task (5.0, "add_swnpc_team_tr");
 }
@@ -126,7 +116,7 @@ public add_swnpc_team_ct ()
 	
 	swnpc_set_add_frags (ent, 2);
 	swnpc_set_dead_remove_time (ent, 10.0);
-	swnpc_set_has_weapon (ent, 1);
+	swnpc_set_has_weapon (ent, "models/p_ak47.mdl");
 	
 	set_task (5.0, "add_swnpc_team_ct");
 }

@@ -98,7 +98,7 @@ private:
 	Vector m_prevOrigin;
 
 	bool m_fakeCrouch;
-	int m_testValue;
+	float m_testValue;
 
 	// For check enemy only
 	edict_t *m_allEnemy[checkEnemyNum];
@@ -212,7 +212,7 @@ public:
 	void NPCAi(void);
 	void NPCAction(void);
 
-	void SetUpNPCWeapon(bool giveWeapon);
+	void SetUpNPCWeapon(const char* pmodelName);
 
 	void SetEnemy(edict_t *entity);
 	void SetMoveTarget(edict_t *entity);
@@ -228,9 +228,8 @@ public:
 	void SetWaypointOrigin(void);
 	int CheckGoalWaypoint(void) { return m_goalWaypoint; };
 
-	void BaseSequence(int baseSequence = 1);
-	void SetSequence(const char *idle, const char *move, const char *walk, const char *attack, 
-		const char *damage, const char *dead);
+	void BaseSequence(void);
+	void SetSequence(int asClass, const char *asName);
 	void SetNPCSize(Vector mins = nullvec, Vector maxs = nullvec);
 };
 
@@ -277,9 +276,8 @@ public:
 	int SetSize(int npcId, Vector minSize, Vector maxSize);
 	int SetFEMode(int npcId, int feMode);
 
-	int BaseSequence(int npcId, int baseSequence);
-	int SetSequence(int npcId, const char *idle, const char *move, const char *walk, const char *attack, 
-		const char *damage, const char *dead);
+	int BaseSequence(int npcId);
+	int SetSequence(int npcId, int asClass, const char *asName);
 
 	int SetBloodColor(int npcId, int bloodColor);
 	int SetDamageMissArmor(int npcId, bool missArmor);
@@ -290,7 +288,7 @@ public:
 	int SetAddFrags(int npcId, int addFrags);
 	int SetDeadRemoveTime(int npcId, float deadRemoveTime);
 
-	int SetHasWeapon(int npcId, int hasWeapon);
+	int SetHasWeapon(int npcId, const char* pmodelName);
 
 	int SetGoalWaypoint(int npcId, int goal);
 	int SetEnemy(int npcId, int enemyId);
@@ -349,8 +347,6 @@ extern AMX_NATIVE_INFO swnpc_natives[];
 // For Add new SwNPC / Remove SwNPC
 extern int g_callAddNPC;
 extern int g_callRemoveNPC;
-
-extern int g_callSetWeapon;
 
 // Pre
 extern int g_callThink_Pre;
