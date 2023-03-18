@@ -26,6 +26,7 @@ enum NPC_ActionSequence
 	AS_MOVE,
 	AS_WALK, 
 	AS_ATTACK,
+	AS_ATTACK_GUN, 
 	AS_DAMAGE, 
 	AS_DEAD,
 	AS_ALL, 
@@ -406,6 +407,7 @@ extern const char *GetEntityName(edict_t *entity);
 extern int LookupActivity(void *pmodel, entvars_t *pev, int activity);
 extern int LookupSequence(void *pmodel, const char *label);
 extern float LookupActionTime(void *pmodel, int seqNum);
+extern void SetController(void* pmodel, entvars_t* pev, int iController, float flValue);
 
 //extern void TraceBleed(edict_t *entity, float damage, Vector vecDir, TraceResult *tr, int bits, int color);
 extern void TraceBleed(edict_t *entity, float damage, Vector vecDir, Vector endPos, int bits, int color);

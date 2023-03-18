@@ -226,11 +226,6 @@ void NPC::Spawn(Vector origin)
 	SetNPCSize();
 	SET_ORIGIN(GetEntity(), origin);
 
-	pev->controller[0] = 125;
-	pev->controller[1] = 125;
-	pev->controller[2] = 125;
-	pev->controller[3] = 125;
-
 	m_pmodel = null;
 
 	DROP_TO_FLOOR(GetEntity());
@@ -711,10 +706,7 @@ void NPC::SetEnemy(edict_t *entity)
 	m_enemy = entity;
 	m_task |= TASK_ENEMY;
 
-	if (m_attackDistance <= 120.0f)
-		m_enemyUpdateTime = gpGlobals->time + 3.0f;
-	else
-		m_enemyUpdateTime = gpGlobals->time + 1.2f;
+	m_enemyUpdateTime = gpGlobals->time + 1.5f;
 
 }
 
@@ -900,6 +892,7 @@ void NPC::MoveAction(void)
 
 	Vector oldVelocity = pev->velocity;
 	Vector vecMove = m_destOrigin - pev->origin;
+	float trueSpeed = 0.0f;
 
 	if (IsOnLadder(GetEntity()))
 	{
@@ -937,7 +930,8 @@ void NPC::MoveAction(void)
 		SetNPCSize();
 
 	bool onFloor = IsOnFloor(GetEntity());
-	if (onFloor)
+	trueSpeed = GetDistance2D(oldVelocity);
+	if (onFloor && trueSpeed > 0.0f)
 	{
 		MakeVectors(pev->angles);
 
@@ -948,7 +942,7 @@ void NPC::MoveAction(void)
 		TraceResult tr;
 		UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
 		m_testValue = tr.flFraction;
-		if (tr.flFraction > 0.0f && tr.flFraction < 0.9f && !tr.fAllSolid && !tr.fStartSolid && FNullEnt(tr.pHit))
+		if (tr.flFraction > 0.05f && tr.flFraction < 0.9f && !tr.fAllSolid && !tr.fStartSolid && FNullEnt(tr.pHit))
 		{
 			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity()).z) - 18;
 
@@ -965,10 +959,9 @@ void NPC::MoveAction(void)
 
 	if (onFloor)
 	{
-		float speed = GetDistance2D(oldVelocity);
-		if (speed > 10.0f || speed < -10.0f)
+		if (trueSpeed > 10.0f || trueSpeed < -10.0f)
 		{
-			if ((speed >= (pev->maxspeed / 2) || speed <= (-pev->maxspeed / 2)))
+			if ((trueSpeed >= (pev->maxspeed / 2) || trueSpeed <= (-pev->maxspeed / 2)))
 			{
 				g_npcAS |= ASC_MOVE;
 
@@ -1081,6 +1074,12 @@ void NPC::ChangeAnim()
 	{
 		animDesired = m_actionSequence[AS_ATTACK];
 		m_changeActionTime = gpGlobals->time + m_actionTime[AS_ATTACK];
+
+		if (m_attackDistance >= 300.0f && m_actionSequence[AS_ATTACK_GUN] != -1)
+		{
+			animDesired = m_actionSequence[AS_ATTACK_GUN];
+			m_changeActionTime = gpGlobals->time + m_actionTime[AS_ATTACK_GUN];
+		}
 	}
 	else if (g_npcAS & ASC_DAMAGE && m_actionSequence[AS_DAMAGE] != -1)
 	{
@@ -1124,6 +1123,14 @@ void NPC::SetUpPModel(void)
 	}
 	else if (pModel != m_pmodel)
 	{
+		MakeVectors(pev->v_angle);
+
+		SetController(pModel, pev, 0, (*g_engfuncs.pfnVecToYaw)(gpGlobals->v_forward));
+		SetController(pModel, pev, 1, 0);
+		SetController(pModel, pev, 2, 0);
+		SetController(pModel, pev, 3, 0);
+		SetController(pModel, pev, 4, 0);
+
 		for (int i = 0; i < AS_ALL; i++)
 		{
 			if (strcmp(m_ASName[i], "null") == 0)
@@ -1153,7 +1160,13 @@ void NPC::PlayNPCSound(int soundClass)
 		return;
 
 	char playSound[80];
-	if (soundClass == NS_ATTACK) sprintf(playSound, "weapons/knife_slash1.wav");
+	if (soundClass == NS_ATTACK)
+	{
+		if (m_attackDistance < 300.0f)
+			sprintf(playSound, "weapons/knife_slash1.wav");
+		else
+			sprintf(playSound, "weapons/ak47-1.wav");
+	}
 	else if (soundClass == NS_DAMAGE) sprintf(playSound, "player/bhit_flesh-1.wav");
 	else if (soundClass == NS_DEAD) sprintf(playSound, "player/die3.wav");
 	else if (soundClass == NS_FOOTSTEP) sprintf(playSound, "player/pl_step1.wav");
@@ -1439,6 +1452,7 @@ void NPC::BaseSequence()
 	//m_ASName[AS_WALK] = "walk";
 	m_ASName[AS_WALK] = "run";
 	m_ASName[AS_ATTACK] = "ref_shoot_knife";
+	m_ASName[AS_ATTACK_GUN] = "ref_shoot_ak47";
 	m_ASName[AS_DAMAGE] = "gut_flinch";
 	m_ASName[AS_DEAD] = "death1";
 }
@@ -1536,18 +1550,18 @@ void NPC::DebugModeMsg(void)
 	}
 
 	char outputBuffer[512];
-	sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
-		"\n [%s] \n Health: %.0f/%.0f Team: %s\n"
+	sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s NPC Count: %d/%d"
+		"\n [%s] ID: %d \n Health: %.0f/%.0f Team: %s\n"
 		"Attack_ Damage: %.0f Count: %d Discount: %.0f Time: %.0f\n"
 		"Task: %s \nEnemy%s\n\n"
 
 		"CWI: %d  GI: %d\n"
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
-		"Fake Crouch: %s Fake Jump: %s\n"
+		"Crouch: %s Jump: %s\n"
 		"Testing: %.2f", 
-		gamemodName,
-		GetEntityName(GetEntity()), pev->health, pev->max_health, npcTeam,
+		gamemodName, g_npcManager->g_SwNPCNum, MAX_NPC, 
+		GetEntityName(GetEntity()), ENTINDEX (GetEntity ()), pev->health, pev->max_health, npcTeam,
 		m_attackDamage, m_attackCount, m_attackDistance, m_attackDelayTime,
 		taskName, enemyName,
 		m_currentWaypointIndex, m_goalWaypoint,

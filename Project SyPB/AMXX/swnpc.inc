@@ -2,7 +2,7 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45230.138
+* Support Build: 1.50.45230.139
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45229.794 or new
@@ -180,6 +180,7 @@ enum // asClass
 	AS_MOVE,
 	AS_WALK, 
 	AS_ATTACK,
+	AS_ATTACK_GUN, 
 	AS_DAMAGE, 
 	AS_DEAD,
 	AS_ALL, 

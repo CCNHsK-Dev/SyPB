@@ -2,7 +2,7 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45230.138
+* Support Build: 1.50.45230.139
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45229.794 or new
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45230.138"
+#define VERSION	"1.50.45230.139"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -102,7 +102,7 @@ public add_swnpc_team_tr ()
 	
 	swnpc_set_add_frags (ent, 1);
 	swnpc_set_dead_remove_time (ent, 10.0);
-	swnpc_set_sequence_name (ent, AS_MOVE, "walk");
+	//swnpc_set_sequence_name (ent, AS_MOVE, "walk");
 
 	set_task (5.0, "add_swnpc_team_tr");
 }
@@ -112,11 +112,12 @@ public add_swnpc_team_ct ()
 	new Float:origin[3];
 	origin = g_spawns[random_num(0, g_spawnCount - 1)];
 	
-	new ent = swnpc_add_npc ("swnpc_team_ct", team2_model, 200.0, 240.0, TEAM_CT, origin);
+	new ent = swnpc_add_npc ("swnpc_team_ct", team2_model, 100.0, 220.0, TEAM_CT, origin);
 
 	// CT NPC attack damage 5, but attack count is 2
-	swnpc_set_attack_damage (ent, 5.0);
-	swnpc_set_attack_count (ent, 2);
+	swnpc_set_attack_distance (ent, 9999.0);
+	swnpc_set_attack_damage (ent, 6.0);
+	swnpc_set_attack_count (ent, 3);
 	
 	swnpc_set_add_frags (ent, 2);
 	swnpc_set_dead_remove_time (ent, 10.0);
