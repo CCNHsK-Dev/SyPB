@@ -43,7 +43,7 @@ void NPC::Remove()
 {
 	m_workNPC = false;
 
-	SetUpNPCWeapon(false);
+	SetUpNPCWeapon("null");
 
 	if (vtable != null)
 	{
@@ -97,8 +97,9 @@ void NPC::NewNPCSetting(void)
 	m_deadRemoveTime = 5.0f;
 
 	m_attackDamage = 20.0f;
+	m_attackCount = 1;
 	m_attackDistance = 64.0f;
-	m_attackDelayTime = 3.0f;
+	m_attackDelayTime = 3.1f;
 
 	m_npcTeam = -1;
 	ResetNPC();
@@ -125,7 +126,10 @@ void NPC::ResetNPC(void)
 	m_goalWaypoint = -1;
 
 	m_asTime = 0.0f;
+
+	m_attackCountCheck = 0;
 	m_attackTime = 0.0f;
+	m_attackCountTime = 0.0f;
 
 	m_checkStuckTime = -1.0f;
 	m_prevOrigin = nullvec;
@@ -217,7 +221,8 @@ void NPC::Spawn(Vector origin)
 	pev->health = pev->max_health;
 	pev->fixangle = true;
 
-	m_fakeCrouch = false;
+	m_crouchAction = false;
+	m_crouchDelayTime = gpGlobals->time;
 	SetNPCSize();
 	SET_ORIGIN(GetEntity(), origin);
 
@@ -250,6 +255,7 @@ void NPC::NPCAi(void)
 
 	FindEnemy();
 	NPCTask();
+	AttackAction();
 
 	if (m_destOrigin == nullvec && m_currentWaypointIndex != -1)
 	{
@@ -335,7 +341,6 @@ void NPC::TaskEnemy(void)
 	m_goalWaypoint = -1;
 
 	m_moveSpeed = pev->maxspeed;
-	AttackAction(m_enemy);
 }
 
 void NPC::TaskMoveTarget(void)
@@ -773,28 +778,36 @@ float NPC::GetEntityDistance(edict_t *entity)
 	return wpDistance;
 }
 
-bool NPC::AttackAction(edict_t *entity, bool needSetSpeed)
+bool NPC::AttackAction(void)
 {
-	if (FNullEnt(entity) || !IsAlive(entity))
+	if (FNullEnt(m_enemy) || !IsAlive(m_enemy))
 		return false;
 
-	if (!IsOnAttackDistance(entity, m_attackDistance))
+	if (!IsOnAttackDistance(m_enemy, m_attackDistance))
 		return false;
 
-	if (needSetSpeed)
-		m_moveSpeed = 0.0f;
+	m_moveSpeed = 0.0f;
+
+	TraceResult tr;
+	UTIL_TraceLine(pev->origin, GetEntityOrigin(m_enemy), ignore_monsters, GetEntity(), &tr);
 
 	if ((m_attackTime + m_attackDelayTime) <= gpGlobals->time)
 	{
-		TraceResult tr;
-		UTIL_TraceLine(pev->origin, GetEntityOrigin(entity), ignore_monsters, GetEntity(), &tr);
-		if (tr.pHit != entity && tr.flFraction < 1.0f)
+		if (tr.pHit != m_enemy && tr.flFraction < 1.0f)
 			return false;
 
-		g_npcAS |= ASC_ATTACK;
 		m_attackTime = gpGlobals->time;
+		m_attackCountCheck = m_attackCount;
+	}
+
+	if (m_attackCountCheck > 0 && m_attackCountTime <= gpGlobals->time)
+	{
+		m_attackCountTime = gpGlobals->time + (1.0f / m_attackCount);
+
+		g_npcAS |= ASC_ATTACK;
 		m_changeActionTime = -1.0f;
 		m_setFootStepSoundTime = gpGlobals->time + 2.0f;
+		PlayNPCSound(NS_ATTACK);
 
 		MakeVectors(pev->angles);
 		float x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
@@ -802,9 +815,10 @@ bool NPC::AttackAction(edict_t *entity, bool needSetSpeed)
 		Vector vecDir = gpGlobals->v_forward + x * 0.15 * gpGlobals->v_right + y * 0.15 * gpGlobals->v_up;
 
 		TakeDamage(m_enemy, GetEntity(), m_attackDamage, 0, tr.vecEndPos, vecDir);
-		PlayNPCSound(NS_ATTACK);
 
-		return true;
+		m_attackCountCheck--;
+		if (m_attackCountCheck == 0)
+			m_attackTime = gpGlobals->time;
 	}
 
 	return false;
@@ -908,8 +922,19 @@ void NPC::MoveAction(void)
 	if (m_jumpAction)
 	{
 		pev->velocity.z = (270.0f * pev->gravity) + 32.0f; // client gravity 1 = 270.0f , and jump+duck + 32.0f
+		m_crouchAction = true;
 		m_jumpAction = false;
 	}
+
+	Vector crouchSize = g_npcSize[1];
+	if (m_crouchAction)
+	{
+		crouchSize.z = 0.0f;
+		SetNPCSize(g_npcSize[0], crouchSize);
+		m_crouchDelayTime = gpGlobals->time + 0.5f;
+	}
+	else if (crouchSize.z == 0.0f && m_crouchDelayTime < gpGlobals->time)
+		SetNPCSize();
 
 	bool onFloor = IsOnFloor(GetEntity());
 	if (onFloor)
@@ -983,15 +1008,11 @@ void NPC::CheckStuck(float oldSpeed)
 
 	if (isStuck)
 	{
-		if (!m_fakeCrouch)
+		if (!m_crouchAction)
 		{
 			if (g_waypoint->g_waypointPointFlag[m_currentWaypointIndex] & WAYPOINT_CROUCH)
 			{
-				m_fakeCrouch = true;
-
-				Vector crouchSize = g_npcSize[1];
-				crouchSize.z = 0.0f;
-				SetNPCSize(g_npcSize[0], crouchSize);
+				m_crouchAction = true;
 				return;
 			}
 		}
@@ -1004,7 +1025,7 @@ void NPC::CheckStuck(float oldSpeed)
 		Vector src = pev->origin + gpGlobals->v_forward * 36;
 
 		UTIL_TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
-		if (tr.flFraction > 0.0f && tr.flFraction != 1.0f)
+		if (tr.flFraction > 0.0f && tr.flFraction != 1.0f && FNullEnt (tr.pHit))
 		{
 			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity ()).z) - 36;
 			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 36)
@@ -1107,7 +1128,7 @@ void NPC::SetUpPModel(void)
 		{
 			if (strcmp(m_ASName[i], "null") == 0)
 				m_actionSequence[i] = -1;
-			else
+			else if (strcmp(m_ASName[i], "setfor_id") != 0)
 				m_actionSequence[i] = LookupSequence(pModel, m_ASName[i]);
 
 			m_actionTime[i] = LookupActionTime(pModel, m_actionSequence[i]);
@@ -1142,7 +1163,7 @@ void NPC::PlayNPCSound(int soundClass)
 
 void NPC::SetUpNPCWeapon(const char* pmodelName)
 {
-	if (strcmp(pmodelName, "null") == 0 || !pmodelName)
+	if (strcmp(pmodelName, "null") == 0)
 	{
 		if (!FNullEnt(m_weaponModel))
 			REMOVE_ENTITY(m_weaponModel);
@@ -1320,18 +1341,7 @@ void NPC::HeadTowardWaypoint(void)
 		SetNPCNewWaypointPoint(GetEntity(), m_navNode->index);
 	}
 
-	if (needFakeCrouch && !m_fakeCrouch)
-	{
-		m_fakeCrouch = true;
-		Vector crouchSize = g_npcSize[1];
-		crouchSize.z = 0.0f;
-		SetNPCSize(g_npcSize[0], crouchSize);
-	}
-	else if (!needFakeCrouch && m_fakeCrouch)
-	{
-		SetNPCSize();
-		m_fakeCrouch = false;
-	}
+	m_crouchAction = needFakeCrouch;
 
 	SetWaypointOrigin();
 	m_navTime = gpGlobals->time + 5.0f;
@@ -1433,10 +1443,11 @@ void NPC::BaseSequence()
 	m_ASName[AS_DEAD] = "death1";
 }
 
-void NPC::SetSequence(int ASClass, const char *ASName)
+void NPC::SetSequence(int ASClass, const char *ASName, int asModelId)
 {
-	m_pmodel = null;
 	m_ASName[ASClass] = (char*)ASName;
+	m_actionSequence[ASClass] = asModelId;
+	m_pmodel = null;
 }
 
 void NPC::SetNPCSize(Vector mins, Vector maxs)
@@ -1526,22 +1537,23 @@ void NPC::DebugModeMsg(void)
 
 	char outputBuffer[512];
 	sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
-		"\n [%s] \n Task: %s\n"
-		"Enemy%s  Team: %s\n\n"
+		"\n [%s] \n Health: %.0f/%.0f Team: %s\n"
+		"Attack_ Damage: %.0f Count: %d Discount: %.0f Time: %.0f\n"
+		"Task: %s \nEnemy%s\n\n"
 
 		"CWI: %d  GI: %d\n"
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
-		"Attack Distance : %.2f\n"
-		"Fake Crouch: %s\n"
+		"Fake Crouch: %s Fake Jump: %s\n"
 		"Testing: %.2f", 
 		gamemodName,
-		GetEntityName(GetEntity()), taskName,
-		enemyName, npcTeam,
+		GetEntityName(GetEntity()), pev->health, pev->max_health, npcTeam,
+		m_attackDamage, m_attackCount, m_attackDistance, m_attackDelayTime,
+		taskName, enemyName,
 		m_currentWaypointIndex, m_goalWaypoint,
 		navIndex[0], navIndex[1],
 		m_moveSpeed, GetDistance2D(pev->velocity),
-		m_attackDistance, m_fakeCrouch ? "Yes" : "No", 
+		m_crouchAction ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
 		m_testValue);
 
 	MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);

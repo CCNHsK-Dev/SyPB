@@ -97,7 +97,12 @@ private:
 	float m_checkStuckTime;
 	Vector m_prevOrigin;
 
-	bool m_fakeCrouch;
+	float m_moveSpeed;
+
+	bool m_jumpAction;
+	bool m_crouchAction;
+	float m_crouchDelayTime;
+
 	float m_testValue;
 
 	// For check enemy only
@@ -121,7 +126,7 @@ private:
 	float GetEntityDistance(edict_t *entity);
 	bool IsEnemyViewable(edict_t *entity);
 	bool IsOnAttackDistance(edict_t *targetEntity, float distance);
-	bool AttackAction(edict_t *entity, bool needSetSpeed = true);
+	bool AttackAction(void);
 
 	void ChangeAnim(void);
 
@@ -166,15 +171,16 @@ public:
 	Vector m_lookAt;
 	Vector m_destOrigin;
 
-	float m_moveSpeed;
-	bool m_jumpAction;
-
 	float m_damageMultiples;
 	bool m_missArmor;
 	int m_addFrags;
 
 	float m_attackTime;
+	int m_attackCountCheck;
+	float m_attackCountTime;
+
 	float m_attackDamage;
+	int m_attackCount;
 	float m_attackDistance;
 	float m_attackDelayTime;
 
@@ -229,7 +235,7 @@ public:
 	int CheckGoalWaypoint(void) { return m_goalWaypoint; };
 
 	void BaseSequence(void);
-	void SetSequence(int asClass, const char *asName);
+	void SetSequence(int asClass, const char *asName, int asModelId);
 	void SetNPCSize(Vector mins = nullvec, Vector maxs = nullvec);
 };
 
@@ -277,12 +283,13 @@ public:
 	int SetFEMode(int npcId, int feMode);
 
 	int BaseSequence(int npcId);
-	int SetSequence(int npcId, int asClass, const char *asName);
+	int SetSequence(int npcId, int asClass, const char *asName, int asModelId = -1);
 
 	int SetBloodColor(int npcId, int bloodColor);
 	int SetDamageMissArmor(int npcId, bool missArmor);
 	int SetDamageMultiples(int npcId, float damageMultiples);
 	int SetAttackDamage(int npcId, float damage);
+	int SetAttackCount(int npcId, int attackCount);
 	int SetAttackDistance(int npcId, float distance);
 	int SetAttackDelayTime(int npcId, float delayTime);
 	int SetAddFrags(int npcId, int addFrags);

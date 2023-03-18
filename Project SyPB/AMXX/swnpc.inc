@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45229.137
+* Support Build: 1.50.45230.138
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45229.794 or new
 *
-* Date: 17/3/2023
+* Date: 18/3/2023
 */
 
 /* -----------------------------------------------------------------------
@@ -84,10 +84,13 @@ native swnpc_set_damage_miss_armor (npcId, missArmor);
 // SwNPC attack damage, base on 20
 native swnpc_set_attack_damage (npcId, Float:damage);
 
+// SwNPC Attack Count, Base is 1 (Max is 3)
+native swnpc_set_attack_count (npcId, attackCount);
+
 // SwNPC attack distance, base on 64
 native swnpc_set_attack_distance (npcId, Float:attackDistance);
 
-// SwNPC Attack Time, base on 3
+// SwNPC Attack Time, base on 3.0 (Min is 1.0)
 native swnpc_set_attack_delay_time (npcId, Float:delayTime);
 
 // Set the npc goal point
@@ -168,6 +171,8 @@ native swnpc_use_base_sequence (npcId);
 
 // Set Model Sequence , Use the sequence name
 native swnpc_set_sequence_name (npcId, asClass, const asName[]);
+// Set Model Sequence, Use the sequence Id
+native swnpc_set_sequence_id (npcId, asClass, sequenceId);
 
 enum // asClass
 {

@@ -84,6 +84,15 @@ static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 	return g_npcManager->SetSequence(npcId, ASClass, ASName);
 }
 
+static cell AMX_NATIVE_CALL amxx_setSequenceId(AMX* amx, cell* params)
+{
+	int npcId = params[1];
+	int ASClass = params[2];
+	int ASModelId = params[3];
+
+	return g_npcManager->SetSequence(npcId, ASClass, "setfor_id", ASModelId);
+}
+
 static cell AMX_NATIVE_CALL amxx_setAddFrags(AMX *amx, cell *params) // 1.48
 {
 	int npcId = params[1];
@@ -138,6 +147,14 @@ static cell AMX_NATIVE_CALL amxx_setAttackDamage(AMX *amx, cell *params) // 1.42
 	float damage = amx_ctof(params[2]);
 
 	return g_npcManager->SetAttackDamage(npcId, damage);
+}
+
+static cell AMX_NATIVE_CALL amx_setAttackCount(AMX* amx, cell* params)
+{
+	int npcId = params[1];
+	float attackCount = params[2];
+
+	return g_npcManager->SetAttackCount(npcId, attackCount);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAttackDistance(AMX *amx, cell *params) // 1.42
@@ -328,6 +345,7 @@ AMX_NATIVE_INFO swnpc_natives[] =
 
 	{ "swnpc_use_base_sequence", amxx_baseSequence },
 	{ "swnpc_set_sequence_name", amxx_setSequenceName },
+	{ "swnpc_set_sequence_id", amxx_setSequenceId }, 
 
 	{ "swnpc_set_blood_color", amxx_setBloodColor },
 	{ "swnpc_set_find_enemy_mode", amxx_findEnemyMode }, 
@@ -341,6 +359,7 @@ AMX_NATIVE_INFO swnpc_natives[] =
 	{ "swnpc_set_damage_miss_armor", amxx_setDamageMissArmor },
 
 	{ "swnpc_set_attack_damage", amxx_setAttackDamage }, 
+	{ "swnpc_set_attack_count", amx_setAttackCount },
 	{ "swnpc_set_attack_distance", amxx_setAttackDistance }, 
 	{ "swnpc_set_attack_delay_time", amxx_setAttackDelayTime }, 
 

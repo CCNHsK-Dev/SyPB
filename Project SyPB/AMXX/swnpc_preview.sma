@@ -2,20 +2,21 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45229.137
+* Support Build: 1.50.45230.138
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45229.794 or new
 *
-* Date: 17/3/2023
+* Date: 18/3/2023
 */
+
 
 #include <amxmodx>
 #include <amxmisc>
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45229.137"
+#define VERSION	"1.50.45230.138"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -96,6 +97,7 @@ public add_swnpc_team_tr ()
 	
 	new ent = swnpc_add_npc ("swnpc_team_tr", team1_model, 200.0, 240.0, TEAM_TR, origin);
 
+	// TR NPC attack damage 10
 	swnpc_set_attack_damage (ent, 10.0);
 	
 	swnpc_set_add_frags (ent, 1);
@@ -112,7 +114,9 @@ public add_swnpc_team_ct ()
 	
 	new ent = swnpc_add_npc ("swnpc_team_ct", team2_model, 200.0, 240.0, TEAM_CT, origin);
 
-	swnpc_set_attack_damage (ent, 10.0);
+	// CT NPC attack damage 5, but attack count is 2
+	swnpc_set_attack_damage (ent, 5.0);
+	swnpc_set_attack_count (ent, 2);
 	
 	swnpc_set_add_frags (ent, 2);
 	swnpc_set_dead_remove_time (ent, 10.0);

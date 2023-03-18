@@ -216,7 +216,7 @@ int NPCControl::BaseSequence(int npcId)
 	return 1;
 }
 
-int NPCControl::SetSequence(int npcId, int ASClass, const char *ASName)
+int NPCControl::SetSequence(int npcId, int ASClass, const char *ASName, int asModelId)
 {
 	if (ASClass < 0 || ASClass >= AS_ALL)
 		return -1;
@@ -225,7 +225,7 @@ int NPCControl::SetSequence(int npcId, int ASClass, const char *ASName)
 	if (npc == null)
 		return -2;
 
-	npc->SetSequence(ASClass, ASName);
+	npc->SetSequence(ASClass, ASName, asModelId);
 
 	return 1;
 }
@@ -305,7 +305,25 @@ int NPCControl::SetAttackDamage(int npcId, float damage)
 	if (npc == null)
 		return -2;
 
+	if (damage < 0)
+		damage = 0;
+
 	npc->m_attackDamage = damage;
+	return 1;
+}
+
+int NPCControl::SetAttackCount(int npcId, int attackCount)
+{
+	NPC* npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	if (attackCount < 1)
+		attackCount = 1;
+	if (attackCount > 3)
+		attackCount = 3;
+
+	npc->m_attackCount = attackCount;
 	return 1;
 }
 
@@ -328,10 +346,10 @@ int NPCControl::SetAttackDelayTime(int npcId, float delayTime)
 	if (npc == null)
 		return -2;
 
-	if (delayTime < 0.0f)
+	if (delayTime < 1.0f)
 		return -1;
 
-	npc->m_attackDelayTime = delayTime;
+	npc->m_attackDelayTime = delayTime+0.1f;
 	return 1;
 }
 
