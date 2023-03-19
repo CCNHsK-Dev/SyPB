@@ -21,6 +21,11 @@ int g_callKill_Post = -1;
 int g_TDP_damageValue = -1;
 bool g_TDP_cvOn = false;
 
+int gcTextures = 0;
+bool fTextureTypeInit = FALSE;
+char grgszTextureName[MAX_TEXTURES][MAX_TEXTURENAME_LENGHT];
+char grgchTextureType[MAX_TEXTURES];
+
 int g_gameMode = -1;
 
 int g_sModelIndexBloodDrop = -1;

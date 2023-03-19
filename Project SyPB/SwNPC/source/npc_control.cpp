@@ -5,6 +5,8 @@ NPCControl::NPCControl(void)
 {
 	g_SwNPCNum = 0;
 	memset(m_npcs, 0, sizeof(m_npcs));
+
+	TEXTURETYPE_Init();
 }
 
 void NPCControl::Think(void)
@@ -188,8 +190,8 @@ int NPCControl::SetSize(int npcId, Vector minSize, Vector maxSize)
 	if (npc == null)
 		return -2;
 
-	npc->g_npcSize[0] = minSize;
-	npc->g_npcSize[1] = maxSize;
+	npc->m_npcSize[0] = minSize;
+	npc->m_npcSize[1] = maxSize;
 
 	npc->SetNPCSize();
 
@@ -251,6 +253,17 @@ int NPCControl::SetAddFrags(int npcId, int addFrags)
 	return 1;
 }
 
+int NPCControl::SetAddMoney(int npcId, int addMoney)
+{
+	NPC* npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	npc->m_addMoney = addMoney;
+
+	return 1;
+}
+
 int NPCControl::SetDeadRemoveTime(int npcId, float deadRemoveTime)
 {
 	NPC *npc = IsSwNPC(npcId);
@@ -258,7 +271,7 @@ int NPCControl::SetDeadRemoveTime(int npcId, float deadRemoveTime)
 		return -2;
 
 	if (deadRemoveTime < 0.0f)
-		deadRemoveTime = 999.9f;
+		deadRemoveTime = 5.0f;
 
 	npc->m_deadRemoveTime = deadRemoveTime;
 
@@ -273,6 +286,17 @@ int NPCControl::SetHasWeapon(int npcId, const char* pmodelName)
 
 	npc->SetUpNPCWeapon(pmodelName);
 
+	return 1;
+}
+
+int NPCControl::SetFootStep(int npcId, int footstep)
+{
+	NPC* npc = IsSwNPC(npcId);
+	if (npc == null)
+		return -2;
+
+	npc->m_needFootStep = (footstep != 0);
+	
 	return 1;
 }
 
@@ -335,6 +359,9 @@ int NPCControl::SetAttackDistance(int npcId, float distance)
 
 	if (distance <= 0.0f)
 		return -1;
+
+	if (distance > 8192.0f)
+		distance = 8192.0f;
 
 	npc->m_attackDistance = distance;
 	return 1;

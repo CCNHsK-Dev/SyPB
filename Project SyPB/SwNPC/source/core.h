@@ -50,8 +50,8 @@ enum GaitSequenceInformation
 	GS_RUN = 4,
 	GS_DUCK_WALK = 5,
 	GS_JUMP = 6,
-}; */
-
+};
+*/
 enum NPC_Task
 {
 	TASK_BASE = (1 << 0),
@@ -105,6 +105,7 @@ private:
 	float m_crouchDelayTime;
 
 	float m_testValue;
+	Vector m_testPoint;
 
 	// For check enemy only
 	edict_t *m_allEnemy[checkEnemyNum];
@@ -150,13 +151,15 @@ public:
 
 	bool m_needRemove;
 
-	int g_npcAS;
-	Vector g_npcSize[2];
+	int m_npcAS;
+	Vector m_npcSize[2];
 	char *m_ASName[AS_ALL];
 
 	int m_actionSequence[AS_ALL];
 	float m_actionTime [AS_ALL];
 	//int m_gaitSequence[2];
+
+	bool m_needFootStep;
 
 	int m_findEnemyMode;
 	int m_bloodColor;
@@ -175,6 +178,7 @@ public:
 	float m_damageMultiples;
 	bool m_missArmor;
 	int m_addFrags;
+	int m_addMoney;
 
 	float m_attackTime;
 	int m_attackCountCheck;
@@ -286,6 +290,7 @@ public:
 	int BaseSequence(int npcId);
 	int SetSequence(int npcId, int asClass, const char *asName, int asModelId = -1);
 
+	int SetFootStep(int npcId, int footstep);
 	int SetBloodColor(int npcId, int bloodColor);
 	int SetDamageMissArmor(int npcId, bool missArmor);
 	int SetDamageMultiples(int npcId, float damageMultiples);
@@ -294,6 +299,7 @@ public:
 	int SetAttackDistance(int npcId, float distance);
 	int SetAttackDelayTime(int npcId, float delayTime);
 	int SetAddFrags(int npcId, int addFrags);
+	int SetAddMoney(int npcId, int addMoney);
 	int SetDeadRemoveTime(int npcId, float deadRemoveTime);
 
 	int SetHasWeapon(int npcId, const char* pmodelName);
@@ -384,6 +390,29 @@ extern int g_modelIndexArrow;
 // For char buffer....
 extern int apiBuffer;
 
+const int MAX_TEXTURES = 1024;
+const int MAX_TEXTURENAME_LENGHT = 17;   // only load first n chars of name
+
+// Texture types
+const char CHAR_TEX_CONCRETE = 'C'; // Cinder block
+const char CHAR_TEX_METAL = 'M'; // Metal
+const char CHAR_TEX_DIRT = 'D';
+const char CHAR_TEX_VENT = 'V';
+const char CHAR_TEX_GRATE = 'G';
+const char CHAR_TEX_TILE = 'T'; // Ceiling tile
+const char CHAR_TEX_SLOSH = 'S';
+const char CHAR_TEX_WOOD = 'W';
+const char CHAR_TEX_COMPUTER = 'P';
+const char CHAR_TEX_GRASS = 'X';
+const char CHAR_TEX_GLASS = 'Y';
+const char CHAR_TEX_FLESH = 'F';
+const char CHAR_TEX_SNOW = 'N';
+
+extern int gcTextures;
+extern bool fTextureTypeInit;
+extern char grgszTextureName[MAX_TEXTURES][MAX_TEXTURENAME_LENGHT];
+extern char grgchTextureType[MAX_TEXTURES];
+
 void AllReLoad(void);
 
 extern int GetTeam(edict_t *entity);
@@ -427,6 +456,12 @@ extern int __fastcall HookTakeDamage(void *pthis, int i, entvars_t *pevInflictor
 extern float GetDistance(Vector origin1, Vector origin2 = nullvec);
 extern float GetDistance2D(Vector origin, Vector origin2 = nullvec);
 
+extern void TraceLine(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, IGNORE_GLASS ignoreGlass, edict_t* pentIgnore, TraceResult* ptr);
+extern void TraceLine(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, edict_t* pentIgnore, TraceResult* ptr);
+extern void TraceHull(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, int hullNumber, edict_t* pentIgnore, TraceResult* ptr);
+
+extern char* memfgets(byte* pMemFile, int fileSize, int& filePos, char* pBuffer, int bufferSize);
+
 // SyPB Load
 extern void SyPB_GetHostEntity(void);
 extern void SyPBDataLoad(void);
@@ -443,7 +478,6 @@ inline void MakeVectors(const Vector &in)
 
 extern void DrawLine(edict_t *client, Vector start, Vector end, Color color, int width, int noise, int speed, int life, int lineType);
 
-/*
 typedef enum
 {
 	HITGROUP_GENERIC,
@@ -457,4 +491,4 @@ typedef enum
 	HITGROUP_SHIELD,
 	NUM_HITGROUPS
 }
-HitBoxGroup; */
+HitBoxGroup;

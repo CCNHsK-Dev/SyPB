@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45230.139
+* Support Build: 1.50.45231.140
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45229.794 or new
 *
-* Date: 18/3/2023
+* Date: 19/3/2023
 */
 
 
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45230.139"
+#define VERSION	"1.50.45231.140"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -101,7 +101,9 @@ public add_swnpc_team_tr ()
 	swnpc_set_attack_damage (ent, 10.0);
 	
 	swnpc_set_add_frags (ent, 1);
+	swnpc_set_add_money (ent, 1000);
 	swnpc_set_dead_remove_time (ent, 10.0);
+	swnpc_set_need_footstep (ent, 0);
 	//swnpc_set_sequence_name (ent, AS_MOVE, "walk");
 
 	set_task (5.0, "add_swnpc_team_tr");
@@ -119,7 +121,8 @@ public add_swnpc_team_ct ()
 	swnpc_set_attack_damage (ent, 6.0);
 	swnpc_set_attack_count (ent, 3);
 	
-	swnpc_set_add_frags (ent, 2);
+	swnpc_set_add_frags (ent, 1);
+	swnpc_set_add_money (ent, 1000);
 	swnpc_set_dead_remove_time (ent, 10.0);
 	swnpc_set_has_weapon (ent, "models/p_ak47.mdl");
 	
