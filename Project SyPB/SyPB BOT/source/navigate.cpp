@@ -1114,13 +1114,7 @@ void Bot::SetEnemy(edict_t *entity)
 {
 	if (g_ignoreEnemies || FNullEnt(entity) || !IsAlive(entity))
 	{
-		if (!FNullEnt(m_enemy) && &m_navNode[0] == null)
-		{
-			SetEntityWaypoint(GetEntity(), -2);
-			m_currentWaypointIndex = -1;
-			GetValidWaypoint();
-		}
-
+		SetEntityWaypoint(GetEntity(), -2);
 		m_enemy = null;
 		m_enemyOrigin = nullvec;
 		return;
@@ -1131,6 +1125,7 @@ void Bot::SetEnemy(edict_t *entity)
 	{
 		m_enemyReachableTimer = 0.0f;
 		m_enemyActionMod = false;
+		SetEntityWaypoint(GetEntity(), GetEntityWaypoint(entity));
 	}
 
 	m_enemy = entity;

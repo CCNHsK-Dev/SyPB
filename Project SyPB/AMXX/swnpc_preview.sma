@@ -2,12 +2,12 @@
 /*
 * This is SwNPC for AMXX
 * Version : 1.50
-* Support Build: 1.50.45231.140
+* Support Build: 1.50.45234.141
 * By ' HsK-Dev Blog By CCN
 *
 * Support SyPB Build: 1.50.45229.794 or new
 *
-* Date: 19/3/2023
+* Date: 22/3/2023
 */
 
 
@@ -16,7 +16,7 @@
 #include <swnpc>
 
 #define PLUGIN	"SwNPC Preview Plug-in [Demo]"
-#define VERSION	"1.50.45231.140"
+#define VERSION	"1.50.45234.141"
 #define AUTHOR	"CCN@HsK"
 
 new bool:g_testStart = false;
@@ -103,8 +103,8 @@ public event_new_round()
 	if (!g_testStart)
 	{
 		g_testStart = true;
-		//set_task (0.5, "add_swnpc_team_tr");
-		//set_task (0.5, "add_swnpc_team_ct");
+		set_task (0.5, "add_swnpc_team_tr");
+		set_task (0.5, "add_swnpc_team_ct");
 		add_followme_npc ();
 	}
 }
@@ -135,7 +135,7 @@ public add_swnpc_team_tr ()
 	swnpc_set_add_money (ent, 1000);
 	swnpc_set_dead_remove_time (ent, 10.0);
 	swnpc_set_need_footstep (ent, 0);
-	//swnpc_set_sequence_name (ent, AS_MOVE, "walk");
+	//swnpc_set_sequence_name (ent, AS_MOVE, ASS_UP, "walk");
 
 	set_task (5.0, "add_swnpc_team_tr");
 }

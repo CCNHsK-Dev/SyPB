@@ -615,7 +615,7 @@ int CorrectGun(int weaponID)
 // SyPB Pro P.21 - New Shootable Thru Obstacle
 bool Bot::IsShootableThruObstacle (edict_t *entity)
 {
-	if (FNullEnt(entity) || !IsValidPlayer(entity) || IsZombieEntity(entity))
+	if (m_skill <= 70 || FNullEnt(entity) || !IsValidPlayer(entity) || IsZombieEntity(entity))
 		return false;
 
 	// SyPB Pro P.48 - Shootable Thru Obstacle improve
@@ -626,35 +626,26 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 	if (currentWeaponPenetrationPower == 0)
 		return false;
 
-	TraceResult tr;
-	const Vector dest = GetEntityOrigin(entity);
-
 	float obstacleDistance = 0.0f;
-
-	TraceLine (EyePosition(), dest, true, GetEntity (), &tr);
-
+	const Vector dest = GetEntityOrigin(entity);
+	TraceResult tr;
+	TraceLine(EyePosition(), dest, true, GetEntity(), &tr);
 	if (tr.fStartSolid)
 	{
-		TraceLine (dest, tr.vecEndPos, true, GetEntity (), &tr);
+		const Vector src = tr.vecEndPos;
+		TraceLine(dest, src, true, GetEntity(), &tr);
 		if (tr.flFraction != 1.0f)
 		{
-			// SyPB Pro P.48 - Base improve
 			if ((tr.vecEndPos - dest).GetLengthSquared() > 800.0f * 800.0f)
 				return false;
 
-			// SyPB Pro P.22 - Strengthen Shootable Thru Obstacle
-			if (tr.vecEndPos.z >= dest.z + 200.0f)
+			if (tr.vecEndPos.z >= dest.z + 200.0f || dest.z >= tr.vecEndPos.z + 200.0f)
 				return false;
-
-			// SyPB Pro P.42 - Shootable Thru Obstacle improve
-			if (dest.z >= tr.vecEndPos.z + 200.0f)
-				return false;
-
-			obstacleDistance = (tr.vecEndPos - tr.vecEndPos).GetLength ();
 		}
+		obstacleDistance = (tr.vecPlaneNormal - src).GetLength();
 	}
 
-	if (obstacleDistance > 0.0)
+	if (obstacleDistance > 0.0f)
 	{
 		while (currentWeaponPenetrationPower > 0)
 		{
@@ -662,6 +653,7 @@ bool Bot::IsShootableThruObstacle (edict_t *entity)
 			{
 				obstacleDistance -= 75.0f;
 				currentWeaponPenetrationPower--;
+
 				continue;
 			}
 

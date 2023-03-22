@@ -111,7 +111,11 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 	if (pev->flags & FL_DUCKING)
 		botHead = botHead + (VEC_HULL_MIN - VEC_DUCK_HULL_MIN);
 
-	TraceLine(botHead, GetEntityOrigin(entity), true, true, GetEntity(), &tr);
+	bool ignoreGlass = true;
+	if (m_currentWeapon != WEAPON_KNIFE && !m_isZombieBot && IsZombieMode())
+		ignoreGlass = false;
+
+	TraceLine(botHead, GetEntityOrigin(entity), true, ignoreGlass, GetEntity(), &tr);
 	if (tr.pHit == entity || tr.flFraction >= 1.0f)
 	{
 		*bodyPart |= VISIBILITY_BODY;
@@ -123,7 +127,7 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 
 	// SyPB Pro P.42 - Get Head Origin 
 	const Vector headOrigin = GetPlayerHeadOrigin(entity);
-	TraceLine(botHead, headOrigin, true, true, GetEntity(), &tr);
+	TraceLine(botHead, headOrigin, true, ignoreGlass, GetEntity(), &tr);
 	if (tr.pHit == entity || tr.flFraction >= 1.0f)
 	{
 		*bodyPart |= VISIBILITY_HEAD;
@@ -231,14 +235,6 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 		}
 	}
 
-	// SyPB Pro P.49 - Find Non-Player Enemy improve
-	if (!IsValidPlayer(entity) && !EntityWaypointVisible(entity))
-		return false;
-
-	Vector entityOrigin;
-	uint8_t visibility;
-	const bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
-
 	if (IsNotAttackLab(entity, pev->origin) == 1)
 	{
 		if (g_gameMode == MODE_DM)
@@ -246,6 +242,14 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 
 		return false;
 	}
+
+	// SyPB Pro P.49 - Find Non-Player Enemy improve
+	if (!IsValidPlayer(entity) && !EntityWaypointVisible(entity))
+		return false;
+
+	Vector entityOrigin;
+	uint8_t visibility;
+	bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
 
 	if (checkOnly)
 		return seeEntity;
@@ -719,6 +723,7 @@ void Bot::FindItem(void)
 {
 	if (GetCurrentTask()->taskID == TASK_ESCAPEFROMBOMB || GetCurrentTask()->taskID == TASK_PLANTBOMB || IsOnLadder() || !FNullEnt (m_enemy))
 	{
+		SetEntityWaypoint(GetEntity(), GetEntityWaypoint(m_pickupItem));
 		m_pickupItem = null;
 		m_pickupType = PICKTYPE_NONE;
 		return;
@@ -739,6 +744,8 @@ void Bot::FindItem(void)
 
 			break;
 		}
+
+		SetEntityWaypoint(GetEntity(), GetEntityWaypoint(m_pickupItem));
 	}
 
 	edict_t *pickupItem = null;
