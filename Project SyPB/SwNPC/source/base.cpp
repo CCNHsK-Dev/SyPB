@@ -196,10 +196,7 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 
 		if (ptr->iHitgroup == HITGROUP_SHIELD)
 		{
-			if (RANDOM_LONG(0, 1))
-				EMIT_SOUND(victim, CHAN_VOICE, "weapons/ric_metal-1.wav", VOL_NORM, ATTN_NORM);
-			else
-				EMIT_SOUND(victim, CHAN_VOICE, "weapons/ric_metal-2.wav", VOL_NORM, ATTN_NORM);
+			EMIT_SOUND(victim, CHAN_VOICE, (RANDOM_LONG(0, 1) == 1) ? "weapons/ric_metal-1.wav" : "weapons/ric_metal-2.wav", VOL_NORM, ATTN_NORM);
 
 			pev->punchangle.x = damage * RANDOM_FLOAT(-0.15, 0.15);
 			pev->punchangle.z = damage * RANDOM_FLOAT(-0.15, 0.15);
@@ -215,6 +212,36 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 		}
 		else
 		{
+			int temp = RANDOM_LONG(0, 2);
+			if (ptr->iHitgroup == HITGROUP_HEAD)
+			{
+				if (victim->v.armortype == 2)
+					EMIT_SOUND(victim, CHAN_VOICE, "player/bhit_helmet-1.wav", VOL_NORM, ATTN_NORM);
+				else
+				{
+					switch (temp)
+					{
+					case 0:  EMIT_SOUND(victim, CHAN_VOICE, "player/headshot1.wav", VOL_NORM, ATTN_NORM); break;
+					case 1:  EMIT_SOUND(victim, CHAN_VOICE, "player/headshot2.wav", VOL_NORM, ATTN_NORM); break;
+					default: EMIT_SOUND(victim, CHAN_VOICE, "player/headshot3.wav", VOL_NORM, ATTN_NORM); break;
+					}
+				}
+			}
+			else
+			{
+				if (ptr->iHitgroup != HITGROUP_LEFTLEG && ptr->iHitgroup != HITGROUP_RIGHTLEG && victim->v.armorvalue > 0)
+					EMIT_SOUND(victim, CHAN_VOICE, "player/bhit_kevlar-1.wav", VOL_NORM, ATTN_NORM);
+				else
+				{
+					switch (temp)
+					{
+					case 0:  EMIT_SOUND(victim, CHAN_VOICE, "player/bhit_flesh-1.wav", VOL_NORM, ATTN_NORM); break;
+					case 1:  EMIT_SOUND(victim, CHAN_VOICE, "player/bhit_flesh-2.wav", VOL_NORM, ATTN_NORM); break;
+					default: EMIT_SOUND(victim, CHAN_VOICE, "player/bhit_flesh-3.wav", VOL_NORM, ATTN_NORM); break;
+					}
+				}
+			}
+
 			pev->punchangle.x = damage * -0.1;
 			if (pev->punchangle.x < -4)
 				pev->punchangle.x = -4;
@@ -382,13 +409,15 @@ void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 			playerMoney += SwNPC->m_addMoney;
 			if (playerMoney > 16000)
 				playerMoney = 16000;
-
-			*((int*)killer->pvPrivateData + 115) = playerMoney;
+			else if (playerMoney < 0)
+				playerMoney = 0;
 
 			MESSAGE_BEGIN(MSG_ONE, GET_USER_MSG_ID(PLID, "Money", null), null, killer);
 			WRITE_LONG(playerMoney);
-			WRITE_BYTE(0);
+			WRITE_BYTE(playerMoney - *((int*)killer->pvPrivateData + 115));
 			MESSAGE_END();
+
+			*((int*)killer->pvPrivateData + 115) = playerMoney;
 		}
 	}
 
@@ -794,6 +823,11 @@ void TraceLine(const Vector &vecStart, const Vector &vecEnd, IGNORE_MONSTERS igm
 void TraceHull(const Vector &vecStart, const Vector &vecEnd, IGNORE_MONSTERS igmon, int hullNumber, edict_t *pentIgnore, TraceResult *ptr)
 {
 	(*g_engfuncs.pfnTraceHull) (vecStart, vecEnd, (igmon ? 1 : 0), hullNumber, pentIgnore, ptr);
+}
+
+void TraceHull(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, IGNORE_GLASS ignoreGlass, int hullNumber, edict_t* pentIgnore, TraceResult* ptr)
+{
+	(*g_engfuncs.pfnTraceHull) (vecStart, vecEnd, (igmon ? 1 : 0) | (ignoreGlass ? 0x100 : 0), hullNumber, pentIgnore, ptr);
 }
 
 float GetDistance(Vector origin1, Vector origin2)

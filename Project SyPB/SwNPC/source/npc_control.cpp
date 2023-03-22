@@ -218,16 +218,16 @@ int NPCControl::BaseSequence(int npcId)
 	return 1;
 }
 
-int NPCControl::SetSequence(int npcId, int ASClass, const char *ASName, int asModelId)
+int NPCControl::SetSequence(int npcId, int ASClass, int ASSClass, const char *ASName, int asModelId)
 {
-	if (ASClass < 0 || ASClass >= AS_ALL)
+	if (ASClass < 0 || ASClass >= AS_ALL || (ASSClass != ASS_UP && ASSClass != ASS_DUCK))
 		return -1;
 
 	NPC *npc = IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 
-	npc->SetSequence(ASClass, ASName, asModelId);
+	npc->SetSequence(ASClass, ASSClass, ASName, asModelId);
 
 	return 1;
 }

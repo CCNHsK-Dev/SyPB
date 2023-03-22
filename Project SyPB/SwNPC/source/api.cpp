@@ -81,18 +81,20 @@ static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 {
 	int npcId = params[1];
 	int ASClass = params[2];
-	const char *ASName = MF_GetAmxString(amx, params[3], apiBuffer++, null);
+	int ASSClass = params[3];
+	const char *ASName = MF_GetAmxString(amx, params[4], apiBuffer++, null);
 
-	return g_npcManager->SetSequence(npcId, ASClass, ASName);
+	return g_npcManager->SetSequence(npcId, ASClass, ASSClass, ASName);
 }
 
 static cell AMX_NATIVE_CALL amxx_setSequenceId(AMX* amx, cell* params)
 {
 	int npcId = params[1];
 	int ASClass = params[2];
-	int ASModelId = params[3];
+	int ASSClass = params[3];
+	int ASModelId = params[4];
 
-	return g_npcManager->SetSequence(npcId, ASClass, "setfor_id", ASModelId);
+	return g_npcManager->SetSequence(npcId, ASClass, ASSClass, "setfor_id", ASModelId);
 }
 
 static cell AMX_NATIVE_CALL amxx_setFootStepSound(AMX* amx, cell* params)

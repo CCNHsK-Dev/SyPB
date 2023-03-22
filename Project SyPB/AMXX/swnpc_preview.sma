@@ -22,6 +22,8 @@
 new bool:g_testStart = false;
 new Float:g_spawns[128][3], g_spawnCount; // Random Spawn Point
 
+new g_testOnlyNPC;
+
 new const team1_model[] = "models/player/zombie_source/zombie_source.mdl"
 new const team2_model[] = "models/player/vip/vip.mdl"
 
@@ -31,6 +33,7 @@ public plugin_init()
 	
 	register_event("HLTV", "event_new_round", "a", "1=0", "2=0");
 	
+	g_testOnlyNPC = -1;
 	load_ranspawn ();
 }
 
@@ -49,6 +52,21 @@ public SwNPC_Add (npcId)
 public SwNPC_Remove (npcId)
 {
 	client_print(0, print_chat, "remove npc %d", npcId);
+}
+
+public SwNPC_Think_Pre (npcId)
+{
+	if (npcId != g_testOnlyNPC)
+		return;
+		
+	if (swnpc_get_follow_entity(npcId) != 1)
+		swnpc_set_follow_entity (npcId, 1);
+}
+
+public SwNPC_Kill_Pre (victim, killer)
+{
+	if (victim == g_testOnlyNPC)
+		add_followme_npc ();
 }
 
 public SwNPC_TakeDamage_Pre(victim, attack, damage)
@@ -85,9 +103,22 @@ public event_new_round()
 	if (!g_testStart)
 	{
 		g_testStart = true;
-		set_task (0.5, "add_swnpc_team_tr");
-		set_task (0.5, "add_swnpc_team_ct");
+		//set_task (0.5, "add_swnpc_team_tr");
+		//set_task (0.5, "add_swnpc_team_ct");
+		add_followme_npc ();
 	}
+}
+
+public add_followme_npc ()
+{
+	g_testOnlyNPC = -1;
+
+	new Float:origin[3];
+	origin = g_spawns[random_num(0, g_spawnCount - 1)];
+	
+	g_testOnlyNPC = swnpc_add_npc ("testOnlySwNPC", team2_model, 200.0, 220.0, TEAM_OTHER, origin);
+	swnpc_set_find_enemy_mode (g_testOnlyNPC, 0);
+	swnpc_set_follow_entity (g_testOnlyNPC, 0);
 }
 
 public add_swnpc_team_tr ()

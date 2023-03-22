@@ -227,10 +227,14 @@ void NPC::Spawn(Vector origin)
 	m_crouchDelayTime = gpGlobals->time;
 	SetNPCSize();
 	SET_ORIGIN(GetEntity(), origin);
-
 	m_pmodel = null;
 
 	DROP_TO_FLOOR(GetEntity());
+
+	if (CheckEntityStuck(pev->origin, true))
+	{
+
+	}
 
 	pev->animtime = gpGlobals->time;
 	pev->nextthink = m_nextThinkTime = gpGlobals->time + 0.05f;
@@ -415,7 +419,10 @@ void NPC::TaskB_FollowEntity(void)
 	if (destIndex >= 0 && destIndex < g_numWaypoints)
 	{
 		bool needMoveToTarget = false;
-		if (m_goalWaypoint == destIndex && !GoalIsValid())
+
+		if (m_currentWaypointIndex == destIndex)
+			m_moveSpeed = 0.0f;
+		else if (m_goalWaypoint == destIndex && !GoalIsValid())
 			needMoveToTarget = true;
 		else
 		{
@@ -810,7 +817,10 @@ bool NPC::AttackAction(void)
 
 		//Vector aimDest = pev->origin + gpGlobals->v_forward * m_attackDistance;
 		Vector aimDest = GetEntityOrigin (m_enemy);
-		TraceLine(pev->origin, aimDest, dont_ignore_monsters, GetEntity(), &tr);
+		if (m_attackDistance < 300.0f)
+			TraceHull(pev->origin, aimDest, dont_ignore_monsters, dont_ignore_glass, head_hull, GetEntity(), &tr);
+		else
+			TraceLine(pev->origin, aimDest, dont_ignore_monsters, dont_ignore_glass, GetEntity(), &tr);
 
 		TraceAttack(tr.pHit, GetEntity(), m_attackDamage, vecDir, &tr, 0);
 
@@ -920,12 +930,21 @@ void NPC::MoveAction(void)
 
 	if (m_jumpAction)
 	{
+		m_npcAS |= ASC_JUMP;
 		pev->velocity.z = (270.0f * pev->gravity) + 32.0f; // client gravity 1 = 270.0f , and jump+duck + 32.0f
 		m_crouchAction = true;
 		m_jumpAction = false;
 	}
 
 	Vector crouchSize = m_npcSize[1];
+	if (!m_crouchAction && pev->flags & FL_DUCKING && m_crouchDelayTime < gpGlobals->time)
+	{
+		pev->flags &= ~FL_DUCKING;
+		SetNPCSize();
+		if (CheckEntityStuck(pev->origin))
+			m_crouchAction = true;
+	}
+
 	if (m_crouchAction)
 	{
 		crouchSize.z = 0.0f;
@@ -934,21 +953,17 @@ void NPC::MoveAction(void)
 
 		m_crouchDelayTime = gpGlobals->time + 0.5f;
 	}
-	else if (pev->flags & FL_DUCKING && m_crouchDelayTime < gpGlobals->time)
-	{
-		pev->flags &= ~FL_DUCKING;
-		SetNPCSize();
-	}
 
 	bool onFloor = IsOnFloor(GetEntity());
 	trueSpeed = GetDistance2D(oldVelocity);
+
+	Vector vecFwd, vecAng;
+	VEC_TO_ANGLES(vecMove, vecAng);
+	vecAng = Vector(0.0f, vecAng.y, 0.0f);
+	MakeVectors(vecAng);
+
 	if (onFloor && trueSpeed > 0.0f)
 	{
-		Vector vecFwd, vecAng;
-		VEC_TO_ANGLES(vecMove, vecAng);
-		vecAng = Vector(0.0f, vecAng.y, 0.0f);
-		MakeVectors(vecAng);
-
 		Vector src = pev->origin;
 		Vector dest = GetBottomOrigin(GetEntity()) + gpGlobals->v_forward * 32;
 
@@ -961,7 +976,8 @@ void NPC::MoveAction(void)
 			m_testValue = newOriginZ - pev->origin.z;
 			m_testPoint = tr.vecEndPos;
 
-			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) < 16.1f)
+			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) < 16.1f && 
+				!CheckEntityStuck(Vector(pev->origin.x, pev->origin.y, newOriginZ + 1)))
 				pev->origin.z = newOriginZ + 1;
 		}
 	}
@@ -973,18 +989,15 @@ void NPC::MoveAction(void)
 	{
 		if (trueSpeed > 10.0f || trueSpeed < -10.0f)
 		{
+			m_npcAS |= ASC_MOVE;
 			if ((trueSpeed >= (pev->maxspeed / 2) || trueSpeed <= (-pev->maxspeed / 2)))
 			{
-				m_npcAS |= ASC_MOVE;
-
 				if (m_setFootStepSoundTime <= gpGlobals->time)
 				{
 					m_setFootStepSoundTime = gpGlobals->time + 0.3f;
 					PlayNPCSound(NS_FOOTSTEP);
 				}
 			}
-			else
-				m_npcAS |= ASC_WALK;
 		}
 	}
 	else if (pev->movetype == MOVETYPE_FLY)
@@ -1002,61 +1015,89 @@ void NPC::MoveAction(void)
 
 void NPC::CheckStuck(float oldSpeed)
 {
-	if (!IsOnFloor(GetEntity()) || IsOnLadder (GetEntity ()))
-		return;
-
-	if (pev->solid == SOLID_NOT)
+	if (!IsOnFloor(GetEntity()) || IsOnLadder(GetEntity()))
 		return;
 
 	if (m_checkStuckTime > gpGlobals->time)
 		return;
 
-	m_checkStuckTime = gpGlobals->time + 0.5f;
+	m_checkStuckTime = gpGlobals->time + 0.2f;
 
-	bool isStuck = false;
 	float moveDistance = GetDistance(pev->origin, m_prevOrigin);
-
-	if (oldSpeed >= 10.0f && pev->speed >= 10.0f)
-	{
-		if (moveDistance <= 2.0f)
-			isStuck = true;
-	}
-
-	if (isStuck)
-	{
-		if (!m_crouchAction)
-		{
-			if (g_waypoint->g_waypointPointFlag[m_currentWaypointIndex] & WAYPOINT_CROUCH)
-			{
-				m_crouchAction = true;
-				return;
-			}
-		}
-
-		MakeVectors(pev->angles);
-
-		TraceResult tr;
-		Vector dest = pev->origin;
-		dest.z += 36;
-		Vector src = pev->origin + gpGlobals->v_forward * 36;
-
-		TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
-		if (tr.flFraction > 0.0f && tr.flFraction != 1.0f && FNullEnt (tr.pHit))
-		{
-			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity ()).z) - 36;
-			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 36)
-			{
-				pev->velocity.z = (270.0f * pev->gravity) + 36.0f;
-				m_jumpAction = false;
-			}
-		}
-		
-		m_goalWaypoint = -1;
-		m_currentWaypointIndex = -1;
-		DeleteSearchNodes();
-	}
-
 	m_prevOrigin = pev->origin;
+
+	if (oldSpeed < 10.0f || pev->speed < 10.0f || moveDistance > 2.0f)
+		return;
+
+	if (!m_crouchAction)
+	{
+		if (g_waypoint->g_waypointPointFlag[m_currentWaypointIndex] & WAYPOINT_CROUCH)
+		{
+			m_crouchAction = true;
+			return;
+		}
+	}
+
+	MakeVectors(pev->angles);
+
+	TraceResult tr;
+	Vector dest = pev->origin;
+	dest.z += 36;
+	Vector src = pev->origin + gpGlobals->v_forward * 36;
+
+	TraceHull(dest, src, dont_ignore_monsters, head_hull, GetEntity(), &tr);
+	if (tr.flFraction > 0.0f && tr.flFraction != 1.0f && FNullEnt(tr.pHit))
+	{
+		float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity()).z) - 36;
+		if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 36)
+		{
+			pev->velocity.z = (270.0f * pev->gravity) + 36.0f;
+			m_jumpAction = false;
+		}
+	}
+
+	m_goalWaypoint = -1;
+	m_currentWaypointIndex = -1;
+	DeleteSearchNodes();
+}
+
+bool NPC::CheckEntityStuck(Vector checkOrigin, bool tryUnstuck)
+{
+	TraceResult tr;
+	TraceHull(checkOrigin, checkOrigin, dont_ignore_monsters, dont_ignore_glass, head_hull, GetEntity(), &tr);
+	if (tr.fAllSolid || tr.fStartSolid)
+	{
+		if (tryUnstuck)
+		{
+			Vector tryOrigin = nullvec;
+			int x, y, z;
+
+			for (x = -5; x <= 5; x++)
+			{
+				for (y = -5; y <= 5; y++)
+				{
+					for (z = -5; z <= 5; z++)
+					{
+						tryOrigin.x = pev->origin.x - pev->mins.x * x;
+						tryOrigin.y = pev->origin.y - pev->mins.y * y;
+						tryOrigin.z = pev->origin.z - pev->mins.z * z;
+
+
+						TraceHull(tryOrigin, tryOrigin, dont_ignore_monsters, dont_ignore_glass, head_hull, GetEntity(), &tr);
+						if (!tr.fAllSolid && !tr.fStartSolid)
+						{
+							SET_ORIGIN(GetEntity(), tryOrigin);
+							return false;
+						}
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 void NPC::ChangeAnim()
@@ -1086,36 +1127,33 @@ void NPC::ChangeAnim()
 
 	m_changeActionTime = gpGlobals->time + 0.02f;
 
-	if (m_actionSequence[AS_MOVE] == -1 && m_actionSequence[AS_WALK] != -1)
-		m_actionSequence[AS_MOVE] = m_actionSequence[AS_WALK];
-	else if (m_actionSequence[AS_WALK] == -1 && m_actionSequence[AS_MOVE] != -1)
-		m_actionSequence[AS_WALK] = m_actionSequence[AS_MOVE];
+	const int assAction = (pev->flags & FL_DUCKING) ? ASS_DUCK : ASS_UP;
 
 	int animDesired = 0;
-	if (m_npcAS & ASC_DEAD && m_actionSequence[AS_DEAD] != -1)
-		animDesired = m_actionSequence[AS_DEAD];
-	else if (m_npcAS & ASC_ATTACK && m_actionSequence[AS_ATTACK] != -1)
+	if (m_npcAS & ASC_DEAD && m_actionSequence[AS_DEAD][assAction] != -1)
+		animDesired = m_actionSequence[AS_DEAD][assAction];
+	else if (m_npcAS & ASC_JUMP && m_actionSequence[AS_JUMP][assAction] != -1)
+		animDesired = m_actionSequence[AS_JUMP][assAction];
+	else if (m_npcAS & ASC_ATTACK && m_actionSequence[AS_ATTACK][assAction] != -1)
 	{
-		animDesired = m_actionSequence[AS_ATTACK];
-		m_changeActionTime = gpGlobals->time + m_actionTime[AS_ATTACK];
+		animDesired = m_actionSequence[AS_ATTACK][assAction];
+		m_changeActionTime = gpGlobals->time + m_actionTime[AS_ATTACK][assAction];
 
-		if (m_attackDistance >= 300.0f && m_actionSequence[AS_ATTACK_GUN] != -1)
+		if (m_attackDistance >= 300.0f && m_actionSequence[AS_ATTACK_GUN][assAction] != -1)
 		{
-			animDesired = m_actionSequence[AS_ATTACK_GUN];
-			m_changeActionTime = gpGlobals->time + m_actionTime[AS_ATTACK_GUN];
+			animDesired = m_actionSequence[AS_ATTACK_GUN][assAction];
+			m_changeActionTime = gpGlobals->time + m_actionTime[AS_ATTACK_GUN][assAction];
 		}
 	}
-	else if (m_npcAS & ASC_DAMAGE && m_actionSequence[AS_DAMAGE] != -1)
+	else if (m_npcAS & ASC_DAMAGE && m_actionSequence[AS_DAMAGE][assAction] != -1)
 	{
-		animDesired = m_actionSequence[AS_DAMAGE];
-		m_changeActionTime = gpGlobals->time + m_actionTime[AS_DAMAGE];
+		animDesired = m_actionSequence[AS_DAMAGE][assAction];
+		m_changeActionTime = gpGlobals->time + m_actionTime[AS_DAMAGE][assAction];
 	}
-	else if (m_npcAS & ASC_MOVE && m_actionSequence[AS_MOVE] != -1)
-		animDesired = m_actionSequence[AS_MOVE];
-	else if (m_npcAS & ASC_WALK && m_actionSequence[AS_WALK] != -1)
-		animDesired = m_actionSequence[AS_WALK];
-	else if (m_actionSequence[AS_IDLE] != -1)
-		animDesired = m_actionSequence[AS_IDLE];
+	else if (m_npcAS & ASC_MOVE && m_actionSequence[AS_MOVE][assAction] != -1)
+		animDesired = m_actionSequence[AS_MOVE][assAction];
+	else if (m_actionSequence[AS_IDLE][assAction] != -1)
+		animDesired = m_actionSequence[AS_IDLE][assAction];
 
 	m_changeActionTime -= 0.01f;
 
@@ -1138,8 +1176,11 @@ void NPC::SetUpPModel(void)
 	{
 		for (int i = 0; i < AS_ALL; i++)
 		{
-			m_actionSequence[i] = -1;
-			m_actionTime[i] = -1.0f;
+			m_actionSequence[i][ASS_UP] = -1;
+			m_actionTime[i][ASS_UP] = -1.0f;
+
+			m_actionSequence[i][ASS_DUCK] = -1;
+			m_actionTime[i][ASS_DUCK] = -1.0f;
 		}
 
 		//m_gaitSequence[AS_IDLE] = -1;
@@ -1157,12 +1198,19 @@ void NPC::SetUpPModel(void)
 
 		for (int i = 0; i < AS_ALL; i++)
 		{
-			if (strcmp(m_ASName[i], "null") == 0)
-				m_actionSequence[i] = -1;
-			else if (strcmp(m_ASName[i], "setfor_id") != 0)
-				m_actionSequence[i] = LookupSequence(pModel, m_ASName[i]);
+			if (strcmp(m_ASName[i][ASS_UP], "null") == 0)
+				m_actionSequence[i][ASS_UP] = -1;
+			else if (strcmp(m_ASName[i][ASS_UP], "setfor_id") != 0)
+				m_actionSequence[i][ASS_UP] = LookupSequence(pModel, m_ASName[i][ASS_UP]);
 
-			m_actionTime[i] = LookupActionTime(pModel, m_actionSequence[i]);
+			m_actionTime[i][ASS_UP] = LookupActionTime(pModel, m_actionSequence[i][ASS_UP]);
+
+			if (strcmp(m_ASName[i][ASS_DUCK], "null") == 0)
+				m_actionSequence[i][ASS_DUCK] = -1;
+			else if (strcmp(m_ASName[i][ASS_DUCK], "setfor_id") != 0)
+				m_actionSequence[i][ASS_DUCK] = LookupSequence(pModel, m_ASName[i][ASS_DUCK]);
+
+			m_actionTime[i][ASS_DUCK] = LookupActionTime(pModel, m_actionSequence[i][ASS_DUCK]);
 		}
 
 		//m_gaitSequence[AS_IDLE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_IDLE]);
@@ -1539,20 +1587,27 @@ int NPC::GetNavDataAPI(int data)
 void NPC::BaseSequence()
 {
 	m_pmodel = null;
-	m_ASName[AS_IDLE] = "idle1";
-	m_ASName[AS_MOVE] = "run";
-	//m_ASName[AS_WALK] = "walk";
-	m_ASName[AS_WALK] = "run";
-	m_ASName[AS_ATTACK] = "ref_shoot_knife";
-	m_ASName[AS_ATTACK_GUN] = "ref_shoot_ak47";
-	m_ASName[AS_DAMAGE] = "gut_flinch";
-	m_ASName[AS_DEAD] = "death1";
+	m_ASName[AS_IDLE][ASS_UP] = "idle1";
+	m_ASName[AS_MOVE][ASS_UP] = "run";
+	m_ASName[AS_ATTACK][ASS_UP] = "ref_shoot_knife";
+	m_ASName[AS_ATTACK_GUN][ASS_UP] = "ref_shoot_ak47";
+	m_ASName[AS_DAMAGE][ASS_UP] = "gut_flinch";
+	m_ASName[AS_DEAD][ASS_UP] = "death1";
+	m_ASName[AS_JUMP][ASS_UP] = "jump";
+
+	m_ASName[AS_IDLE][ASS_DUCK] = "crouch_idle";
+	m_ASName[AS_MOVE][ASS_DUCK] = "crouchrun";
+	m_ASName[AS_ATTACK][ASS_DUCK] = "crouch_shoot_knife";
+	m_ASName[AS_ATTACK_GUN][ASS_DUCK] = "crouch_shoot_ak47";
+	m_ASName[AS_DAMAGE][ASS_DUCK] = "null";
+	m_ASName[AS_DEAD][ASS_DUCK] = "crouch_die";
+	m_ASName[AS_JUMP][ASS_DUCK] = "jump";
 }
 
-void NPC::SetSequence(int ASClass, const char *ASName, int asModelId)
+void NPC::SetSequence(int ASClass, int ASSClass, const char *ASName, int asModelId)
 {
-	m_ASName[ASClass] = (char*)ASName;
-	m_actionSequence[ASClass] = asModelId;
+	m_ASName[ASClass][ASSClass] = (char*)ASName;
+	m_actionSequence[ASClass][ASSClass] = asModelId;
 	m_pmodel = null;
 }
 
@@ -1641,7 +1696,7 @@ void NPC::DebugModeMsg(void)
 		navid = navid->next;
 	}
 
-	char outputBuffer[512];
+	char outputBuffer[1024];
 	sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s NPC Count: %d/%d"
 		"\n [%s] ID: %d \n Health: %.0f/%.0f Team: %s\n"
 		"Attack_ Damage: %.0f Count: %d Discount: %.0f Time: %.0f\n"
@@ -1651,7 +1706,9 @@ void NPC::DebugModeMsg(void)
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
 		"Crouch: %s Jump: %s\n"
-		"Testing: %.2f", 
+		"Testing: %.2f\n"
+		"Min:%.0f %.0f %.0f Max:%.0f %.0f %.0f \n"
+		"AMin:%.0f %.0f %.0f AMax:%.0f %.0f %.0f " , 
 		gamemodName, g_npcManager->g_SwNPCNum, MAX_NPC, 
 		GetEntityName(GetEntity()), ENTINDEX (GetEntity ()), pev->health, pev->max_health, npcTeam,
 		m_attackDamage, m_attackCount, m_attackDistance, m_attackDelayTime,
@@ -1661,7 +1718,11 @@ void NPC::DebugModeMsg(void)
 		m_moveSpeed, GetDistance2D(pev->velocity),
 		//m_crouchAction ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
 		(pev->flags & FL_DUCKING) ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
-		m_testValue);
+		m_testValue, 
+		pev->mins.x, pev->mins.y, pev->mins.z,
+		pev->maxs.x, pev->maxs.y, pev->maxs.z, 
+		pev->absmin.x, pev->absmin.y, pev->absmin.z, 
+		pev->absmax.x, pev->absmax.y, pev->absmax.z);
 
 	DrawLine(g_hostEntity, pev->origin, m_testPoint, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
 

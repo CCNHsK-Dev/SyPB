@@ -702,7 +702,6 @@ edict_t *Bot::FindBreakable(void)
 		m_breakable = tr.vecEndPos;
 		m_breakableEntity = tr.pHit;
 		m_destOrigin = m_breakable;
-		
 
 		if (pev->origin.z > m_breakable.z)
 			m_campButtons = IN_DUCK;

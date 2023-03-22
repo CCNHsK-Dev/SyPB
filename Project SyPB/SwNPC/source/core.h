@@ -24,11 +24,11 @@ enum NPC_ActionSequence
 {
 	AS_IDLE = 0,
 	AS_MOVE,
-	AS_WALK, 
 	AS_ATTACK,
 	AS_ATTACK_GUN, 
 	AS_DAMAGE, 
 	AS_DEAD,
+	AS_JUMP,
 	AS_ALL, 
 };
 
@@ -36,11 +36,19 @@ enum NPC_AS_Action
 {
 	ASC_IDLE = (1 << 0),
 	ASC_MOVE = (1 << 1),
-	ASC_WALK = (1 << 2), 
-	ASC_ATTACK = (1 << 3),
-	ASC_DAMAGE = (1 << 4),
-	ASC_DEAD = (1 << 5),
+	ASC_ATTACK = (1 << 2),
+	ASC_DAMAGE = (1 << 3),
+	ASC_DEAD = (1 << 4),
+	ASC_JUMP = (1 << 5),
 };
+
+enum NPC_ActionStand
+{
+	ASS_UP = 0,
+	ASS_DUCK,
+	ASS_ALL,
+};
+
 /*
 enum GaitSequenceInformation
 {
@@ -96,6 +104,7 @@ private:
 	int m_goalWaypoint;
 
 	float m_checkStuckTime;
+
 	Vector m_prevOrigin;
 
 	float m_moveSpeed;
@@ -134,7 +143,9 @@ private:
 
 	void FacePosition(void);
 	void MoveAction(void);
+
 	void CheckStuck(float oldSpeed);
+	bool CheckEntityStuck(Vector checkOrigin, bool tryUnstuck = false);
 
 	bool DoWaypointNav(void);
 	bool GoalIsValid(void);
@@ -153,10 +164,10 @@ public:
 
 	int m_npcAS;
 	Vector m_npcSize[2];
-	char *m_ASName[AS_ALL];
+	char *m_ASName[AS_ALL][ASS_ALL];
 
-	int m_actionSequence[AS_ALL];
-	float m_actionTime [AS_ALL];
+	int m_actionSequence[AS_ALL][ASS_ALL];
+	float m_actionTime [AS_ALL][ASS_ALL];
 	//int m_gaitSequence[2];
 
 	bool m_needFootStep;
@@ -240,7 +251,7 @@ public:
 	int CheckGoalWaypoint(void) { return m_goalWaypoint; };
 
 	void BaseSequence(void);
-	void SetSequence(int asClass, const char *asName, int asModelId);
+	void SetSequence(int asClass, int assClass, const char *asName, int asModelId);
 	void SetNPCSize(Vector mins = nullvec, Vector maxs = nullvec);
 };
 
@@ -288,7 +299,7 @@ public:
 	int SetFEMode(int npcId, int feMode);
 
 	int BaseSequence(int npcId);
-	int SetSequence(int npcId, int asClass, const char *asName, int asModelId = -1);
+	int SetSequence(int npcId, int asClass, int assClass, const char *asName, int asModelId = -1);
 
 	int SetFootStep(int npcId, int footstep);
 	int SetBloodColor(int npcId, int bloodColor);
@@ -459,6 +470,8 @@ extern float GetDistance2D(Vector origin, Vector origin2 = nullvec);
 extern void TraceLine(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, IGNORE_GLASS ignoreGlass, edict_t* pentIgnore, TraceResult* ptr);
 extern void TraceLine(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, edict_t* pentIgnore, TraceResult* ptr);
 extern void TraceHull(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, int hullNumber, edict_t* pentIgnore, TraceResult* ptr);
+extern void TraceHull(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, IGNORE_GLASS ignoreGlass, int hullNumber, edict_t* pentIgnore, TraceResult* ptr);
+
 
 extern char* memfgets(byte* pMemFile, int fileSize, int& filePos, char* pBuffer, int bufferSize);
 
