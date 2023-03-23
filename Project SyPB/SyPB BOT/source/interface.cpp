@@ -2558,16 +2558,19 @@ void LoadEntityData(void)
 
 			void *pmodel = GET_MODEL_PTR(entity);
 			studiohdr_t *pstudiohdr = (studiohdr_t *)pmodel;
-			mstudiobbox_t *var_c = (mstudiobbox_t *)(((uint8_t *)pstudiohdr) + pstudiohdr->hitboxindex);
-
-			for (int h = 0; h < pstudiohdr->numhitboxes; h++)
+			if (pmodel != null && pstudiohdr != null)
 			{
-				if (var_c[h].group == 1)
+				mstudiobbox_t* var_c = (mstudiobbox_t*)(((uint8_t*)pstudiohdr) + pstudiohdr->hitboxindex);
+
+				for (int h = 0; h < pstudiohdr->numhitboxes; h++)
 				{
-					Vector headOrigin, headAngles;
-					(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
-					g_clients[i].headOrigin = headOrigin;
-					g_clients[i].headOrigin.z = headOrigin.z + 0.6f;
+					if (var_c[h].group == 1)
+					{
+						Vector headOrigin, headAngles;
+						(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
+						g_clients[i].headOrigin = headOrigin;
+						g_clients[i].headOrigin.z = headOrigin.z + 0.6f;
+					}
 				}
 			}
 
@@ -2664,6 +2667,10 @@ void StartFrame (void)
 		else if (sypb_showwp.GetBool() == true)
 			g_waypoint->ShowWaypointMsg();
 
+		g_debugMode = sypb_debug.GetInt();
+		if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)
+			sypb_debug.SetInt(DEBUG_NONE);
+
 		CheckWelcomeMessage();
 	}
 
@@ -2674,10 +2681,6 @@ void StartFrame (void)
 		g_secondTime = engine->GetTime() + 1.0f;
 
 		SetGameMode(sypb_gamemod.GetInt());
-
-		g_debugMode = sypb_debug.GetInt();
-		if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)
-			sypb_debug.SetInt(DEBUG_NONE);
 
 		extern ConVar sypb_dangerfactor;
 		if (sypb_dangerfactor.GetFloat() >= 4096.0f)

@@ -866,10 +866,30 @@ inline const float HF_None (int start, int goal)
 }
 
 // SyPB Pro P.42 - Zombie Waypoint improve
-inline const float GF_CostZB(int index, int parent, int team, float offset)
+inline const float GF_CostZM(int index, int parent, int team, float offset)
 {
 	float baseCost = g_exp.GetAStarValue(index, team, false);
 	float pathDist = g_waypoint->GetPathDistanceFloat(parent, index);
+
+	if (IsZombieMode() && team == TEAM_COUNTER)
+	{
+		for (int i = 0; i < engine->GetMaxClients(); i++)
+		{
+			if (g_clients[i].wpIndex != -1 && IsZombieEntity(INDEXENT(i + 1)))
+			{
+				if (g_clients[i].wpIndex == index || g_clients[i].wpIndex2 == index)
+					baseCost += pathDist * 5.0f;
+				else
+				{
+					for (int j = 0; j < Const_MaxPathIndex; j++)
+					{
+						if (g_waypoint->GetPath(index)->index[j] == g_clients[i].wpIndex)
+							baseCost += pathDist * 2.0f;
+					}
+				}
+			}
+		}
+	}
 
 	if (g_waypoint->GetPath(index)->flags & WAYPOINT_CROUCH)
 		baseCost += pathDist * 1.5f;
@@ -940,9 +960,9 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
    float offset = 1.0f;
 
    // SyPB Pro P.42 - Zombie Waypoint improve
-   if (m_isZombieBot)
+   if (m_isZombieBot || IsZombieMode ())
    {
-	   gcalc = GF_CostZB;
+	   gcalc = GF_CostZM;
 	   hcalc = HF_ZB;
 	   offset = static_cast <float> (m_skill / 20);
    }
@@ -1075,37 +1095,21 @@ void Bot::CheckTouchEntity(edict_t *entity)
 {
 	// SyPB Pro P.40 - Touch Entity Attack Action
 	if (m_currentWeapon == WEAPON_KNIFE && 
-		(!FNullEnt(m_enemy) || !FNullEnt(m_breakableEntity)) && 
-		(m_enemy == entity || m_breakableEntity == entity))
-		KnifeAttack((pev->origin - GetEntityOrigin(entity)).GetLength() + 50.0f);
+		(entity == m_enemy || entity == m_lastEnemy || entity == m_moveTargetEntity || entity == m_breakableEntity))
+		KnifeAttack((pev->origin - GetEntityOrigin(entity)).GetLength() + 0.1f);
 
 	if (IsShootableBreakable(entity))
 	{
-		bool attackBreakable = false;
-		// SyPB Pro P.40 - Breakable 
-		if (m_isStuck || &m_navNode[0] == null)
-			attackBreakable = true;
-		else if (m_currentWaypointIndex != -1)
-		{
-			TraceResult tr;
-			TraceLine(pev->origin, g_waypoint->GetPath (m_currentWaypointIndex)->origin, false, false, GetEntity(), &tr);
-			if (tr.pHit == entity)// && tr.flFraction < 1.0f)
-				attackBreakable = true;
-		}
+		m_breakableEntity = entity;
+		m_breakable = GetEntityOrigin(entity);
+		m_destOrigin = m_breakable;
 
-		if (attackBreakable)
-		{
-			m_breakableEntity = entity;
-			m_breakable = GetEntityOrigin(entity);
-			m_destOrigin = m_breakable;
+		if (pev->origin.z > m_breakable.z && (pev->origin - GetEntityOrigin(entity)).GetLength2D() <= 60.0f)
+			m_campButtons = IN_DUCK;
+		else
+			m_campButtons = pev->button & IN_DUCK;
 
-			if (pev->origin.z > m_breakable.z && (pev->origin - GetEntityOrigin(entity)).GetLength2D() <= 60.0f)
-				m_campButtons = IN_DUCK;
-			else
-				m_campButtons = pev->button & IN_DUCK;
-
-			PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
-		}
+		PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
 	}
 }
 
@@ -2195,7 +2199,7 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 		}
 	}
 
-	if (playerCount < 4 && IsValidPlayer(nearest))
+	if (playerCount < 4 && !FNullEnt (nearest))
 	{
 		MakeVectors(m_moveAngles); // use our movement angles
 
@@ -2208,7 +2212,7 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 		float nextFrameDistance = ((nearest->v.origin + nearest->v.velocity * m_frameInterval) - pev->origin).GetLength2D();
 
 		// is player that near now or in future that we need to steer away?
-		if ((nearest->v.origin - moved).GetLength2D() <= 48.0f || (nearestDistance <= 56.0f && nextFrameDistance < nearestDistance))
+		if ((nearest->v.origin - moved).GetLength2D() <= 48.0f || (nearestDistance <= 56.0f && nextFrameDistance <= nearestDistance))
 		{
 			// to start strafing, we have to first figure out if the target is on the left side or right side
 			const Vector &dirToPoint = (pev->origin - nearest->v.origin).Normalize2D();
@@ -2455,157 +2459,153 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		else
 			bits |= (COPROBE_STRAFE | (engine->RandomInt(0, 10) > 7 ? COPROBE_JUMP : 0));
 
-		// collision check allowed if not flying through the air
-		if (IsOnFloor() || IsOnLadder() || IsInWater())
+		int state[8];
+		int i = 0;
+
+		// first 4 entries hold the possible collision states
+		state[i++] = COSTATE_STRAFELEFT;
+		state[i++] = COSTATE_STRAFERIGHT;
+		state[i++] = COSTATE_JUMP;
+		state[i++] = COSTATE_DUCK;
+
+		if (bits & COPROBE_STRAFE)
 		{
-			int state[8];
-			int i = 0;
+			state[i] = 0;
+			state[i + 1] = 0;
 
-			// first 4 entries hold the possible collision states
-			state[i++] = COSTATE_STRAFELEFT;
-			state[i++] = COSTATE_STRAFERIGHT;
-			state[i++] = COSTATE_JUMP;
-			state[i++] = COSTATE_DUCK;
+			// to start strafing, we have to first figure out if the target is on the left side or right side
+			MakeVectors(m_moveAngles);
 
-			if (bits & COPROBE_STRAFE)
+			Vector dirToPoint = (pev->origin - m_destOrigin).Normalize2D();
+			Vector rightSide = g_pGlobals->v_right.Normalize2D();
+
+			bool dirRight = false;
+			bool dirLeft = false;
+			bool blockedLeft = false;
+			bool blockedRight = false;
+
+			if ((dirToPoint | rightSide) > 0.0f)
+				dirRight = true;
+			else
+				dirLeft = true;
+
+			const Vector& testDir = m_moveSpeed > 0.0f ? g_pGlobals->v_forward : -g_pGlobals->v_forward;
+
+			// now check which side is blocked
+			src = pev->origin + g_pGlobals->v_right * 32.0f;
+			dest = src + testDir * 32.0f;
+
+			TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
+
+			if (tr.flFraction != 1.0f)
+				blockedRight = true;
+
+			src = pev->origin - g_pGlobals->v_right * 32.0f;
+			dest = src + testDir * 32.0f;
+
+			TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
+
+			if (tr.flFraction != 1.0f)
+				blockedLeft = true;
+
+			if (dirLeft)
+				state[i] += 5;
+			else
+				state[i] -= 5;
+
+			if (blockedLeft)
+				state[i] -= 5;
+
+			i++;
+
+			if (dirRight)
+				state[i] += 5;
+			else
+				state[i] -= 5;
+
+			if (blockedRight)
+				state[i] -= 5;
+		}
+
+		// now weight all possible states
+		if (bits & COPROBE_JUMP)
+		{
+			state[i] = 0;
+
+			if (CanJumpUp(directionNormal))
+				state[i] += 10;
+
+			if (m_destOrigin.z >= pev->origin.z + 18.0f)
+				state[i] += 5;
+
+			if (EntityIsVisible(m_destOrigin))
 			{
-				state[i] = 0;
-				state[i + 1] = 0;
-
-				// to start strafing, we have to first figure out if the target is on the left side or right side
 				MakeVectors(m_moveAngles);
 
-				Vector dirToPoint = (pev->origin - m_destOrigin).Normalize2D();
-				Vector rightSide = g_pGlobals->v_right.Normalize2D();
+				src = EyePosition();
+				src = src + g_pGlobals->v_right * 15.0f;
 
-				bool dirRight = false;
-				bool dirLeft = false;
-				bool blockedLeft = false;
-				bool blockedRight = false;
+				TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
 
-				if ((dirToPoint | rightSide) > 0.0f)
-					dirRight = true;
-				else
-					dirLeft = true;
-
-				const Vector &testDir = m_moveSpeed > 0.0f ? g_pGlobals->v_forward : -g_pGlobals->v_forward;
-
-				// now check which side is blocked
-				src = pev->origin + g_pGlobals->v_right * 32.0f;
-				dest = src + testDir * 32.0f;
-
-				TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
-
-				if (tr.flFraction != 1.0f)
-					blockedRight = true;
-
-				src = pev->origin - g_pGlobals->v_right * 32.0f;
-				dest = src + testDir * 32.0f;
-
-				TraceHull(src, dest, true, head_hull, GetEntity(), &tr);
-
-				if (tr.flFraction != 1.0f)
-					blockedLeft = true;
-
-				if (dirLeft)
-					state[i] += 5;
-				else
-					state[i] -= 5;
-
-				if (blockedLeft)
-					state[i] -= 5;
-
-				i++;
-
-				if (dirRight)
-					state[i] += 5;
-				else
-					state[i] -= 5;
-
-				if (blockedRight)
-					state[i] -= 5;
-			}
-
-			// now weight all possible states
-			if (bits & COPROBE_JUMP)
-			{
-				state[i] = 0;
-
-				if (CanJumpUp(directionNormal))
-					state[i] += 10;
-
-				if (m_destOrigin.z >= pev->origin.z + 18.0f)
-					state[i] += 5;
-
-				if (EntityIsVisible(m_destOrigin))
+				if (tr.flFraction >= 1.0f)
 				{
-					MakeVectors(m_moveAngles);
-
 					src = EyePosition();
-					src = src + g_pGlobals->v_right * 15.0f;
+					src = src - g_pGlobals->v_right * 15.0f;
 
 					TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
 
 					if (tr.flFraction >= 1.0f)
-					{
-						src = EyePosition();
-						src = src - g_pGlobals->v_right * 15.0f;
-
-						TraceLine(src, m_destOrigin, true, true, GetEntity(), &tr);
-
-						if (tr.flFraction >= 1.0f)
-							state[i] += 5;
-					}
+						state[i] += 5;
 				}
-				if (pev->flags & FL_DUCKING)
-					src = pev->origin;
-				else
-					src = pev->origin + Vector(0.0f, 0.0f, -17.0f);
-
-				dest = src + directionNormal * 30.0f;
-				TraceLine(src, dest, true, true, GetEntity(), &tr);
-
-				if (tr.flFraction != 1.0f)
-					state[i] += 10;
 			}
+			if (pev->flags & FL_DUCKING)
+				src = pev->origin;
 			else
-				state[i] = 0;
-			i++;
-			state[i] = 0;
-			i++;
+				src = pev->origin + Vector(0.0f, 0.0f, -17.0f);
 
-			// weighted all possible moves, now sort them to start with most probable
-			bool isSorting = false;
+			dest = src + directionNormal * 30.0f;
+			TraceLine(src, dest, true, true, GetEntity(), &tr);
 
-			do
-			{
-				isSorting = false;
-				for (i = 0; i < 3; i++)
-				{
-					if (state[i + 3] < state[i + 3 + 1])
-					{
-						int temp = state[i];
-
-						state[i] = state[i + 1];
-						state[i + 1] = temp;
-
-						temp = state[i + 3];
-
-						state[i + 3] = state[i + 4];
-						state[i + 4] = temp;
-
-						isSorting = true;
-					}
-				}
-			} while (isSorting);
-
-			for (i = 0; i < 3; i++)
-				m_collideMoves[i] = state[i];
-
-			m_probeTime = engine->GetTime() + 0.5f;
-			m_collisionState = COSTATE_PROBING;
-			m_collStateIndex = 0;
+			if (tr.flFraction != 1.0f)
+				state[i] += 10;
 		}
+		else
+			state[i] = 0;
+		i++;
+		state[i] = 0;
+		i++;
+
+		// weighted all possible moves, now sort them to start with most probable
+		bool isSorting = false;
+
+		do
+		{
+			isSorting = false;
+			for (i = 0; i < 3; i++)
+			{
+				if (state[i + 3] < state[i + 3 + 1])
+				{
+					int temp = state[i];
+
+					state[i] = state[i + 1];
+					state[i + 1] = temp;
+
+					temp = state[i + 3];
+
+					state[i + 3] = state[i + 4];
+					state[i + 4] = temp;
+
+					isSorting = true;
+				}
+			}
+		} while (isSorting);
+
+		for (i = 0; i < 3; i++)
+			m_collideMoves[i] = state[i];
+
+		m_probeTime = engine->GetTime() + 0.5f;
+		m_collisionState = COSTATE_PROBING;
+		m_collStateIndex = 0;
 	}
 
 	if (m_collisionState == COSTATE_PROBING)

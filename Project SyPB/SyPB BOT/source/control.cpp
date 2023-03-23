@@ -385,7 +385,7 @@ void BotControl::CheckBotNum(void)
 					fp.PutString(FormatBuffer("sypb_quota %s%d",
 						needBotNumber > 10 ? "" : "0", needBotNumber));
 
-				ServerPrint("sypb_quota save to '%d' - C", needBotNumber);
+				ServerPrint("Change: sypb_quota save to '%d'", needBotNumber);
 
 				break;
 			}
@@ -395,7 +395,7 @@ void BotControl::CheckBotNum(void)
 				fp.Seek(0, SEEK_END);
 				fp.Print(FormatBuffer("\nsypb_quota \"%s%d\"\n",
 					needBotNumber > 10 ? "" : "0", needBotNumber));
-				ServerPrint("sypb_quota save to '%d' - A", needBotNumber);
+				ServerPrint("Add: sypb_quota save to '%d'", needBotNumber);
 			}
 
 			fp.Close();
@@ -407,7 +407,8 @@ void BotControl::CheckBotNum(void)
 			{
 				fp2.Print(FormatBuffer("\nsypb_quota \"%s%d\"\n",
 					needBotNumber > 10 ? "" : "0", needBotNumber));
-				ServerPrint("sypb_quota save to '%d' - A", needBotNumber);
+				ServerPrint("Cannot find SyPB.cfg, Add the file.", needBotNumber);
+				ServerPrint("Add: sypb_quota save to '%d'", needBotNumber);
 				fp2.Close();
 			}
 			else
