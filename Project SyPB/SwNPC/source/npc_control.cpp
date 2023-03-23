@@ -344,8 +344,8 @@ int NPCControl::SetAttackCount(int npcId, int attackCount)
 
 	if (attackCount < 1)
 		attackCount = 1;
-	if (attackCount > 3)
-		attackCount = 3;
+	if (attackCount > 5)
+		attackCount = 5;
 
 	npc->m_attackCount = attackCount;
 	return 1;

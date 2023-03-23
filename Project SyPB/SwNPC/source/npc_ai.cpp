@@ -27,6 +27,7 @@ NPC::NPC(const char *className, const char *modelName, float maxHealth, float ma
 	pev->maxspeed = maxSpeed;
 
 	SET_MODEL(GetEntity(), (char *)STRING(pev->model));
+	pev->modelindex = PRECACHE_MODEL((char*)STRING(pev->model));
 	pev->framerate = 1.0;
 	pev->frame = 0;
 
@@ -84,8 +85,10 @@ void NPC::NewNPCSetting(void)
 	m_navNodeStart = null;
 
 	BaseSequence();
-	//m_gaitSequence[AS_IDLE] = -1;
-	//m_gaitSequence[AS_MOVE] = -1;
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
+	m_gaitSequence[AS_IDLE] = -1;
+	m_gaitSequence[AS_MOVE] = -1;
+#endif
 
 	m_needFootStep = true;
 
@@ -816,7 +819,14 @@ bool NPC::AttackAction(void)
 		Vector vecDir = gpGlobals->v_forward + x * 0.15 * gpGlobals->v_right + y * 0.15 * gpGlobals->v_up;
 
 		//Vector aimDest = pev->origin + gpGlobals->v_forward * m_attackDistance;
-		Vector aimDest = GetEntityOrigin (m_enemy);
+		//Vector aimDest = GetEntityOrigin (m_enemy);
+
+		Vector vecFwd, vecAng;
+		VEC_TO_ANGLES(GetEntityOrigin (m_enemy) - pev->origin, vecAng);
+		vecAng = Vector(0.0f, vecAng.y, 0.0f);
+		MakeVectors(vecAng);
+		Vector aimDest = pev->origin + gpGlobals->v_forward * (m_attackDistance+1);
+
 		if (m_attackDistance < 300.0f)
 			TraceHull(pev->origin, aimDest, dont_ignore_monsters, dont_ignore_glass, head_hull, GetEntity(), &tr);
 		else
@@ -841,7 +851,7 @@ bool NPC::IsEnemyViewable(edict_t *entity)
 		return false;
 
 	TraceResult tr;
-	TraceLine(pev->origin, GetEntityOrigin (entity), dont_ignore_monsters, GetEntity(), &tr);
+	TraceLine(pev->origin, GetEntityOrigin (entity), ignore_monsters, GetEntity(), &tr);
 	if (tr.pHit == ENT(entity) || tr.flFraction >= 1.0f)
 		return true;
 
@@ -893,9 +903,17 @@ void NPC::MoveAction(void)
 		GetDistance2D(pev->origin, g_waypoint->g_waypointPointOrigin[m_currentWaypointIndex]) <= 10.0f) ||
 		(m_oldNavIndex != -1 && g_waypoint->g_waypointPointFlag[m_oldNavIndex] & WAYPOINT_LADDER &&
 			GetDistance2D(pev->origin, g_waypoint->g_waypointPointOrigin[m_oldNavIndex]) <= 10.0f))
+	{
+		if (pev->movetype != MOVETYPE_FLY)
+			m_setFootStepSoundTime = gpGlobals->time;
+
 		pev->movetype = MOVETYPE_FLY;
-	else
+	}
+	else if (pev->movetype != MOVETYPE_PUSHSTEP)
+	{
 		pev->movetype = MOVETYPE_PUSHSTEP;
+		m_setFootStepSoundTime = gpGlobals->time;
+	}
 
 	float oldSpeed = pev->speed;
 	if (m_moveSpeed == 0.0f || !IsAlive (GetEntity ()))
@@ -945,7 +963,7 @@ void NPC::MoveAction(void)
 			m_crouchAction = true;
 	}
 
-	if (m_crouchAction)
+	if (m_crouchAction && !(pev->flags & FL_DUCKING))
 	{
 		crouchSize.z = 0.0f;
 		SetNPCSize(m_npcSize[0], crouchSize);
@@ -1105,8 +1123,8 @@ void NPC::ChangeAnim()
 	SetUpPModel();
 	if (m_pmodel == null)
 		return;
-	
-	/*
+
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
 	int gaitSequence;
 	if ((m_npcAS & ASC_DEAD))
 		gaitSequence = m_gaitSequence[AS_IDLE];
@@ -1120,7 +1138,8 @@ void NPC::ChangeAnim()
 	}
 
 	if (gaitSequence != -1 && pev->gaitsequence != gaitSequence)
-		pev->gaitsequence = gaitSequence; */
+		pev->gaitsequence = gaitSequence;
+#endif
 		
 	if (m_changeActionTime > gpGlobals->time)
 		return;
@@ -1179,22 +1198,28 @@ void NPC::SetUpPModel(void)
 			m_actionSequence[i][ASS_UP] = -1;
 			m_actionTime[i][ASS_UP] = -1.0f;
 
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
 			m_actionSequence[i][ASS_DUCK] = -1;
 			m_actionTime[i][ASS_DUCK] = -1.0f;
+#endif
 		}
 
-		//m_gaitSequence[AS_IDLE] = -1;
-		//m_gaitSequence[AS_MOVE] = -1;
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
+		m_gaitSequence[AS_IDLE] = -1;
+		m_gaitSequence[AS_MOVE] = -1;
+#endif
 	}
 	else if (pModel != m_pmodel)
 	{
 		MakeVectors(pev->angles);
 
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
 		SetController(pModel, pev, 0, (*g_engfuncs.pfnVecToYaw)(gpGlobals->v_forward));
 		SetController(pModel, pev, 1, 0);
 		SetController(pModel, pev, 2, 0);
 		SetController(pModel, pev, 3, 0);
 		SetController(pModel, pev, 4, 0);
+#endif
 
 		for (int i = 0; i < AS_ALL; i++)
 		{
@@ -1213,8 +1238,10 @@ void NPC::SetUpPModel(void)
 			m_actionTime[i][ASS_DUCK] = LookupActionTime(pModel, m_actionSequence[i][ASS_DUCK]);
 		}
 
-		//m_gaitSequence[AS_IDLE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_IDLE]);
-		//m_gaitSequence[AS_MOVE] = LookupActivity(m_pmodel, pev, m_actionSequence[AS_MOVE]);
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
+		m_gaitSequence[AS_IDLE] = LookupActivity(pModel, pev, m_actionSequence[AS_IDLE][ASS_UP]);
+		m_gaitSequence[AS_MOVE] = LookupActivity(pModel, pev, m_actionSequence[AS_MOVE][ASS_UP]);
+#endif
 	}
 
 	m_pmodel = pModel;
@@ -1240,7 +1267,7 @@ void NPC::PlayNPCSound(int soundClass)
 		if (m_attackDistance < 300.0f)
 			sprintf(playSound, "weapons/knife_slash1.wav");
 		else
-			sprintf(playSound, "weapons/ak47-1.wav");
+			sprintf(playSound, "weapons/mp5-1.wav");
 	}
 	else if (soundClass == NS_DAMAGE)
 		sprintf(playSound, "player/bhit_flesh-1.wav");
@@ -1590,7 +1617,7 @@ void NPC::BaseSequence()
 	m_ASName[AS_IDLE][ASS_UP] = "idle1";
 	m_ASName[AS_MOVE][ASS_UP] = "run";
 	m_ASName[AS_ATTACK][ASS_UP] = "ref_shoot_knife";
-	m_ASName[AS_ATTACK_GUN][ASS_UP] = "ref_shoot_ak47";
+	m_ASName[AS_ATTACK_GUN][ASS_UP] = "ref_shoot_mp5";
 	m_ASName[AS_DAMAGE][ASS_UP] = "gut_flinch";
 	m_ASName[AS_DEAD][ASS_UP] = "death1";
 	m_ASName[AS_JUMP][ASS_UP] = "jump";
@@ -1598,7 +1625,7 @@ void NPC::BaseSequence()
 	m_ASName[AS_IDLE][ASS_DUCK] = "crouch_idle";
 	m_ASName[AS_MOVE][ASS_DUCK] = "crouchrun";
 	m_ASName[AS_ATTACK][ASS_DUCK] = "crouch_shoot_knife";
-	m_ASName[AS_ATTACK_GUN][ASS_DUCK] = "crouch_shoot_ak47";
+	m_ASName[AS_ATTACK_GUN][ASS_DUCK] = "crouch_shoot_mp5";
 	m_ASName[AS_DAMAGE][ASS_DUCK] = "null";
 	m_ASName[AS_DEAD][ASS_DUCK] = "crouch_die";
 	m_ASName[AS_JUMP][ASS_DUCK] = "jump";

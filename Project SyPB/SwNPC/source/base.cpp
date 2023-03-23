@@ -467,6 +467,7 @@ void TraceBleed(edict_t *entity, float damage, Vector vecDir, /* TraceResult *tr
 	}
 }
 
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
 void SetController(void* pmodel, entvars_t* pev, int iController, float flValue)
 {
 	studiohdr_t* pstudiohdr = (studiohdr_t*)pmodel;
@@ -476,6 +477,7 @@ void SetController(void* pmodel, entvars_t* pev, int iController, float flValue)
 
 	int i;
 	mstudiobonecontroller_t* pbonecontroller = (mstudiobonecontroller_t*)((byte*)pstudiohdr + pstudiohdr->bonecontrollerindex);
+	LogToFile("TTT %d", pstudiohdr->numbonecontrollers);
 	for (i = 0; i < pstudiohdr->numbonecontrollers; i++, pbonecontroller++)
 	{
 		if (pbonecontroller->index == iController)
@@ -484,7 +486,7 @@ void SetController(void* pmodel, entvars_t* pev, int iController, float flValue)
 
 	if (i >= pstudiohdr->numbonecontrollers)
 		return;
-	
+
 	if (pbonecontroller->type & (STUDIO_XR | STUDIO_YR | STUDIO_ZR))
 	{
 		if (pbonecontroller->end < pbonecontroller->start)
@@ -541,6 +543,7 @@ int LookupActivity(void *pmodel, entvars_t *pev, int activity)
 
 	return -1;
 }
+#endif
 
 int LookupSequence(void *pmodel, const char *label)
 {

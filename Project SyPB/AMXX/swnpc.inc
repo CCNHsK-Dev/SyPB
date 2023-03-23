@@ -142,7 +142,7 @@ native swnpc_set_damage_miss_armor (npcId, missArmor);
 // SwNPC attack damage, base on 20
 native swnpc_set_attack_damage (npcId, Float:damage);
 
-// SwNPC Attack Count, Base is 1 (Max is 3)
+// SwNPC Attack Count, Base is 1 (Max is 5)
 native swnpc_set_attack_count (npcId, attackCount);
 
 // SwNPC Attack distance, base on 64 (>300 has fake gun effect)

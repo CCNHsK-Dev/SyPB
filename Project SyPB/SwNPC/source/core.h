@@ -2,6 +2,8 @@
 
 #include "main.h"
 
+//#define NON_WORK_ON_NONPLAYER_ENTITY
+
 #define MAX_NPC 128
 
 #define null 0
@@ -168,7 +170,9 @@ public:
 
 	int m_actionSequence[AS_ALL][ASS_ALL];
 	float m_actionTime [AS_ALL][ASS_ALL];
-	//int m_gaitSequence[2];
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
+	int m_gaitSequence[2];
+#endif
 
 	bool m_needFootStep;
 
@@ -444,10 +448,12 @@ extern bool IsFriendlyFireOn(void);
 extern const char *GetEntityName(edict_t *entity);
 
 // About Player(NPC) Model
+#ifdef NON_WORK_ON_NONPLAYER_ENTITY
+extern void SetController(void* pmodel, entvars_t* pev, int iController, float flValue);
 extern int LookupActivity(void *pmodel, entvars_t *pev, int activity);
+#endif
 extern int LookupSequence(void *pmodel, const char *label);
 extern float LookupActionTime(void *pmodel, int seqNum);
-extern void SetController(void* pmodel, entvars_t* pev, int iController, float flValue);
 
 //extern void TraceBleed(edict_t *entity, float damage, Vector vecDir, TraceResult *tr, int bits, int color);
 extern void TraceBleed(edict_t *entity, float damage, Vector vecDir, Vector endPos, int bits, int color);

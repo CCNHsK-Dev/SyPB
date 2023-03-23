@@ -155,7 +155,7 @@ public add_swnpc_team_ct ()
 	swnpc_set_add_frags (ent, 1);
 	swnpc_set_add_money (ent, 1000);
 	swnpc_set_dead_remove_time (ent, 10.0);
-	swnpc_set_has_weapon (ent, "models/p_ak47.mdl");
+	swnpc_set_has_weapon (ent, "models/p_mp5.mdl");
 	
 	set_task (5.0, "add_swnpc_team_ct");
 }
