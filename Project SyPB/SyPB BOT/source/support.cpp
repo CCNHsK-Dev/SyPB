@@ -933,10 +933,10 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 
 	if (wpIndex == -1 || getWpOrigin == nullvec)
 		needCheckNewWaypoint = true;
-	else if (traceCheckTime >= engine->GetTime () && (!isPlayer || mode == -1))
-		needCheckNewWaypoint = false;
 	else if (mode != -1)
 		needCheckNewWaypoint = true;
+	else if (traceCheckTime >= engine->GetTime())
+		needCheckNewWaypoint = false;
 	else
 	{
 		float distance = (getWpOrigin - origin).GetLength();

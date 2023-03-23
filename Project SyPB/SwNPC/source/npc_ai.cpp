@@ -703,6 +703,8 @@ void NPC::SetEnemy(edict_t *entity)
 	{
 		if (!FNullEnt(m_enemy))
 		{
+			LoadEntityWaypointPoint(GetEntity());
+
 			m_currentWaypointIndex = -1;
 			FindWaypoint();
 		}
@@ -719,13 +721,20 @@ void NPC::SetEnemy(edict_t *entity)
 	m_task |= TASK_ENEMY;
 
 	m_enemyUpdateTime = gpGlobals->time + 1.5f;
-
 }
 
 void NPC::SetMoveTarget(edict_t *entity)
 {
 	if (FNullEnt(entity) || !IsAlive(entity))
 	{
+		if (!FNullEnt(m_moveTargetEntity))
+		{
+			LoadEntityWaypointPoint(GetEntity());
+
+			m_currentWaypointIndex = -1;
+			FindWaypoint();
+		}
+
 		m_moveTargetEntity = null;
 		m_task &= ~TASK_MOVETOTARGET;
 		m_enemyUpdateTime = -1.0f;
@@ -780,6 +789,11 @@ float NPC::GetEntityDistance(edict_t *entity)
 		return distance;
 
 	return wpDistance;
+}
+
+Vector NPC::GetBaseSizeOrigin(void)
+{
+	return GetBottomOrigin(GetEntity()) + Vector (0, 0, 36);
 }
 
 bool NPC::AttackAction(void)
@@ -928,13 +942,20 @@ void NPC::MoveAction(void)
 	Vector vecMove = m_destOrigin - pev->origin;
 	float trueSpeed = 0.0f;
 
-	if (IsOnLadder(GetEntity()))
+	bool ladderMove = IsOnLadder(GetEntity());
+	if (ladderMove)
 	{
 		if (m_destOrigin.z > pev->origin.z)
-			vecMove.z += m_npcSize[1].z * 2.0f;
-
-		pev->velocity = vecMove * sqrt(m_moveSpeed * m_moveSpeed / (vecMove.x * vecMove.x + vecMove.y * vecMove.y + vecMove.z * vecMove.z));
+			vecMove = Vector(0, 0, pev->maxspeed);
+		else if (m_destOrigin.z < pev->origin.z && IsOnFloor(GetEntity()) && GetDistance2D(m_destOrigin - pev->origin) >= 2.0f)
+		{
+			vecMove.z -= vecMove.z;
+			ladderMove = false;
+		}
 	}
+
+	if (ladderMove)
+		pev->velocity = vecMove * sqrt(m_moveSpeed * m_moveSpeed / (vecMove.x * vecMove.x + vecMove.y * vecMove.y + vecMove.z * vecMove.z));
 	else
 	{
 		Vector vecFwd, vecAng;
@@ -944,7 +965,7 @@ void NPC::MoveAction(void)
 
 		pev->velocity.x = vecFwd.x * m_moveSpeed;
 		pev->velocity.y = vecFwd.y * m_moveSpeed;
-	}
+	} 
 
 	if (m_jumpAction)
 	{
@@ -1077,6 +1098,7 @@ void NPC::CheckStuck(float oldSpeed)
 	m_goalWaypoint = -1;
 	m_currentWaypointIndex = -1;
 	DeleteSearchNodes();
+	g_waypoint->GetEntityWpIndex(GetEntity());
 }
 
 bool NPC::CheckEntityStuck(Vector checkOrigin, bool tryUnstuck)
@@ -1451,12 +1473,12 @@ bool NPC::DoWaypointNav (void)
 	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
 		FindWaypoint();
 
-	float waypointDistance = GetDistance(pev->origin, m_waypointOrigin);
+	float waypointDistance = GetDistance(GetBaseSizeOrigin(), m_waypointOrigin);
 	float desiredDistance = g_waypoint->g_waypointPointRadius[m_currentWaypointIndex];
 	
 	if (desiredDistance < 16.0f && waypointDistance < 30.0f)
 	{
-		Vector nextFrameOrigin = pev->origin + (pev->velocity * m_frameInterval);
+		Vector nextFrameOrigin = GetBaseSizeOrigin() + (pev->velocity * m_frameInterval);
 
 		if (GetDistance(nextFrameOrigin, m_waypointOrigin) >= waypointDistance)
 			desiredDistance = waypointDistance + 1.0f;
@@ -1473,7 +1495,7 @@ bool NPC::DoWaypointNav (void)
 		return false;
 	}
 
-	if (GetDistance(m_waypointOrigin, pev->origin) <= 2.0f)
+	if (GetDistance(m_waypointOrigin, GetBaseSizeOrigin()) <= 2.0f)
 		HeadTowardWaypoint();
 
 	return false;
@@ -1733,9 +1755,7 @@ void NPC::DebugModeMsg(void)
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
 		"Crouch: %s Jump: %s\n"
-		"Testing: %.2f\n"
-		"Min:%.0f %.0f %.0f Max:%.0f %.0f %.0f \n"
-		"AMin:%.0f %.0f %.0f AMax:%.0f %.0f %.0f " , 
+		"On Floor: %s On Ladder: %s", 
 		gamemodName, g_npcManager->g_SwNPCNum, MAX_NPC, 
 		GetEntityName(GetEntity()), ENTINDEX (GetEntity ()), pev->health, pev->max_health, npcTeam,
 		m_attackDamage, m_attackCount, m_attackDistance, m_attackDelayTime,
@@ -1745,11 +1765,7 @@ void NPC::DebugModeMsg(void)
 		m_moveSpeed, GetDistance2D(pev->velocity),
 		//m_crouchAction ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
 		(pev->flags & FL_DUCKING) ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
-		m_testValue, 
-		pev->mins.x, pev->mins.y, pev->mins.z,
-		pev->maxs.x, pev->maxs.y, pev->maxs.z, 
-		pev->absmin.x, pev->absmin.y, pev->absmin.z, 
-		pev->absmax.x, pev->absmax.y, pev->absmax.z);
+		IsOnFloor (GetEntity ()) ? "Yes" : "No", IsOnLadder (GetEntity ()) ? "Yes" : "No");
 
 	DrawLine(g_hostEntity, pev->origin, m_testPoint, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
 

@@ -137,6 +137,8 @@ private:
 	void ResetCheckEnemy(void);
 
 	float GetEntityDistance(edict_t *entity);
+	Vector GetBaseSizeOrigin(void);
+
 	bool IsEnemyViewable(edict_t *entity);
 	bool IsOnAttackDistance(edict_t *targetEntity, float distance);
 	bool AttackAction(void);
