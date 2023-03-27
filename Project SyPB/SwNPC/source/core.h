@@ -104,19 +104,18 @@ private:
 	int m_currentWaypointIndex;
 	Vector m_waypointOrigin;
 	int m_goalWaypoint;
+	float m_waitLadderTime;
 
 	float m_checkStuckTime;
 
 	Vector m_prevOrigin;
-
 	float m_moveSpeed;
 
 	bool m_jumpAction;
 	bool m_crouchAction;
 	float m_crouchDelayTime;
 
-	float m_testValue;
-	Vector m_testPoint;
+	bool m_testValue;
 
 	// For check enemy only
 	edict_t *m_allEnemy[checkEnemyNum];

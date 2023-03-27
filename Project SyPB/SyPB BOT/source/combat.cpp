@@ -92,7 +92,13 @@ void Bot::ResetCheckEnemy()
 			continue;
 
 		entity = INDEXENT(g_entityId[i]);
-		if (FNullEnt(entity) || !IsAlive(entity) || entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
+		if (FNullEnt(entity) || !IsAlive(entity) || entity->v.effects & EF_NODRAW)
+		{
+			SetEntityActionData(i);
+			continue;
+		}
+
+		if (entity->v.takedamage == DAMAGE_NO)
 			continue;
 
 		m_allEnemy[m_checkEnemyNum] = entity;
@@ -486,7 +492,7 @@ bool Bot::LookupEnemy(void)
 	if ((UsesSniper() || UsesZoomableRifle()) && m_zoomCheckTime + 1.0f < engine->GetTime())
 	{
 		if (pev->fov < 90)
-			pev->button |= IN_ATTACK2;
+			m_buttonFlags |= IN_ATTACK2;
 		else
 			m_zoomCheckTime = 0.0f;
 	}
@@ -556,8 +562,7 @@ bool Bot::IsFriendInLineOfFire (float distance)
 		if (strcmp(STRING(tr.pHit->v.classname), "hostage_entity") == 0)
 			return true;
 
-		if (needCheckFriendEntity && 
-			IsAlive (tr.pHit) && m_team == GetTeam(tr.pHit))
+		if (needCheckFriendEntity && IsAlive (tr.pHit) && m_team == GetTeam(tr.pHit))
 		{
 			if (IsValidPlayer(tr.pHit))
 				return true;
@@ -860,9 +865,9 @@ WeaponSelectEnd:
 	if (HasShield() && m_shieldCheckTime < engine->GetTime() && GetCurrentTask()->taskID != TASK_CAMP) // better shield gun usage
 	{
 		if ((distance > 750.0f) && !IsShieldDrawn())
-			pev->button |= IN_ATTACK2; // draw the shield
+			m_buttonFlags |= IN_ATTACK2; // draw the shield
 		else if (IsShieldDrawn() || (!FNullEnt(enemy) && (enemy->v.button & IN_RELOAD)))
-			pev->button |= IN_ATTACK2; // draw out the shield
+			m_buttonFlags |= IN_ATTACK2; // draw out the shield
 
 		m_shieldCheckTime = engine->GetTime() + 1.0f;
 	}
@@ -870,13 +875,13 @@ WeaponSelectEnd:
 	if (UsesSniper() && m_zoomCheckTime < engine->GetTime()) // is the bot holding a sniper rifle?
 	{
 		if (distance > 1500.0f && pev->fov >= 40.0f) // should the bot switch to the long-range zoom?
-			pev->button |= IN_ATTACK2;
+			m_buttonFlags |= IN_ATTACK2;
 
 		else if (distance > 150.0f && pev->fov >= 90.0f) // else should the bot switch to the close-range zoom ?
-			pev->button |= IN_ATTACK2;
+			m_buttonFlags |= IN_ATTACK2;
 
 		else if (distance <= 150.0f && pev->fov < 90.0f) // else should the bot restore the normal view ?
-			pev->button |= IN_ATTACK2;
+			m_buttonFlags |= IN_ATTACK2;
 
 		m_zoomCheckTime = engine->GetTime();
 
@@ -890,10 +895,10 @@ WeaponSelectEnd:
 	else if (UsesZoomableRifle() && m_zoomCheckTime < engine->GetTime() && m_skill < 90) // else is the bot holding a zoomable rifle?
 	{
 		if (distance > 800.0f && pev->fov >= 90.0f) // should the bot switch to zoomed mode?
-			pev->button |= IN_ATTACK2;
+			m_buttonFlags |= IN_ATTACK2;
 
 		else if (distance <= 800.0f && pev->fov < 90.0f) // else should the bot restore the normal view?
-			pev->button |= IN_ATTACK2;
+			m_buttonFlags |= IN_ATTACK2;
 
 		m_zoomCheckTime = engine->GetTime();
 	}
@@ -906,15 +911,15 @@ WeaponSelectEnd:
 		else
 		{
 			if (selectTab[chosenWeaponIndex].primaryFireHold) // if automatic weapon, just press attack
-				pev->button |= IN_ATTACK;
+				m_buttonFlags |= IN_ATTACK;
 			else // if not, toggle buttons
 			{
-				if ((pev->oldbuttons & IN_ATTACK) == 0)
-					pev->button |= IN_ATTACK;
+				if ((m_oldButtonFlags & IN_ATTACK) == 0)
+					m_buttonFlags |= IN_ATTACK;
 			}
 		}
 
-		if (pev->button & IN_ATTACK)
+		if (m_buttonFlags & IN_ATTACK)
 			m_shootTime = engine->GetTime();
 	}
 	else
@@ -940,11 +945,11 @@ WeaponSelectEnd:
 			//m_shootTime = engine->GetTime();
 			m_zoomCheckTime = engine->GetTime();
 
-			pev->button |= IN_ATTACK;  // use primary attack
+			m_buttonFlags |= IN_ATTACK;  // use primary attack
 		}
 		else
 		{
-			pev->button |= IN_ATTACK;  // use primary attack
+			m_buttonFlags |= IN_ATTACK;  // use primary attack
 
 			//m_shootTime = engine->GetTime() + baseDelay + engine->RandomFloat(minDelay, maxDelay);
 			delayTime = baseDelay + engine->RandomFloat(minDelay, maxDelay);
@@ -1026,37 +1031,37 @@ bool Bot::KnifeAttack(float attackDistance)
 		// SyPB Pro P.35 - Knife Attack Change
 		if (pev->origin.z > GetEntityOrigin(entity).z && distanceSkipZ < 64.0f)
 		{
-			pev->button |= IN_DUCK;
+			m_buttonFlags |= IN_DUCK;
 			m_campButtons |= IN_DUCK; 
 
-			pev->button &= ~IN_JUMP;
+			m_buttonFlags &= ~IN_JUMP;
 		}
 		else
 		{
-			pev->button &= ~IN_DUCK;
+			m_buttonFlags &= ~IN_DUCK;
 			m_campButtons &= ~IN_DUCK;
 
 			if (pev->origin.z + 150.0f < GetEntityOrigin(entity).z && distanceSkipZ < 300.0f)
-				pev->button |= IN_JUMP;
+				m_buttonFlags |= IN_JUMP;
 		}
 
 		if (m_isZombieBot)
 		{
 			if (kaMode != 2)
-				pev->button |= IN_ATTACK;
+				m_buttonFlags |= IN_ATTACK;
 			else
-				pev->button |= IN_ATTACK2;
+				m_buttonFlags |= IN_ATTACK2;
 		}
 		else
 		{
 			if (kaMode == 1)
-				pev->button |= IN_ATTACK;
+				m_buttonFlags |= IN_ATTACK;
 			else if (kaMode == 2)
-				pev->button |= IN_ATTACK2;
+				m_buttonFlags |= IN_ATTACK2;
 			else if (engine->RandomInt(1, 100) < 30 || HasShield())
-				pev->button |= IN_ATTACK;
+				m_buttonFlags |= IN_ATTACK;
 			else
-				pev->button |= IN_ATTACK2;
+				m_buttonFlags |= IN_ATTACK2;
 		}
 
 		return true;
@@ -1251,7 +1256,7 @@ void Bot::ActionForEnemy(void)
 			return;
 
 		// start hide task
-		PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(5.0f, 15.0f), false);
+		PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(5.0f, 10.0f), false);
 		Vector destination = m_lastEnemyOrigin;
 
 		// get a valid look direction
@@ -1341,7 +1346,7 @@ void Bot::CombatFight(void)
 	if ((m_moveSpeed != 0.0f || m_strafeSpeed != 0.0f) &&
 		m_currentWaypointIndex != -1 && g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH &&
 		(pev->velocity.GetLength() < 2.0f))
-		pev->button |= IN_DUCK;
+		m_buttonFlags |= IN_DUCK;
 
 	// SyPB Pro P.39 - Zombie Ai improve
 	if (m_isZombieBot)
@@ -1463,7 +1468,7 @@ void Bot::CombatFight(void)
 			}
 			else
 			{
-				if (approach >= 50 && (!(pev->button & IN_ATTACK) || UsesBadPrimary()))
+				if (approach >= 50 && (!(m_buttonFlags & IN_ATTACK) || UsesBadPrimary()))
 					m_moveSpeed = pev->maxspeed;
 				else
 					m_moveSpeed = 0.0f;
@@ -1474,7 +1479,7 @@ void Bot::CombatFight(void)
 			{
 				setStrafe = true;
 				if (!UsesSubmachineGun())
-					pev->button |= IN_DUCK;
+					m_buttonFlags |= IN_DUCK;
 
 				m_moveSpeed = -pev->maxspeed;
 			}
@@ -1482,7 +1487,7 @@ void Bot::CombatFight(void)
 
 		// SyPB Pro p.49 - Base improve
 		if (IsOnLadder() || !IsOnFloor() || 
-			(pev->button & IN_ATTACK && !UsesBadPrimary ()))
+			(m_buttonFlags & IN_ATTACK && !UsesBadPrimary ()))
 			setStrafe = false;
 
 		if (UsesSniper())
@@ -1529,7 +1534,7 @@ void Bot::CombatFight(void)
 		}
 
 		// SyPB Pro P.42 - Attack Move Ai improve 
-		if (((pev->button & IN_RELOAD) || m_isReloading) || (m_skill >= 70 && m_fightStyle == FIGHT_STRAFE &&
+		if (((m_buttonFlags & IN_RELOAD) || m_isReloading) || (m_skill >= 70 && m_fightStyle == FIGHT_STRAFE &&
 			((!enemyIsZombie && distance < 800.0f) || (enemyIsZombie && distance < 500.0f))))
 		{
 			if (!setStrafe)
@@ -1581,7 +1586,7 @@ void Bot::CombatFight(void)
 			}
 
 			if (m_skill > 80 && (m_jumpTime + 5.0f < engine->GetTime() && IsOnFloor() && engine->RandomInt(0, 1000) < (m_isReloading ? 8 : 2) && pev->velocity.GetLength2D() > 150.0f))
-				pev->button |= IN_JUMP;
+				m_buttonFlags |= IN_JUMP;
 		}
 		else if (m_fightStyle == FIGHT_STAY && m_moveSpeed == 0.0f && engine->RandomInt(1, 100) < 10)
 		{
@@ -1627,7 +1632,7 @@ void Bot::CombatFight(void)
 				m_strafeSpeed = -m_strafeSpeed;
 				m_moveSpeed = -m_moveSpeed;
 
-				pev->button &= ~IN_JUMP;
+				m_buttonFlags &= ~IN_JUMP;
 			}
 		}
 	}
@@ -1929,10 +1934,10 @@ void Bot::CheckReload (void)
 		   if (m_currentWeapon != weaponIndex)
 			   SelectWeaponByName(g_weaponDefs[weaponIndex].className);
 
-		   pev->button &= ~IN_ATTACK;
+		   m_buttonFlags &= ~IN_ATTACK;
 
-		   if ((pev->oldbuttons & IN_RELOAD) == RSTATE_NONE)
-			   pev->button |= IN_RELOAD; // press reload button
+		   if ((m_oldButtonFlags & IN_RELOAD) == RSTATE_NONE)
+			   m_buttonFlags |= IN_RELOAD; // press reload button
 
 		   m_preReloadAmmo = m_ammoInClip[m_currentWeapon];
 		   m_isReloading = true;

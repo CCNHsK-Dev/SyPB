@@ -483,8 +483,11 @@ void Bot::AvoidEntity(void)
 			continue;
 
 		entity = INDEXENT(g_entityId[i]);
-		if (FNullEnt(entity) || entity->v.effects & EF_NODRAW)
+		if (FNullEnt(entity) || entity->v.effects & EF_NODRAW || entity->v.flags & FL_ONGROUND)
+		{
+			SetEntityActionData(i);
 			continue;
+		}
 
 		m_allAvoidEntity[allEntity] = entity;
 		allEntity++;
@@ -710,7 +713,7 @@ edict_t *Bot::FindBreakable(void)
 		if (pev->origin.z > m_breakable.z)
 			m_campButtons = IN_DUCK;
 		else
-			m_campButtons = pev->button & IN_DUCK;
+			m_campButtons = m_buttonFlags & IN_DUCK;
 
 		return tr.pHit;
 	}
@@ -3209,8 +3212,8 @@ float Bot::GetWalkSpeed(void)
 	// SyPB Pro P.48 - Base improve
 	if (IsZombieMode () || IsZombieEntity (m_enemy) ||
 		pev->maxspeed <= 180.f || m_currentTravelFlags & PATHFLAG_JUMP || 
-		pev->button & IN_JUMP || pev->oldbuttons & IN_JUMP ||
-		pev->flags & FL_DUCKING || pev->button & IN_DUCK || pev->oldbuttons & IN_DUCK || IsInWater())
+		m_buttonFlags & IN_JUMP || m_oldButtonFlags & IN_JUMP ||
+		pev->flags & FL_DUCKING || m_buttonFlags & IN_DUCK || m_oldButtonFlags & IN_DUCK || IsInWater())
 		return pev->maxspeed;
 
 	return static_cast <float> ((static_cast <int> (pev->maxspeed) * 0.5f) + (static_cast <int> (pev->maxspeed) / 50)) - 18;
@@ -3316,7 +3319,6 @@ void Bot::Think(void)
 	}
 	else if (!g_botActionStop && m_botMovement)
 	{
-		// Bot Action improve 
 		DoWaypointNav();
 
 		ChooseAimDirection();
@@ -3334,8 +3336,10 @@ void Bot::Think(void)
 
 void Bot::ThinkFrame(void)
 {
-   pev->button = 0;
    pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
+
+   m_oldButtonFlags = m_buttonFlags;
+   m_buttonFlags = 0;
 
    m_moveSpeed = 0.0f;
    m_strafeSpeed = 0.0f;
@@ -3447,26 +3451,37 @@ void Bot::MoveAction(void)
 	{
 		m_moveSpeed = 0.0f;
 		m_strafeSpeed = 0.0f;
-		pev->button &= ~IN_JUMP;
+		m_buttonFlags &= ~IN_JUMP;
 	}
 
-	if (!(pev->button & (IN_FORWARD | IN_BACK)))
+	if (m_moveSpeed > 0)
+		m_buttonFlags |= IN_FORWARD;
+	else if (m_moveSpeed < 0)
+		m_buttonFlags |= IN_BACK;
+
+	if (m_strafeSpeed > 0)
+		m_buttonFlags |= IN_MOVERIGHT;
+	else if (m_strafeSpeed < 0)
+		m_buttonFlags |= IN_MOVELEFT;
+
+	/*
+	if (!(m_buttonFlags & (IN_FORWARD | IN_BACK)))
 	{
 		if (m_moveSpeed > 0)
-			pev->button |= IN_FORWARD;
+			m_buttonFlags |= IN_FORWARD;
 		else if (m_moveSpeed < 0)
-			pev->button |= IN_BACK;
+			m_buttonFlags |= IN_BACK;
 	}
 
-	if (!(pev->button & (IN_MOVELEFT | IN_MOVERIGHT)))
+	if (!(m_buttonFlags & (IN_MOVELEFT | IN_MOVERIGHT)))
 	{
 		if (m_strafeSpeed > 0)
-			pev->button |= IN_MOVERIGHT;
+			m_buttonFlags |= IN_MOVERIGHT;
 		else if (m_strafeSpeed < 0)
-			pev->button |= IN_MOVELEFT;
+			m_buttonFlags |= IN_MOVELEFT;
 	}
-
-	if (m_sniperFire && pev->button & IN_ATTACK)
+	*/
+	if (m_sniperFire && m_buttonFlags & IN_ATTACK)
 		m_sniperFire = false;
 }
 
@@ -3550,7 +3565,7 @@ void Bot::RunTask (void)
 	  }
 
       if (IsShieldDrawn ())
-         pev->button |= IN_ATTACK2;
+		  m_buttonFlags |= IN_ATTACK2;
 
       if (m_reloadState == RSTATE_NONE && GetAmmo () != 0)
          m_reloadState = RSTATE_PRIMARY;
@@ -3755,7 +3770,7 @@ void Bot::RunTask (void)
 
       if (engine->IsFootstepsOn () && m_skill > 80 && !(m_aimFlags & AIM_ENEMY) && 
 		  !g_bombPlanted && !m_isZombieBot && !(m_currentTravelFlags & PATHFLAG_JUMP) &&
-		  !(pev->button & IN_DUCK) && !(pev->flags & FL_DUCKING) && 
+		  !(m_buttonFlags & IN_DUCK) && !(pev->flags & FL_DUCKING) &&
 		  (m_heardSoundTime + 8.0f >= engine->GetTime () || (m_states & (STATE_HEARENEMY))) && 
 		  GetNearbyEnemiesNearPosition (pev->origin, 1024) >= 1)
          m_moveSpeed = GetWalkSpeed ();
@@ -3865,7 +3880,7 @@ void Bot::RunTask (void)
          m_wantsToFire = true;
       }
       else
-         pev->button |= m_campButtons;
+		  m_buttonFlags |= m_campButtons;
 
       // stop camping if time over or gets hurt by something else than bullets
       if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
@@ -3890,7 +3905,7 @@ void Bot::RunTask (void)
 	  {
 		  m_moveSpeed = m_blindMoveSpeed;
 		  m_strafeSpeed = m_blindSidemoveSpeed;
-		  pev->button |= m_blindButton;
+		  m_buttonFlags |= m_blindButton;
 	  }
 	  else
 	  {
@@ -4037,7 +4052,7 @@ void Bot::RunTask (void)
             m_camp = g_waypoint->GetPath (GetCampAimingWaypoint())->origin;
       }
       // press remembered crouch button
-      pev->button |= m_campButtons;
+	  m_buttonFlags |= m_campButtons;
 
       // stop camping if time over or gets hurt by something else than bullets
       if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
@@ -4070,9 +4085,9 @@ void Bot::RunTask (void)
       if (HasShield () && !m_isReloading)
       {
          if (!IsShieldDrawn ())
-            pev->button |= IN_ATTACK2; // draw the shield!
+			 m_buttonFlags |= IN_ATTACK2; // draw the shield!
          else
-            pev->button |= IN_DUCK; // duck under if the shield is already drawn
+			 m_buttonFlags |= IN_DUCK; // duck under if the shield is already drawn
       }
 
       // if we see an enemy and aren't at a good camping point leave the spot
@@ -4104,7 +4119,7 @@ void Bot::RunTask (void)
          break;
       }
 
-      pev->button |= m_campButtons;
+	  m_buttonFlags |= m_campButtons;
       m_navTimeset = engine->GetTime ();
 
 	  // SyPB Pro P.37 - Base Mode improve
@@ -4125,7 +4140,7 @@ void Bot::RunTask (void)
       m_aimFlags |= AIM_NAVPOINT;
 
       if (IsShieldDrawn ())
-         pev->button |= IN_ATTACK2;
+		  m_buttonFlags |= IN_ATTACK2;
 
       if (m_reloadState == RSTATE_NONE && GetAmmo () != 0)
          m_reloadState = RSTATE_PRIMARY;
@@ -4176,9 +4191,9 @@ void Bot::RunTask (void)
             m_navTimeset = engine->GetTime ();
 
             if (path->flags & WAYPOINT_CROUCH)
-               pev->button |= (IN_ATTACK | IN_DUCK);
+				m_buttonFlags |= (IN_ATTACK | IN_DUCK);
             else
-               pev->button |= IN_ATTACK;
+				m_buttonFlags |= IN_ATTACK;
 
             m_moveSpeed = 0.0f;
             m_strafeSpeed = 0.0f;
@@ -4282,7 +4297,7 @@ void Bot::RunTask (void)
 				   }
 			   }
 
-			   //pev->button |= IN_USE;
+			   //m_buttonFlags |= IN_USE;
 			   MDLL_Use(m_pickupItem, GetEntity());
 			   RadioMessage(Radio_CoverMe);
 		   }
@@ -4357,7 +4372,7 @@ void Bot::RunTask (void)
          m_moveSpeed = GetWalkSpeed ();
 
       if (IsShieldDrawn ())
-         pev->button |= IN_ATTACK2;
+		  m_buttonFlags |= IN_ATTACK2;
 
       if (DoWaypointNav ()) // reached destination?
          GetCurrentTask ()->data = -1;
@@ -4547,8 +4562,8 @@ void Bot::RunTask (void)
                if (pev->weapons & (1 << WEAPON_HEGRENADE))
                   SelectWeaponByName ("weapon_hegrenade");
             }
-            else if (!(pev->oldbuttons & IN_ATTACK))
-               pev->button |= IN_ATTACK;
+            else if (!(m_oldButtonFlags & IN_ATTACK))
+				m_buttonFlags |= IN_ATTACK;
 			else // SyPB Pro P.27 - Debug Grenade
 			{
 				SelectBestWeapon();
@@ -4556,7 +4571,7 @@ void Bot::RunTask (void)
 			}
          }
       }
-      pev->button |= m_campButtons;
+	  m_buttonFlags |= m_campButtons;
       break;
 
    // flashbang throw behavior (basically the same code like for HE's)
@@ -4616,8 +4631,8 @@ void Bot::RunTask (void)
                if (pev->weapons & (1 << WEAPON_FBGRENADE))
                   SelectWeaponByName ("weapon_flashbang");
             }
-            else if (!(pev->oldbuttons & IN_ATTACK))
-               pev->button |= IN_ATTACK;
+            else if (!(m_oldButtonFlags & IN_ATTACK))
+				m_buttonFlags |= IN_ATTACK;
 			else // SyPB Pro P.27 - Debug Grenade
 			{
 				SelectBestWeapon();
@@ -4625,7 +4640,7 @@ void Bot::RunTask (void)
 			}
          }
       }
-      pev->button |= m_campButtons;
+	  m_buttonFlags |= m_campButtons;
       break;
 
    // smoke grenade throw behavior
@@ -4671,8 +4686,8 @@ void Bot::RunTask (void)
          else
 			 GetCurrentTask()->time = engine->GetTime () + 0.1f;
       }
-      else if (!(pev->oldbuttons & IN_ATTACK))
-         pev->button |= IN_ATTACK;
+      else if (!(m_oldButtonFlags & IN_ATTACK))
+		  m_buttonFlags |= IN_ATTACK;
 	  else // SyPB Pro P.27 - Debug Grenade
 	  {
 		  SelectBestWeapon();
@@ -4699,7 +4714,7 @@ void Bot::RunTask (void)
          m_strafeSpeed = 0.0f;
 
          if (m_duckForJump < engine->GetTime ())
-            pev->button |= IN_DUCK;
+			 m_buttonFlags |= IN_DUCK;
 
          MakeVectors (nullvec);
 
@@ -4762,7 +4777,7 @@ void Bot::RunTask (void)
 			   m_campButtons = IN_DUCK;
 
 			   if (IsShieldDrawn())
-				   pev->button |= IN_ATTACK2;
+				   m_buttonFlags |= IN_ATTACK2;
 		   }
 
 		   PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + 10.0f, true);
@@ -4815,7 +4830,7 @@ void Bot::RunTask (void)
 		  break;
 	  }
 
-      pev->button |= m_campButtons;
+	  m_buttonFlags |= m_campButtons;
 
       m_checkTerrain = false;
       m_moveToGoal = false;
@@ -5476,7 +5491,7 @@ void Bot::BotAI(void)
    if (m_checkWeaponSwitch && m_buyingFinished && m_spawnTime + engine->RandomFloat (2.0f, 3.5f) < engine->GetTime ())
    {
       if (HasShield () && IsShieldDrawn ())
-        pev->button |= IN_ATTACK2;
+		  m_buttonFlags |= IN_ATTACK2;
       else
       {
          switch (m_currentWeapon)
@@ -5489,7 +5504,7 @@ void Bot::BotAI(void)
          case WEAPON_FAMAS:
          case WEAPON_GLOCK18:
             if (engine->RandomInt (0, 100) < 50)
-               pev->button |= IN_ATTACK2;
+				m_buttonFlags |= IN_ATTACK2;
             break;
          }
       }
@@ -5617,22 +5632,24 @@ void Bot::BotAI(void)
 
       // Press duck button if we need to
       if ((g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CROUCH) && !(g_waypoint->GetPath (m_currentWaypointIndex)->flags & WAYPOINT_CAMP))
-         pev->button |= IN_DUCK;
+		  m_buttonFlags |= IN_DUCK;
 
       m_timeWaypointMove = engine->GetTime ();
 
       if (IsInWater ()) // special movement for swimming here
       {
          // check if we need to go forward or back press the correct buttons
-         if (InFieldOfView (m_destOrigin - EyePosition ()) > 90.0f)
-            pev->button |= IN_BACK;
-		 else
-            pev->button |= IN_FORWARD;
+		  if (InFieldOfView(m_destOrigin - EyePosition()) > 90.0f)
+			  //m_buttonFlags |= IN_BACK;
+			  m_moveSpeed = -pev->maxspeed;
+		  else
+			  //m_buttonFlags |= IN_FORWARD;
+			  m_moveSpeed = pev->maxspeed;
 
          if (m_moveAngles.x > 60.0f)
-            pev->button |= IN_DUCK;
+			 m_buttonFlags |= IN_DUCK;
          else if (m_moveAngles.x < -60.0f)
-            pev->button |= IN_JUMP;
+			 m_buttonFlags |= IN_JUMP;
       }
    }
 
@@ -5643,7 +5660,7 @@ void Bot::BotAI(void)
    if (m_needAvoidEntity != 0)
    {
       // Don't duck to get away faster
-      pev->button &= ~IN_DUCK;
+	   m_buttonFlags &= ~IN_DUCK;
 
       m_moveSpeed = -pev->maxspeed;
       m_strafeSpeed = pev->maxspeed * m_needAvoidEntity;
@@ -5687,18 +5704,18 @@ void Bot::BotAI(void)
    if (OnLadderNoDuck)
    {
 	   m_campButtons &= ~IN_DUCK;
-	   pev->button &= ~IN_DUCK;
+	   m_buttonFlags &= ~IN_DUCK;
    }
    else if (m_duckTime > engine->GetTime())
-	   pev->button |= IN_DUCK;
+	   m_buttonFlags |= IN_DUCK;
 
-   if (pev->button & IN_JUMP)
+   if (m_buttonFlags & IN_JUMP)
 	   m_jumpTime = engine->GetTime();
 
    if (m_jumpTime + 0.85f > engine->GetTime())
    {
 	   if (!IsOnFloor() && !IsInWater())
-		   pev->button |= IN_DUCK;
+		   m_buttonFlags |= IN_DUCK;
    }
 
    // save the previous speed (for checking if stuck)
@@ -5765,12 +5782,15 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 
 	// SyPB Pro P.23 - Bot Ai
 	m_damageTime = engine->GetTime() + 0.3f;
+	if (g_gameMode == MODE_DM)
+		return;
 
 	if (GetTeam(inflictor) == m_team)
 		return;
 
 	m_lastDamageType = bits;
-	RemoveCertainTask(TASK_HIDE);
+	if (GetCurrentTask()->taskID == TASK_HIDE)
+		RemoveCertainTask(TASK_HIDE);
 
 	// SyPB Pro P.43 - Zombie Ai improve
 	if (m_isZombieBot)
@@ -6067,11 +6087,16 @@ void Bot::RunPlayerMovement(void)
 	// SyPB Pro P.41 - Run Player Move
 	m_frameInterval = engine->GetTime() - m_lastCommandTime;
 
-	const int8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
+	uint8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
+	if (pev->flags & FL_FROZEN)
+		msecVal = 0;
+	else if(msecVal > 255)
+		msecVal = 255;
+
 	m_lastCommandTime = engine->GetTime();
 
-	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), m_moveAngles, m_moveSpeed, m_strafeSpeed,
-		0.0f, static_cast <unsigned short> (pev->button), 0, static_cast <uint8_t> (msecVal));
+	(*g_engfuncs.pfnRunPlayerMove) (GetEntity(), m_moveAngles, m_moveSpeed, m_strafeSpeed, 0.0f, 
+		m_buttonFlags, static_cast <uint8> (pev->impulse), msecVal);
 }
 
 
@@ -6084,15 +6109,15 @@ void Bot::CheckBurstMode (float distance)
 
    // if current weapon is glock, disable burstmode on long distances, enable it else
    if (m_currentWeapon == WEAPON_GLOCK18 && distance < 300.0f && m_weaponBurstMode == BURST_DISABLED)
-      pev->button |= IN_ATTACK2;
+	   m_buttonFlags |= IN_ATTACK2;
    else if (m_currentWeapon == WEAPON_GLOCK18 && distance >= 30.0f && m_weaponBurstMode == BURST_ENABLED)
-      pev->button |= IN_ATTACK2;
+	   m_buttonFlags |= IN_ATTACK2;
 
    // if current weapon is famas, disable burstmode on short distances, enable it else
    if (m_currentWeapon == WEAPON_FAMAS && distance > 400.0f && m_weaponBurstMode == BURST_DISABLED)
-      pev->button |= IN_ATTACK2;
+	   m_buttonFlags |= IN_ATTACK2;
    else if (m_currentWeapon == WEAPON_FAMAS && distance <= 400.0f && m_weaponBurstMode == BURST_ENABLED)
-      pev->button |= IN_ATTACK2;
+	   m_buttonFlags |= IN_ATTACK2;
 }
 
 void Bot::CheckSilencer (void)
@@ -6105,12 +6130,12 @@ void Bot::CheckSilencer (void)
       if (engine->RandomInt (1, 100) <= (m_currentWeapon == WEAPON_USP ? random / 3 : random))
       {
          if (pev->weaponanim > 6) // is the silencer not attached...
-            pev->button |= IN_ATTACK2; // attach the silencer
+			 m_buttonFlags |= IN_ATTACK2; // attach the silencer
       }
       else
       {
          if (pev->weaponanim <= 6) // is the silencer attached...
-            pev->button |= IN_ATTACK2; // detach the silencer
+			 m_buttonFlags |= IN_ATTACK2; // detach the silencer
       }
    }
 }
@@ -6149,7 +6174,7 @@ float Bot::GetEstimatedReachTime (void)
 			estimatedTime = 5.0f * distance / pev->maxspeed;
 
 		// check for special waypoints, that can slowdown our movement
-		if ((g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH) || (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) || (pev->button & IN_DUCK))
+		if ((g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_CROUCH) || (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER) || (m_buttonFlags & IN_DUCK))
 			estimatedTime *= 3.0f;
 
 		// check for too low values

@@ -591,6 +591,9 @@ private:
    float m_minSpeed; // minimum speed in normal mode
    float m_oldCombatDesire; // holds old desire for filtering
 
+   unsigned short m_buttonFlags;
+   unsigned short m_oldButtonFlags;
+
    bool m_isLeader; // bot is leader of his team
    bool m_checkTerrain; // check for terrain
 
@@ -720,9 +723,6 @@ private:
 
    float m_checkCampPointTime; // SyPB Pro P.30 - Zombie Mode Human Camp
    int m_zhCampPointIndex; // SyPB Pro P.38 - Zombie Mode Human Camp
-
-   Vector m_moveAnglesForRunMove;
-   float m_moveSpeedForRunMove, m_strafeSpeedForRunMove;
 
    float m_backCheckEnemyTime; // SyPB Pro P.37 - Aim OS
 

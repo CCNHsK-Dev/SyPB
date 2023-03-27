@@ -421,7 +421,7 @@ void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 		}
 	}
 
-	if (!FNullEnt(killer))
+	if (!FNullEnt(killer) && IsAlive (killer))
 		SwNPC->m_lookAt = GetEntityOrigin(killer);
 
 	SwNPC->pev->deadflag = DEAD_DYING;

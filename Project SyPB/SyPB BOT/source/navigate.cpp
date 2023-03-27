@@ -161,6 +161,9 @@ int Bot::FindGoal(void)
 				   if (GetBombTimeleft() >= 10.0f && IsBombDefusing(bombPos))
 					   return m_chosenGoalIndex = FindDefendWaypoint(bombPos, g_waypoint->GetBombPoint ());
 
+				   if ((pev->origin - bombPos).GetLength() <= 150.0f)
+					   return m_chosenGoalIndex = g_waypoint->GetBombPoint();
+
 				   if (g_bombSayString)
 				   {
 					   ChatMessage(CHAT_PLANTBOMB);
@@ -437,7 +440,7 @@ bool Bot::DoWaypointNav (void)
 	   if (!m_jumpFinished && (IsOnFloor() || IsOnLadder()))
 	   {
 		   pev->velocity = m_desiredVelocity;
-		   pev->button |= IN_JUMP;
+		   m_buttonFlags |= IN_JUMP;
 
 		   m_jumpFinished = true;
 		   m_checkTerrain = false;
@@ -1107,7 +1110,7 @@ void Bot::CheckTouchEntity(edict_t *entity)
 		if (pev->origin.z > m_breakable.z && (pev->origin - GetEntityOrigin(entity)).GetLength2D() <= 60.0f)
 			m_campButtons = IN_DUCK;
 		else
-			m_campButtons = pev->button & IN_DUCK;
+			m_campButtons = m_buttonFlags & IN_DUCK;
 
 		PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
 	}
@@ -2441,7 +2444,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		{
 			// remember to keep pressing duck if it was necessary ago
 			if (m_collideMoves[m_collStateIndex] == COSTATE_DUCK && IsOnFloor() || IsInWater())
-				pev->button |= IN_DUCK;
+				m_buttonFlags |= IN_DUCK;
 		}
 
 		return;
@@ -2631,22 +2634,22 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				{
 					if (IsInWater() || !m_isZombieBot || m_damageTime < engine->GetTime() ||
 						m_currentTravelFlags & PATHFLAG_JUMP)
-						pev->button |= IN_JUMP;
+						m_buttonFlags |= IN_JUMP;
 				}
 				break;
 
 			case COSTATE_DUCK:
 				if (IsOnFloor() || IsInWater())
-					pev->button |= IN_DUCK;
+					m_buttonFlags |= IN_DUCK;
 				break;
 
 			case COSTATE_STRAFELEFT:
-				pev->button |= IN_MOVELEFT;
+				//m_buttonFlags |= IN_MOVELEFT;
 				SetStrafeSpeed(directionNormal, -pev->maxspeed);
 				break;
 
 			case COSTATE_STRAFERIGHT:
-				pev->button |= IN_MOVERIGHT;
+				//m_buttonFlags |= IN_MOVERIGHT;
 				SetStrafeSpeed(directionNormal, pev->maxspeed);
 				break;
 			}
@@ -2669,7 +2672,7 @@ void Bot::FacePosition(void)
 	direction.ClampAngles();
 	deviation.ClampAngles();
 
-	if ((m_wantsToFire || pev->button & IN_ATTACK) &&
+	if ((m_wantsToFire || m_buttonFlags & IN_ATTACK) &&
 		(m_isZombieBot || m_skill >= 70 || UsesSniper () || IsZombieEntity (m_enemy)))
 		pev->v_angle = direction;
 	else

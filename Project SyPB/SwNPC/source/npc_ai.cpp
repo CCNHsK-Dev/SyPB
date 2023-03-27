@@ -128,6 +128,7 @@ void NPC::ResetNPC(void)
 
 	m_currentWaypointIndex = -1;
 	m_navTime = gpGlobals->time;
+	m_waitLadderTime = -1.0f;
 	m_goalWaypoint = -1;
 
 	m_asTime = 0.0f;
@@ -195,27 +196,35 @@ void NPC::DeadThink(void)
 	{
 		m_deadActionTime = gpGlobals->time + m_deadRemoveTime;
 		m_changeActionTime = -1.0f;
-		m_setFootStepSoundTime = gpGlobals->time + 10.0f;
+		m_setFootStepSoundTime = gpGlobals->time + m_deadRemoveTime;
 
 		pev->velocity = nullvec;
 		pev->takedamage = DAMAGE_NO;
-		pev->deadflag = DEAD_DEAD;
 		pev->solid = SOLID_NOT;
 
 		m_npcAS |= ASC_DEAD;
 		FacePosition();
 		ChangeAnim();
 		PlayNPCSound(NS_DEAD);
+
 		pev->nextthink = -1;
-	}
-	else if (m_deadActionTime <= gpGlobals->time)
-		m_needRemove = true;
-	else if (m_nextThinkTime <= gpGlobals->time)
-	{
-		MF_ExecuteForward(g_callThink_Pre, (cell)ENTINDEX(GetEntity()));
 		m_nextThinkTime = gpGlobals->time + 0.1f;
-		MF_ExecuteForward(g_callThink_Post, (cell)ENTINDEX(GetEntity()));
 	}
+
+	if (m_nextThinkTime > gpGlobals->time)
+		return;
+
+	MF_ExecuteForward(g_callThink_Pre, (cell)ENTINDEX(GetEntity()));
+
+	m_nextThinkTime = gpGlobals->time + 0.1f;
+
+	if (m_changeActionTime <= gpGlobals->time)
+		pev->deadflag = DEAD_DEAD;
+
+	if (m_deadActionTime <= gpGlobals->time)
+		m_needRemove = true;
+
+	MF_ExecuteForward(g_callThink_Post, (cell)ENTINDEX(GetEntity()));
 }
 
 void NPC::Spawn(Vector origin)
@@ -913,6 +922,9 @@ void NPC::FacePosition(void)
 
 void NPC::MoveAction(void)
 {
+	if (m_waitLadderTime > gpGlobals->time)
+		return;
+
 	if ((g_waypoint->g_waypointPointFlag[m_currentWaypointIndex] & WAYPOINT_LADDER &&
 		GetDistance2D(pev->origin, g_waypoint->g_waypointPointOrigin[m_currentWaypointIndex]) <= 10.0f) ||
 		(m_oldNavIndex != -1 && g_waypoint->g_waypointPointFlag[m_oldNavIndex] & WAYPOINT_LADDER &&
@@ -967,14 +979,6 @@ void NPC::MoveAction(void)
 		pev->velocity.y = vecFwd.y * m_moveSpeed;
 	} 
 
-	if (m_jumpAction)
-	{
-		m_npcAS |= ASC_JUMP;
-		pev->velocity.z = (270.0f * pev->gravity) + 32.0f; // client gravity 1 = 270.0f , and jump+duck + 32.0f
-		m_crouchAction = true;
-		m_jumpAction = false;
-	}
-
 	Vector crouchSize = m_npcSize[1];
 	if (!m_crouchAction && pev->flags & FL_DUCKING && m_crouchDelayTime < gpGlobals->time)
 	{
@@ -991,6 +995,14 @@ void NPC::MoveAction(void)
 		pev->flags |= FL_DUCKING;
 
 		m_crouchDelayTime = gpGlobals->time + 0.5f;
+	}
+
+	if (m_jumpAction)
+	{
+		m_npcAS |= ASC_JUMP;
+		pev->velocity.z = (270.0f * pev->gravity) + ((pev->flags & FL_DUCKING) ? 36.0f : 32.0f);
+		m_crouchAction = true;
+		m_jumpAction = false;
 	}
 
 	bool onFloor = IsOnFloor(GetEntity());
@@ -1011,9 +1023,6 @@ void NPC::MoveAction(void)
 		if (tr.flFraction < 1.0f && !tr.fAllSolid && !tr.fStartSolid && FNullEnt(tr.pHit))
 		{
 			float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(GetEntity()).z) - 18;
-
-			m_testValue = newOriginZ - pev->origin.z;
-			m_testPoint = tr.vecEndPos;
 
 			if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) < 16.1f && 
 				!CheckEntityStuck(Vector(pev->origin.x, pev->origin.y, newOriginZ + 1)))
@@ -1054,9 +1063,6 @@ void NPC::MoveAction(void)
 
 void NPC::CheckStuck(float oldSpeed)
 {
-	if (!IsOnFloor(GetEntity()) || IsOnLadder(GetEntity()))
-		return;
-
 	if (m_checkStuckTime > gpGlobals->time)
 		return;
 
@@ -1094,7 +1100,7 @@ void NPC::CheckStuck(float oldSpeed)
 			m_jumpAction = false;
 		}
 	}
-
+	
 	m_goalWaypoint = -1;
 	m_currentWaypointIndex = -1;
 	DeleteSearchNodes();
@@ -1504,30 +1510,84 @@ bool NPC::DoWaypointNav (void)
 void NPC::HeadTowardWaypoint(void)
 {
 	FindWaypoint();
-
 	if (m_navNode == null)
 		return;
 
-	bool needFakeCrouch = false;
+	int ladderPoint = -1;
+	bool waitOtherEntityUseLadder = false;
 
-	m_jumpAction = false;
+	m_crouchAction = false;
+	m_testValue = false;
 
 	if (m_navNode->next != null)
 	{
-		for (int j = 0; j < Const_MaxPathIndex; j++)
+		int i;
+		const int destIndex = m_navNode->next->index;
+
+		if (g_waypoint->g_waypointPointFlag[destIndex] & WAYPOINT_LADDER)
+			ladderPoint = destIndex;
+		else if (m_navNode->next->next != null && g_waypoint->g_waypointPointFlag[m_navNode->next->next->index] & WAYPOINT_LADDER)
+			ladderPoint = m_navNode->next->next->index;
+
+		if (ladderPoint != -1 && pev->solid != SOLID_NOT && !IsOnLadder(GetEntity()))
 		{
-			if (g_waypoint->g_wpConnectionIndex[m_navNode->index][j] != m_navNode->next->index)
+			edict_t* entity = null;
+			for (i = 0; (i < gpGlobals->maxClients && !waitOtherEntityUseLadder); i++)
+			{
+				entity = INDEXENT(i + 1);
+				if (!IsAlive(entity) || entity->v.solid == SOLID_NOT || !IsOnLadder(entity))
+					continue;
+
+				if (GetDistance2D(g_waypoint->g_waypointPointOrigin[ladderPoint] - entity->v.origin) <= 10.0f)
+					waitOtherEntityUseLadder = true;
+			}
+
+			bool goUP = (g_waypoint->g_waypointPointOrigin[ladderPoint].z > pev->origin.z);
+			for (i = 0; (i < MAX_NPC && !waitOtherEntityUseLadder); i++)
+			{
+				NPC* npc = g_npcManager->IsSwNPCForNum(i);
+				if (npc == null || npc == this)
+					continue;
+
+				entity = npc->GetEntity();
+				if (!IsAlive(entity) || entity->v.solid == SOLID_NOT || !IsOnLadder(entity))
+					continue;
+				
+				if (GetDistance2D(g_waypoint->g_waypointPointOrigin[ladderPoint] - entity->v.origin) > 10.0f)
+					continue;
+
+				if (npc->m_destOrigin != nullvec)
+				{
+					if (goUP && npc->m_destOrigin.z > entity->v.origin.z)
+						continue;
+
+					if (!goUP && npc->m_destOrigin.z < entity->v.origin.z)
+						continue;
+				}
+
+				waitOtherEntityUseLadder = true;
+			}
+
+			m_testValue = waitOtherEntityUseLadder;
+
+			if (waitOtherEntityUseLadder)
+			{
+				const float waitTime = RANDOM_FLOAT(0.8f, 1.3f);
+				m_waitLadderTime = gpGlobals->time + waitTime;
+				m_navTime += waitTime;
+				return;
+			}
+		}
+
+		if (g_waypoint->g_waypointPointFlag[destIndex] & WAYPOINT_CROUCH)
+			m_crouchAction = true;
+
+		for (i = 0; i < Const_MaxPathIndex; i++)
+		{
+			if (g_waypoint->g_wpConnectionIndex[m_navNode->index][i] != destIndex)
 				continue;
 
-			if (g_waypoint->g_waypointPointFlag[m_navNode->index] & (WAYPOINT_CROUCH | WAYPOINT_NOHOSTAGE) || 
-				g_waypoint->g_waypointPointFlag[m_navNode->next->index] & (WAYPOINT_CROUCH | WAYPOINT_NOHOSTAGE))
-				needFakeCrouch = true;
-
-			if (g_waypoint->g_waypointPointFlag[m_navNode->index] & (WAYPOINT_LADDER) ||
-				g_waypoint->g_waypointPointFlag[m_navNode->next->index] & (WAYPOINT_LADDER))
-				needFakeCrouch = false;
-
-			if (g_waypoint->g_wpConnectionFlags[m_navNode->index][j] & PATHFLAG_JUMP)
+			if (g_waypoint->g_wpConnectionFlags[m_navNode->index][i] & PATHFLAG_JUMP)
 			{
 				m_jumpAction = true;
 				break;
@@ -1537,13 +1597,12 @@ void NPC::HeadTowardWaypoint(void)
 
 	m_oldNavIndex = m_navNode->index;
 	m_navNode = m_navNode->next;
+
 	if (m_navNode != null)
 	{
 		m_currentWaypointIndex = m_navNode->index;
 		SetNPCNewWaypointPoint(GetEntity(), m_navNode->index);
 	}
-
-	m_crouchAction = needFakeCrouch;
 
 	SetWaypointOrigin();
 	m_navTime = gpGlobals->time + 5.0f;
@@ -1755,7 +1814,8 @@ void NPC::DebugModeMsg(void)
 		"Nav: %d  Next Nav :%d\n"
 		"Move Speed: %.2f  Speed: %.2f\n"
 		"Crouch: %s Jump: %s\n"
-		"On Floor: %s On Ladder: %s", 
+		"On Floor: %s On Ladder: %s\n"
+		"Testing: %s", 
 		gamemodName, g_npcManager->g_SwNPCNum, MAX_NPC, 
 		GetEntityName(GetEntity()), ENTINDEX (GetEntity ()), pev->health, pev->max_health, npcTeam,
 		m_attackDamage, m_attackCount, m_attackDistance, m_attackDelayTime,
@@ -1765,9 +1825,8 @@ void NPC::DebugModeMsg(void)
 		m_moveSpeed, GetDistance2D(pev->velocity),
 		//m_crouchAction ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
 		(pev->flags & FL_DUCKING) ? "Yes" : "No", m_jumpAction ? "Yes" : "No",
-		IsOnFloor (GetEntity ()) ? "Yes" : "No", IsOnLadder (GetEntity ()) ? "Yes" : "No");
-
-	DrawLine(g_hostEntity, pev->origin, m_testPoint, Color(255, 0, 0, 200), 10, 0, 5, 1, LINE_SIMPLE);
+		IsOnFloor (GetEntity ()) ? "Yes" : "No", IsOnLadder (GetEntity ()) ? "Yes" : "No", 
+		m_testValue ? "Yes" : "No");
 
 	MESSAGE_BEGIN(MSG_ONE_UNRELIABLE, SVC_TEMPENTITY, null, g_hostEntity);
 	WRITE_BYTE(TE_TEXTMESSAGE);

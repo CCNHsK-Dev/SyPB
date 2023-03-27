@@ -1171,7 +1171,8 @@ void Bot::NewRound (void)
    m_spawnTime = engine->GetTime ();
    m_lastChatTime = engine->GetTime ();
    pev->v_angle.y = pev->ideal_yaw;
-   pev->button = 0;
+   m_buttonFlags = 0;
+   m_oldButtonFlags = 0;
 
    m_timeCamping = 0;
    m_campDirection = 0;
@@ -1217,7 +1218,7 @@ void Bot::NewRound (void)
 
    m_secondThinkTimer = 0.0f;
 
-   m_thinkInterval = (1.0f / engine->RandomFloat(24.9f, 29.9f)) * engine->RandomFloat(0.95f, 1.05f);
+   m_thinkInterval = (1.0f / engine->RandomFloat(24.9f, 30.0f));
 }
 
 void Bot::Kill (void)

@@ -36,47 +36,47 @@
 ConVar sypb_apitestmsg("sypb_apitestmsg", "0");
 ConVar sypb_welcomemsg("sypb_welcomemsg", "1");
 
-void TraceLine (const Vector &start, const Vector &end, bool ignoreMonsters, bool ignoreGlass, edict_t *ignoreEntity, TraceResult *ptr)
+void TraceLine(const Vector& start, const Vector& end, bool ignoreMonsters, bool ignoreGlass, edict_t* ignoreEntity, TraceResult* ptr)
 {
-   // this function traces a line dot by dot, starting from vecStart in the direction of vecEnd,
-   // ignoring or not monsters (depending on the value of IGNORE_MONSTERS, true or false), and stops
-   // at the first obstacle encountered, returning the results of the trace in the TraceResult structure
-   // ptr. Such results are (amongst others) the distance traced, the hit surface, the hit plane
-   // vector normal, etc. See the TraceResult structure for details. This function allows to specify
-   // whether the trace starts "inside" an entity's polygonal model, and if so, to specify that entity
-   // in ignoreEntity in order to ignore it as a possible obstacle.
-   // this is an overloaded prototype to add IGNORE_GLASS in the same way as IGNORE_MONSTERS work.
+	// this function traces a line dot by dot, starting from vecStart in the direction of vecEnd,
+	 // ignoring or not monsters (depending on the value of IGNORE_MONSTERS, true or false), and stops
+	 // at the first obstacle encountered, returning the results of the trace in the TraceResult structure
+	 // ptr. Such results are (amongst others) the distance traced, the hit surface, the hit plane
+	 // vector normal, etc. See the TraceResult structure for details. This function allows to specify
+	 // whether the trace starts "inside" an entity's polygonal model, and if so, to specify that entity
+	 // in ignoreEntity in order to ignore it as a possible obstacle.
+	 // this is an overloaded prototype to add IGNORE_GLASS in the same way as IGNORE_MONSTERS work.
 
-   (*g_engfuncs.pfnTraceLine) (start, end, (ignoreMonsters ? 1 : 0) | (ignoreGlass ? 0x100 : 0), ignoreEntity, ptr);
+	(*g_engfuncs.pfnTraceLine) (start, end, (ignoreMonsters ? 1 : 0) | (ignoreGlass ? 0x100 : 0), ignoreEntity, ptr);
 }
 
-void TraceLine (const Vector &start, const Vector &end, bool ignoreMonsters, edict_t *ignoreEntity, TraceResult *ptr)
+void TraceLine(const Vector& start, const Vector& end, bool ignoreMonsters, edict_t* ignoreEntity, TraceResult* ptr)
 {
-   // this function traces a line dot by dot, starting from vecStart in the direction of vecEnd,
-   // ignoring or not monsters (depending on the value of IGNORE_MONSTERS, true or false), and stops
-   // at the first obstacle encountered, returning the results of the trace in the TraceResult structure
-   // ptr. Such results are (amongst others) the distance traced, the hit surface, the hit plane
-   // vector normal, etc. See the TraceResult structure for details. This function allows to specify
-   // whether the trace starts "inside" an entity's polygonal model, and if so, to specify that entity
-   // in ignoreEntity in order to ignore it as a possible obstacle.
+	// this function traces a line dot by dot, starting from vecStart in the direction of vecEnd,
+	// ignoring or not monsters (depending on the value of IGNORE_MONSTERS, true or false), and stops
+	// at the first obstacle encountered, returning the results of the trace in the TraceResult structure
+	// ptr. Such results are (amongst others) the distance traced, the hit surface, the hit plane
+	// vector normal, etc. See the TraceResult structure for details. This function allows to specify
+	// whether the trace starts "inside" an entity's polygonal model, and if so, to specify that entity
+	// in ignoreEntity in order to ignore it as a possible obstacle.
 
-   (*g_engfuncs.pfnTraceLine) (start, end, ignoreMonsters ? 1 : 0, ignoreEntity, ptr);
+	(*g_engfuncs.pfnTraceLine) (start, end, ignoreMonsters ? 1 : 0, ignoreEntity, ptr);
 }
 
-void TraceHull (const Vector &start, const Vector &end, bool ignoreMonsters, int hullNumber, edict_t *ignoreEntity, TraceResult *ptr)
+void TraceHull(const Vector& start, const Vector& end, bool ignoreMonsters, int hullNumber, edict_t* ignoreEntity, TraceResult* ptr)
 {
-   // this function traces a hull dot by dot, starting from vecStart in the direction of vecEnd,
-   // ignoring or not monsters (depending on the value of IGNORE_MONSTERS, true or
-   // false), and stops at the first obstacle encountered, returning the results
-   // of the trace in the TraceResult structure ptr, just like TraceLine. Hulls that can be traced
-   // (by parameter hull_type) are point_hull (a line), head_hull (size of a crouching player),
-   // human_hull (a normal body size) and large_hull (for monsters?). Not all the hulls in the
-   // game can be traced here, this function is just useful to give a relative idea of spatial
-   // reachability (i.e. can a hostage pass through that tiny hole ?) Also like TraceLine, this
-   // function allows to specify whether the trace starts "inside" an entity's polygonal model,
-   // and if so, to specify that entity in ignoreEntity in order to ignore it as an obstacle.
+	// this function traces a hull dot by dot, starting from vecStart in the direction of vecEnd,
+	// ignoring or not monsters (depending on the value of IGNORE_MONSTERS, true or
+	// false), and stops at the first obstacle encountered, returning the results
+	// of the trace in the TraceResult structure ptr, just like TraceLine. Hulls that can be traced
+	// (by parameter hull_type) are point_hull (a line), head_hull (size of a crouching player),
+	// human_hull (a normal body size) and large_hull (for monsters?). Not all the hulls in the
+	// game can be traced here, this function is just useful to give a relative idea of spatial
+	// reachability (i.e. can a hostage pass through that tiny hole ?) Also like TraceLine, this
+	// function allows to specify whether the trace starts "inside" an entity's polygonal model,
+	// and if so, to specify that entity in ignoreEntity in order to ignore it as an obstacle.
 
-   (*g_engfuncs.pfnTraceHull) (start, end, ignoreMonsters ? 1 : 0, hullNumber, ignoreEntity, ptr);
+	(*g_engfuncs.pfnTraceHull) (start, end, ignoreMonsters ? 1 : 0, hullNumber, ignoreEntity, ptr);
 }
 
 uint16 FixedUnsigned16 (float value, float scale)
@@ -897,7 +897,7 @@ int GetTeam (edict_t *ent)
 int SetEntityWaypoint(edict_t *ent, int mode)
 {
 	// Waypoint Edit now, Do now check it!
-	if (g_waypointOn)
+	if (g_waypointOn || FNullEnt (ent) || !IsAlive (ent))
 		return -1;
 
 	const Vector origin = GetEntityOrigin(ent);
@@ -991,7 +991,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 // SyPB Pro P.41 - Base Waypoint improve
 int GetEntityWaypoint(edict_t *ent)
 {
-	if (FNullEnt(ent))
+	if (FNullEnt(ent) || !IsAlive(ent))
 		return -1;
 
 	if (!IsValidPlayer(ent))
@@ -1001,6 +1001,12 @@ int GetEntityWaypoint(edict_t *ent)
 		{
 			if (g_entityId[i] == -1)
 				continue;
+
+			if (FNullEnt(INDEXENT(g_entityId[i])))
+			{
+				SetEntityActionData(i);
+				return -1;
+			}
 
 			if (ent != INDEXENT(g_entityId[i]))
 				continue;
@@ -1579,6 +1585,7 @@ void DebugModeMsg(void)
 		engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
 			Color(0, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
 	}
+
 }
 
 char *Localizer::TranslateInput (const char *input)
