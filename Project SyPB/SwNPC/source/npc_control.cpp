@@ -46,7 +46,7 @@ void NPCControl::DebugModeMsg(void)
 		if (m_npcs[i] == null)
 			continue;
 		
-		if (!IsAlive(m_npcs[i]->GetEntity()))
+		if (!IsAlive(m_npcs[i]->m_iEntity))
 			continue;
 
 		distance = GetDistance(hostOrigin, m_npcs[i]->pev->origin);
@@ -111,7 +111,7 @@ int NPCControl::AddNPC(const char *className, const char *modelName, float maxHe
 	UpdateNPCNum();
 	m_npcs[newNPCId]->Spawn(origin);
 
-	return m_npcs[newNPCId]->GetIndex();
+	return ENTINDEX(m_npcs[newNPCId]->m_iEntity);
 }
 
 int NPCControl::RemoveNPCAPI(int id)
@@ -144,7 +144,7 @@ int NPCControl::RemoveNPC(NPC *npc)
 			if (g_debugNPC == npc)
 				g_debugNPC = null;
 
-			MF_ExecuteForward(g_callRemoveNPC, (cell)ENTINDEX(npc->GetEntity()));
+			MF_ExecuteForward(g_callRemoveNPC, (cell)ENTINDEX(npc->m_iEntity));
 
 			npc->Remove();
 
@@ -439,7 +439,7 @@ NPC *NPCControl::IsSwNPC(edict_t *ent)
 		if (m_npcs[i] == null)
 			continue;
 
-		if (ent == m_npcs[i]->GetEntity())
+		if (ent == m_npcs[i]->m_iEntity)
 			return m_npcs[i];
 	}
 

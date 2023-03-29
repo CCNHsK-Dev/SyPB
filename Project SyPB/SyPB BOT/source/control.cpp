@@ -260,8 +260,8 @@ Bot *BotControl::FindOneValidAliveBot (void)
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
-      if (m_bots[i] != null && IsAlive (m_bots[i]->GetEntity ()))
-         foundBots.Push (i);
+	   if (m_bots[i] != null && m_bots[i]->m_isAlive)
+		   foundBots.Push (i);
    }
 
    if (!foundBots.IsEmpty ())
@@ -600,7 +600,7 @@ void BotControl::RemoveFromTeam (Team team, bool removeAll)
 
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
-      if (m_bots[i] != null && team == GetTeam (m_bots[i]->GetEntity ()))
+      if (m_bots[i] != null && team == GetTeam (m_bots[i]->m_iEntity))
       {
          m_bots[i]->Kick ();
 
@@ -623,10 +623,10 @@ void BotControl::RemoveMenu(edict_t *ent, int selection)
 	// SyPB Pro P.30 - Debugs
 	for (int i = ((selection - 1) * 8); i < selection * 8; ++i)
 	{
-		if ((m_bots[i] != null) && !FNullEnt(m_bots[i]->GetEntity()))
+		if ((m_bots[i] != null) && !FNullEnt(m_bots[i]->m_iEntity))
 		{
 			validSlots |= 1 << (i - ((selection - 1) * 8));
-			sprintf(buffer, "%s %1.1d. %s%s\n", buffer, i - ((selection - 1) * 8) + 1, GetEntityName(m_bots[i]->GetEntity ()), GetTeam(m_bots[i]->GetEntity()) == TEAM_COUNTER ? " \\y(CT)\\w" : " \\r(T)\\w");
+			sprintf(buffer, "%s %1.1d. %s%s\n", buffer, i - ((selection - 1) * 8) + 1, GetEntityName(m_bots[i]->m_iEntity), GetTeam(m_bots[i]->m_iEntity) == TEAM_COUNTER ? " \\y(CT)\\w" : " \\r(T)\\w");
 		}
 		else if (!FNullEnt(g_clients[i].ent))
 			sprintf(buffer, "%s %1.1d.\\d %s (Not SyPB) \\w\n", buffer, i - ((selection - 1) * 8) + 1, GetEntityName (g_clients[i].ent));
@@ -676,7 +676,7 @@ void BotControl::KillAll (int team)
    {
       if (m_bots[i] != null)
       {
-         if (team != -1 && team != GetTeam (m_bots[i]->GetEntity ()))
+         if (team != -1 && team != GetTeam (m_bots[i]->m_iEntity))
             continue;
 
          m_bots[i]->Kill ();
@@ -817,7 +817,7 @@ Bot *BotControl::GetHighestFragsBot (int team)
    {
       highFragBot = g_botManager->GetBot (i);
 
-      if (highFragBot != null && IsAlive (highFragBot->GetEntity ()) && GetTeam (highFragBot->GetEntity ()) == team)
+      if (highFragBot != null && highFragBot->m_isAlive && GetTeam (highFragBot->m_iEntity) == team)
       {
          if (highFragBot->pev->frags > bestScore)
          {
@@ -848,7 +848,7 @@ void BotControl::CheckTeamEconomics (int team)
    // start calculating
    for (int i = 0; i < engine->GetMaxClients (); i++)
    {
-      if (m_bots[i] != null && GetTeam (m_bots[i]->GetEntity ()) == team)
+      if (m_bots[i] != null && GetTeam (m_bots[i]->m_iEntity) == team)
       {
          if (m_bots[i]->m_moneyAmount <= 1500)
             numPoorPlayers++;
@@ -893,7 +893,7 @@ void BotControl::Free (int index)
 
 	ITERATE_ARRAY(g_botNames, j)
 	{
-		if (g_botNames[j].usedBy == GetIndex(m_bots[index]->GetEntity ()))
+		if (g_botNames[j].usedBy == GetIndex(m_bots[index]->m_iEntity))
 		{
 			g_botNames[j].usedBy = -1;
 			break;
@@ -1210,7 +1210,7 @@ void Bot::NewRound (void)
    m_blockWeaponPickAPI = false;
 
    // SyPB Pro P.49 - Waypoint improve
-   SetEntityWaypoint(GetEntity(), -2);
+   SetEntityWaypoint(m_iEntity, -2);
 
    // and put buying into its message queue
    PushMessageQueue (CMENU_BUY);
@@ -1232,7 +1232,7 @@ void Bot::Kill (void)
       return;
 
    hurtEntity->v.classname = MAKE_STRING (g_weaponDefs[m_currentWeapon].className);
-   hurtEntity->v.dmg_inflictor = GetEntity ();
+   hurtEntity->v.dmg_inflictor = m_iEntity;
    hurtEntity->v.dmg = 9999.0f;
    hurtEntity->v.dmg_take = 1.0f;
    hurtEntity->v.dmgtime = 2.0f;
@@ -1249,7 +1249,7 @@ void Bot::Kill (void)
    MDLL_KeyValue (hurtEntity, &kv);
 
    MDLL_Spawn (hurtEntity);
-   MDLL_Touch (hurtEntity, GetEntity ());
+   MDLL_Touch (hurtEntity, m_iEntity);
 
    (*g_engfuncs.pfnRemoveEntity) (hurtEntity);
 }
@@ -1257,7 +1257,7 @@ void Bot::Kill (void)
 void Bot::Kick (void)
 {
 	// SyPB Pro P.47 - Small Base improve
-	if (!(pev->flags & FL_FAKECLIENT) || IsNullString(GetEntityName(GetEntity())))
+	if (!(pev->flags & FL_FAKECLIENT) || IsNullString(GetEntityName(m_iEntity)))
 		return;
 
 	ITERATE_ARRAY(g_botNames, j)
@@ -1272,8 +1272,8 @@ void Bot::Kick (void)
 	pev->flags &= ~FL_FAKECLIENT;
 	pev->flags |= FL_DORMANT;
 
-	CenterPrint("SyPB '%s' kicked", GetEntityName(GetEntity()));
-	ServerCommand("kick \"%s\"", GetEntityName(GetEntity()));
+	CenterPrint("SyPB '%s' kicked", GetEntityName(m_iEntity));
+	ServerCommand("kick \"%s\"", GetEntityName(m_iEntity));
 
 	if (g_botManager->GetBotsNum() - 1 < sypb_quota.GetInt())
 		sypb_quota.SetInt(g_botManager->GetBotsNum() - 1);
@@ -1299,7 +1299,7 @@ void Bot::StartGame (void)
          m_wantedTeam = 5;
 
       // select the team the bot wishes to join...
-      FakeClientCommand (GetEntity (), "menuselect %d", m_wantedTeam);
+      FakeClientCommand (m_iEntity, "menuselect %d", m_wantedTeam);
    }
    else if (m_startAction == CMENU_CLASS)
    {
@@ -1310,7 +1310,7 @@ void Bot::StartGame (void)
 	  m_wantedClass = engine->RandomInt(1, maxChoice);
 
       // select the class the bot wishes to use...
-      FakeClientCommand (GetEntity (), "menuselect %d", m_wantedClass);
+      FakeClientCommand (m_iEntity, "menuselect %d", m_wantedClass);
 
       // bot has now joined the game (doesn't need to be started)
       m_notStarted = false;

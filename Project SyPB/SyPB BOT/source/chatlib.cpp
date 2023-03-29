@@ -204,7 +204,7 @@ void Bot::PrepareChatMessage (char *text)
 
             for (int i = 0; i < engine->GetMaxClients (); i++)
             {
-               if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == GetEntity ())
+               if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == m_iEntity)
                   continue;
 
                int frags = static_cast <int> (g_clients[i].ent->v.frags);
@@ -244,7 +244,7 @@ void Bot::PrepareChatMessage (char *text)
 
             for (i = 0; i < engine->GetMaxClients (); i++)
             {
-               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
+               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team != m_team) || (g_clients[i].ent == m_iEntity))
                   continue;
 
                break;
@@ -264,7 +264,7 @@ void Bot::PrepareChatMessage (char *text)
             {
                for (i = 0; i < engine->GetMaxClients (); i++)
                {
-                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == GetEntity ()))
+                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == m_iEntity))
                      continue;
 
                   break;
@@ -285,7 +285,7 @@ void Bot::PrepareChatMessage (char *text)
 
             for (i = 0; i < engine->GetMaxClients (); i++)
             {
-               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team == m_team) || (g_clients[i].ent == GetEntity ()))
+               if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team == m_team) || (g_clients[i].ent == m_iEntity))
                   continue;
                break;
             }
@@ -301,7 +301,7 @@ void Bot::PrepareChatMessage (char *text)
             {
                for (i = 0; i < engine->GetMaxClients (); i++)
                {
-                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team == m_team) || (g_clients[i].ent == GetEntity ()))
+                  if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team == m_team) || (g_clients[i].ent == m_iEntity))
                      continue;
                   break;
                }
@@ -456,12 +456,12 @@ void Bot::ChatSay(bool teamSay, const char *text)
     else if (m_team == TEAM_COUNTER)
         strcpy(botTeam, "(Counter-Terrorist)");
 
-    strcpy(botName, GetEntityName(GetEntity()));
+    strcpy(botName, GetEntityName(m_iEntity));
 
 
     for (int i = 0; i < engine->GetMaxClients(); i++)
     {
-        if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == GetEntity() || g_clients[i].flags & FL_FAKECLIENT)
+        if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == m_iEntity || g_clients[i].flags & FL_FAKECLIENT)
             continue;
 
         if (teamSay && g_clients[i].team != m_team)

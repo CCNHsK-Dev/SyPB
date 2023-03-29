@@ -17,7 +17,7 @@ static cell AMX_NATIVE_CALL amxx_checkIsSwNPC(AMX *amx, cell *params) // 1.42
 	if (!g_npcManager->IsSwNPC(npcId))
 		return -1;
 
-	return g_npcManager->IsSwNPC(npcId)->GetIndex();
+	return ENTINDEX(g_npcManager->IsSwNPC(npcId)->m_iEntity);
 }
 
 static cell AMX_NATIVE_CALL amxx_addNPC(AMX *amx, cell *params) // 1.42

@@ -754,16 +754,16 @@ void DrawLine(edict_t* client, Vector start, Vector end, Color color, int width,
 
 void MakeHookFunction(NPC* npc)
 {
-	if (npc->GetEntity()->pvPrivateData == null)
+	if (npc->m_iEntity->pvPrivateData == null)
 	{
-		LogToFile("[Error] Cannot Hook Entity Trace Attack - pEnt null - ID:%d", ENTINDEX(npc->GetEntity()));
+		LogToFile("[Error] Cannot Hook Entity Trace Attack - pEnt null - ID:%d", ENTINDEX(npc->m_iEntity));
 		return;
 	}
 
-	npc->vtable = *((void***)(((char*)npc->GetEntity()->pvPrivateData) + 0x0));
+	npc->vtable = *((void***)(((char*)npc->m_iEntity->pvPrivateData) + 0x0));
 	if (npc->vtable == null)
 	{
-		LogToFile("[Error] Cannot Hook Entity Trace Attack - vtable null - ID:%d", ENTINDEX(npc->GetEntity()));
+		LogToFile("[Error] Cannot Hook Entity Trace Attack - vtable null - ID:%d", ENTINDEX(npc->m_iEntity));
 		return;
 	}
 
@@ -773,7 +773,7 @@ void MakeHookFunction(NPC* npc)
 	npc->vFcTakeDamage = (void*)ivtable[TakeDamageOffset];
 
 	if (npc->vFcTraceAttack == null)
-		LogToFile("[Error] Cannot Hook Entity Trace Attack - vFcTraceAttack null - ID:%d", ENTINDEX(npc->GetEntity()));
+		LogToFile("[Error] Cannot Hook Entity Trace Attack - vFcTraceAttack null - ID:%d", ENTINDEX(npc->m_iEntity));
 	else
 	{
 		DWORD OldFlags;
@@ -783,7 +783,7 @@ void MakeHookFunction(NPC* npc)
 	}
 
 	if (npc->vFcTakeDamage == null)
-		LogToFile("[Error] Cannot Hook Entity Take Damage - vFcTakeDamage null - ID:%d", ENTINDEX(npc->GetEntity()));
+		LogToFile("[Error] Cannot Hook Entity Take Damage - vFcTakeDamage null - ID:%d", ENTINDEX(npc->m_iEntity));
 	else
 	{
 		DWORD OldFlags;
@@ -792,7 +792,7 @@ void MakeHookFunction(NPC* npc)
 		ivtable[TakeDamageOffset] = (int*)HookTakeDamage;
 	}
 
-	npc->pvData = npc->GetEntity()->pvPrivateData;
+	npc->pvData = npc->m_iEntity->pvPrivateData;
 }
 
 int __fastcall HookTraceAttack(void* pthis, int i, entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType)

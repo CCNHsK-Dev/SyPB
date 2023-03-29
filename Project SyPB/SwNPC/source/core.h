@@ -160,6 +160,7 @@ private:
 public:
 	entvars_t *pev;
 	void *pvData;
+	edict_t* m_iEntity;
 
 	int m_npcTeam;
 
@@ -226,10 +227,6 @@ public:
 
 	void NewNPCSetting(void);
 	void ResetNPC(void);
-
-	inline edict_t *GetEntity(void) { return ENT(pev); };
-	inline EOFFSET GetOffset(void) { return OFFSET(pev); };
-	inline int GetIndex(void) { return ENTINDEX(GetEntity()); };
 
 	void DebugModeMsg(void);
 

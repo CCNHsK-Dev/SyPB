@@ -582,10 +582,12 @@ private:
    unsigned int m_states; // sensing bitstates
    Task *m_tasks; // pointer to active tasks/schedules
 
-   // SyPB Pro P.49 - Base improve
+   edict_t* m_iEntity;
+   Vector m_iOrigin;
    int m_team;
    bool m_isZombieBot;
 
+   float m_iMaxSpeed;
    float m_moveSpeed; // current speed forward/backward
    float m_strafeSpeed; // current speed sideways
    float m_minSpeed; // minimum speed in normal mode
@@ -1015,8 +1017,8 @@ public:
    inline int GetIndex (void) { return ENTINDEX (GetEntity ()); };
 
    inline Vector Center (void) { return (pev->absmax + pev->absmin) * 0.5f; };
-   inline Vector EyePosition (void) { return pev->origin + pev->view_ofs; };
-   inline Vector EarPosition (void) { return pev->origin + pev->view_ofs; };
+   inline Vector EyePosition (void) { return m_iOrigin + pev->view_ofs; };
+   inline Vector EarPosition (void) { return m_iOrigin + pev->view_ofs; };
 
    void Think (void);
    void ThinkFrame(void);

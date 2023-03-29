@@ -2931,7 +2931,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
       int index = g_botManager->GetIndex (ed);
 
       // is this message for a bot?
-      if (index != -1 && !(ed->v.flags & FL_DORMANT) && g_botManager->GetBot (index)->GetEntity () == ed)
+      if (index != -1 && !(ed->v.flags & FL_DORMANT) && g_botManager->GetBot (index)->GetEntity() == ed)
       {
          g_netMsg->SetBot (g_botManager->GetBot (index));
 
@@ -3251,7 +3251,7 @@ void pfnAlertMessage (ALERT_TYPE alertType, char *format, ...)
       {
          Bot *bot = g_botManager->GetBot (i);
 
-         if (bot != null && GetTeam (bot->GetEntity ()) == TEAM_TERRORIST && IsAlive (bot->GetEntity ()))
+         if (bot != null && GetTeam (bot->GetEntity()) == TEAM_TERRORIST && bot->m_isAlive)
          {
             bot->ResetTasks ();
             bot->MoveToPoint(g_waypoint->GetBombPoint ());
@@ -3851,7 +3851,7 @@ C_DLLEXPORT int Amxx_BlockWeaponPick(int index, int blockWeaponPick) // 1.42
 
 	bot->m_blockWeaponPickAPI = (blockWeaponPick == 1) ? true : false;
 	API_TestMSG("Amxx_BlockWeaponPick Checking - Index:%d[%s] - Block:%s - Done", 
-		index, GetEntityName(bot->GetEntity ()),
+		index, GetEntityName(bot->GetEntity()),
 		bot->m_blockWeaponPickAPI ? "Blocking" : "None (Base Mode)");
 	return 1;
 }

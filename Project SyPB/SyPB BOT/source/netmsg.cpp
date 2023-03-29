@@ -331,7 +331,7 @@ void NetworkMsg::Execute (void *p)
             {
                Bot *bot = g_botManager->GetBot (i);
 
-               if (bot != null && IsAlive (bot->GetEntity ()))
+               if (bot != null && bot->m_isAlive)
                {
                   bot->DeleteSearchNodes ();
                   bot->ResetTasks ();

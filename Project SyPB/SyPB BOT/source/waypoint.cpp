@@ -1470,13 +1470,11 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 			return false;
 	}
 
-	// SyPB Pro P.45 - Waypoint OS improve
 	TraceResult tr;
+	//TraceHull(src, dest, true, head_hull, entity, &tr);
 	TraceLine(src, dest, true, entity, &tr);
-	if (tr.flFraction == 1.0f)
-		return true;
 
-	return false;
+	return tr.flFraction == 1.0f;
 }
 
 bool Waypoint::IsNodeReachable (Vector src, Vector destination)
