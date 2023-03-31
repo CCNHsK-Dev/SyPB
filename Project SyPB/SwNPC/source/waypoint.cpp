@@ -110,7 +110,7 @@ int Waypoint::FindNearest(Vector origin, float distance)
 
 int Waypoint::GetEntityWpIndex(edict_t *entity)
 {
-	int wpIndex = GetEntityWaypointPoint(entity);
+	const int wpIndex = GetEntityWaypointPoint(entity);
 	if (wpIndex >= 0 && wpIndex < g_numWaypoints)
 		return wpIndex;
 

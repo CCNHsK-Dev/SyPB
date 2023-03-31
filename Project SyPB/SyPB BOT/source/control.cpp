@@ -83,8 +83,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 	// SyPB Pro P.22 - join after player
 	if (sypb_join_after_player.GetBool() == true)
 	{
-		int playerNum = GetHumansNum(1);
-		if (playerNum == 0)
+		if (GetHumansNum(1) == 0)
 			return -3;
 	}
 
@@ -135,7 +134,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 
 	if (personality < 0 || personality > 2)
 	{
-		int randomPrecent = engine->RandomInt(0, 100);
+		const int randomPrecent = engine->RandomInt(0, 100);
 
 		if (randomPrecent < 50)
 			personality = PERSONALITY_NORMAL;
@@ -221,7 +220,7 @@ int BotControl::GetIndex (edict_t *ent)
    if (FNullEnt (ent))
       return -1;
 
-   int index = ENTINDEX (ent) - 1;
+   const int index = ENTINDEX (ent) - 1;
 
    if (index < 0 || index >= 32)
       return -1;
@@ -440,7 +439,7 @@ int BotControl::AddBotAPI(const String &name, int skill, int team)
 	if (g_botManager->GetBotsNum() + 1 > sypb_quota.GetInt())
 		sypb_quota.SetInt(g_botManager->GetBotsNum() + 1);
 
-	int resultOfCall = CreateBot(name, skill, -1, team, -1);
+	const int resultOfCall = CreateBot(name, skill, -1, team, -1);
 
 	// check the result of creation
 	if (resultOfCall == -1)
@@ -475,7 +474,7 @@ void BotControl::MaintainBotQuota(void)
 	{
 		CreateItem last = m_creationTab.Pop();
 
-		int resultOfCall = CreateBot(last.name, last.skill, last.personality, last.team, last.member);
+		const int resultOfCall = CreateBot(last.name, last.skill, last.personality, last.team, last.member);
 
 		// check the result of creation
 		if (resultOfCall == -1)
@@ -497,7 +496,7 @@ void BotControl::MaintainBotQuota(void)
 
 	if (m_maintainTime < engine->GetTime())
 	{
-		int botNumber = GetBotsNum();
+		const int botNumber = GetBotsNum();
 
 		if (botNumber > sypb_quota.GetInt())
 			RemoveRandom();
@@ -548,7 +547,7 @@ void BotControl::FillServer (int selection, int personality, int skill, int numT
       {"Random"},
    };
 
-   int toAdd = numToAdd == -1 ? engine->GetMaxClients () - (GetHumansNum () + GetBotsNum ()) : numToAdd;
+   const int toAdd = numToAdd == -1 ? engine->GetMaxClients () - (GetHumansNum () + GetBotsNum ()) : numToAdd;
 
    for (int i = 0; i <= toAdd; i++)
    {
@@ -703,7 +702,7 @@ void BotControl::SetWeaponMode (int selection)
 {
    // this function sets bots weapon mode
 
-   int tabMapStandart[7][Const_NumWeapons] =
+   const int tabMapStandart[7][Const_NumWeapons] =
    {
       {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}, // Knife only
       {-1,-1,-1, 2, 2, 0, 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}, // Pistols only
@@ -714,7 +713,7 @@ void BotControl::SetWeaponMode (int selection)
       {-1,-1,-1, 2, 2, 0, 1, 2, 2, 2, 1, 2, 0, 2, 0, 0, 1, 0, 1, 1, 2, 2, 0, 1, 2, 1}  // Standard
    };
 
-   int tabMapAS[7][Const_NumWeapons] =
+   const int tabMapAS[7][Const_NumWeapons] =
    {
       {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}, // Knife only
       {-1,-1,-1, 2, 2, 0, 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}, // Pistols only
@@ -1306,7 +1305,7 @@ void Bot::StartGame (void)
       m_startAction = CMENU_IDLE;  // switch back to idle
 
 	  // SyPB Pro P.47 - Small change
-	  int maxChoice = (g_gameVersion == CSVER_CZERO) ? 5 : 4;
+	  const int maxChoice = (g_gameVersion == CSVER_CZERO) ? 5 : 4;
 	  m_wantedClass = engine->RandomInt(1, maxChoice);
 
       // select the class the bot wishes to use...

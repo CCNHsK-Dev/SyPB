@@ -52,11 +52,11 @@ ConVar sypb_showwp("sypb_showwp", "0");
 // SyPB Pro P.47 - SyPB Version MSG
 void SyPBVersionMSG(edict_t *entity = null)
 {
-	int buildVersion[4] = { SYPB_VERSION_DWORD };
-	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-	uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
-	uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
-
+	const int buildVersion[4] = { SYPB_VERSION_DWORD };
+	const uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
+	const uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
+	const uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
+	/*
 	if (amxxDLL_Version == -1.0)
 	{
 		amxxbV16[0] = 0;
@@ -72,7 +72,7 @@ void SyPBVersionMSG(edict_t *entity = null)
 		swnpcbV16[2] = 0;
 		swnpcbV16[3] = 0;
 	}
-
+	*/
 	char versionData[1024];
 	sprintf(versionData, 
 		"------------------------------------------------\n"
@@ -178,7 +178,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    // select the weapon mode for bots
    else if (stricmp (arg0, "weaponmode") == 0 || stricmp (arg0, "wmode") == 0)
    {
-      int selection = atoi (arg1);
+      const int selection = atoi (arg1);
 
       // check is selected range valid
       if (selection >= 1 && selection <= 7)
@@ -192,7 +192,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    {
       if (!IsNullString (arg1))
       {
-         int nominatedMap = atoi (arg1);
+         const int nominatedMap = atoi (arg1);
 
          // loop through all players
          for (int i = 0; i < engine->GetMaxClients (); i++)
@@ -224,8 +224,8 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    // display current time on the server
    else if (stricmp (arg0, "ctime") == 0 || stricmp (arg0, "time") == 0)
    {
-      time_t tickTime = time (null);
-      tm *localTime = localtime (&tickTime);
+      const time_t tickTime = time (null);
+      const tm *localTime = localtime (&tickTime);
 
       char date[32];
       strftime (date, 31, "--- Current Time: %H:%M:%S ---", localTime);
@@ -439,7 +439,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       // save waypoint data into file on hard disk
       else if (stricmp (arg1, "save") == 0)
       {
-         char *waypointSaveMessage = g_localizer->TranslateInput ("Waypoints Saved");
+         const char *waypointSaveMessage = g_localizer->TranslateInput ("Waypoints Saved");
 
          if (FStrEq (arg2, "nocheck"))
          {
@@ -486,7 +486,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       // teleport player to specified waypoint
       else if (stricmp (arg1, "teleport") == 0)
       {
-         int teleportPoint = atoi (arg2);
+         const int teleportPoint = atoi (arg2);
 
          if (teleportPoint < g_numWaypoints)
          {
@@ -1247,7 +1247,7 @@ void ClientDisconnect (edict_t *ent)
    // listen server client disconnects, and we don't want to send him any sort of message then.
 
    //callbacks->OnClientDisconnect (ent);
-	int i = ENTINDEX(ent) - 1;
+	const int i = ENTINDEX(ent) - 1;
 
 	InternalAssert(i >= 0 && i < 32);
 
@@ -1341,7 +1341,7 @@ void ClientCommand(edict_t *ent)
 		else if (stricmp(command, "menuselect") == 0 && !IsNullString(arg1) && g_clients[ENTINDEX(ent) - 1].menu != null)
 		{
 			Client_old *client = &g_clients[ENTINDEX(ent) - 1];
-			int selection = atoi(arg1);
+			const int selection = atoi(arg1);
 
 			if (client->menu == &g_menus[12])
 			{
@@ -2355,7 +2355,7 @@ void ClientCommand(edict_t *ent)
 			return;
 		}
 
-		bool isAlive = IsAlive(ent);
+		const bool isAlive = IsAlive(ent);
 		int team = -1;
 
 		if (FStrEq(command, "say_team"))
@@ -2928,7 +2928,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
 
    if (!FNullEnt (ed))
    {
-      int index = g_botManager->GetIndex (ed);
+      const int index = g_botManager->GetIndex (ed);
 
       // is this message for a bot?
       if (index != -1 && !(ed->v.flags & FL_DORMANT) && g_botManager->GetBot (index)->GetEntity() == ed)
@@ -3201,7 +3201,7 @@ int pfnRegUserMsg(const char *name, int size)
 	if (g_isMetamod)
 		RETURN_META_VALUE(MRES_IGNORED, 0);
 
-   int message = REG_USER_MSG (name, size);
+   const int message = REG_USER_MSG (name, size);
 
    if (strcmp (name, "VGUIMenu") == 0)
       g_netMsg->SetId (NETMSG_VGUI, message);
@@ -3632,7 +3632,7 @@ C_DLLEXPORT int Amxx_SetKADistance(int index, int k1d, int k2d) // 1.31
 // SyPB Pro P.34 - AMXX API
 C_DLLEXPORT int Amxx_AddSyPB(const char *name, int skill, int team) // 1.34
 {
-	int botId = g_botManager->AddBotAPI(name, skill, team);
+	const int botId = g_botManager->AddBotAPI(name, skill, team);
 
 	if (botId < 0)
 	{
@@ -3696,7 +3696,7 @@ C_DLLEXPORT int Amxx_SetZombieBot(int index, int zombieBot)
 
 C_DLLEXPORT int Amxx_GetOriginPoint(Vector origin) // 1.38
 {
-	int pointId = g_waypoint->FindNearest(origin);
+	const int pointId = g_waypoint->FindNearest(origin);
 
 	API_TestMSG("Amxx_GetOriginPoint Checking - %.2f | %.2f | %.2f", origin[0], origin[1], origin[2]);
 	API_TestMSG("Amxx_GetOriginPoint Checking - point:%d - Done", pointId);
@@ -3714,7 +3714,7 @@ C_DLLEXPORT int Amxx_GetBotPoint(int index, int mod) // 1.38
 	if (bot == null)
 		return -2;
 
-	int pointId = bot->CheckBotPointAPI (mod);
+	const int pointId = bot->CheckBotPointAPI (mod);
 	API_TestMSG("Amxx_GetBotPoint Checking - pointId:%d - Done", pointId);
 
 	if (pointId >= 0 && pointId < g_numWaypoints)
@@ -3731,7 +3731,7 @@ C_DLLEXPORT int Amxx_GetBotNavNum(int index) // 1.40
 	if (bot == null)
 		return -2;
 
-	int navNum = bot->GetNavData(-1);
+	const int navNum = bot->GetNavData(-1);
 	API_TestMSG("Amxx_GetBotNavNum Checking - navNum:%d - Done", navNum);
 
 	return navNum;
@@ -3744,7 +3744,7 @@ C_DLLEXPORT int Amxx_GetBotNavPointId(int index, int pointNum) // 1.40
 	if (bot == null)
 		return -2;
 
-	int navId = bot->GetNavData(pointNum);
+	const int navId = bot->GetNavData(pointNum);
 	API_TestMSG("Amxx_GetBotNavPointId Checking - navNum:%d navId:%d - Done", pointNum, navId);
 	return navId;
 }

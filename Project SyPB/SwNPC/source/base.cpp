@@ -97,14 +97,12 @@ bool IsOnLadder(edict_t *entity)
 	return entity->v.movetype == MOVETYPE_FLY;
 }
 
-bool IsOnFloor(edict_t *entity)
+bool IsOnFloor(edict_t* entity)
 {
 	if (IsValidPlayer(entity))
 		return (!!(entity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)));
 
 	return (g_engfuncs.pfnEntIsOnFloor(entity) != 0 || !!(entity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)));
-
-	//return IsValidPlayer(entity) ? (!!(entity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND))) : g_engfuncs.pfnEntIsOnFloor(entity) != 0;
 }
 
 bool IsInWater(edict_t *entity)
@@ -127,9 +125,7 @@ const char *GetEntityName(edict_t *entity)
 
 bool IsFriendlyFireOn(void)
 {
-	cvar_t* teamDamage = CVAR_GET_POINTER("mp_friendlyfire");
-
-	return teamDamage->value > 0;
+	return CVAR_GET_POINTER("mp_friendlyfire")->value > 0;
 }
 
 void FN_TraceLine_Post(const float* v1, const float* v2, int fNoMonsters, edict_t* pentToSkip, TraceResult* ptr)
@@ -212,7 +208,7 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 		}
 		else
 		{
-			int temp = RANDOM_LONG(0, 2);
+			const int temp = RANDOM_LONG(0, 2);
 			if (ptr->iHitgroup == HITGROUP_HEAD)
 			{
 				if (victim->v.armortype == 2)
@@ -259,9 +255,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 	if (bits == -1 || (attackNPC == null && victimNPC == null))
 		return;
 
-	int attackId = ENTINDEX(attacker);
-	if (FNullEnt(attacker))
-		attackId = -1;
+	const int attackId = FNullEnt(attacker) ? -1 : ENTINDEX(attacker);
 
 	g_TDP_damageValue = -1;
 	g_TDP_cvOn = true;
@@ -306,11 +300,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 		
 		if (endPos != nullvec && vecDir != nullvec)
 		{
-			int bloodColor = -1;
-			if (IsValidPlayer(victim))
-				bloodColor = BLOOD_COLOR_RED;
-			else if (victimNPC != null)
-				bloodColor = victimNPC->m_bloodColor;
+			const int bloodColor = victimNPC ? victimNPC->m_bloodColor : BLOOD_COLOR_RED;
 
 			if (bloodColor != -1)
 			{
@@ -328,9 +318,9 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 			if (force > 1000.0f)
 				force = 1000.0f;
 
-			Vector vecDir2 = (GetEntityOrigin(victim) - (attacker->v.absmin + attacker->v.absmax) * 0.5).Normalize();
+			const Vector vecDir2 = (GetEntityOrigin(victim) - (attacker->v.absmin + attacker->v.absmax) * 0.5).Normalize();
+			const Vector velocity = victim->v.velocity + vecDir2 * force;
 
-			Vector velocity = victim->v.velocity + vecDir2 * force;
 			victim->v.velocity = velocity;
 		}
 
@@ -359,9 +349,7 @@ void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 	if (FNullEnt (victim) || !IsAlive(victim))
 		return;
 
-	int killerId = ENTINDEX(killer);
-	if (FNullEnt(killer))
-		killerId = -1;
+	const int killerId = FNullEnt(killer) ? -1 : ENTINDEX(killer);
 
 	if (IsValidPlayer(victim))
 	{

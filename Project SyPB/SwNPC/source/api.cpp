@@ -13,7 +13,7 @@ static cell AMX_NATIVE_CALL amxx_checkSwNPCNum(AMX *amx, cell *params) // 1.42
 
 static cell AMX_NATIVE_CALL amxx_checkIsSwNPC(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 	if (!g_npcManager->IsSwNPC(npcId))
 		return -1;
 
@@ -24,25 +24,25 @@ static cell AMX_NATIVE_CALL amxx_addNPC(AMX *amx, cell *params) // 1.42
 {
 	const char *className = MF_GetAmxString(amx, params[1], apiBuffer++, null);
 	const char *modelName = MF_GetAmxString(amx, params[2], apiBuffer++, null);
-	float maxHealth = amx_ctof(params[3]);
-	float maxSpeed = amx_ctof(params[4]);
-	int team = params[5];
-	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[6]);
-	Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
+	const float maxHealth = amx_ctof(params[3]);
+	const float maxSpeed = amx_ctof(params[4]);
+	const int team = params[5];
+	const cell *cpVec1 = g_fn_GetAmxAddr(amx, params[6]);
+	const Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 
-	int npcId = g_npcManager->AddNPC(className, modelName, maxHealth, maxSpeed, team, origin);
+	const int npcId = g_npcManager->AddNPC(className, modelName, maxHealth, maxSpeed, team, origin);
 	return npcId;
 }
 
 static cell AMX_NATIVE_CALL amxx_removeNPC(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 	return g_npcManager->RemoveNPCAPI(npcId);
 }
 
 static cell AMX_NATIVE_CALL amxx_getTeam(AMX* amx, cell* params) //1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
 		return -1;
@@ -52,36 +52,36 @@ static cell AMX_NATIVE_CALL amxx_getTeam(AMX* amx, cell* params) //1.42
 
 static cell AMX_NATIVE_CALL amxx_setTeam(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	int team = params[2];
+	const int npcId = params[1];
+	const int team = params[2];
 	return g_npcManager->SetTeam(npcId, team);
 }
 
 static cell AMX_NATIVE_CALL amxx_setSize(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
-	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
-	Vector minSize = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
+	const cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
+	const Vector minSize = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 
-	cell *cpVec2 = g_fn_GetAmxAddr(amx, params[3]);
-	Vector maxSize = Vector(amx_ctof((float)cpVec2[0]), amx_ctof((float)cpVec2[1]), amx_ctof((float)cpVec2[2]));
+	const cell *cpVec2 = g_fn_GetAmxAddr(amx, params[3]);
+	const Vector maxSize = Vector(amx_ctof((float)cpVec2[0]), amx_ctof((float)cpVec2[1]), amx_ctof((float)cpVec2[2]));
 
 	return g_npcManager->SetSize(npcId, minSize, maxSize);
 }
 
 static cell AMX_NATIVE_CALL amxx_baseSequence(AMX* amx, cell* params) // 1.50
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	return g_npcManager->BaseSequence(npcId);
 }
 
 static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	int ASClass = params[2];
-	int ASSClass = params[3];
+	const int npcId = params[1];
+	const int ASClass = params[2];
+	const int ASSClass = params[3];
 	const char *ASName = MF_GetAmxString(amx, params[4], apiBuffer++, null);
 
 	return g_npcManager->SetSequence(npcId, ASClass, ASSClass, ASName);
@@ -89,65 +89,65 @@ static cell AMX_NATIVE_CALL amxx_setSequenceName(AMX *amx, cell *params) // 1.42
 
 static cell AMX_NATIVE_CALL amxx_setSequenceId(AMX* amx, cell* params)
 {
-	int npcId = params[1];
-	int ASClass = params[2];
-	int ASSClass = params[3];
-	int ASModelId = params[4];
+	const int npcId = params[1];
+	const int ASClass = params[2];
+	const int ASSClass = params[3];
+	const int ASModelId = params[4];
 
 	return g_npcManager->SetSequence(npcId, ASClass, ASSClass, "setfor_id", ASModelId);
 }
 
 static cell AMX_NATIVE_CALL amxx_setFootStepSound(AMX* amx, cell* params)
 {
-	int npcId = params[1];
-	int footStepSound = params[2];
+	const int npcId = params[1];
+	const int footStepSound = params[2];
 
 	return g_npcManager->SetFootStep(npcId, footStepSound);
 }
 
 static cell AMX_NATIVE_CALL amxx_setBloodColor(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
-	int bloodColor = params[2];
+	const int npcId = params[1];
+	const int bloodColor = params[2];
 
 	return g_npcManager->SetBloodColor(npcId, bloodColor);
 }
 
 static cell AMX_NATIVE_CALL amxx_findEnemyMode(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
-	int feMode = params[2];
+	const int npcId = params[1];
+	const int feMode = params[2];
 
 	return g_npcManager->SetFEMode(npcId, feMode);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAddFrags(AMX *amx, cell *params) // 1.48
 {
-	int npcId = params[1];
-	int addFrags = params[2];
+	const int npcId = params[1];
+	const int addFrags = params[2];
 
 	return g_npcManager->SetAddFrags(npcId, addFrags);
 }
 
 static cell AMX_NATIVE_CALL amx_setAddMoney(AMX* amx, cell* params)
 {
-	int npcId = params[1];
-	int addMoney = params[2];
+	const int npcId = params[1];
+	const int addMoney = params[2];
 
 	return g_npcManager->SetAddMoney(npcId, addMoney);
 }
 
 static cell AMX_NATIVE_CALL amxx_setDeadRemoveTime(AMX *amx, cell *params) // 1.48
 {
-	int npcId = params[1];
-	float deadRemoveTime = amx_ctof(params[2]);
+	const int npcId = params[1];
+	const float deadRemoveTime = amx_ctof(params[2]);
 
 	return g_npcManager->SetDeadRemoveTime(npcId, deadRemoveTime);
 }
 
 static cell AMX_NATIVE_CALL amxx_setHasWeapon(AMX* amx, cell* params)
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 	const char* pmodelName = MF_GetAmxString(amx, params[2], apiBuffer++, null);
 
 	return g_npcManager->SetHasWeapon(npcId, pmodelName);
@@ -155,57 +155,57 @@ static cell AMX_NATIVE_CALL amxx_setHasWeapon(AMX* amx, cell* params)
 
 static cell AMX_NATIVE_CALL amxx_setDamageMultiples(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	float damageMu = amx_ctof(params[2]);
+	const int npcId = params[1];
+	const float damageMu = amx_ctof(params[2]);
 
 	return g_npcManager->SetDamageMultiples(npcId, damageMu);
 }
 
 static cell AMX_NATIVE_CALL amxx_setDamageMissArmor(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	bool missArmor = (params[2] == 0) ? false : true;
+	const int npcId = params[1];
+	const bool missArmor = (params[2] == 0) ? false : true;
 
 	return g_npcManager->SetDamageMissArmor(npcId, missArmor);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAttackDamage(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	float damage = amx_ctof(params[2]);
+	const int npcId = params[1];
+	const float damage = amx_ctof(params[2]);
 
 	return g_npcManager->SetAttackDamage(npcId, damage);
 }
 
 static cell AMX_NATIVE_CALL amx_setAttackCount(AMX* amx, cell* params)
 {
-	int npcId = params[1];
-	float attackCount = params[2];
+	const int npcId = params[1];
+	const float attackCount = params[2];
 
 	return g_npcManager->SetAttackCount(npcId, attackCount);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAttackDistance(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	float distance = amx_ctof(params[2]);
+	const int npcId = params[1];
+	const float distance = amx_ctof(params[2]);
 
 	return g_npcManager->SetAttackDistance(npcId, distance);
 }
 
 static cell AMX_NATIVE_CALL amxx_setAttackDelayTime(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	float delayTime = amx_ctof(params[2]);
+	const int npcId = params[1];
+	const float delayTime = amx_ctof(params[2]);
 
 	return g_npcManager->SetAttackDelayTime(npcId, delayTime);
 }
 
 static cell AMX_NATIVE_CALL amxx_FakeTakeDamage(AMX* amx, cell* params) // 1.42
 {
-	int victimId = params[1];
-	int attackId = params[2];
-	int damage = params[3];
+	const int victimId = params[1];
+	const int attackId = params[2];
+	const int damage = params[3];
 
 	edict_t* victim = INDEXENT(victimId);
 	edict_t* attack = INDEXENT(attackId);
@@ -222,12 +222,12 @@ static cell AMX_NATIVE_CALL amxx_FakeTakeDamage(AMX* amx, cell* params) // 1.42
 
 static cell AMX_NATIVE_CALL amxx_FakeKill(AMX* amx, cell* params)
 {
-	int victimId = params[1];
+	const int victimId = params[1];
 	edict_t* victim = INDEXENT(victimId);
 	if (FNullEnt(victim) || g_npcManager->IsSwNPC(victim) == null)
 		return -2;
 
-	int attackId = params[2];
+	const int attackId = params[2];
 	edict_t* attack = INDEXENT(attackId);
 
 	KillAction(victim, attack, false);
@@ -236,44 +236,44 @@ static cell AMX_NATIVE_CALL amxx_FakeKill(AMX* amx, cell* params)
 
 static cell AMX_NATIVE_CALL amxx_getNpcWpIndex(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	return g_npcManager->GetWpData(npcId, -2);
 }
 
 static cell AMX_NATIVE_CALL amxx_getNpcNavNums(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	return g_npcManager->GetWpData(npcId, -1);
 }
 
 static cell AMX_NATIVE_CALL amxx_getNpcNavPointId(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
-	int navNum = params[2];
+	const int npcId = params[1];
+	const int navNum = params[2];
 
 	return g_npcManager->GetWpData(npcId, navNum);
 }
 
 static cell AMX_NATIVE_CALL amxx_getGoalWaypoint(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	return g_npcManager->GetGoalWaypoint(npcId);
 }
 
 static cell AMX_NATIVE_CALL amxx_setGoalWaypoint(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	int goalWaypoint = params[2];
+	const int npcId = params[1];
+	const int goalWaypoint = params[2];
 
 	return g_npcManager->SetGoalWaypoint(npcId, goalWaypoint);
 }
 
 static cell AMX_NATIVE_CALL amxx_getMoveTarget(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
@@ -287,7 +287,7 @@ static cell AMX_NATIVE_CALL amxx_getMoveTarget(AMX* amx, cell* params) // 1.42
 
 static cell AMX_NATIVE_CALL amxx_getEnemy(AMX* amx, cell* params) // 1.42
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
@@ -301,15 +301,15 @@ static cell AMX_NATIVE_CALL amxx_getEnemy(AMX* amx, cell* params) // 1.42
 
 static cell AMX_NATIVE_CALL amxx_setEnemy(AMX *amx, cell *params) // 1.42
 {
-	int npcId = params[1];
-	int enemyId = params[2];
+	const int npcId = params[1];
+	const int enemyId = params[2];
 
 	return g_npcManager->SetEnemy(npcId, enemyId);
 }
 
 static cell AMX_NATIVE_CALL amxx_getFollowEntity(AMX* amx, cell* params) // 1.48
 {
-	int npcId = params[1];
+	const int npcId = params[1];
 
 	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
@@ -323,8 +323,8 @@ static cell AMX_NATIVE_CALL amxx_getFollowEntity(AMX* amx, cell* params) // 1.48
 
 static cell AMX_NATIVE_CALL amxx_setFollowEntity(AMX *amx, cell *params) // 1.48
 {
-	int npcId = params[1];
-	int entityId = params[2];
+	const int npcId = params[1];
+	const int entityId = params[2];
 
 	NPC *npc = g_npcManager->IsSwNPC(npcId);
 	if (npc == null)

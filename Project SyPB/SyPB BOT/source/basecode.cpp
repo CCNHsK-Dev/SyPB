@@ -39,7 +39,7 @@ int Bot::GetMessageQueue (void)
 {
    // this function get the current message from the bots message queue
 
-   int message = m_messageQueue[m_actMessageIndex++];
+   const int message = m_messageQueue[m_actMessageIndex++];
    m_actMessageIndex &= 0x1f; // wraparound
 
    return message;
@@ -75,8 +75,8 @@ void Bot::PushMessageQueue (int message)
 
 float Bot::InFieldOfView (Vector destination)
 {
-   float entityAngle = AngleMod (destination.ToYaw ()); // find yaw angle from source to destination...
-   float viewAngle = AngleMod (pev->v_angle.y); // get bot's current view angle...
+   const float entityAngle = AngleMod (destination.ToYaw ()); // find yaw angle from source to destination...
+   const float viewAngle = AngleMod (pev->v_angle.y); // get bot's current view angle...
 
    // return the absolute value of angle to destination entity
    // zero degrees means straight ahead, 45 degrees to the left or
@@ -106,14 +106,8 @@ bool Bot::CheckVisibility(entvars_t *targetEntity, Vector *origin, uint8_t *body
 	TraceResult tr;
 	*bodyPart = 0;
 
-	Vector botHead = EyePosition();
-	// SyPB Pro P.48 - Look up entity improve
-	if (pev->flags & FL_DUCKING)
-		botHead = botHead + (VEC_HULL_MIN - VEC_DUCK_HULL_MIN);
-
-	bool ignoreGlass = true;
-	if (m_currentWeapon != WEAPON_KNIFE && !m_isZombieBot && IsZombieMode())
-		ignoreGlass = false;
+	const Vector botHead = (pev->flags & FL_DUCKING) ? EyePosition() + (VEC_HULL_MIN - VEC_DUCK_HULL_MIN) : EyePosition();
+	const bool ignoreGlass = (m_currentWeapon != WEAPON_KNIFE && !m_isZombieBot && IsZombieMode()) ? false : true;
 
 	TraceLine(botHead, GetEntityOrigin(entity), true, ignoreGlass, m_iEntity, &tr);
 	if (tr.pHit == entity || tr.flFraction >= 1.0f)
@@ -219,13 +213,12 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 				}
 				else
 				{
-					float addTime = engine->RandomFloat(0.2f, 0.5f);
 					if (m_skill == 100)
-						addTime = 0.0f;
+						m_backCheckEnemyTime = 0.0f;
 					else if (!FNullEnt(m_enemy))
-						addTime += 0.2f;
-
-					m_backCheckEnemyTime = engine->GetTime() + addTime;
+						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.5f, 1.0f);
+					else
+						m_backCheckEnemyTime = engine->GetTime() + engine->RandomFloat(0.3f, 0.7f);
 				}
 
 				// SyPB Pro P.47 - Small Fixed 
@@ -249,7 +242,7 @@ bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool ch
 
 	Vector entityOrigin;
 	uint8_t visibility;
-	bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
+	const bool seeEntity = CheckVisibility(VARS(entity), &entityOrigin, &visibility);
 
 	if (checkOnly)
 		return seeEntity;
@@ -374,8 +367,6 @@ void Bot::ZombieModeAi(void)
 		}
 	}
 }
-
-
 
 void Bot::ZmCampPointAction(void)
 {
@@ -627,7 +618,7 @@ int Bot::GetBestSecondaryWeaponCarried (void)
    if (HasShield ())
       weapons |= (1 << WEAPON_SHIELDGUN);
 
-   WeaponSelect *weaponTab = &g_weaponSelect[0];
+   const WeaponSelect *weaponTab = &g_weaponSelect[0];
 
    for (int i = 0; i < Const_NumWeapons; i++)
    {
@@ -651,7 +642,7 @@ bool Bot::RateGroundWeapon (edict_t *ent)
    int groundIndex = 0;
    int *ptr = g_weaponPrefs[m_personality];
 
-   WeaponSelect *weaponTab = &g_weaponSelect[0];
+   const WeaponSelect *weaponTab = &g_weaponSelect[0];
 
    for (int i = 0; i < Const_NumWeapons; i++)
    {
@@ -807,8 +798,8 @@ void Bot::FindItem(void)
 		if (pickupType == PICKTYPE_NONE)
 			continue;
 
-		Vector entityOrigin = GetEntityOrigin(ent);
-		float distance = (m_iOrigin - entityOrigin).GetLength();
+		const Vector entityOrigin = GetEntityOrigin(ent);
+		const float distance = (m_iOrigin - entityOrigin).GetLength();
 		if (distance > minDistance)
 			continue;
 		
@@ -1047,7 +1038,6 @@ void Bot::GetCampDirection (Vector *dest)
 {
    // this function check if view on last enemy position is blocked - replace with better vector then
    // mostly used for getting a good camping direction vector if not camping on a camp waypoint
-
    TraceResult tr;
    const Vector src = EyePosition ();
 
@@ -1308,6 +1298,7 @@ bool Bot::IsRestrictedAMX (int weaponIndex)
 {
    // this function checks restriction set by AMX Mod, this function code is courtesy of KWo.
 
+
    const char *restrictedWeapons = CVAR_GET_STRING ("amx_restrweapons");
    const char *restrictedEquipment = CVAR_GET_STRING ("amx_restrequipammo");
 
@@ -1530,7 +1521,7 @@ void Bot::PerformWeaponPurchase (void)
 				if (m_moneyAmount <= (selectedWeapon->price + 120))
 					continue;
 
-				int gunMode = BuyWeaponMode (selectedWeapon->id);
+				const int gunMode = BuyWeaponMode (selectedWeapon->id);
 
 				if (likeGunId == 0)
 				{
@@ -1678,7 +1669,7 @@ int Bot::BuyWeaponMode (int weaponId)
 }
 
 
-Task *ClampDesire (Task *first, float min, float max)
+Task *ClampDesire (Task *first, float min, float max) noexcept
 {
    // this function iven some values min and max, clamp the inputs to be inside the [min, max] range.
 
@@ -1690,7 +1681,7 @@ Task *ClampDesire (Task *first, float min, float max)
    return first;
 }
 
-Task *MaxDesire (Task *first, Task *second)
+Task *MaxDesire (Task *first, Task *second) noexcept
 {
    // this function returns the behavior having the higher activation level.
 
@@ -1700,7 +1691,7 @@ Task *MaxDesire (Task *first, Task *second)
    return second;
 }
 
-Task *SubsumeDesire (Task *first, Task *second)
+Task *SubsumeDesire (Task *first, Task *second) noexcept
 {
    // this function returns the first behavior if its activation level is anything higher than zero.
 
@@ -1710,7 +1701,7 @@ Task *SubsumeDesire (Task *first, Task *second)
    return second;
 }
 
-Task *ThresholdDesire (Task *first, float threshold, float desire)
+Task *ThresholdDesire (Task *first, float threshold, float desire) noexcept
 {
    // this function returns the input behavior if it's activation level exceeds the threshold, or some default
    // behavior otherwise.
@@ -1721,7 +1712,7 @@ Task *ThresholdDesire (Task *first, float threshold, float desire)
    return first;
 }
 
-float HysteresisDesire (float cur, float min, float max, float old)
+float HysteresisDesire (float cur, float min, float max, float old) noexcept
 {
    // this function clamp the inputs to be the last known value outside the [min, max] range.
 
@@ -1992,7 +1983,7 @@ void Bot::CheckTasksPriorities (void)
       return;
    }
 
-   Task *oldTask = m_tasks;
+   const Task *oldTask = m_tasks;
    Task *prev = null;
    Task *next = null;
 
@@ -2501,16 +2492,15 @@ void Bot::CheckGrenadeThrow(void)
 
 bool Bot::IsOnAttackDistance(edict_t *targetEntity, float distance)
 {
-	const Vector origin = m_iOrigin;
-	if ((origin - GetEntityOrigin(targetEntity)).GetLength() < distance)
+	if ((m_iOrigin - GetEntityOrigin(targetEntity)).GetLength() < distance)
 		return true;
 
 	if (m_currentWeapon == WEAPON_KNIFE)
 	{
-		if ((origin - GetPlayerHeadOrigin(targetEntity) - Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
+		if ((m_iOrigin - GetPlayerHeadOrigin(targetEntity) - Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
 			return true;
 
-		if ((origin - GetBottomOrigin(targetEntity) + Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
+		if ((m_iOrigin - GetBottomOrigin(targetEntity) + Vector(0.0f, 0.0f, 1.0f)).GetLength() < distance)
 			return true;
 	}
 
@@ -2656,6 +2646,7 @@ void Bot::CheckRadioCommands (void)
    }
 
    float distance = (GetEntityOrigin(m_radioEntity) - m_iOrigin).GetLength();
+   const BotTask taskID = GetCurrentTask()->taskID;
 
    switch (m_radioOrder)
    {
@@ -2694,8 +2685,6 @@ void Bot::CheckRadioCommands (void)
                m_targetEntity = m_radioEntity;
 
                // don't pause/camp/follow anymore
-               BotTask taskID = GetCurrentTask ()->taskID;
-
                if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 				   GetCurrentTask()->time = engine->GetTime ();
 
@@ -2756,8 +2745,6 @@ void Bot::CheckRadioCommands (void)
                RadioMessage (Radio_Affirmative);
 
             // don't pause/camp anymore
-            BotTask taskID = GetCurrentTask ()->taskID;
-
             if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 				GetCurrentTask()->time = engine->GetTime ();
 
@@ -2788,8 +2775,6 @@ void Bot::CheckRadioCommands (void)
             RadioMessage (Radio_Affirmative);
 
          // don't pause/camp anymore
-         BotTask taskID = GetCurrentTask ()->taskID;
-
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 			 GetCurrentTask()->time = engine->GetTime ();
 
@@ -2817,8 +2802,6 @@ void Bot::CheckRadioCommands (void)
       }
       else if (distance < 2048.0f || (FNullEnt (m_enemy) && EntityIsVisible (GetEntityOrigin (m_radioEntity))))
       {
-         BotTask taskID = GetCurrentTask ()->taskID;
-
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
          {
             m_fearLevel -= 0.3f;
@@ -2883,8 +2866,6 @@ void Bot::CheckRadioCommands (void)
          RadioMessage (Radio_Affirmative);
 
          // don't pause/camp anymore
-         BotTask taskID = GetCurrentTask ()->taskID;
-
          if (taskID == TASK_PAUSE || taskID == TASK_CAMP)
 			 GetCurrentTask()->time = engine->GetTime ();
 
@@ -2926,8 +2907,6 @@ void Bot::CheckRadioCommands (void)
          else
          {
             // don't pause/camp anymore
-            BotTask taskID = GetCurrentTask ()->taskID;
-
             if (taskID == TASK_PAUSE)
 				GetCurrentTask()->time = engine->GetTime ();
 
@@ -3040,8 +3019,6 @@ void Bot::CheckRadioCommands (void)
          else
          {
             // don't pause anymore
-            BotTask taskID = GetCurrentTask ()->taskID;
-
             if (taskID == TASK_PAUSE)
 				GetCurrentTask()->time = engine->GetTime ();
 
@@ -3060,7 +3037,7 @@ void Bot::CheckRadioCommands (void)
                      continue;
 
                   edict_t *enemy = g_clients[i].ent;
-                  float nowDistance = (GetEntityOrigin (m_radioEntity) - GetEntityOrigin (enemy)).GetLengthSquared ();
+                  const float nowDistance = (GetEntityOrigin (m_radioEntity) - GetEntityOrigin (enemy)).GetLengthSquared ();
 
                   if (nowDistance < nearestDistance)
                   {
@@ -3071,7 +3048,7 @@ void Bot::CheckRadioCommands (void)
             }
             DeleteSearchNodes ();
 
-            int index = FindDefendWaypoint (GetEntityOrigin (m_radioEntity), GetEntityWaypoint (m_radioEntity));
+            const int index = FindDefendWaypoint (GetEntityOrigin (m_radioEntity), GetEntityWaypoint (m_radioEntity));
 
             // push camp task on to stack
             PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (30.0f, 60.0f), true);
@@ -3485,7 +3462,7 @@ void Bot::RunTask (void)
    const float timeToBlowUp = GetBombTimeleft();
    float defuseRemainingTime = m_hasDefuser ? 7.0f : 12.0f;;
 
-   Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+   const Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
 
    switch (GetCurrentTask ()->taskID)
    {
@@ -3640,7 +3617,7 @@ void Bot::RunTask (void)
 					 {
 						 if (m_skill >= 80 || engine->RandomInt(0, 100) < m_skill)
 						 {
-							 int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
+							 const int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
 
 							 PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0, 120.0f), true); // push camp task on to stack
 							 PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0, 30.0f), true); // push move command
@@ -3690,7 +3667,7 @@ void Bot::RunTask (void)
 						 {
 							 m_timeCamping = engine->GetTime() + engine->RandomFloat(g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
 
-							 int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
+							 const int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
 
 							 PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(35.0f, 60.0f), true); // push camp task on to stack
 							 PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0f, 15.0f), true); // push move command
@@ -3978,7 +3955,7 @@ void Bot::RunTask (void)
             int foundPoints[3];
             int distanceTab[3];
 
-            Vector dotA = (destination - m_iOrigin).Normalize2D ();
+            const Vector dotA = (destination - m_iOrigin).Normalize2D ();
 
             for (i = 0; i < g_numWaypoints; i++)
             {
@@ -3986,11 +3963,11 @@ void Bot::RunTask (void)
                if (i == m_currentWaypointIndex || g_waypoint->IsVisible(m_currentWaypointIndex, i))
                   continue;
 
-               Vector dotB = (g_waypoint->GetPath (i)->origin - m_iOrigin).Normalize2D ();
+               const Vector dotB = (g_waypoint->GetPath (i)->origin - m_iOrigin).Normalize2D ();
 
                if ((dotA | dotB) > 0.9)
                {
-                  int distance = static_cast <int> ((m_iOrigin - g_waypoint->GetPath (i)->origin).GetLength ());
+                  const int distance = static_cast <int> ((m_iOrigin - g_waypoint->GetPath (i)->origin).GetLength ());
 
                   if (numFoundPoints >= 3)
                   {
@@ -4106,8 +4083,8 @@ void Bot::RunTask (void)
 
          DeleteSearchNodes ();
 
-         int index = FindDefendWaypoint (m_iOrigin, GetEntityWaypoint (m_iEntity));
-         float halfTimer = engine->GetTime () + ((engine->GetC4TimerTime () / 2) + (engine->GetC4TimerTime () / 4));
+         const int index = FindDefendWaypoint (m_iOrigin, GetEntityWaypoint (m_iEntity));
+         const float halfTimer = engine->GetTime () + ((engine->GetC4TimerTime () / 2) + (engine->GetC4TimerTime () / 4));
 
          // push camp task on to stack
          PushTask (TASK_CAMP, TASKPRI_CAMP, -1, halfTimer, true);
@@ -4285,7 +4262,7 @@ void Bot::RunTask (void)
 
          while (!points.IsEmpty ())
          {
-            int newIndex = points.Pop ();
+            const int newIndex = points.Pop ();
 
             // if waypoint not yet used, assign it as dest
             if (!IsWaypointUsed (newIndex) && (newIndex != m_currentWaypointIndex))
@@ -4692,7 +4669,7 @@ void Bot::RunTask (void)
 			   if ((g_waypoint->GetPath(i)->origin - g_waypoint->GetBombPosition()).GetLength() <  2048.0f)
 				   continue;
 
-			   float pathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, i);
+			   const float pathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, i);
 
 			   if (minPathDistance > pathDistance)
 			   {
@@ -4768,7 +4745,7 @@ void Bot::RunTask (void)
 		  m_moveSpeed = m_iMaxSpeed;
 
       // find the distance to the item
-      float itemDistance = (destination - m_iOrigin).GetLength ();
+      const float itemDistance = (destination - m_iOrigin).GetLength ();
 
       switch (m_pickupType)
       {
@@ -5215,7 +5192,7 @@ void Bot::BotDebugModeMsg(void)
 				navid = navid->next;
 			}
 
-			int client = GetIndex() - 1;
+			const int client = GetIndex() - 1;
 
 			char outputBuffer[512];
 			sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
@@ -5281,7 +5258,7 @@ void Bot::BotDebugModeMsg(void)
 		Vector src = nullvec;
 		while (node != null)
 		{
-			Path *path = g_waypoint->GetPath(node->index);
+			const Path *path = g_waypoint->GetPath(node->index);
 			src = path->origin;
 			node = node->next;
 
@@ -5846,8 +5823,8 @@ Vector Bot::CheckToss (const Vector &start, Vector end)
    if ((midPoint.z < start.z) || (midPoint.z < end.z))
       return nullvec;
 
-   float timeOne = sqrtf ((midPoint.z - start.z) / (0.5f * gravity));
-   float timeTwo = sqrtf ((midPoint.z - end.z) / (0.5f * gravity));
+   const float timeOne = sqrtf ((midPoint.z - start.z) / (0.5f * gravity));
+   const float timeTwo = sqrtf ((midPoint.z - end.z) / (0.5f * gravity));
 
    if (timeOne < 0.1)
       return nullvec;
@@ -5867,7 +5844,7 @@ Vector Bot::CheckToss (const Vector &start, Vector end)
 
    if (tr.flFraction != 1.0f)
    {
-      float dot = -(tr.vecPlaneNormal | (apex - end).Normalize ());
+      const float dot = -(tr.vecPlaneNormal | (apex - end).Normalize ());
 
       if (dot > 0.7f || tr.flFraction < 0.8f) // 60 degrees
          return nullvec;
@@ -5906,7 +5883,7 @@ Vector Bot::CheckThrow (const Vector &start, Vector end)
 
    if (tr.flFraction != 1.0f || tr.fAllSolid)
    {
-      float dot = -(tr.vecPlaneNormal | (apex - end).Normalize ());
+      const float dot = -(tr.vecPlaneNormal | (apex - end).Normalize ());
 
       if (dot > 0.7f || tr.flFraction < 0.8f)
          return nullvec;
@@ -6187,7 +6164,7 @@ void Bot::ReactOnSound (void)
 			else
 			{
 				// if bot had an enemy but the heard one is nearer, take it instead
-				float distance = (m_lastEnemyOrigin - m_iOrigin).GetLength();
+				const float distance = (m_lastEnemyOrigin - m_iOrigin).GetLength();
 				if (distance <= (GetEntityOrigin(player) - m_iOrigin).GetLength() && m_seeEnemyTime + 2.0f < engine->GetTime())
 					return;
 

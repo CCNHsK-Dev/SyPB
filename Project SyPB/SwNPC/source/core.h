@@ -9,9 +9,9 @@
 #define null 0
 #define nullvec Vector (0.0f, 0.0f, 0.0f)
 
-const int checkEnemyNum = 128+32;
-const int Const_MaxWaypoints = 1024;
-const int Const_MaxPathIndex = 8;
+constexpr int checkEnemyNum = 128+32;
+constexpr int Const_MaxWaypoints = 1024;
+constexpr int Const_MaxPathIndex = 8;
 
 enum NPC_Sound
 {
@@ -247,10 +247,10 @@ public:
 
 	void DeleteSearchNodes(void);
 
-	int CheckPointAPI(void) { return m_currentWaypointIndex; };
+	inline int CheckPointAPI(void) { return m_currentWaypointIndex; };
 	int GetNavDataAPI(int data);
 	void SetWaypointOrigin(void);
-	int CheckGoalWaypoint(void) { return m_goalWaypoint; };
+	inline int CheckGoalWaypoint(void) { return m_goalWaypoint; };
 
 	void BaseSequence(void);
 	void SetSequence(int asClass, int assClass, const char *asName, int asModelId);

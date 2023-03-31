@@ -105,7 +105,7 @@ int Waypoint::FindFarest (Vector origin, float maxDistance)
 
    for (int i = 0; i < g_numWaypoints; i++)
    {
-      float distance = (m_paths[i]->origin - origin).GetLength ();
+	  const float distance = (m_paths[i]->origin - origin).GetLength ();
 
       if (distance > maxDistance)
       {
@@ -190,12 +190,12 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 		if (flags != -1 && !(m_paths[i]->flags & flags))
 			continue;
 
-		float distance = (m_paths[i]->origin - origin).GetLength();
+		const float distance = (m_paths[i]->origin - origin).GetLength();
 		if (distance > minDistance)
 			continue;
 
-		Vector dest = m_paths[i]->origin;
-		float distance2D = (dest - origin).GetLength2D();
+		const Vector dest = m_paths[i]->origin;
+		const float distance2D = (dest - origin).GetLength2D();
 		if (((dest.z > origin.z + 62.0f || dest.z < origin.z - 100.0f) &&
 			!(m_paths[i]->flags & WAYPOINT_LADDER)) && distance2D <= 30.0f)
 			continue;
@@ -236,7 +236,7 @@ int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *
 			if (wpIndex[i] < 0 || wpIndex[i] >= g_numWaypoints)
 				continue;
 
-			float distance = g_waypoint->GetPathDistanceFloat(wpIndex[i], mode);
+			const float distance = g_waypoint->GetPathDistanceFloat(wpIndex[i], mode);
 			for (int y = 0; y < checkPoint; y++)
 			{
 				if (distance >= cdWPDistance[y])
@@ -299,21 +299,21 @@ void Waypoint::FindInRadius (Vector origin, float radius, int *holdTab, int *cou
 {
    // returns all waypoints within radius from position
 
-   int maxCount = *count;
-   *count = 0;
+	const int maxCount = *count;
+	*count = 0;
 
-   for (int i = 0; i < g_numWaypoints; i++)
-   {
-      if ((m_paths[i]->origin - origin).GetLength () < radius)
-      {
-         *holdTab++ = i;
-         *count += 1;
+	for (int i = 0; i < g_numWaypoints; i++)
+	{
+		if ((m_paths[i]->origin - origin).GetLength () < radius)
+		{
+			*holdTab++ = i;
+			*count += 1;
 
-         if (*count >= maxCount)
-            break;
-      }
-   }
-   *count -= 1;
+			if (*count >= maxCount)
+				break;
+		}
+	}
+	*count -= 1;
 }
 
 void Waypoint::FindInRadius (Array <int> &queueID, float radius, Vector origin)
@@ -805,7 +805,7 @@ void Waypoint::ToggleFlags (int toggleFlag)
 			}
 
 			MakeVectors(g_hostEntity->v.v_angle);
-			Vector forward = GetEntityOrigin(g_hostEntity) + g_hostEntity->v.view_ofs + g_pGlobals->v_forward * 640;
+			const Vector forward = GetEntityOrigin(g_hostEntity) + g_hostEntity->v.view_ofs + g_pGlobals->v_forward * 640;
 
 			if (!(m_paths[index]->flags & toggleFlag))
 			{
@@ -916,7 +916,7 @@ void Waypoint::CreatePath (char dir)
 {
    // this function allow player to manually create a path from one waypoint to another
 
-   int nodeFrom = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
+   const int nodeFrom = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
 
    if (nodeFrom == -1)
    {
@@ -942,7 +942,7 @@ void Waypoint::CreatePath (char dir)
       return;
    }
 
-   float distance = (m_paths[nodeTo]->origin - m_paths[nodeFrom]->origin).GetLength ();
+   const float distance = (m_paths[nodeTo]->origin - m_paths[nodeFrom]->origin).GetLength ();
 
    if (dir == PATHCON_OUTGOING)
       AddPath (nodeFrom, nodeTo, distance);
@@ -1034,7 +1034,7 @@ void Waypoint::DeletePath (void)
 
 void Waypoint::CacheWaypoint (void)
 {
-   int node = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
+   const int node = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
 
    if (node == -1)
    {
@@ -1409,7 +1409,7 @@ void Waypoint::SaveXML (void)
       // save the waypoint paths...
       for (int i = 0; i < g_numWaypoints; i++)
       {
-         Path *path = m_paths[i];
+         const Path *path = m_paths[i];
 
          fp.Print ("\t\t<waypoint id=\"%d\">\n", i + 1);
          fp.Print ("\t\t\t<campend x=\"%.2f\" y=\"%.2f\"/>\n", path->campEndX, path->campEndY);
@@ -1456,8 +1456,8 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 		return false;
 
 	// SyPB Pro P.43 - Waypoint OS improve
-	Vector src = GetEntityOrigin(entity);
-	Vector dest = m_paths[index]->origin;
+	const Vector src = GetEntityOrigin(entity);
+	const Vector dest = m_paths[index]->origin;
 
 	// SyPB Pro P.48 - Waypoint OS improve
 	if ((dest - src).GetLength() >= 1200.0f)
@@ -1471,8 +1471,11 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 	}
 
 	TraceResult tr;
-	//TraceHull(src, dest, true, head_hull, entity, &tr);
-	TraceLine(src, dest, true, entity, &tr);
+
+	if (IsValidPlayer (entity))
+		TraceLine(src, dest, true, entity, &tr);
+	else
+		TraceHull(src, dest, true, head_hull, entity, &tr);
 
 	return tr.flFraction == 1.0f;
 }
@@ -1516,9 +1519,8 @@ bool Waypoint::IsNodeReachable (Vector src, Vector destination)
       // is dest waypoint higher than src? (45 is max jump height)
       if (destination.z > src.z + 45.0f)
       {
-         Vector sourceNew = destination;
-         Vector destinationNew = destination;
-         destinationNew.z = destinationNew.z - 50.0f; // straight down 50 units
+         const Vector sourceNew = destination;
+         const Vector destinationNew = destination - Vector (0, 0, 50.0f);  // straight down 50 units
 
          TraceLine (sourceNew, destinationNew, ignore_monsters, g_hostEntity, &tr);
 
@@ -1528,7 +1530,7 @@ bool Waypoint::IsNodeReachable (Vector src, Vector destination)
       }
 
       // check if distance to ground drops more than step height at points between source and destination...
-      Vector direction = (destination - src).Normalize(); // 1 unit long
+      const Vector direction = (destination - src).Normalize(); // 1 unit long
       Vector check = src, down = src;
 
       down.z = down.z - 1000.0f; // straight down 1000 units
@@ -1590,7 +1592,7 @@ void Waypoint::InitializeVisibility(void)
 		for (int i = 0; i < g_numWaypoints; i++)
 		{
 			// first check ducked visibility
-			Vector dest = m_paths[i]->origin;
+			const Vector dest = m_paths[i]->origin;
 
 			TraceLine(sourceDuck, dest, true, null, &tr);
 
@@ -1661,7 +1663,7 @@ char *Waypoint::GetWaypointInfo (int id)
 {
    // this function returns path information for waypoint pointed by id.
 
-   Path *path = GetPath (id);
+   const Path *path = GetPath (id);
 
    // if this path is null, return
    if (path == null)
@@ -1890,7 +1892,7 @@ void Waypoint::ShowWaypointMsg(void)
 	// now iterate through all waypoints in a map, and draw required ones
 	for (int i = 0; i < g_numWaypoints; i++)
 	{
-		float distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
+		const float distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
 
 		// check if waypoint is whitin a distance, and is visible
 		if (distance < 500 * 500 && ((::IsVisible(m_paths[i]->origin, g_hostEntity) && IsInViewCone(m_paths[i]->origin, g_hostEntity)) || !IsAlive(g_hostEntity) || distance < 2500))
@@ -1904,8 +1906,8 @@ void Waypoint::ShowWaypointMsg(void)
 
 			if (m_waypointDisplayTime[i] + 1.0f < engine->GetTime())
 			{
-				float nodeHeight = (m_paths[i]->flags & WAYPOINT_CROUCH) ? 36.0f : 72.0f; // check the node height
-				float nodeHalfHeight = nodeHeight * 0.5f;
+				const float nodeHeight = (m_paths[i]->flags & WAYPOINT_CROUCH) ? 36.0f : 72.0f; // check the node height
+				const float nodeHalfHeight = nodeHeight * 0.5f;
 
 				// all waypoints are by default are green
 				Color nodeColor = Color(0, 255, 0);
@@ -1993,8 +1995,7 @@ void Waypoint::ShowWaypointMsg(void)
 		if (path->flags & WAYPOINT_CAMP)
 		{
 			const Vector &src = path->origin + Vector(0, 0, (path->flags & WAYPOINT_CROUCH) ? 18.0f : 36.0f); // check if it's a source
-
-																											  // draw it now
+																								  // draw it now
 			engine->DrawLine(g_hostEntity, src, Vector(path->campStartX, path->campStartY, src.z), Color(255, 0, 0, 200), 10, 0, 0, 10);
 			engine->DrawLine(g_hostEntity, src, Vector(path->campEndX, path->campEndY, src.z), Color(255, 0, 0, 200), 10, 0, 0, 10);
 		}
@@ -2294,7 +2295,7 @@ bool Waypoint::NodesValid (void)
 
       for (j = 0; j < Const_MaxPathIndex; j++)
       {
-         int index = m_paths[current->index]->index[j];
+         const int index = m_paths[current->index]->index[j];
 
          if (visited[index])
             continue; // skip this waypoint as it's already visited
@@ -2533,9 +2534,7 @@ void Waypoint::SetGoalVisited (int index)
 
    if (!IsGoalVisited (index) && (m_paths[index]->flags & WAYPOINT_GOAL))
    {
-      int bombPoint = GetBombPoint ();
-
-      if (bombPoint != index)
+      if (GetBombPoint() != index)
          m_visitedGoals.Push (index);
    }
 }
@@ -2566,7 +2565,7 @@ void Waypoint::CreateBasic (void)
       TraceResult tr;
       Vector up, down, front, back;
 
-      Vector diff = ((ladderLeft - ladderRight) ^ Vector (0.0f, 0.0f, 0.0f)).Normalize () * 15.0f;
+      const Vector diff = ((ladderLeft - ladderRight) ^ Vector (0.0f, 0.0f, 0.0f)).Normalize () * 15.0f;
       front = back = GetEntityOrigin (ent);
 
       front = front + diff; // front
@@ -2608,7 +2607,7 @@ void Waypoint::CreateBasic (void)
    // then terrortist spawnpoints
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "info_player_deathmatch")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (0, origin);
@@ -2617,7 +2616,7 @@ void Waypoint::CreateBasic (void)
    // then add ct spawnpoints
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "info_player_start")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (0, origin);
@@ -2626,7 +2625,7 @@ void Waypoint::CreateBasic (void)
    // then vip spawnpoint
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "info_vip_start")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (0, origin);
@@ -2635,7 +2634,7 @@ void Waypoint::CreateBasic (void)
    // hostage rescue zone
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "func_hostage_rescue")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (4, origin);
@@ -2644,7 +2643,7 @@ void Waypoint::CreateBasic (void)
    // hostage rescue zone (same as above)
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "info_hostage_rescue")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (4, origin);
@@ -2653,7 +2652,7 @@ void Waypoint::CreateBasic (void)
    // bombspot zone
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "func_bomb_target")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (100, origin);
@@ -2662,7 +2661,7 @@ void Waypoint::CreateBasic (void)
    // bombspot zone (same as above)
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "info_bomb_target")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (100, origin);
@@ -2675,7 +2674,7 @@ void Waypoint::CreateBasic (void)
       if ((ent->v.effects & EF_NODRAW) && (ent->v.speed > 0))
          continue;
 
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (100, origin);
@@ -2684,7 +2683,7 @@ void Waypoint::CreateBasic (void)
    // vip rescue (safety) zone
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "func_vip_safetyzone")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (100, origin);
@@ -2693,7 +2692,7 @@ void Waypoint::CreateBasic (void)
    // terrorist escape zone
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "func_escapezone")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (100, origin);
@@ -2702,7 +2701,7 @@ void Waypoint::CreateBasic (void)
    // weapons on the map ?
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "armoury_entity")))
    {
-      Vector origin = GetEntityOrigin (ent);
+      const Vector origin = GetEntityOrigin (ent);
 
       if (FindNearest (origin, 50) == -1)
          Add (0, origin);
@@ -2768,7 +2767,7 @@ int Waypoint::FindLoosedBomb(void)
 
 int Waypoint::GetBombPoint(void)
 {
-	Vector bombOrigin = GetBombPosition();
+	const Vector bombOrigin = GetBombPosition();
 	static int bombPoint = -1;
 	if (bombOrigin == nullvec)
 		return bombPoint = -1;

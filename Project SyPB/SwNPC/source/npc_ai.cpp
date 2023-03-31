@@ -3,8 +3,6 @@
 
 NPC::NPC(const char *className, const char *modelName, float maxHealth, float maxSpeed, int team)
 {
-	pev = null;
-	m_iEntity = null;
 	NewNPCSetting();
 
 	m_iEntity = CREATE_NAMED_ENTITY(MAKE_STRING("info_target"));
@@ -75,6 +73,9 @@ void NPC::Remove()
 
 void NPC::NewNPCSetting(void)
 {
+	pev = null;
+	m_iEntity = null;
+
 	m_needRemove = false;
 	m_workNPC = false;
 	m_nextThinkTime = gpGlobals->time + 999.9f;
@@ -243,10 +244,7 @@ void NPC::Spawn(Vector origin)
 
 	DROP_TO_FLOOR(m_iEntity);
 
-	if (CheckEntityStuck(pev->origin, true))
-	{
-		// TESTTEST
-	}
+	CheckEntityStuck(pev->origin, true);
 
 	pev->animtime = gpGlobals->time;
 	pev->nextthink = m_nextThinkTime = gpGlobals->time + 0.05f;
@@ -364,7 +362,7 @@ void NPC::TaskMoveTarget(void)
 	if (DoWaypointNav())
 		DeleteSearchNodes();
 
-	int destIndex = g_waypoint->GetEntityWpIndex(m_moveTargetEntity);
+	const int destIndex = g_waypoint->GetEntityWpIndex(m_moveTargetEntity);
 	if (destIndex >= 0 && destIndex < g_numWaypoints)
 	{
 		bool needMoveToTarget = false;
@@ -427,7 +425,7 @@ void NPC::TaskB_FollowEntity(void)
 		return;
 	}
 
-	int destIndex = g_waypoint->GetEntityWpIndex(m_followEntity);
+	const int destIndex = g_waypoint->GetEntityWpIndex(m_followEntity);
 	if (destIndex >= 0 && destIndex < g_numWaypoints)
 	{
 		bool needMoveToTarget = false;
@@ -477,20 +475,18 @@ void NPC::TaskB_FollowEntity(void)
 
 void NPC::FindEnemy(void)
 {
-	int team = GetTeam(m_iEntity);
-
-	if (m_enemyAPI != null && (FNullEnt(m_enemyAPI) || !IsAlive(m_enemyAPI) || GetTeam(m_enemyAPI) == team))
+	if (m_enemyAPI != null && (FNullEnt(m_enemyAPI) || !IsAlive(m_enemyAPI) || GetTeam(m_enemyAPI) == m_npcTeam))
 		m_enemyAPI = null;
 
 	if (!FNullEnt(m_enemy))
 	{
-		if (!IsAlive(m_enemy) || GetTeam(m_enemy) == team)
+		if (!IsAlive(m_enemy) || GetTeam(m_enemy) == m_npcTeam)
 			SetEnemy(null);
 	}
 
 	if (!FNullEnt(m_moveTargetEntity))
 	{
-		if (!IsAlive(m_moveTargetEntity) || GetTeam(m_moveTargetEntity) == team)
+		if (!IsAlive(m_moveTargetEntity) || GetTeam(m_moveTargetEntity) == m_npcTeam)
 			SetMoveTarget(null);
 	}
 
@@ -580,7 +576,7 @@ void NPC::FindEnemy(void)
 		{
 			bool moveTarget = true;
 			int srcIndex = g_waypoint->GetEntityWpIndex(m_iEntity);
-			int destIndex = g_waypoint->GetEntityWpIndex(targetEntity);
+			const int destIndex = g_waypoint->GetEntityWpIndex(targetEntity);
 
 			enemy_distance = GetDistance(pev->origin, GetEntityOrigin (targetEntity));
 
@@ -629,8 +625,6 @@ void NPC::FindEnemy(void)
 
 void NPC::ResetCheckEnemy(void)
 {
-	int team = GetTeam(m_iEntity);
-
 	int i, y, z;
 	edict_t* entity = null;
 	m_checkEnemyNum = 0;
@@ -646,7 +640,7 @@ void NPC::ResetCheckEnemy(void)
 	for (i = 0; i < gpGlobals->maxClients; i++)
 	{
 		entity = INDEXENT(i + 1);
-		if (!IsAlive(entity) || GetTeam(entity) == team || m_iEntity == entity)
+		if (!IsAlive(entity) || GetTeam(entity) == m_npcTeam || m_iEntity == entity)
 			continue;
 
 		m_allEnemy[m_checkEnemyNum] = entity;
@@ -661,7 +655,7 @@ void NPC::ResetCheckEnemy(void)
 			continue;
 
 		entity = npc->m_iEntity;
-		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == team)
+		if (FNullEnt(entity) || !IsAlive(entity) || GetTeam(entity) == m_npcTeam)
 			continue;
 
 		if (entity->v.effects & EF_NODRAW || entity->v.takedamage == DAMAGE_NO)
@@ -771,12 +765,12 @@ float NPC::GetEntityDistance(edict_t *entity)
 	if (FNullEnt(entity))
 		return 9999.9f;
 
-	float distance = GetDistance(pev->origin, GetEntityOrigin (entity));
+	const float distance = GetDistance(pev->origin, GetEntityOrigin (entity));
 	if (m_attackDistance >= 120.0f || distance <= 60.0f)
 		return distance;
 
-	int srcIndex = m_currentWaypointIndex;
-	int destIndex = g_waypoint->GetEntityWpIndex(entity);
+	const int srcIndex = m_currentWaypointIndex;
+	const int destIndex = g_waypoint->GetEntityWpIndex(entity);
 
 	if (srcIndex < 0 || srcIndex >= g_numWaypoints || destIndex < 0 || destIndex >= g_numWaypoints ||
 		srcIndex == destIndex)
@@ -793,7 +787,7 @@ float NPC::GetEntityDistance(edict_t *entity)
 		return distance;
 	}
 
-	float wpDistance = *(g_waypoint->m_distMatrix + (srcIndex * g_numWaypoints) + destIndex);
+	const float wpDistance = *(g_waypoint->m_distMatrix + (srcIndex * g_numWaypoints) + destIndex);
 	if (wpDistance <= distance)
 		return distance;
 
@@ -946,7 +940,7 @@ void NPC::MoveAction(void)
 		return;
 	}
 
-	Vector oldVelocity = pev->velocity;
+	const Vector oldVelocity = pev->velocity;
 	Vector vecMove = m_destOrigin - pev->origin;
 	float trueSpeed = 0.0f;
 
@@ -1011,8 +1005,8 @@ void NPC::MoveAction(void)
 
 	if (onFloor && trueSpeed > 0.0f)
 	{
-		Vector src = pev->origin;
-		Vector dest = GetBottomOrigin(m_iEntity) + gpGlobals->v_forward * 32;
+		const Vector src = pev->origin;
+		const Vector dest = GetBottomOrigin(m_iEntity) + gpGlobals->v_forward * 32;
 
 		TraceResult tr;
 		TraceHull(src, dest, ignore_monsters, head_hull, m_iEntity, &tr);
@@ -1064,7 +1058,7 @@ void NPC::CheckStuck(float oldSpeed)
 
 	m_checkStuckTime = gpGlobals->time + 0.2f;
 
-	float moveDistance = GetDistance(pev->origin, m_prevOrigin);
+	const float moveDistance = GetDistance(pev->origin, m_prevOrigin);
 	m_prevOrigin = pev->origin;
 
 	if (oldSpeed < 10.0f || pev->speed < 10.0f || moveDistance > 2.0f)
@@ -1082,14 +1076,13 @@ void NPC::CheckStuck(float oldSpeed)
 	MakeVectors(pev->angles);
 
 	TraceResult tr;
-	Vector dest = pev->origin;
-	dest.z += 36;
-	Vector src = pev->origin + gpGlobals->v_forward * 36;
+	const Vector dest = pev->origin + Vector (0, 0, 36);
+	const Vector src = pev->origin + gpGlobals->v_forward * 36;
 
 	TraceHull(dest, src, dont_ignore_monsters, head_hull, m_iEntity, &tr);
 	if (tr.flFraction > 0.0f && tr.flFraction != 1.0f && FNullEnt(tr.pHit))
 	{
-		float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(m_iEntity).z) - 36;
+		const float newOriginZ = pev->origin.z + (tr.vecEndPos.z - GetBottomOrigin(m_iEntity).z) - 36;
 		if (newOriginZ > pev->origin.z && (newOriginZ - pev->origin.z) <= 36)
 		{
 			pev->velocity.z = (270.0f * pev->gravity) + 36.0f;
@@ -1450,7 +1443,7 @@ void NPC::FindShortestPath(int srcIndex, int destIndex)
 
 bool NPC::GoalIsValid(void)
 {
-	int goal = m_goalWaypoint;
+	const int goal = m_goalWaypoint;
 
 	if (goal == -1)
 		return false;
@@ -1475,7 +1468,7 @@ bool NPC::DoWaypointNav (void)
 	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
 		FindWaypoint();
 
-	float waypointDistance = GetDistance(GetBaseSizeOrigin(), m_waypointOrigin);
+	const float waypointDistance = GetDistance(GetBaseSizeOrigin(), m_waypointOrigin);
 	float desiredDistance = g_waypoint->g_waypointPointRadius[m_currentWaypointIndex];
 	
 	if (desiredDistance < 16.0f && waypointDistance < 30.0f)
@@ -1538,7 +1531,7 @@ void NPC::HeadTowardWaypoint(void)
 					waitOtherEntityUseLadder = true;
 			}
 
-			bool goUP = (g_waypoint->g_waypointPointOrigin[ladderPoint].z > pev->origin.z);
+			const bool goUP = (g_waypoint->g_waypointPointOrigin[ladderPoint].z > pev->origin.z);
 			for (i = 0; (i < MAX_NPC && !waitOtherEntityUseLadder); i++)
 			{
 				NPC* npc = g_npcManager->IsSwNPCForNum(i);
@@ -1627,7 +1620,7 @@ void NPC::SetWaypointOrigin(void)
 {
 	m_waypointOrigin = g_waypoint->g_waypointPointOrigin[m_currentWaypointIndex];
 
-	float radius = g_waypoint->g_waypointPointRadius[m_currentWaypointIndex];
+	const float radius = g_waypoint->g_waypointPointRadius[m_currentWaypointIndex];
 	if (radius > 0)
 	{
 		if (&m_navNode[0] != null && m_navNode->next != null)

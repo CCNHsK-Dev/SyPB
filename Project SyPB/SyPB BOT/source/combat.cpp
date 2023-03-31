@@ -167,7 +167,7 @@ float Bot::GetEntityDistance(edict_t *entity)
 		srcIndex == destIndex)
 		return distance;
 
-	Path *path = g_waypoint->GetPath(srcIndex);
+	const Path *path = g_waypoint->GetPath(srcIndex);
 	for (int j = 0; j < Const_MaxPathIndex; j++)
 	{
 		if (path->index[j] != destIndex)
@@ -179,8 +179,7 @@ float Bot::GetEntityDistance(edict_t *entity)
 		return distance;
 	}
 
-	float wpDistance = g_waypoint->GetPathDistanceFloat(srcIndex, destIndex);
-	return wpDistance;
+	return g_waypoint->GetPathDistanceFloat(srcIndex, destIndex);
 }
 
 // SyPB Pro P.29 - new Look UP Enemy
@@ -727,8 +726,8 @@ void Bot::FireWeapon(void)
 		return;
 	}
 
-	FireDelay *delay = &g_fireDelay[0];
-	WeaponSelect *selectTab = &g_weaponSelect[0];
+	const FireDelay *delay = &g_fireDelay[0];
+	const WeaponSelect *selectTab = &g_weaponSelect[0];
 
 	edict_t *enemy = m_enemy;
 
@@ -1497,8 +1496,8 @@ void Bot::CombatFight(void)
 					// to start strafing, we have to first figure out if the target is on the left side or right side
 					MakeVectors(m_enemy->v.v_angle);
 
-					Vector dirToPoint = (m_iOrigin - GetEntityOrigin(m_enemy)).Normalize2D();
-					Vector rightSide = g_pGlobals->v_right.Normalize2D();
+					const Vector dirToPoint = (m_iOrigin - GetEntityOrigin(m_enemy)).Normalize2D();
+					const Vector rightSide = g_pGlobals->v_right.Normalize2D();
 
 					if ((dirToPoint | rightSide) < 0)
 						m_combatStrafeDir = 1;
@@ -1713,7 +1712,7 @@ void Bot::SelectBestWeapon(void)
 		return;
 	}
 
-	WeaponSelect *selectTab = &g_weaponSelect[0];
+	const WeaponSelect *selectTab = &g_weaponSelect[0];
 
 	int selectIndex = 0;
 	int chosenWeaponIndex = 0;
@@ -1744,7 +1743,7 @@ void Bot::SelectBestWeapon(void)
 	chosenWeaponIndex %= Const_NumWeapons + 1;
 	selectIndex = chosenWeaponIndex;
 
-	int weaponID = selectTab[selectIndex].id;
+	const int weaponID = selectTab[selectIndex].id;
 
 	// SyPB Pro P.45 - Change Weapon small change 
 	if (weaponID == m_currentWeapon)
@@ -1755,7 +1754,7 @@ void Bot::SelectBestWeapon(void)
 
 void Bot::SelectPistol (void)
 {
-   int oldWeapons = pev->weapons;
+   const int oldWeapons = pev->weapons;
 
    pev->weapons &= ~WeaponBits_Primary;
    SelectBestWeapon ();
@@ -1767,7 +1766,7 @@ int Bot::GetHighestWeapon (void)
 {
    WeaponSelect *selectTab = &g_weaponSelect[0];
 
-   int weapons = pev->weapons;
+   const int weapons = pev->weapons;
    int num = 0;
    int i = 0;
 
@@ -1873,7 +1872,7 @@ void Bot::CheckReload (void)
 	   }
 
 	   int weaponIndex = -1;
-	   int maxClip = CheckMaxClip(weapons, &weaponIndex);
+	   const int maxClip = CheckMaxClip(weapons, &weaponIndex);
 
 	   // SyPB Pro P.43 - Weapon Reload improve
 	   if (m_ammoInClip[weaponIndex] < maxClip * 0.8f && g_weaponDefs[weaponIndex].ammo1 != -1 &&

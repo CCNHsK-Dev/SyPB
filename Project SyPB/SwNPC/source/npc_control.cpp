@@ -37,7 +37,7 @@ void NPCControl::Think(void)
 
 void NPCControl::DebugModeMsg(void)
 {
-	Vector hostOrigin = GetEntityOrigin(g_hostEntity);
+	const Vector hostOrigin = GetEntityOrigin(g_hostEntity);
 	float minDistance = 9999.9f, distance;
 	NPC *debugNPC = null;
 

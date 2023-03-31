@@ -85,7 +85,7 @@ int Bot::FindGoal(void)
 				int maxEnemyNum = 0;
 				for (int i = 0; i < 3; i++)
 				{
-					int enemyNum = GetNearbyEnemiesNearPosition(g_waypoint->GetPath(checkPoint[i])->origin, 300);
+					const int enemyNum = GetNearbyEnemiesNearPosition(g_waypoint->GetPath(checkPoint[i])->origin, 300);
 					if (enemyNum > maxEnemyNum)
 					{
 						maxEnemyNum = enemyNum;
@@ -95,11 +95,11 @@ int Bot::FindGoal(void)
 			}
 			else
 			{
-				int playerWpIndex = GetEntityWaypoint(m_iEntity);
+				const int playerWpIndex = GetEntityWaypoint(m_iEntity);
 				float maxDistance = 0.0f;
 				for (int i = 0; i < 3; i++)
 				{
-					float distance = g_waypoint->GetPathDistanceFloat(playerWpIndex, checkPoint[i]);
+					const float distance = g_waypoint->GetPathDistanceFloat(playerWpIndex, checkPoint[i]);
 					if (distance >= maxDistance)
 					{
 						maxDistance = distance;
@@ -188,7 +188,7 @@ int Bot::FindGoal(void)
 
 			   ITERATE_ARRAY(g_waypoint->m_goalPoints, i)
 			   {
-				   float realPathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, g_waypoint->m_goalPoints[i]) + engine->RandomFloat(0.0, 128.0f);
+				   const float realPathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, g_waypoint->m_goalPoints[i]) + engine->RandomFloat(0.0, 128.0f);
 
 				   if (leastPathDistance > realPathDistance)
 				   {
@@ -294,7 +294,7 @@ TacticChoosen:
 
       ITERATE_ARRAY (g_waypoint->m_goalPoints, i)
       {
-         int closest = g_waypoint->m_goalPoints[i];
+         const int closest = g_waypoint->m_goalPoints[i];
 
          if ((m_iOrigin - g_waypoint->GetPath (closest)->origin).GetLength () < 1000 && !IsGroupOfEnemies (g_waypoint->GetPath (closest)->origin))
          {
@@ -323,7 +323,7 @@ TacticChoosen:
    // SyPB Pro P.30 - Zombie Mode Human Camp
    else if (tactic == 4 && !offensiveWpts.IsEmpty()) // offensive goal
    {   
-	   int playerWpIndex = GetEntityWaypoint(m_iEntity);
+	   const int playerWpIndex = GetEntityWaypoint(m_iEntity);
 
 	   int targetWpIndex = -1;
 	   float distance = 9999.9f;
@@ -365,7 +365,7 @@ TacticChoosen:
    // rusher bots does not care any danger (idea from pbmm)
    if (m_personality == PERSONALITY_RUSHER)
    {
-      int randomGoal = goalChoices[engine->RandomInt (0, 3)];
+      const int randomGoal = goalChoices[engine->RandomInt (0, 3)];
 
       if (randomGoal >= 0 && randomGoal < g_numWaypoints)
           return m_chosenGoalIndex = randomGoal;
@@ -399,7 +399,7 @@ TacticChoosen:
 
 bool Bot::GoalIsValid (void)
 {
-   int goal = GetCurrentTask ()->data;
+   const int goal = GetCurrentTask ()->data;
 
    if (goal == -1) // not decided about a goal
       return false;
@@ -448,7 +448,7 @@ bool Bot::DoWaypointNav (void)
 	   }
    }
 
-   float waypointDistance = (m_iOrigin - m_waypointOrigin).GetLength ();
+   const float waypointDistance = (m_iOrigin - m_waypointOrigin).GetLength ();
 
    if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
    {
@@ -598,12 +598,12 @@ bool Bot::DoWaypointNav (void)
 
 	   if ((g_mapType & MAP_DE) && g_bombPlanted && m_team == TEAM_COUNTER && GetCurrentTask()->taskID != TASK_ESCAPEFROMBOMB && GetCurrentTask()->data != -1)
 	   {
-		   Vector bombOrigin = CheckBombAudible();
+		   const Vector bombOrigin = CheckBombAudible();
 
 		   // bot within 'hearable' bomb tick noises?
 		   if (bombOrigin != nullvec)
 		   {
-			   float distance = (bombOrigin - g_waypoint->GetPath(GetCurrentTask()->data)->origin).GetLength();
+			   const float distance = (bombOrigin - g_waypoint->GetPath(GetCurrentTask()->data)->origin).GetLength();
 
 			   if (distance > 512.0f)
 				   g_waypoint->SetGoalVisited(GetCurrentTask()->data); // doesn't hear so not a good goal
@@ -725,7 +725,7 @@ void PriorityQueue::Insert (int value, float priority)
 // removes the smallest item from the priority queue
 int PriorityQueue::Remove (void)
 {
-   int retID = m_heap[0].id;
+   const int retID = m_heap[0].id;
 
    m_size--;
    m_heap[0] = m_heap[m_size];
@@ -739,7 +739,7 @@ void PriorityQueue::HeapSiftDown (int subRoot)
    int parent = subRoot;
    int child = (2 * parent) + 1;
 
-   HeapNode_t ref = m_heap[parent];
+   const HeapNode_t ref = m_heap[parent];
 
    while (child < m_size)
    {
@@ -773,7 +773,7 @@ void PriorityQueue::HeapSiftUp (void)
       if (m_heap[parent].priority <= m_heap[child].priority)
          break;
 
-      HeapNode_t temp = m_heap[child];
+      const HeapNode_t temp = m_heap[child];
 
       m_heap[child] = m_heap[parent];
       m_heap[parent] = temp;
@@ -788,12 +788,12 @@ inline const float GF_Cost (int index, int parent, int team, float offset)
 
    for (int i = 0; i < Const_MaxPathIndex; i++)
    {
-      int neighbour = g_waypoint->GetPath (index)->index[i];
+      const int neighbour = g_waypoint->GetPath (index)->index[i];
 
       if (neighbour != -1)
          baseCost += g_exp.GetDamage (neighbour, neighbour, team);
    }
-   float pathDist = g_waypoint->GetPathDistanceFloat (parent, index);
+   const float pathDist = g_waypoint->GetPathDistanceFloat (parent, index);
 
    if (g_waypoint->GetPath (index)->flags & WAYPOINT_CROUCH)
       baseCost += pathDist * 3.0f;
@@ -807,12 +807,12 @@ inline const float GF_CostDist (int index, int parent, int team, float offset)
 
    for (int i = 0; i < Const_MaxPathIndex; i++)
    {
-      int neighbour = g_waypoint->GetPath (index)->index[i];
+	   const int neighbour = g_waypoint->GetPath (index)->index[i];
 
       if (neighbour != -1)
          baseCost += g_exp.GetDamage (neighbour, neighbour, team);
    }
-   float pathDist = g_waypoint->GetPathDistanceFloat (parent, index);
+   const float pathDist = g_waypoint->GetPathDistanceFloat (parent, index);
 
    if (g_waypoint->GetPath (index)->flags & WAYPOINT_CROUCH)
       baseCost += pathDist * 2.0f;
@@ -822,7 +822,7 @@ inline const float GF_CostDist (int index, int parent, int team, float offset)
 
 inline const float GF_CostNoHostage (int index, int parent, int, float offset)
 {
-   Path *path = g_waypoint->GetPath (index);
+	const Path *path = g_waypoint->GetPath (index);
 
    // check if we got a hostage
    if (path->flags & WAYPOINT_NOHOSTAGE)
@@ -837,7 +837,7 @@ inline const float GF_CostNoHostage (int index, int parent, int, float offset)
 
 inline const float GF_CostNoHostageDist (int index, int parent, int, float offset)
 {
-   Path *path = g_waypoint->GetPath (index);
+	const Path *path = g_waypoint->GetPath (index);
 
    // check if we got a hostage
    if (path->flags & WAYPOINT_NOHOSTAGE)
@@ -852,8 +852,8 @@ inline const float GF_CostNoHostageDist (int index, int parent, int, float offse
 
 inline const float HF_PathDist (int start, int goal)
 {
-   Path *pathStart = g_waypoint->GetPath (start);
-   Path *pathGoal = g_waypoint->GetPath (goal);
+	const Path *pathStart = g_waypoint->GetPath (start);
+	const Path *pathGoal = g_waypoint->GetPath (goal);
 
    return fabsf (pathGoal->origin.x - pathStart->origin.x) + fabsf (pathGoal->origin.y - pathStart->origin.y) + fabsf (pathGoal->origin.z - pathStart->origin.z);
 }
@@ -872,7 +872,7 @@ inline const float HF_None (int start, int goal)
 inline const float GF_CostZM(int index, int parent, int team, float offset)
 {
 	float baseCost = g_exp.GetAStarValue(index, team, false);
-	float pathDist = g_waypoint->GetPathDistanceFloat(parent, index);
+	const float pathDist = g_waypoint->GetPathDistanceFloat(parent, index);
 
 	if (IsZombieMode() && team == TEAM_COUNTER)
 	{
@@ -902,12 +902,12 @@ inline const float GF_CostZM(int index, int parent, int team, float offset)
 
 inline const float HF_ZB(int start, int goal)
 {
-	Path *pathStart = g_waypoint->GetPath(start);
-	Path *pathGoal = g_waypoint->GetPath(goal);
+	const Path *pathStart = g_waypoint->GetPath(start);
+	const Path *pathGoal = g_waypoint->GetPath(goal);
 
-	float xDist = fabsf(pathStart->origin.x - pathGoal->origin.x);
-	float yDist = fabsf(pathStart->origin.y - pathGoal->origin.y);
-	float zDist = fabsf(pathStart->origin.z - pathGoal->origin.z);
+	const float xDist = fabsf(pathStart->origin.x - pathGoal->origin.x);
+	const float yDist = fabsf(pathStart->origin.y - pathGoal->origin.y);
+	const float zDist = fabsf(pathStart->origin.z - pathGoal->origin.z);
 
 	if (xDist > yDist)
 		return 1.4f * yDist + (xDist - yDist) + zDist;
@@ -1034,9 +1034,9 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
             continue;
 
          // calculate the F value as F = G + H
-         float g = astar[currentIndex].g + gcalc (self, currentIndex, m_team, offset);
-         float h = hcalc (srcIndex, destIndex);
-         float f = g + h;
+		 const float g = astar[currentIndex].g + gcalc (self, currentIndex, m_team, offset);
+		 const float h = hcalc (srcIndex, destIndex);
+		 const float f = g + h;
 
          if (astar[self].state == NEW || astar[self].f > f)
          {
@@ -1228,7 +1228,7 @@ int Bot::FindWaypoint (void)
 {
 	// SyPB Pro P.42 - Waypoint improve
 	int waypointIndex = -1, waypointIndex1, waypointIndex2;
-	int client = GetIndex() - 1;
+	const int client = GetIndex() - 1;
 	waypointIndex1 = g_clients[client].wpIndex;
 	waypointIndex2 = g_clients[client].wpIndex2;
 
@@ -1261,7 +1261,7 @@ void Bot::SetWaypointOrigin(void)
 {
 	m_waypointOrigin = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
 
-	float radius = g_waypoint->GetPath(m_currentWaypointIndex)->radius;
+	const float radius = g_waypoint->GetPath(m_currentWaypointIndex)->radius;
 	if (radius > 0)
 	{
 		MakeVectors(Vector(pev->angles.x, AngleNormalize(pev->angles.y + engine->RandomFloat(-90.0f, 90.0f)), 0.0f));
@@ -1345,7 +1345,7 @@ void Bot::GetValidWaypoint(void)
 // SyPB Pro P.49 - Base Waypoint improve
 void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, bool howardNew)
 {
-	int i = GetIndex() - 1;
+	const int i = GetIndex() - 1;
 	int newWaypointIndex = preWaypointIndex;
 	if (howardNew)
 		goto lastly;
@@ -1412,7 +1412,7 @@ int Bot::ChooseBombWaypoint (void)
    // find nearest goal waypoint either to bomb (if "heard" or player)
    ITERATE_ARRAY (g_waypoint->m_goalPoints, i)
    {
-      float distance = (g_waypoint->GetPath (g_waypoint->m_goalPoints[i])->origin - bombOrigin).GetLengthSquared ();
+	   const float distance = (g_waypoint->GetPath (g_waypoint->m_goalPoints[i])->origin - bombOrigin).GetLengthSquared ();
 
       // check if we got more close distance
       if (distance < lastDistance)
@@ -1456,7 +1456,7 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
    if (posIndex == -1)
 	   posIndex = g_waypoint->FindNearest (origin);
 
-   int srcIndex = GetEntityWaypoint(m_iEntity);
+   const int srcIndex = GetEntityWaypoint(m_iEntity);
 
    // some of points not found, return random one
    if (srcIndex == -1 || posIndex == -1)
@@ -1469,7 +1469,7 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
          continue;
 
       // use the 'real' pathfinding distances
-      int distances = g_waypoint->GetPathDistance (srcIndex, i);
+	  const int distances = g_waypoint->GetPathDistance (srcIndex, i);
 
       // skip wayponts with distance more than 1024 units
       if (distances > 512)
@@ -1498,10 +1498,10 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
    {
       if (waypointIndex[i] != -1)
       {
-         int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], m_team) * 100 / MAX_EXPERIENCE_VALUE;
+		  const int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], m_team) * 100 / MAX_EXPERIENCE_VALUE;
 
-         minDistance[i] = (experience * 100) / 8192;
-         minDistance[i] += experience;
+		  minDistance[i] = (experience * 100) / 8192;
+		  minDistance[i] += experience;
       }
    }
 
@@ -1555,8 +1555,8 @@ int Bot::FindCoverWaypoint (float maxDistance)
    if (maxDistance < 300.0f)
       maxDistance = 300.0f;
 
-   int srcIndex = m_currentWaypointIndex;
-   int enemyIndex = GetEntityWaypoint(m_lastEnemy);
+   const int srcIndex = m_currentWaypointIndex;
+   const int enemyIndex = GetEntityWaypoint(m_lastEnemy);
    if (enemyIndex == -1)
 	   return -1;
 
@@ -1604,8 +1604,8 @@ int Bot::FindCoverWaypoint (float maxDistance)
          continue;
 
       // use the 'real' pathfinding distances
-      int distances = g_waypoint->GetPathDistance (srcIndex, i);
-      int enemyDistance = g_waypoint->GetPathDistance (enemyIndex, i);
+	  const int distances = g_waypoint->GetPathDistance (srcIndex, i);
+	  const int enemyDistance = g_waypoint->GetPathDistance (enemyIndex, i);
 
       if (distances >= enemyDistance)
          continue;
@@ -1627,10 +1627,10 @@ int Bot::FindCoverWaypoint (float maxDistance)
    {
       if (waypointIndex[i] != -1)
       {
-         int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], m_team) * 100 / MAX_EXPERIENCE_VALUE;
+		  const int experience = g_exp.GetDamage (waypointIndex[i], waypointIndex[i], m_team) * 100 / MAX_EXPERIENCE_VALUE;
 
-         minDistance[i] = (experience * 100) / 8192;
-         minDistance[i] += experience;
+		  minDistance[i] = (experience * 100) / 8192;
+		  minDistance[i] += experience;
       }
    }
 
@@ -1689,7 +1689,7 @@ bool Bot::GetBestNextWaypoint (void)
 
    for (int i = 0; i < Const_MaxPathIndex; i++)
    {
-      int id = g_waypoint->GetPath (m_currentWaypointIndex)->index[i];
+	  const int id = g_waypoint->GetPath (m_currentWaypointIndex)->index[i];
 
       if (id != -1 && g_waypoint->IsConnected (id, m_navNode->next->index) && g_waypoint->IsConnected (m_currentWaypointIndex, id))
       {
@@ -1737,7 +1737,7 @@ void Bot::HeadTowardWaypoint (void)
 			   {
 				   m_campButtons = 0;
 
-				   int waypoint = m_navNode->next->index;
+				   const int waypoint = m_navNode->next->index;
 				   int kills = g_exp.GetDamage(waypoint, waypoint, m_team);
 
 				   // if damage done higher than one
@@ -1778,12 +1778,12 @@ void Bot::HeadTowardWaypoint (void)
 
       if (m_navNode != null)
       {
-         int destIndex = m_navNode->index;
+		 const int destIndex = m_navNode->index;
 
          // find out about connection flags
          if (m_currentWaypointIndex != -1)
          {
-			 Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
+			 const Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
 
 			 if (m_jumpFinished && m_currentWeapon == WEAPON_KNIFE)
 				 SelectBestWeapon();
@@ -2130,13 +2130,13 @@ bool Bot::IsDeadlyDrop (Vector targetOriginPos)
 {
    // this function eturns if given location would hurt Bot with falling damage
 
-   Vector botPos = m_iOrigin;
+const Vector botPos = m_iOrigin;
    TraceResult tr;
 
-   Vector move ((targetOriginPos - botPos).ToYaw (), 0.0f, 0.0f);
+   const Vector move ((targetOriginPos - botPos).ToYaw (), 0.0f, 0.0f);
    MakeVectors (move);
 
-   Vector direction = (targetOriginPos - botPos).Normalize ();  // 1 unit long
+   const Vector direction = (targetOriginPos - botPos).Normalize ();  // 1 unit long
    Vector check = botPos;
    Vector down = botPos;
 
@@ -2191,7 +2191,7 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 			g_clients[i].ent == m_iEntity || m_team != GetTeam (g_clients[i].ent))
 			continue;
 
-		float distance = (g_clients[i].ent->v.origin - m_iOrigin).GetLength();
+		const float distance = (g_clients[i].ent->v.origin - m_iOrigin).GetLength();
 
 		if (distance < nearestDist && distance < m_iMaxSpeed)
 		{
@@ -2211,8 +2211,8 @@ void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 		moved += g_pGlobals->v_right * m_strafeSpeed * m_frameInterval;
 		moved += pev->velocity * m_frameInterval;
 
-		float nearestDistance = (nearest->v.origin - m_iOrigin).GetLength2D();
-		float nextFrameDistance = ((nearest->v.origin + nearest->v.velocity * m_frameInterval) - m_iOrigin).GetLength2D();
+		const float nearestDistance = (nearest->v.origin - m_iOrigin).GetLength2D();
+		const float nextFrameDistance = ((nearest->v.origin + nearest->v.velocity * m_frameInterval) - m_iOrigin).GetLength2D();
 
 		// is player that near now or in future that we need to steer away?
 		if ((nearest->v.origin - moved).GetLength2D() <= 48.0f || (nearestDistance <= 56.0f && nextFrameDistance <= nearestDistance))
@@ -2338,8 +2338,8 @@ void Bot::CheckFall(void)
 		{
 			bool fixFall = false;
 
-			float baseDistance = (m_checkFallPoint[0] - m_checkFallPoint[1]).GetLength();
-			float nowDistance = (m_iOrigin - m_checkFallPoint[1]).GetLength();
+			const float baseDistance = (m_checkFallPoint[0] - m_checkFallPoint[1]).GetLength();
+			const float nowDistance = (m_iOrigin - m_checkFallPoint[1]).GetLength();
 
 			if (nowDistance > baseDistance &&
 				(nowDistance > baseDistance * 1.2 || nowDistance > baseDistance + 200.0f) &&
@@ -2349,7 +2349,7 @@ void Bot::CheckFall(void)
 				fixFall = true;
 			else if (m_currentWaypointIndex != -1)
 			{
-				float distance2D = (m_iOrigin - m_checkFallPoint[1]).GetLength();
+				const float distance2D = (m_iOrigin - m_checkFallPoint[1]).GetLength();
 				if (distance2D <= 32.0f && m_iOrigin.z + 16.0f < m_checkFallPoint[1].z)
 					fixFall = true;
 			}
@@ -2493,8 +2493,8 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 			// to start strafing, we have to first figure out if the target is on the left side or right side
 			MakeVectors(m_moveAngles);
 
-			Vector dirToPoint = (m_iOrigin - m_destOrigin).Normalize2D();
-			Vector rightSide = g_pGlobals->v_right.Normalize2D();
+			const Vector dirToPoint = (m_iOrigin - m_destOrigin).Normalize2D();
+			const Vector rightSide = g_pGlobals->v_right.Normalize2D();
 
 			bool dirRight = false;
 			bool dirLeft = false;
@@ -2807,8 +2807,8 @@ void Bot::SetStrafeSpeed (Vector moveDir, float strafeSpeed)
 {
    MakeVectors (pev->angles);
 
-   Vector los = (moveDir - m_iOrigin).Normalize2D ();
-   float dot = los | g_pGlobals->v_forward.SkipZ ();
+   const Vector los = (moveDir - m_iOrigin).Normalize2D ();
+   const float dot = los | g_pGlobals->v_forward.SkipZ ();
 
    if (dot > 0 && !CheckWallOnRight ())
       m_strafeSpeed = strafeSpeed;
@@ -2864,7 +2864,7 @@ bool Bot::IsWaypointUsed (int index)
 	   if ((g_waypoint->GetPath(index)->origin - GetEntityOrigin (player)).GetLength() < 50.0f)
 		   return true;
 
-	   Bot *bot = g_botManager->GetBot(i);
+	   const Bot *bot = g_botManager->GetBot(i);
 	   if (bot != null && bot->m_currentWaypointIndex == index)
 		   return true;
    }
@@ -2886,12 +2886,12 @@ edict_t *Bot::FindNearestButton (const char *className)
    // find the nearest button which can open our target
    while (!FNullEnt (searchEntity = FIND_ENTITY_BY_TARGET (searchEntity, className)))
    {
-      Vector entityOrign = GetEntityOrigin (searchEntity);
+	  const Vector entityOrign = GetEntityOrigin (searchEntity);
 
       // check if this place safe
       if (!IsDeadlyDrop (entityOrign))
       {
-         float distance = (m_iOrigin - entityOrign).GetLengthSquared ();
+		 const float distance = (m_iOrigin - entityOrign).GetLengthSquared ();
 
          // check if we got more close button
          if (distance <= nearestDistance)
