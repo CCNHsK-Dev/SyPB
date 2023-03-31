@@ -1251,66 +1251,14 @@ void Bot::ActionForEnemy(void)
 		TaskComplete();
 
 		m_prevGoalIndex = -1;
-
-		if (g_gameMode != MODE_BASE)
-			return;
-
-		// start hide task
-		PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(5.0f, 10.0f), false);
-		Vector destination = m_lastEnemyOrigin;
-
-		// get a valid look direction
-		GetCampDirection(&destination);
-
-		m_aimFlags |= AIM_CAMP;
-		m_camp = destination;
-		m_campDirection = 0;
-
-		Path* path = g_waypoint->GetPath(m_currentWaypointIndex);
-
-		// chosen waypoint is a camp waypoint?
-		if (path->flags & WAYPOINT_CAMP)
-		{
-			// use the existing camp wpt prefs
-			if (path->flags & WAYPOINT_CROUCH)
-				m_campButtons = IN_DUCK;
-			else
-				m_campButtons = 0;
-		}
-		else
-		{
-			// choose a crouch or stand pos
-			if (g_waypoint->GetPath(m_currentWaypointIndex)->vis.crouch <= path->vis.stand)
-				m_campButtons = IN_DUCK;
-			else
-				m_campButtons = 0;
-
-			// enter look direction from previously calculated positions
-			path->campStartX = destination.x;
-			path->campStartY = destination.y;
-
-			path->campStartX = destination.x;
-			path->campEndY = destination.y;
-		}
-
-		if ((m_reloadState == RSTATE_NONE) && (GetAmmoInClip() < 8) && (GetAmmo() != 0))
-			m_reloadState = RSTATE_PRIMARY;
-
-		m_moveSpeed = 0.0f;
-		m_strafeSpeed = 0.0f;
-
-		m_moveToGoal = false;
-		m_checkTerrain = true;
 	}
 	else if (!GoalIsValid()) // we didn't choose a cover waypoint yet or lost it due to an attack?
 	{
 		DeleteSearchNodes();
 
 		// SyPB Pro P.38 - Zombie Mode Camp improve
-		if (g_gameMode == MODE_ZP && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
+		if (IsZombieMode() && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
 			destIndex = FindGoal();
-		else if (g_gameMode == MODE_BASE && m_isReloading && FNullEnt (m_enemy))
-			PushTask(TASK_HIDE, TASKPRI_HIDE, -1, engine->GetTime() + engine->RandomFloat(2.0f, 6.0f), false);
 		else if (GetCurrentTask()->data != -1)
 			destIndex = GetCurrentTask()->data;
 		else

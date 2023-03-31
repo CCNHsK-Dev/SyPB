@@ -1945,7 +1945,7 @@ void Bot::SetConditions (void)
    taskOffensive = MaxDesire(taskOffensive, taskEnemyAction);
    taskOffensive = SubsumeDesire (taskOffensive, &g_taskFilters[TASK_PICKUPITEM]); // if offensive task, don't allow picking up stuff
 
-   Task *final = SubsumeDesire (&g_taskFilters[TASK_BLINDED], MaxDesire (taskOffensive, &g_taskFilters[TASK_HIDE])); // reason about fleeing instead
+   Task *final = SubsumeDesire (&g_taskFilters[TASK_BLINDED], taskOffensive); // reason about fleeing instead
 
    if (m_tasks != null)
       final = MaxDesire (final, m_tasks);
@@ -3577,148 +3577,133 @@ void Bot::RunTask (void)
          if (m_timeLogoSpray < engine->GetTime () && sypb_spraypaints.GetBool () && engine->RandomInt (1, 100) < 80 && m_moveSpeed > GetWalkSpeed ())
             PushTask (TASK_SPRAYLOGO, TASKPRI_SPRAYLOGO, -1, engine->GetTime () + 1.0f, false);
 
-         // reached waypoint is a camp waypoint
-         if ((path->flags & WAYPOINT_CAMP) && g_gameMode == MODE_BASE )
-         {
-            // check if bot has got a primary weapon and hasn't camped before
-            if (HasPrimaryWeapon () && m_timeCamping + 10.0f < engine->GetTime () && !HasHostage ())
-            {
-               bool campingAllowed = true;
-
-			   // Check if it's not allowed for this team to camp here
-			   if (m_team == TEAM_TERRORIST)
-			   {
-				   if (path->flags & WAYPOINT_COUNTER)
-					   campingAllowed = false;
-			   }
-			   else
-			   {
-				   if (path->flags & WAYPOINT_TERRORIST)
-					   campingAllowed = false;
-			   }
-
-			   // don't allow vip on as_ maps to camp + don't allow terrorist carrying c4 to camp
-			   if (((g_mapType & MAP_AS) && *(INFOKEY_VALUE(GET_INFOKEYBUFFER(m_iEntity), "model")) == 'v') || ((g_mapType & MAP_DE) && m_team == TEAM_TERRORIST && !g_bombPlanted && (pev->weapons & (1 << WEAPON_C4))))
-				   campingAllowed = false;
-
-               // check if another bot is already camping here
-               if (IsWaypointUsed (m_currentWaypointIndex))
-                  campingAllowed = false;
-
-               if (campingAllowed)
-               {
-                  // crouched camping here?
-                  if (path->flags & WAYPOINT_CROUCH)
-                     m_campButtons = IN_DUCK;
-                  else
-                     m_campButtons = 0;
-
-                  SelectBestWeapon ();
-
-                  if (!(m_states & (STATE_SEEINGENEMY | STATE_HEARENEMY)) && m_reloadState == RSTATE_NONE)
-                     m_reloadState = RSTATE_PRIMARY;
-
-                  MakeVectors (pev->v_angle);
-
-                  m_timeCamping = engine->GetTime () + engine->RandomFloat (g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
-                  PushTask (TASK_CAMP, TASKPRI_CAMP, -1, m_timeCamping, true);
-
-                  src.x = path->campStartX;
-                  src.y = path->campStartY;
-                  src.z = 0;
-
-                  m_camp = src;
-                  m_aimFlags |= AIM_CAMP;
-                  m_campDirection = 0;
-
-                  // tell the world we're camping
-                  if (engine->RandomInt (0, 100) < 95)
-                     RadioMessage (Radio_InPosition);
-
-                  m_moveToGoal = false;
-                  m_checkTerrain = false;
-
-                  m_moveSpeed = 0.0f;
-                  m_strafeSpeed = 0.0f;
-               }
-            }
-         }
-		 // SyPB Pro P.30 - Zombie Mode Human Camp
-		 else if (g_gameMode == MODE_ZP && !m_isZombieBot)
+		 if (IsZombieMode() && !m_isZombieBot)
 			 ZmCampPointAction();
-         else if (g_gameMode == MODE_BASE)
-         {
-            // some goal waypoints are map dependant so check it out...
-            if (g_mapType & MAP_CS)
-			{
-				// SyPB Pro P.28 - CS Ai
-				if (m_team == TEAM_TERRORIST)
-				{
-					if (m_skill >= 80 || engine->RandomInt(0, 100) < m_skill)
-					{
-						int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
+		 else if (g_gameMode == MODE_BASE)
+		 {
+			 if (path->flags & WAYPOINT_CAMP && HasPrimaryWeapon() && m_timeCamping + 10.0f < engine->GetTime() && !HasHostage())
+			 {
+				 bool campingAllowed = true;
+				 if (m_team == TEAM_TERRORIST && path->flags & WAYPOINT_COUNTER)
+					 campingAllowed = false;
+				 else if (m_team == TEAM_COUNTER && path->flags & WAYPOINT_TERRORIST)
+					 campingAllowed = false;
+				 else if (((g_mapType & MAP_AS) && *(INFOKEY_VALUE(GET_INFOKEYBUFFER(m_iEntity), "model")) == 'v') || ((g_mapType & MAP_DE) && m_team == TEAM_TERRORIST && !g_bombPlanted && (pev->weapons & (1 << WEAPON_C4))))
+					 campingAllowed = false;
+				 else if (IsWaypointUsed(m_currentWaypointIndex))
+					 campingAllowed = false;
 
-						PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0, 120.0f), true); // push camp task on to stack
-						PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0, 30.0f), true); // push move command
+				 if (campingAllowed)
+				 {
+					 // crouched camping here?
+					 if (path->flags & WAYPOINT_CROUCH)
+						 m_campButtons = IN_DUCK;
+					 else
+						 m_campButtons = 0;
 
-						if (g_waypoint->GetPath(index)->vis.crouch <= g_waypoint->GetPath(index)->vis.stand)
-							m_campButtons |= IN_DUCK;
-						else
-							m_campButtons &= ~IN_DUCK;
-					}
-				}
-				else if (m_team == TEAM_COUNTER)
-				{
-					if (HasHostage())
-					{
-						// and reached a Rescue Point?
-						if (path->flags & WAYPOINT_RESCUE)
-						{
-							for (i = 0; i < Const_MaxHostages; i++)
-							{
-								// SyPB Pro P.49 - Base improve 
-								if (!IsAlive(m_hostages[i]) || m_hostages[i]->v.effects & EF_NODRAW)
-									m_hostages[i] = null;
-							}
-						}
-					} 			
-				}
-            }
-			
-            if ((g_mapType & MAP_DE) && ((path->flags & WAYPOINT_GOAL) || m_inBombZone) && FNullEnt (m_enemy))
-            {
-               // is it a terrorist carrying the bomb?
-               if (pev->weapons & (1 << WEAPON_C4))
-               {
-                  if ((m_states & STATE_SEEINGENEMY) && GetNearbyFriendsNearPosition (m_iOrigin, 768) == 0)
-                  {
-                     // request an help also
-                     RadioMessage (Radio_NeedBackup);
+					 SelectBestWeapon();
 
-                     PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (4.0f, 8.0f), true);
-                  }
-                  else
-                     PushTask (TASK_PLANTBOMB, TASKPRI_PLANTBOMB, -1, 0.0, false);
-               }
-               else if (m_team == TEAM_COUNTER && m_timeCamping + 10.0f < engine->GetTime ())
-               {
-                  if (!g_bombPlanted && GetNearbyFriendsNearPosition (m_iOrigin, 250) < 4 && engine->RandomInt (0, 100) < 60)
-                  {
-                     m_timeCamping = engine->GetTime () + engine->RandomFloat (g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
+					 if (!(m_states & (STATE_SEEINGENEMY | STATE_HEARENEMY)) && m_reloadState == RSTATE_NONE)
+						 m_reloadState = RSTATE_PRIMARY;
 
-                     int index = FindDefendWaypoint (path->origin, m_currentWaypointIndex);
+					 MakeVectors(pev->v_angle);
 
-                     PushTask (TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime () + engine->RandomFloat (35.0f, 60.0f), true); // push camp task on to stack
-                     PushTask (TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime () + engine->RandomFloat (10.0f, 15.0f), true); // push move command
+					 m_timeCamping = engine->GetTime() + engine->RandomFloat(g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
+					 PushTask(TASK_CAMP, TASKPRI_CAMP, -1, m_timeCamping, true);
 
-                     if (g_waypoint->GetPath (index)->vis.crouch <= g_waypoint->GetPath (index)->vis.stand)
-                        m_campButtons |= IN_DUCK;
-                     else
-                        m_campButtons &= ~IN_DUCK;
-                  }
-               }
-            }
-         }
+					 src.x = path->campStartX;
+					 src.y = path->campStartY;
+					 src.z = 0;
+
+					 m_camp = src;
+					 m_aimFlags |= AIM_CAMP;
+					 m_campDirection = 0;
+
+					 // tell the world we're camping
+					 if (engine->RandomInt(0, 100) < 95)
+						 RadioMessage(Radio_InPosition);
+
+					 m_moveToGoal = false;
+					 m_checkTerrain = false;
+
+					 m_moveSpeed = 0.0f;
+					 m_strafeSpeed = 0.0f;
+				 }
+			 }
+			 else
+			 {
+				 // some goal waypoints are map dependant so check it out...
+				 if (g_mapType & MAP_CS)
+				 {
+					 // SyPB Pro P.28 - CS Ai
+					 if (m_team == TEAM_TERRORIST)
+					 {
+						 if (m_skill >= 80 || engine->RandomInt(0, 100) < m_skill)
+						 {
+							 int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
+
+							 PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(60.0, 120.0f), true); // push camp task on to stack
+							 PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0, 30.0f), true); // push move command
+
+							 if (g_waypoint->GetPath(index)->vis.crouch <= g_waypoint->GetPath(index)->vis.stand)
+								 m_campButtons |= IN_DUCK;
+							 else
+								 m_campButtons &= ~IN_DUCK;
+						 }
+					 }
+					 else if (m_team == TEAM_COUNTER)
+					 {
+						 if (HasHostage())
+						 {
+							 // and reached a Rescue Point?
+							 if (path->flags & WAYPOINT_RESCUE)
+							 {
+								 for (i = 0; i < Const_MaxHostages; i++)
+								 {
+									 // SyPB Pro P.49 - Base improve 
+									 if (!IsAlive(m_hostages[i]) || m_hostages[i]->v.effects & EF_NODRAW)
+										 m_hostages[i] = null;
+								 }
+							 }
+						 }
+					 }
+				 }
+
+				 if ((g_mapType & MAP_DE) && ((path->flags & WAYPOINT_GOAL) || m_inBombZone) && FNullEnt(m_enemy))
+				 {
+					 // is it a terrorist carrying the bomb?
+					 if (pev->weapons & (1 << WEAPON_C4))
+					 {
+						 if ((m_states & STATE_SEEINGENEMY) && GetNearbyFriendsNearPosition(m_iOrigin, 768) == 0)
+						 {
+							 // request an help also
+							 RadioMessage(Radio_NeedBackup);
+
+							 PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(4.0f, 8.0f), true);
+						 }
+						 else
+							 PushTask(TASK_PLANTBOMB, TASKPRI_PLANTBOMB, -1, 0.0, false);
+					 }
+					 else if (m_team == TEAM_COUNTER && m_timeCamping + 10.0f < engine->GetTime())
+					 {
+						 if (!g_bombPlanted && GetNearbyFriendsNearPosition(m_iOrigin, 250) < 4 && engine->RandomInt(0, 100) < 60)
+						 {
+							 m_timeCamping = engine->GetTime() + engine->RandomFloat(g_skillTab[m_skill / 20].campStartDelay, g_skillTab[m_skill / 20].campEndDelay);
+
+							 int index = FindDefendWaypoint(path->origin, m_currentWaypointIndex);
+
+							 PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + engine->RandomFloat(35.0f, 60.0f), true); // push camp task on to stack
+							 PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, index, engine->GetTime() + engine->RandomFloat(10.0f, 15.0f), true); // push move command
+
+							 if (g_waypoint->GetPath(index)->vis.crouch <= g_waypoint->GetPath(index)->vis.stand)
+								 m_campButtons |= IN_DUCK;
+							 else
+								 m_campButtons &= ~IN_DUCK;
+						 }
+					 }
+				 }
+			 }
+		 }
       }
       else if (!GoalIsValid ()) // no more nodes to follow - search new ones (or we have a momb)
       {
@@ -4044,81 +4029,6 @@ void Bot::RunTask (void)
       // stop camping if time over or gets hurt by something else than bullets
       if (GetCurrentTask()->time < engine->GetTime () || m_lastDamageType > 0)
          TaskComplete ();
-
-      break;
-
-   // hiding behaviour
-   case TASK_HIDE:
-	   // SyPB Pro P.37 - small change
-	   if (m_isZombieBot || (g_gameMode == MODE_DM && pev->health > pev->max_health/2))
-	   {
-		   TaskComplete();
-		   break;
-	   }
-
-      m_aimFlags |= AIM_CAMP;
-      m_checkTerrain = false;
-      m_moveToGoal = false;
-
-      // half the reaction time if camping
-      m_idealReactionTime = (engine->RandomFloat (g_skillTab[m_skill / 20].minSurpriseTime, g_skillTab[m_skill / 20].maxSurpriseTime)) / 2;
-
-      m_navTimeset = engine->GetTime ();
-      m_moveSpeed = 0.0f;
-      m_strafeSpeed = 0.0f;
-
-      GetValidWaypoint ();
-
-      if (HasShield () && !m_isReloading)
-      {
-         if (!IsShieldDrawn ())
-			 m_buttonFlags |= IN_ATTACK2; // draw the shield!
-         else
-			 m_buttonFlags |= IN_DUCK; // duck under if the shield is already drawn
-      }
-
-      // if we see an enemy and aren't at a good camping point leave the spot
-      if ((m_states & STATE_SEEINGENEMY) || m_inBombZone)
-      {
-         if (!(path->flags & WAYPOINT_CAMP))
-         {
-            TaskComplete ();
-
-            m_campButtons = 0;
-            m_prevGoalIndex = -1;
-
-            if (!FNullEnt (m_enemy))
-               CombatFight ();
-
-            break;
-         }
-      }
-      else if (m_lastEnemyOrigin == nullvec) // If we don't have an enemy we're also free to leave
-      {
-         TaskComplete ();
-
-         m_campButtons = 0;
-         m_prevGoalIndex = -1;
-
-         if (GetCurrentTask ()->taskID == TASK_HIDE)
-            TaskComplete ();
-
-         break;
-      }
-
-	  m_buttonFlags |= m_campButtons;
-      m_navTimeset = engine->GetTime ();
-
-	  // SyPB Pro P.37 - Base Mode improve
-	  if (m_lastDamageType > 0 || GetCurrentTask()->time < engine->GetTime())
-	  {
-		  if (m_isReloading && (!FNullEnt(m_enemy) || !FNullEnt(m_lastEnemy)) && m_skill > 70)
-			  GetCurrentTask()->time += 2.0f;
-		  else if (g_gameMode == MODE_DM && pev->health <= 20.0f && m_skill > 70)
-			  GetCurrentTask()->time += 5.0f;
-		  else
-			  TaskComplete();
-	  }
 
       break;
 
@@ -5179,10 +5089,6 @@ void Bot::BotDebugModeMsg(void)
 				sprintf(taskName, "ShootBreakable");
 				break;
 
-			case TASK_HIDE:
-				sprintf(taskName, "Hide");
-				break;
-
 			case TASK_BLINDED:
 				sprintf(taskName, "Blinded");
 				break;
@@ -5769,8 +5675,8 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 		return;
 
 	m_lastDamageType = bits;
-	if (GetCurrentTask()->taskID == TASK_HIDE)
-		RemoveCertainTask(TASK_HIDE);
+	if (GetCurrentTask()->taskID == TASK_CAMP)
+		RemoveCertainTask(TASK_CAMP);
 
 	// SyPB Pro P.43 - Zombie Ai improve
 	if (m_isZombieBot)

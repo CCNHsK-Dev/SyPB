@@ -202,7 +202,6 @@ Task g_taskFilters[] =
    {null, null, TASK_DOUBLEJUMP, 0, -1, 0.0f, false},
    {null, null, TASK_ESCAPEFROMBOMB, 0, -1, 0.0f, false},
    {null, null, TASK_DESTROYBREAKABLE, 0, -1, 0.0f, false},
-   {null, null, TASK_HIDE, 0, -1, 0.0f, false},
    {null, null, TASK_BLINDED, 0, -1, 0.0f, false},
    {null, null, TASK_SPRAYLOGO, 0, -1, 0.0f, false},
    {null, null, TASK_MOVETOTARGET, 0, -1, 0.0f, true}
