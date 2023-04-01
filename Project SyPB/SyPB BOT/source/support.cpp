@@ -655,134 +655,37 @@ void AutoLoadGameMode(bool reset)
 		return;
 	}
 
-	extern ConVar sypb_zmdelay_time;
 	checkShowTextTime++;
 
-	// CS:BTE Support 
-	char *Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/bte_player.ini", GetModName());
-	if (TryFileOpen(Plugin_INI) ||
-		// SyPB Pro P.45 - BTE Facebook Version Support
-		TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_config/bte_blockresource.txt", GetModName())))
+	float zmDelayTime = 0.0f;
+	if (CVAR_GET_FLOAT("zp_delay") > 0)
+		zmDelayTime = CVAR_GET_FLOAT("zp_delay") + 2.0f;
+	else if (CVAR_GET_FLOAT("zp_gamemode_delay") > 0)
+		zmDelayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 2.0f;
+	else if (CVAR_GET_FLOAT("ze_release_time") > 0)
+		zmDelayTime = CVAR_GET_FLOAT("ze_release_time");
+	else if (CVAR_GET_FLOAT("zswarm_enable") > 0)
+		zmDelayTime = 0.1f;
+	else if (CVAR_GET_FLOAT("bh_starttime") > 0)
+		zmDelayTime = CVAR_GET_FLOAT("bh_starttime");
+	else if (CVAR_GET_FLOAT("amx_zmod_enabled") > 0)
+		zmDelayTime = 8.0f;
+
+	if (zmDelayTime != 0.0f)
 	{
-		constexpr int Const_GameModes = 13;
-		const int bteGameModAi[Const_GameModes] =
-		{
-			MODE_BASE,		//1
-			MODE_BASE,		//2
-			MODE_DM,		//3
-			MODE_NOTEAM,	//4
-			MODE_BASE,		//5
-			MODE_ZP,		//6
-			MODE_ZP,		//7
-			MODE_ZP,		//8
-			MODE_ZP,		//9
-			MODE_ZH,		//10
-			MODE_ZP,		//11
-			MODE_NOTEAM,	//12
-			MODE_ZP			//13
-		};
+		if (g_gameMode != MODE_ZP || checkShowTextTime == 1)
+			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode***");
 
-		const char *bteGameINI[Const_GameModes] =
-		{
-			"plugins-none", //1
-			"plugins-td",   //2
-			"plugins-dm",   //3
-			"plugins-dr",   //4
-			"plugins-gd",   //5
-			"plugins-ghost",//6
-			"plugins-zb1",  //7
-			"plugins-zb3",  //8
-			"plugins-zb4",  //9 
-			"plugins-ze",   //10
-			"plugins-zse",  //11
-			"plugins-npc",  //12
-			"plugins-zb5"   //13
-		};
-
-		for (int i = 0; i < Const_GameModes; i++)
-		{
-			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
-			{
-				if (bteGameModAi[i] == 2 && i != 5)
-					g_gameStartTime = engine->GetTime() + 20.0f + CVAR_GET_FLOAT("mp_freezetime");
-
-				if (g_gameMode != bteGameModAi[i] || checkShowTextTime == 1)
-					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
-
-				if ((i == 3 || i == 9) && checkShowTextTime == 1)
-					ServerPrint("***** SyPB not support the mode now :( *****");
-				
-				SetGameMode(bteGameModAi[i]);
-
-				// SyPB Pro P.36 - bte support 
-				g_gameVersion = CSVER_CZERO;
-
-				// SyPB Pro P.46 - BTE support improve
-				// Only ZM3 need restart the round
-				if (checkShowTextTime < 3 && i == 7)
-					ServerCommand("sv_restart 1");
-
-				break;
-			}
-		}
-
-		goto lastly;
-	}
-
-	// Zombie Mode
-	if (CVAR_GET_FLOAT("amx_zmod_enabled") > 0)
-	{
-		sypb_zmdelay_time.SetFloat(8);
 		SetGameMode(MODE_ZP);
+		extern ConVar sypb_zmdelay_time;
+		sypb_zmdelay_time.SetFloat(zmDelayTime);
+		g_gameStartTime = engine->GetTime() + sypb_zmdelay_time.GetFloat();
+
 		goto lastly;
-	}
-
-	constexpr int Const_GameModes = 11;
-	const char* zombieGameMode[Const_GameModes] =
-	{
-		"plugins-zplague",  // ZP 4.3
-		"plugins-zp50_ammopacks", // ZP 5.0
-		"plugins-zp50_money", // ZP 5.0
-		"plugins-ze", // ZE
-		"plugins-zp", // ZP
-		"plugins-zescape", // ZE
-		"plugins-escape", // ZE
-		"plugins-plague", // ZP
-		"plugins-biohazard", // Biohazard Mode?
-		"plugins-bio", // Biohazard Mode?
-		"plugins-bh" // Biohazard Mode?
-	};
-
-
-	for (int i = 0; i < Const_GameModes; i++)
-	{
-		Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), zombieGameMode[i]);
-		if (TryFileOpen(Plugin_INI))
-		{
-			float delayTime = 0.0f;
-
-			if (CVAR_GET_FLOAT("zp_delay") > 0.0f)
-				delayTime = CVAR_GET_FLOAT("zp_delay") + 1.9f;
-			else if (CVAR_GET_FLOAT("bh_starttime") > 0.0f)
-				delayTime = CVAR_GET_FLOAT("bh_starttime") + 0.5f;
-			else if (CVAR_GET_FLOAT("zp_gamemode_delay") > 0.0f)
-				delayTime = CVAR_GET_FLOAT("zp_gamemode_delay") + 0.2f;
-			
-			if (delayTime != 0.0f)
-				sypb_zmdelay_time.SetFloat(delayTime);
-			
-			if (g_gameMode != MODE_ZP || checkShowTextTime == 1)
-				ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode (%s)***", zombieGameMode[i]);
-
-			SetGameMode(MODE_ZP);
-
-			goto lastly;
-		}
 	}
 
 	// Zombie Hell
-	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/zombiehell.cfg", GetModName());
-	if (TryFileOpen(Plugin_INI) && CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
+	if (CVAR_GET_FLOAT("zh_zombie_maxslots") > 0)
 	{
 		if (g_gameMode != MODE_ZH || checkShowTextTime == 1)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Hell ***");
@@ -795,40 +698,83 @@ void AutoLoadGameMode(bool reset)
 		goto lastly;
 	}
 
-	// DM:KD
-	Plugin_INI = FormatBuffer("%s/addons/amxmodx/configs/plugins-dmkd.ini", GetModName());
-	if (TryFileOpen(Plugin_INI))
+	// SyPB Pro P.47 - CSDM Check
+	if (CVAR_GET_POINTER("csdm_active"))
 	{
-		if (checkShowTextTime == 1)
-			ServerPrint("*** SyPB Auto Game Mode Setting: DeathMatch: Kill Duty Auto Setting ***");
+		if (CVAR_GET_FLOAT("mp_freeforall") > 0)
+		{
+			if (g_gameMode != MODE_DM || checkShowTextTime == 1)
+				ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-DM ***");
+
+			SetGameMode(MODE_DM);
+		}
+		else
+		{
+			if (g_gameMode != MODE_BASE || checkShowTextTime == 1)
+				ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-TDM ***");
+
+			SetGameMode(MODE_BASE);
+		}
 
 		goto lastly;
 	}
 
-	// SyPB Pro P.47 - CSDM Mode Check
-	static cvar_t* dmActive;
-	static cvar_t* freeForAll;
-
-	dmActive = g_engfuncs.pfnCVarGetPointer("csdm_active");
-	freeForAll = g_engfuncs.pfnCVarGetPointer("mp_freeforall");
-
-	if (dmActive && freeForAll)
+	// CS:BTE Final Support 
+	if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_launcher.cfg", GetModName())))
 	{
-		if (dmActive->value > 0.0f)
+		g_gameVersion = CSVER_CZERO;
+
+		constexpr int Const_GameModes = 14;
+		const int bteGameModAi[Const_GameModes] =
 		{
-			if (freeForAll->value > 0.0f)
-			{
-				if (g_gameMode != MODE_DM || checkShowTextTime == 1)
-					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-DM ***");
+			MODE_BASE, //1
+			MODE_DM, //2
+			-1, //3
+			MODE_BASE, //4
+			-1, //5
+			MODE_BASE, //6
+			MODE_ZP, //7
+			MODE_ZP, //8
+			MODE_ZP, //9
+			MODE_ZP, //10
+			MODE_ZP, //11
+			MODE_ZP, //12
+			MODE_ZP //13
+		};
 
-				SetGameMode(MODE_DM);
-			}
-			else
-			{
-				if (g_gameMode != MODE_BASE || checkShowTextTime == 1)
-					ServerPrint("*** SyPB Auto Game Mode Setting: CSDM-TDM ***");
+		char* const bteGameINI[Const_GameModes] =
+		{
+			"plugins-none", //1
+			"plugins-dm", //2
+			"plugins-dr", //3
+			"plugins-gd", //4
+			"plugins-ghost", //5
+			"plugins-td", //6
+			"plugins-z4e", //7
+			"plugins-zb1", //8
+			"plugins-zb3", //9
+			"plugins-zb4", //10
+			"plugins-zb5", //11
+			"plugins-ze", //12
+			"plugins-zse" //13
+		};
 
-				SetGameMode(MODE_BASE);
+		for (int i = 0; i < Const_GameModes; i++)
+		{
+			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
+			{
+				if (g_gameMode != bteGameModAi[i] || checkShowTextTime == 1)
+					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
+
+				if (bteGameModAi[i] == -1 && checkShowTextTime == 1)
+					ServerPrint("***** SyPB not support the mode now *****");
+
+				SetGameMode(bteGameModAi[i]);
+
+				if (checkShowTextTime < 3)
+					ServerCommand("sv_restart 1");
+
+				break;
 			}
 		}
 
@@ -840,23 +786,18 @@ void AutoLoadGameMode(bool reset)
 
 lastly:
 	if (g_gameMode != MODE_BASE)
-	{
 		g_mapType |= MAP_DE;
-
-		if (g_gameMode == MODE_ZP)
-			g_gameStartTime = engine->GetTime() + sypb_zmdelay_time.GetFloat();
-	}
 	else
 		g_exp.UpdateGlobalKnowledge(); // update experience data on round start
 }
 
 void SetGameMode(int gamemode)
 {
-	extern ConVar sypb_gamemod;
-	sypb_gamemod.SetInt(gamemode);
-
 	if (gamemode < MODE_BASE || gamemode >= MODE_NONE)
 		gamemode = MODE_BASE;
+
+	extern ConVar sypb_gamemod;
+	sypb_gamemod.SetInt(gamemode);
 
 	g_gameMode = gamemode;
 

@@ -3,13 +3,10 @@
 
 #include <../../version.h>
 
-bool sypbLog = false;
 
 // AMXX API
 void OnPluginsLoaded()
 {
-	sypbLog = false;
-
 	SyPBDataLoad();
 }
 

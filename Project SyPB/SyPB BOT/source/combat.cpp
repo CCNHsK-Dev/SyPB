@@ -1170,7 +1170,7 @@ void Bot::ActionForEnemy(void)
 		return;
 	}
 
-	if (GetTeam(m_lastEnemy) == m_team || !IsAlive (m_lastEnemy))
+	if (GetTeam(m_lastEnemy) == m_team || !IsAlive(m_lastEnemy))
 	{
 		RemoveCertainTask(TASK_ACTIONFORENEMY);
 		m_prevGoalIndex = -1;
@@ -1184,26 +1184,45 @@ void Bot::ActionForEnemy(void)
 	{
 		m_checkTerrain = true;
 		bool loadNewWaypoint = !(GoalIsValid());
-		if (loadNewWaypoint && &m_navNode[0] != null && m_navNode->next != null)
+		if (DoWaypointNav())
+		{
+			m_enemyActionMod = false;
+			loadNewWaypoint = true;
+		}
+
+		if (!loadNewWaypoint && &m_navNode[0] != null && m_navNode->next != null)
 		{
 			if ((g_waypoint->GetPath(m_navNode->next->index)->origin - m_lastEnemyOrigin).GetLength() <
 				(g_waypoint->GetPath(m_navNode->index)->origin - m_lastEnemyOrigin).GetLength())
 				loadNewWaypoint = true;
 		}
 
-		// if we've got new enemy...
-		if (FNullEnt(m_lastEnemy) || DoWaypointNav())
-		{
-			// forget about it...
-			TaskComplete();
-			m_prevGoalIndex = -1;
-
-			SetLastEnemy(null);
-			m_enemyActionMod = false;
-		}
-		else if (loadNewWaypoint) // do we need to calculate a new path?
+		if (loadNewWaypoint) // do we need to calculate a new path?
 		{
 			DeleteSearchNodes();
+
+			int wpId = GetEntityWaypoint (m_iEntity);
+			float wpDistance = (m_lastEnemyOrigin - g_waypoint->GetPath(wpId)->origin).GetLength();
+			for (int i = 0; i < Const_MaxPathIndex; i++)
+			{
+				const int id = g_waypoint->GetPath(wpId)->index[i];
+				if (id == -1)
+					continue;
+
+				const float distance = (m_lastEnemyOrigin - g_waypoint->GetPath(id)->origin).GetLength();
+				if (distance > wpDistance)
+				{
+					wpDistance = distance;
+					wpId = id;
+				}
+			}
+
+			if (GetEntityWaypoint(m_iEntity) != wpId && (m_lastEnemyOrigin - g_waypoint->GetPath(wpId)->origin).GetLength() >
+				(m_lastEnemyOrigin - g_waypoint->GetPath(GetEntityWaypoint(m_iEntity))->origin).GetLength())
+			{
+				ChangeWptIndex(wpId);
+				SetWaypointOrigin();
+			}
 
 			// is there a remembered index?
 			if (g_gameMode == MODE_ZP && !m_isZombieBot)
@@ -1211,7 +1230,7 @@ void Bot::ActionForEnemy(void)
 				if (!g_waypoint->m_zmHmPoints.IsEmpty())
 					destIndex = FindGoal();
 				else
-					destIndex = FindCoverWaypoint(1024.0f);
+					destIndex = g_waypoint->FindFarest(m_iOrigin, 1024.0f);
 			}
 			else if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
 				destIndex = GetCurrentTask()->data;
@@ -1226,7 +1245,7 @@ void Bot::ActionForEnemy(void)
 			GetCurrentTask()->data = destIndex;
 
 			if (destIndex != m_currentWaypointIndex)
-				FindPath(m_currentWaypointIndex, destIndex, IsZombieEntity (m_lastEnemy) ? 1 : m_pathType);
+				FindPath(m_currentWaypointIndex, destIndex, IsZombieEntity(m_lastEnemy) ? 1 : m_pathType);
 
 			m_moveToGoal = true;
 			m_checkTerrain = true;
@@ -1277,6 +1296,7 @@ void Bot::ActionForEnemy(void)
 		m_checkTerrain = true;
 	}
 }
+
 
 // SyPB Pro P.30 - Attack Ai
 void Bot::CombatFight(void)

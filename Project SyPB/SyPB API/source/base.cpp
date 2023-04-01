@@ -40,9 +40,6 @@ _SetWeaponClip Amxx_SetWeaponClip;
 typedef int(*_BlockWeaponReload) (int, int);
 _BlockWeaponReload Amxx_BlockWeaponReload;
 
-//typedef void(*_AddSyPB)(const char *, int, int);
-//_AddSyPB Amxx_AddSyPB;
-
 // API 1.31
 typedef int(*_SetKaDistance) (int, int, int);
 _SetKaDistance Amxx_SetKaDistance;
@@ -117,8 +114,6 @@ void SyPBDataLoad (void)
 	Amxx_RunSypb = (_RunSypb)GetProcAddress(dll, "Amxx_RunSypb");
 	if (!Amxx_RunSypb)
 	{
-		api_version = 0.0;
-		
 		LogToFile("***************************");
 		LogToFile("Error: Cannot Find SyPB");
 		LogToFile("-The Game Has not run SyPB/SyPB is old Version");
@@ -140,8 +135,6 @@ void SyPBDataLoad (void)
 	Amxx_APIVersion = (_SypbAPIVersion)GetProcAddress(dll, "Amxx_APIVersion");
 	if (!Amxx_APIVersion)
 	{
-		api_version = 0.0;
-
 		LogToFile("***************************");
 		LogToFile("Error: API Error");
 		LogToFile("-We could not start the SyPB AMXX");
@@ -283,8 +276,6 @@ void SyPBDataLoad (void)
 	Amxx_AddLog = (_AddLog)GetProcAddress(dll, "Amxx_AddLog");
 	if (!Amxx_AddLog)
 		LogToFile("Load API::Amxx_AddLog Failed");
-	else
-		sypbLog = true;
 
 	Amxx_SetBotGoal = (_SetBotGoal)GetProcAddress(dll, "Amxx_SetBotGoal");
 	if (!Amxx_SetBotGoal)
@@ -329,7 +320,7 @@ static cell AMX_NATIVE_CALL amxx_IsSypb(AMX *amx, cell *params) // 1.30
 	if (!Amxx_IsSypb || api_version < float(1.30))
 		return -2;
 
-	int iType = params[1];
+	const int iType = params[1];
 	return Amxx_IsSypb(iType);
 }
 
@@ -339,7 +330,7 @@ static cell AMX_NATIVE_CALL amxx_CheckEnemy(AMX *amx, cell *params) // 1.30
 	if (!Amxx_CheckEnemy || api_version < float(1.30))
 		return -2;
 
-	int iType = params[1];
+	const int iType = params[1];
 	return Amxx_CheckEnemy(iType);
 }
 
@@ -349,7 +340,7 @@ static cell AMX_NATIVE_CALL amxx_CheckMoveTarget(AMX *amx, cell *params) // 1.30
 	if (!Amxx_CheckMoveTarget || api_version < float(1.30))
 		return -2;
 
-	int iType = params[1];
+	const int iType = params[1];
 	return Amxx_CheckMoveTarget(iType);
 }
 
@@ -359,9 +350,9 @@ static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.30
 	if (!Amxx_SetEnemy || api_version < float(1.30))
 		return -2;
 
-	int botId = params[1];
-	int targetId = params[2];
-	float blockCheckTime = amx_ctof(params[3]);
+	const int botId = params[1];
+	const int targetId = params[2];
+	const float blockCheckTime = amx_ctof(params[3]);
 	return Amxx_SetEnemy(botId, targetId, blockCheckTime);
 }
 
@@ -371,8 +362,8 @@ static cell AMX_NATIVE_CALL amxx_SetBotMove(AMX *amx, cell *params) // 1.30
 	if (!Amxx_SetBotMove || api_version < float(1.30))
 		return -2;
 
-	int id = params[1];
-	int moveAIforPlugin = params[2];
+	const int id = params[1];
+	const int moveAIforPlugin = params[2];
 
 	return Amxx_SetBotMove(id, moveAIforPlugin);
 }
@@ -383,9 +374,9 @@ static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.30
 	if (!Amxx_SetBotLookAt || api_version < float(1.30))
 		return -2;
 
-	int id = params[1];
+	const int id = params[1];
 	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
-	Vector lookAt = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
+	const Vector lookAt = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 	
 	return Amxx_SetBotLookAt(id, lookAt);
 }
@@ -396,8 +387,8 @@ static cell AMX_NATIVE_CALL amxx_SetWeaponClip(AMX *amx, cell *params) // 1.30
 	if (!Amxx_SetWeaponClip || api_version < float(1.30))
 		return -2;
 
-	int id = params[1];
-	int weaponClip = params[2];
+	const int id = params[1];
+	const int weaponClip = params[2];
 
 	return Amxx_SetWeaponClip(id, weaponClip);
 }
@@ -408,8 +399,8 @@ static cell AMX_NATIVE_CALL amxx_BlockWeaponReload(AMX *amx, cell *params) // 1.
 	if (!Amxx_BlockWeaponReload || api_version < float(1.30))
 		return -2;
 
-	int id = params[1];
-	int blockReload = params[2];
+	const int id = params[1];
+	const int blockReload = params[2];
 
 	return Amxx_BlockWeaponReload(id, blockReload);
 }
@@ -420,9 +411,9 @@ static cell AMX_NATIVE_CALL amxx_SetKaDistance(AMX *amx, cell *params) // 1.31
 	if (!Amxx_SetKaDistance || api_version < float (1.31))
 		return -2;
 
-	int id = params[1];
-	int kad1 = params[2];
-	int kad2 = params[3];
+	const int id = params[1];
+	const int kad1 = params[2];
+	const int kad2 = params[3];
 
 	return Amxx_SetKaDistance(id, kad1, kad2);
 }
@@ -434,8 +425,8 @@ static cell AMX_NATIVE_CALL amxx_AddSyPB(AMX *amx, cell *params) // 1.34
 		return -2;
 
 	const char *name = g_fn_GetAmxString(amx, params[1], 0, NULL);
-	int skill = params[2];
-	int team = params[3];
+	const int skill = params[2];
+	const int team = params[3];
 
 	return Amxx_AddSyPB(name, skill, team);
 }
@@ -446,9 +437,9 @@ static cell AMX_NATIVE_CALL amxx_SetGunDistance(AMX *amx, cell *params) // 1.35
 	if (!Amxx_SetGunDistance || api_version < float(1.35))
 		return -2;
 
-	int id = params[1];
-	int minD = params[2];
-	int maxD = params[3];
+	const int id = params[1];
+	const int minD = params[2];
+	const int maxD = params[3];
 
 	return Amxx_SetGunDistance(id, minD, maxD);
 }
@@ -459,7 +450,7 @@ static cell AMX_NATIVE_CALL amxx_IsZombotBot(AMX *amx, cell *params) // 1.38
 	if (!Amxx_IsZombieBot || api_version < float(1.38))
 		return -2;
 
-	int id = params[1];
+	const int id = params[1];
 	return Amxx_IsZombieBot(id);
 }
 
@@ -469,8 +460,8 @@ static cell AMX_NATIVE_CALL amxx_SetZombieBot(AMX *amx, cell *params) // 1.38
 	if (!Amxx_SetZombieBot || api_version < float(1.38))
 		return -2;
 
-	int id = params[1];
-	int zombieBot = params[2];
+	const int id = params[1];
+	const int zombieBot = params[2];
 
 	return Amxx_SetZombieBot(id, zombieBot);
 }
@@ -482,7 +473,7 @@ static cell AMX_NATIVE_CALL amxx_GetOriginPoint(AMX *amx, cell *params) // 1.38
 		return -2;
 
 	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[1]);
-	Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
+	const Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 
 	return Amxx_GetOriginPoint(origin);
 }
@@ -493,8 +484,8 @@ static cell AMX_NATIVE_CALL amxx_GetBotPoint(AMX *amx, cell *params) // 1.38
 	if (!Amxx_GetBotPoint || api_version < float(1.38))
 		return -2;
 
-	int id = params[1];
-	int mod = params[2];
+	const int id = params[1];
+	const int mod = params[2];
 
 	return Amxx_GetBotPoint(id, mod);
 }
@@ -505,7 +496,7 @@ static cell AMX_NATIVE_CALL amxx_GetBotNavNum(AMX *amx, cell *params) // 1.40
 	if (!Amxx_GetBotNavNum || api_version < float(1.40))
 		return -2;
 
-	int id = params[1];
+	const int id = params[1];
 
 	return Amxx_GetBotNavNum(id);
 }
@@ -516,8 +507,8 @@ static cell AMX_NATIVE_CALL amxx_GetBotNavPointId(AMX *amx, cell *params) // 1.4
 	if (!Amxx_GetBotNavPointId || api_version < float(1.40))
 		return -2;
 
-	int id = params[1];
-	int pointId = params[2];
+	const int id = params[1];
+	const int pointId = params[2];
 
 	return Amxx_GetBotNavPointId(id, pointId);
 }
@@ -528,9 +519,9 @@ static cell AMX_NATIVE_CALL amxx_SetEntityAction(AMX *amx, cell *params) // 1.40
 	if (!Amxx_SetEntityAction || api_version < float(1.40))
 		return -2;
 
-	int id = params[1];
-	int team = params[2];
-	int action = params[3];
+	const int id = params[1];
+	const int team = params[2];
+	const int action = params[3];
 
 	return Amxx_SetEntityAction(id, team, action);
 }
@@ -541,8 +532,8 @@ static cell AMX_NATIVE_CALL amxx_SetBotGoal(AMX *amx, cell *params) // 1.42
 	if (!Amxx_SetBotGoal || api_version < float(1.42))
 		return -2;
 
-	int id = params[1];
-	int goalId = params[2];
+	const int id = params[1];
+	const int goalId = params[2];
 
 	return Amxx_SetBotGoal(id, goalId);
 }
@@ -553,8 +544,8 @@ static cell AMX_NATIVE_CALL amxx_BlockWeaponPick(AMX *amx, cell *params) // 1.42
 	if (!Amxx_BlockWeaponPick || api_version < float(1.42))
 		return -2;
 
-	int id = params[1];
-	int blockWeaponPick = params[2];
+	const int id = params[1];
+	const int blockWeaponPick = params[2];
 
 	return Amxx_BlockWeaponPick (id, blockWeaponPick);
 }
@@ -565,7 +556,7 @@ static cell AMX_NATIVE_CALL amxx_GetEntityWaypointId(AMX *amx, cell *params) // 
 	if (!Amxx_GetEntityWaypointId || api_version < float(1.48))
 		return -2;
 
-	int id = params[1];
+	const int id = params[1];
 
 	return Amxx_GetEntityWaypointId(id);
 }
@@ -576,7 +567,7 @@ static cell AMX_NATIVE_CALL amxx_ZombieModGameStart(AMX* amx, cell* params) // 1
 	if (!Amxx_ZombieModGameStart || api_version < float(1.50))
 		return -2;
 
-	int input = params[1];
+	const int input = params[1];
 
 	return Amxx_ZombieModGameStart(input);
 }
@@ -621,14 +612,14 @@ AMX_NATIVE_INFO sypb_natives[] =
 
 int LogToFile(char *szLogText, ...)
 {
-	if (sypbLog)
+	if (Amxx_AddLog)
 	{
 		Amxx_AddLog(szLogText);
 		return 1;
 	}
 
-	int buildVersion[4] = { SYPBAPI_VERSION_DWORD };
-	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
+	const int buildVersion[4] = { SYPBAPI_VERSION_DWORD };
+	const uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
 
 	char buildVersionName[64];
 	sprintf(buildVersionName, "sypb_amxx_%u_%u_%u_%u.txt", bV16[0], bV16[1], bV16[2], bV16[3]);

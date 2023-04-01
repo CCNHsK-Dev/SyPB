@@ -1860,11 +1860,9 @@ void Bot::SetConditions (void)
 
    if (IsZombieEntity(m_lastEnemy))
    {
+	   m_enemyActionMod = true;
 	   if (FNullEnt(m_enemy) || m_enemyActionMod)
-	   {
-		   m_enemyActionMod = true;
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
-	   }
    }
    else if (!m_isZombieBot && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec)
    {

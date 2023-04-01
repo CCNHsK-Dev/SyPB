@@ -18,7 +18,4 @@ void ErrorWindows(char *text);
 // Error Log
 int LogToFile(char *szLogText, ...);
 
-
-extern bool sypbLog;
-
 #endif // MAIN_H

@@ -465,7 +465,6 @@ void SetController(void* pmodel, entvars_t* pev, int iController, float flValue)
 
 	int i;
 	mstudiobonecontroller_t* pbonecontroller = (mstudiobonecontroller_t*)((byte*)pstudiohdr + pstudiohdr->bonecontrollerindex);
-	LogToFile("TTT %d", pstudiohdr->numbonecontrollers);
 	for (i = 0; i < pstudiohdr->numbonecontrollers; i++, pbonecontroller++)
 	{
 		if (pbonecontroller->index == iController)
