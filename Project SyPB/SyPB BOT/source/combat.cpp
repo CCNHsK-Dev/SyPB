@@ -1265,10 +1265,10 @@ void Bot::ActionForEnemy(void)
 
 	if (DoWaypointNav()) // reached final cover waypoint?
 	{
-		// yep. activate hide behaviour
 		TaskComplete();
-
 		m_prevGoalIndex = -1;
+
+		SetLastEnemy(null);
 	}
 	else if (!GoalIsValid()) // we didn't choose a cover waypoint yet or lost it due to an attack?
 	{

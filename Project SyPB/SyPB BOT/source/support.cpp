@@ -907,14 +907,14 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 
 	int wpIndex2 = -1;
 
-	if (mode == -1 || g_botManager->GetBot(ent) == null)
+	if (mode == -1)
 		wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);
 	else
 		wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex2, mode);
 
 	if (!isPlayer)
 	{
-		g_entityWpIndex[i] = wpIndex;
+		g_entityWpIndex[i] = (wpIndex2 == -1) ? wpIndex : wpIndex2;
 		g_entityGetWpOrigin[i] = origin;
 		g_entityGetWpTime[i] = engine->GetTime() + 1.5f;
 	}

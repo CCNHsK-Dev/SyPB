@@ -175,11 +175,15 @@ void NPC::Think(void)
 	if (MF_ExecuteForward(g_callThink_Pre, (cell)ENTINDEX(m_iEntity)))
 		return;
 
+	float nextThinkTime = 0.05f;
+	nextThinkTime *= (IS_DEDICATED_SERVER() ? 2 : 1);
+	nextThinkTime *= (g_npcManager->g_SwNPCNum > 64 ? 2 : (g_npcManager->g_SwNPCNum > 32 ? 1.5 : 1));
+
 	m_deadActionTime = -1.0f;
 
 	m_frameInterval = gpGlobals->time - m_lastThinkTime;
 	m_lastThinkTime = gpGlobals->time;
-	m_nextThinkTime = gpGlobals->time + 0.05f;
+	m_nextThinkTime = gpGlobals->time + nextThinkTime;
 
 	NPCAi();
 	NPCAction();
@@ -706,7 +710,7 @@ void NPC::SetEnemy(edict_t *entity)
 	{
 		if (!FNullEnt(m_enemy))
 		{
-			LoadEntityWaypointPoint(m_iEntity);
+			LoadEntityWaypointPoint(m_iEntity, m_enemy);
 
 			m_currentWaypointIndex = -1;
 			FindWaypoint();
@@ -732,7 +736,7 @@ void NPC::SetMoveTarget(edict_t *entity)
 	{
 		if (!FNullEnt(m_moveTargetEntity))
 		{
-			LoadEntityWaypointPoint(m_iEntity);
+			LoadEntityWaypointPoint(m_iEntity, m_moveTargetEntity);
 
 			m_currentWaypointIndex = -1;
 			FindWaypoint();

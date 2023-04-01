@@ -3298,8 +3298,6 @@ void Bot::Think(void)
 	}
 	else if (!g_botActionStop && m_botMovement)
 	{
-		//DoWaypointNav();
-
 		ChooseAimDirection();
 		FacePosition();
 	}

@@ -1209,7 +1209,7 @@ void Bot::NewRound (void)
    m_blockWeaponPickAPI = false;
 
    // SyPB Pro P.49 - Waypoint improve
-   SetEntityWaypoint(m_iEntity, -2);
+   SetEntityWaypoint(m_iEntity);
 
    // and put buying into its message queue
    PushMessageQueue (CMENU_BUY);
@@ -1217,7 +1217,7 @@ void Bot::NewRound (void)
 
    m_secondThinkTimer = 0.0f;
 
-   m_thinkInterval = (1.0f / 24.9f);
+   m_thinkInterval = (1.0f / (IsDedicatedServer () ? 19.9f : 24.9f));
 }
 
 void Bot::Kill (void)
