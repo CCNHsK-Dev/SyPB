@@ -1163,82 +1163,80 @@ void Bot::FocusEnemy (void)
 
 void Bot::ActionForEnemy(void)
 {
-	if (FNullEnt(m_lastEnemy))
-	{
-		TaskComplete();
-		m_enemyActionMod = false;
-		return;
-	}
-
-	if (GetTeam(m_lastEnemy) == m_team || !IsAlive(m_lastEnemy))
+	if (FNullEnt(m_lastEnemy) || GetTeam(m_lastEnemy) == m_team || !IsAlive(m_lastEnemy) || m_lastEnemyOrigin == nullvec || 
+		(!m_escapeEnemyAction && m_isStuck))
 	{
 		RemoveCertainTask(TASK_ACTIONFORENEMY);
 		m_prevGoalIndex = -1;
-		m_enemyActionMod = false;
+		m_escapeEnemyAction = false;
 		return;
 	}
-
 	int destIndex = -1;
 
-	if (m_enemyActionMod)
+	if (m_escapeEnemyAction)
 	{
 		m_checkTerrain = true;
 		bool loadNewWaypoint = !(GoalIsValid());
 		if (DoWaypointNav())
 		{
-			m_enemyActionMod = false;
+			DeleteSearchNodes();
 			loadNewWaypoint = true;
 		}
 
 		if (!loadNewWaypoint && &m_navNode[0] != null && m_navNode->next != null)
 		{
-			if ((g_waypoint->GetPath(m_navNode->next->index)->origin - m_lastEnemyOrigin).GetLength() <
-				(g_waypoint->GetPath(m_navNode->index)->origin - m_lastEnemyOrigin).GetLength())
+			const float distance = (g_waypoint->GetPath(m_navNode->next->index)->origin - m_lastEnemyOrigin).GetLength();
+			if (distance <= 120.0f && 
+				distance < (g_waypoint->GetPath(m_navNode->index)->origin - m_lastEnemyOrigin).GetLength())
 				loadNewWaypoint = true;
+			else
+			{
+				const int enemyWaypoint = GetEntityWaypoint(m_lastEnemy);
+				PathNode* node = m_navNode;
+				while (node->next != null && !loadNewWaypoint)
+				{
+					node = node->next;
+					if (node->index == enemyWaypoint)
+						loadNewWaypoint = true;
+				}
+			}
 		}
 
 		if (loadNewWaypoint) // do we need to calculate a new path?
 		{
 			DeleteSearchNodes();
 
-			int wpId = GetEntityWaypoint (m_iEntity);
-			float wpDistance = (m_lastEnemyOrigin - g_waypoint->GetPath(wpId)->origin).GetLength();
+			const int enemyWaypoint = GetEntityWaypoint(m_lastEnemy);
+			const int nowWpId = GetEntityWaypoint(m_iEntity);
+			const float nowWpDistance = (m_lastEnemyOrigin - g_waypoint->GetPath(nowWpId)->origin).GetLength();
+			int wpId = nowWpId;
+			float wpDistance = nowWpDistance;
 			for (int i = 0; i < Const_MaxPathIndex; i++)
 			{
 				const int id = g_waypoint->GetPath(wpId)->index[i];
-				if (id == -1)
+				if (id == -1 || id == enemyWaypoint)
 					continue;
 
 				const float distance = (m_lastEnemyOrigin - g_waypoint->GetPath(id)->origin).GetLength();
-				if (distance > wpDistance)
+				if (distance <= 200.0f && distance > wpDistance && 
+					(m_iOrigin - g_waypoint->GetPath(id)->origin).GetLength() < distance)
 				{
 					wpDistance = distance;
 					wpId = id;
 				}
 			}
 
-			if (GetEntityWaypoint(m_iEntity) != wpId && (m_lastEnemyOrigin - g_waypoint->GetPath(wpId)->origin).GetLength() >
-				(m_lastEnemyOrigin - g_waypoint->GetPath(GetEntityWaypoint(m_iEntity))->origin).GetLength())
+			if (nowWpId != wpId && wpDistance > nowWpDistance)
 			{
 				ChangeWptIndex(wpId);
 				SetWaypointOrigin();
 			}
 
 			// is there a remembered index?
-			if (g_gameMode == MODE_ZP && !m_isZombieBot)
-			{
-				if (!g_waypoint->m_zmHmPoints.IsEmpty())
-					destIndex = FindGoal();
-				else
-					destIndex = g_waypoint->FindFarest(m_iOrigin, 1024.0f);
-			}
-			else if (GetCurrentTask()->data != -1 && GetCurrentTask()->data < g_numWaypoints)
-				destIndex = GetCurrentTask()->data;
-			else // no. we need to find a new one
-				destIndex = GetEntityWaypoint(m_lastEnemy);
-
-			if (destIndex < 0 || destIndex >= g_numWaypoints)
-				destIndex = g_waypoint->FindFarest(m_iOrigin, 1024.0f);
+			if (g_gameMode == MODE_ZP && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
+				destIndex = FindGoal();
+			else
+				destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 1024.0f);
 
 			// remember index
 			m_prevGoalIndex = destIndex;
@@ -1304,7 +1302,7 @@ void Bot::CombatFight(void)
 	if (FNullEnt(m_enemy))
 		return;
 
-	if (m_enemyActionMod)
+	if (m_escapeEnemyAction)
 		return;
 
 	m_destOrigin = GetEntityOrigin(m_enemy);
@@ -1384,7 +1382,7 @@ void Bot::CombatFight(void)
 				if (distance <= baseDistance)
 				{
 					if (enemyIsZombie)
-						m_enemyActionMod = true;
+						m_escapeEnemyAction = true;
 
 					m_moveSpeed = -m_iMaxSpeed;
 					setStrafe = true;

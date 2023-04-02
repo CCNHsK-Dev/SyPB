@@ -376,6 +376,7 @@ void Bot::ZmCampPointAction(void)
 
 	float campAction = 0.0f;
 	static int campPointWaypointIndex = -1;
+	const int goldPoint = GetCurrentTask()->data;
 
 	if (g_waypoint->IsZBCampPoint(m_currentWaypointIndex))
 	{
@@ -386,9 +387,14 @@ void Bot::ZmCampPointAction(void)
 		else
 			campAction = engine->RandomFloat(1.0f, 1.5f);
 	}
-	else if (GetCurrentTask()->data != -1 && g_waypoint->IsZBCampPoint(GetCurrentTask()->data))
+	else if (goldPoint != -1 && g_waypoint->IsZBCampPoint(goldPoint))
 	{
-		if (&m_navNode[0] != null)
+		if ((m_iOrigin - g_waypoint->GetPath(goldPoint)->origin).GetLength() < g_waypoint->GetPath(goldPoint)->radius)
+		{
+			campPointWaypointIndex = goldPoint;
+			campAction = engine->RandomFloat(1.0f, 1.5f);
+		}
+		else if (&m_navNode[0] != null)
 		{
 			PathNode *navid = &m_navNode[0];
 			navid = navid->next;
@@ -397,7 +403,7 @@ void Bot::ZmCampPointAction(void)
 			{
 				movePoint++;
 
-				if (GetCurrentTask()->data == navid->index)
+				if (goldPoint == navid->index)
 				{
 					if ((g_waypoint->GetPath(navid->index)->origin - m_iOrigin).GetLength2D() <= 220.0f && 
 						IsWaypointUsed(navid->index))
@@ -1801,7 +1807,13 @@ void Bot::SetConditions (void)
    CheckGrenadeThrow();
 
    // check if there are items needing to be used/collected
-   if (m_itemCheckTime < engine->GetTime () || !FNullEnt (m_pickupItem))
+   if (m_isStuck && !FNullEnt(m_pickupItem))
+   {
+	   m_pickupItem = null;
+	   m_pickupType = PICKTYPE_NONE;
+	   m_itemCheckTime = engine->GetTime() + 5.0f;
+   }
+   else if (m_itemCheckTime < engine->GetTime () || !FNullEnt (m_pickupItem))
    {
       m_itemCheckTime = engine->GetTime () + 2.5f;
       FindItem ();
@@ -1860,9 +1872,13 @@ void Bot::SetConditions (void)
 
    if (IsZombieEntity(m_lastEnemy))
    {
-	   m_enemyActionMod = true;
-	   if (FNullEnt(m_enemy) || m_enemyActionMod)
+	   if (GetCurrentTask()->taskID == TASK_CAMP && m_zhCampPointIndex != -1)
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
+	   else
+	   {
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
+		   m_escapeEnemyAction = (!FNullEnt (m_enemy)) ? true : false;
+	   }
    }
    else if (!m_isZombieBot && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec)
    {
@@ -1870,7 +1886,7 @@ void Bot::SetConditions (void)
 		   (g_gameMode == MODE_BASE && !g_bombPlanted && pev->health <= 30.0f))
 	   {
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
-		   m_enemyActionMod = false;
+		   m_escapeEnemyAction = true;
 	   }
 	   else if (FNullEnt(m_enemy) && (g_gameMode != MODE_BASE || g_timeRoundMid < engine->GetTime()) &&
 		   !m_isUsingGrenade && m_personality != PERSONALITY_CAREFUL && m_currentWaypointIndex != m_lastEnemyWpIndex)
@@ -1897,23 +1913,16 @@ void Bot::SetConditions (void)
 			   }
 		   }
 
-		   if (desireLevel >= g_taskFilters[TASK_ACTIONFORENEMY].desire)
-		   {
-			   m_enemyActionMod = true;
-			   g_taskFilters[TASK_ACTIONFORENEMY].desire = desireLevel;
-		   }
+		   if (desireLevel < TASKPRI_ACTIONFORENEMY)
+			   m_escapeEnemyAction = true;
+
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = desireLevel;
 	   }
 	   else
-	   {
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
-		   m_enemyActionMod = false;
-	   }
    }
    else
-   {
 	   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
-	   m_enemyActionMod = false;
-   }
 
    // blinded behaviour
    if (m_blindTime > engine->GetTime ())
@@ -1929,7 +1938,7 @@ void Bot::SetConditions (void)
 
    Task *taskOffensive = &g_taskFilters[TASK_FIGHTENEMY];
    Task* taskEnemyAction = ThresholdDesire(&g_taskFilters[TASK_ACTIONFORENEMY], 
-	   (m_enemyActionMod ? 40.0f : 60.0f), 0.0f);
+	   (m_escapeEnemyAction ? 40.0f : 60.0f), 0.0f);
 
    taskOffensive = MaxDesire(taskOffensive, taskEnemyAction);
    taskOffensive = SubsumeDesire (taskOffensive, &g_taskFilters[TASK_PICKUPITEM]); // if offensive task, don't allow picking up stuff
@@ -3441,6 +3450,12 @@ void Bot::MoveAction(void)
 	else if (m_strafeSpeed < 0)
 		m_buttonFlags |= IN_MOVELEFT;
 
+	if (m_buttonFlags & IN_JUMP && m_buttonFlags & IN_DUCK)
+	{
+		m_buttonFlags &= ~IN_DUCK;
+		m_duckTime = engine->GetTime() + 0.85f;
+	}
+
 	if (m_sniperFire && m_buttonFlags & IN_ATTACK)
 		m_sniperFire = false;
 }
@@ -4726,10 +4741,11 @@ void Bot::RunTask (void)
    case TASK_PICKUPITEM:
       if (FNullEnt (m_pickupItem))
       {
-         m_pickupItem = null;
-         TaskComplete ();
+		  m_pickupItem = null;
+		  m_pickupType = PICKTYPE_NONE;
+		  TaskComplete ();
 
-         break;
+		  break;
       }
 
       destination = GetEntityOrigin (m_pickupItem);
@@ -4763,6 +4779,7 @@ void Bot::RunTask (void)
 		 if (m_blockWeaponPickAPI)
 		 {
 			 m_pickupItem = null;
+			 m_pickupType = PICKTYPE_NONE;
 			 TaskComplete();
 			 break;
 		 }
@@ -4831,8 +4848,9 @@ void Bot::RunTask (void)
 		 if (HasShield () || m_blockWeaponPickAPI)
          //if (HasShield ())
          {
-            m_pickupItem = null;
-            break;
+			 m_pickupItem = null;
+			 m_pickupType = PICKTYPE_NONE;
+			 break;
          }
          else if (itemDistance < 60) // near to shield?
          {
@@ -4886,10 +4904,11 @@ void Bot::RunTask (void)
 		 if (!IsAlive(m_pickupItem) || m_team != TEAM_COUNTER)
          {
             // don't pickup dead hostages
-            m_pickupItem = null;
-            TaskComplete ();
+			 m_pickupItem = null;
+			 m_pickupType = PICKTYPE_NONE;
+			 TaskComplete ();
 
-            break;
+			 break;
          }
 
          if (itemDistance < 60)
@@ -4904,7 +4923,8 @@ void Bot::RunTask (void)
                   if (FNullEnt (m_hostages[i])) // store pointer to hostage so other bots don't steal from this one or bot tries to reuse it
                   {
                      m_hostages[i] = m_pickupItem;
-                     m_pickupItem = null;
+					 m_pickupItem = null;
+					 m_pickupType = PICKTYPE_NONE;
 
                      break;
                   }
@@ -5032,10 +5052,7 @@ void Bot::BotDebugModeMsg(void)
 				break;
 
 			case TASK_ACTIONFORENEMY:
-				if (!m_enemyActionMod)
-					sprintf(taskName, "ActionForEnemy [0]");
-				else
-					sprintf(taskName, "ActionForEnemy [1]");
+				sprintf(taskName, "ActionForEnemy [%d]", (m_escapeEnemyAction) ? 1 : 0);
 				break;
 
 			case TASK_THROWHEGRENADE:
@@ -5463,7 +5480,7 @@ void Bot::BotAI(void)
 	   (m_skill >= 60 || m_isZombieBot ||
 	   (m_isEnemyReachable && (IsZombieEntity(m_enemy) || !IsValidPlayer(m_enemy)))))
    {
-	   if (!m_enemyActionMod)
+	   if (!m_escapeEnemyAction)
 	   {
 		   m_moveToGoal = false; // don't move to goal
 		   m_navTimeset = engine->GetTime();

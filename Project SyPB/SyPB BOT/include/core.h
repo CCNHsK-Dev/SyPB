@@ -952,7 +952,7 @@ public:
    float m_nextEmotionUpdate; // next time to sanitize emotions
    float m_thinkFps; // skip some frames in bot thinking 
    float m_thinkInterval; // interval between frames
-   bool m_enemyActionMod;
+   bool m_escapeEnemyAction;
 
    int m_actMessageIndex; // current processed message
    int m_pushMessageIndex; // offset for next pushed message

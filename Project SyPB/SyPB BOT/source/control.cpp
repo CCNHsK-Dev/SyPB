@@ -1060,6 +1060,7 @@ void Bot::NewRound (void)
    m_maxViewDistance = 4096.0f;
 
    m_pickupItem = null;
+   m_pickupType = PICKTYPE_NONE;
    m_itemIgnore = null;
    m_itemCheckTime = 0.0f;
 

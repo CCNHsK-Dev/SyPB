@@ -352,7 +352,9 @@ TacticChoosen:
 	   }
 
 	   if (targetWpIndex >= 0 && targetWpIndex < g_numWaypoints)
-		   return m_chosenGoalIndex = targetWpIndex; 
+		   return m_chosenGoalIndex = targetWpIndex;
+	   else
+		   return m_chosenGoalIndex = offensiveWpts.GetRandomElement();
    } 
 
    if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
@@ -1131,7 +1133,7 @@ void Bot::SetEnemy(edict_t *entity)
 	if (m_enemy != entity)
 	{
 		m_enemyReachableTimer = 0.0f;
-		m_enemyActionMod = false;
+		m_escapeEnemyAction = false;
 		SetEntityWaypoint(m_iEntity, GetEntityWaypoint(entity));
 	}
 
