@@ -1183,11 +1183,9 @@ void Bot::ActionForEnemy(void)
 			loadNewWaypoint = true;
 		}
 
-		if (!loadNewWaypoint && &m_navNode[0] != null && m_navNode->next != null)
+		if (!loadNewWaypoint && &m_navNode[0] != null)
 		{
-			const float distance = (g_waypoint->GetPath(m_navNode->next->index)->origin - m_lastEnemyOrigin).GetLength();
-			if (distance <= 120.0f && 
-				distance < (g_waypoint->GetPath(m_navNode->index)->origin - m_lastEnemyOrigin).GetLength())
+			if (m_navNode->next == null)
 				loadNewWaypoint = true;
 			else
 			{
@@ -1197,6 +1195,8 @@ void Bot::ActionForEnemy(void)
 				{
 					node = node->next;
 					if (node->index == enemyWaypoint)
+						loadNewWaypoint = true;
+					else if ((g_waypoint->GetPath(node->index)->origin - m_lastEnemyOrigin).GetLength() < 200.0f)
 						loadNewWaypoint = true;
 				}
 			}
@@ -1232,11 +1232,7 @@ void Bot::ActionForEnemy(void)
 				SetWaypointOrigin();
 			}
 
-			// is there a remembered index?
-			if (g_gameMode == MODE_ZP && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
-				destIndex = FindGoal();
-			else
-				destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 1024.0f);
+			destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 500.0f);
 
 			// remember index
 			m_prevGoalIndex = destIndex;

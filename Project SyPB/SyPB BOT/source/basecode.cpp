@@ -2239,6 +2239,40 @@ Task *Bot::GetCurrentTask (void)
 
 void Bot::RemoveCertainTask (BotTask taskID)
 {
+	// this function removes one task from the bot task stack.
+
+	if (m_tasks == null || (m_tasks != null && m_tasks->taskID == TASK_NORMAL))
+		return; // since normal task can be only once on the stack, don't remove it...
+
+	Task* task = m_tasks;
+	while (task->prev != null)
+		task = task->prev;
+
+	Task* next = null;
+	Task* prev = null;
+
+	while (task != null)
+	{
+		next = task->next;
+		prev = task->prev;
+
+		if (task->taskID == taskID)
+		{
+			if (prev != null)
+				prev->next = next;
+
+			if (next != null)
+				next->prev = prev;
+
+			delete task;
+		}
+
+		task = next;
+	}
+
+	m_tasks = prev;
+
+	/*
    // this function removes one task from the bot task stack.
 
    if (m_tasks == null || (m_tasks != null && m_tasks->taskID == TASK_NORMAL))
@@ -2292,7 +2326,7 @@ void Bot::RemoveCertainTask (BotTask taskID)
       GetCurrentTask ();
 
    if (checkPriorities)
-      CheckTasksPriorities ();
+      CheckTasksPriorities (); */
 }
 
 void Bot::TaskComplete (void)
@@ -3307,6 +3341,7 @@ void Bot::Think(void)
 	}
 	else if (!g_botActionStop && m_botMovement)
 	{
+		DoWaypointNav();
 		ChooseAimDirection();
 		FacePosition();
 	}

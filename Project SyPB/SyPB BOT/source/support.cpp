@@ -1416,21 +1416,26 @@ void AddLogEntry (int logLevel, const char *format, ...)
 
    switch (logLevel)
    {
-   case LOG_DEFAULT:
-      strcpy (levelString, "Log: ");
-      break;
+	   case LOG_MAKEWAYPOINT:
+		   strcpy(levelString, "SgdWP: ");
+		   ChartPrint("[SgdWP] %s", buffer);
+		   break;
 
-   case LOG_WARNING:
-      strcpy (levelString, "Warning: ");
-      break;
+	   case LOG_DEFAULT:
+		   strcpy(levelString, "Log: ");
+		   break;
 
-   case LOG_ERROR:
-      strcpy (levelString, "Error: ");
-      break;
+	   case LOG_WARNING:
+		   strcpy(levelString, "Warning: ");
+		   break;
 
-   case LOG_FATAL:
-      strcpy (levelString, "Critical: ");
-      break;
+	   case LOG_ERROR:
+		   strcpy(levelString, "Error: ");
+		   break;
+
+	   case LOG_FATAL:
+		   strcpy(levelString, "Critical: ");
+		   break;
    }
 
    sprintf(logLine, "%s%s", levelString, buffer);
@@ -1491,7 +1496,7 @@ void MOD_AddLogEntry(int mod, char *format)
 		return;
 
 	time_t tickTime = time(&tickTime);
-	tm *time = localtime(&tickTime);
+	const tm *time = localtime(&tickTime);
 
 	int buildVersion[4] = { SYPB_VERSION_DWORD };
 	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };

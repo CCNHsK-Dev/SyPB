@@ -364,8 +364,7 @@ void Waypoint::SgdWp_Set (const char *modset)
 
 			// SyPB Pro P.38 - SgdWP Msg
 			ChartPrint("[SgdWP] Save your waypoint - Finsh *******");
-			ChartPrint("[SgdWP] Pls restart the game and re-load the waypoint *******");
-			ChartPrint("[SgdWP] Pls restart the game and re-load the waypoint *******");
+			Load();
 		}
 		else
 		{
@@ -960,12 +959,16 @@ void Waypoint::CreatePath (char dir)
 
 
 // SyPB Pro P.12
-void Waypoint:: TeleportWaypoint (void)
+void Waypoint:: TeleportWaypoint (int waypointId)
 {
-	m_facingAtIndex = GetFacingIndex ();
+	if (waypointId == -2)
+	{
+		m_facingAtIndex = GetFacingIndex();
+		waypointId = m_facingAtIndex;
+	}
 	
-	if (m_facingAtIndex != -1)
-		(*g_engfuncs.pfnSetOrigin) (g_hostEntity, g_waypoint->m_paths[m_facingAtIndex]->origin);
+	if (waypointId != -1)
+		(*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[waypointId]->origin);
 }
 
 void Waypoint::DeletePath (void)
@@ -1194,10 +1197,6 @@ void Waypoint::InitTypes (int mode)
 
 void Waypoint::tryDownloadWaypoint(void)
 {
-	extern ConVar sypb_download_waypoint;
-	if (sypb_download_waypoint.GetBool() == false)
-		return;
-
 	EraseFromHardDisk(false);
 
 	String saveFile = "", downloadURL = "";
@@ -1257,6 +1256,11 @@ bool Waypoint::Load(void)
 	}
 
 	fp.Read(&header, sizeof(header));
+	//if (header.date == null)
+	//{
+	//	fp.Rewind();
+	//	fp.Read(&header, sizeof(WaypointHeaderOld));
+	//}
 
 	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) == 0)
 	{
@@ -1279,7 +1283,18 @@ bool Waypoint::Load(void)
 
 		Initialize();
 		g_numWaypoints = header.pointNumber;
-
+		/*
+		if (header.date == null)
+		{
+			sprintf(m_infoBuffer, "The Waypoint Have not Date");
+			AddLogEntry(LOG_DEFAULT, m_infoBuffer);
+		}
+		else
+		{
+			sprintf(m_infoBuffer, "The Waypoint Date is %d", header.date);
+			AddLogEntry(LOG_DEFAULT, m_infoBuffer);
+		}
+		*/
 		for (int i = 0; i < g_numWaypoints; i++)
 		{
 			m_paths[i] = new Path;
@@ -1348,6 +1363,10 @@ void Waypoint::Save (void)
    header.fileVersion = FV_WAYPOINT;
    header.pointNumber = g_numWaypoints;
 
+   //time_t tick = time(null);
+   //const tm* time = localtime(&tick);
+   //header.date = time->tm_mday + (time->tm_mon + 1) * 100 + (time->tm_year + 1900) * 10000;
+
    File fp (CheckSubfolderFile (), "wb");
 
    // file was opened
@@ -1365,8 +1384,8 @@ void Waypoint::Save (void)
       // save XML version
       SaveXML ();
 
-	  String deletePmtFile;
-	  sprintf(deletePmtFile, "%sdata/%s.pmt", GetWaypointDir(), GetMapName());
+	  String deletePmtFile = "";
+	  deletePmtFile = FormatBuffer("%sdata/%s.pmt", GetWaypointDir(), GetMapName());
 	  if (TryFileOpen(deletePmtFile))
 		  unlink(deletePmtFile);
    }
@@ -2160,10 +2179,9 @@ bool Waypoint::NodesValid (void)
          {
             if (m_paths[i]->index[j] > g_numWaypoints)
             {
-               AddLogEntry (LOG_WARNING, "Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
+               AddLogEntry (LOG_MAKEWAYPOINT, "Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
+			   TeleportWaypoint(i);
 			   haveError = true;
-			   if (g_sgdWaypoint)
-				   ChartPrint("[SgdWP] Waypoint %d connected with invalid Waypoint #%d!", i, m_paths[i]->index[j]);
             }
             connections++;
             break;
@@ -2174,29 +2192,26 @@ bool Waypoint::NodesValid (void)
       {
          if (!IsConnected (i))
          {
-            AddLogEntry (LOG_WARNING, "Waypoint %d isn't connected with any other Waypoint!", i);
+            AddLogEntry (LOG_MAKEWAYPOINT, "Waypoint %d isn't connected with any other Waypoint!", i);
+			TeleportWaypoint(i);
 			haveError = true;
-			if (g_sgdWaypoint)
-				ChartPrint("[SgdWP] Waypoint %d isn't connected with any other Waypoint!", i);
          }
       }
 
       if (m_paths[i]->pathNumber != i)
       {
-         AddLogEntry (LOG_WARNING, "Waypoint %d pathnumber differs from index!", i);
+         AddLogEntry (LOG_MAKEWAYPOINT, "Waypoint %d pathnumber differs from index!", i);
+		 TeleportWaypoint(i);
 		 haveError = true;
-		 if (g_sgdWaypoint)
-			 ChartPrint("[SgdWP] Waypoint %d pathnumber differs from index!", i);
       }
 
       if (m_paths[i]->flags & WAYPOINT_CAMP)
       {
          if (m_paths[i]->campEndX == 0 && m_paths[i]->campEndY == 0)
          {
-            AddLogEntry (LOG_WARNING, "Waypoint %d Camp-Endposition not set!", i);
+            AddLogEntry (LOG_MAKEWAYPOINT, "Waypoint %d Camp-Endposition not set!", i);
+			TeleportWaypoint(i);
 			haveError = true;
-			if (g_sgdWaypoint)
-				ChartPrint("[SgdWP] Waypoint %d Camp-Endposition not set!", i);
          }
       }
       else if (m_paths[i]->flags & WAYPOINT_TERRORIST)
@@ -2214,27 +2229,23 @@ bool Waypoint::NodesValid (void)
          {
             if (m_paths[i]->index[k] >= g_numWaypoints || m_paths[i]->index[k] < -1)
             {
-               AddLogEntry (LOG_WARNING, "Waypoint %d - Pathindex %d out of Range!", i, k);
-               (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
+               AddLogEntry (LOG_MAKEWAYPOINT, "Waypoint %d - Pathindex %d out of Range!", i, k);
+			   TeleportWaypoint(i);
 
                g_waypointOn = true;
                g_editNoclip = true;
 
 			   haveError = true;
-			   if (g_sgdWaypoint)
-				   ChartPrint("[SgdWP] Waypoint %d - Pathindex %d out of Range!", i, k);
             }
             else if (m_paths[i]->index[k] == i)
             {
-               AddLogEntry (LOG_WARNING, "Waypoint %d - Pathindex %d points to itself!", i, k);
-               (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
+               AddLogEntry (LOG_MAKEWAYPOINT, "Waypoint %d - Pathindex %d points to itself!", i, k);
+			   TeleportWaypoint(i);
 
                g_waypointOn = true;
                g_editNoclip = true;
 
 			   haveError = true;
-			   if (g_sgdWaypoint)
-				   ChartPrint("[SgdWP] Waypoint %d - Pathindex %d points to itself!", i, k);
             }
          }
       }
@@ -2243,33 +2254,25 @@ bool Waypoint::NodesValid (void)
    {
       if (rescuePoints == 0)
       {
-         AddLogEntry (LOG_WARNING, "You didn't set a Rescue Point!");
+         AddLogEntry (LOG_MAKEWAYPOINT, "You didn't set a Rescue Point!");
 		 haveError = true;
-		 if (g_sgdWaypoint)
-			 ChartPrint("[SgdWP] You didn't set a Rescue Point!");
       }
    }
 
    if (terrPoints == 0)
    {
-      AddLogEntry (LOG_WARNING, "You didn't set any Terrorist Important Point!");
+      AddLogEntry (LOG_MAKEWAYPOINT, "You didn't set any Terrorist Important Point!");
 	  haveError = true;
-	  if (g_sgdWaypoint)
-		  ChartPrint("[SgdWP] You didn't set any Terrorist Important Point!");
    }
    else if (ctPoints == 0)
    {
-      AddLogEntry (LOG_WARNING, "You didn't set any CT Important Point!");
+      AddLogEntry (LOG_MAKEWAYPOINT, "You didn't set any CT Important Point!");
 	  haveError = true;
-	  if (g_sgdWaypoint)
-		  ChartPrint("[SgdWP] You didn't set any CT Important Point!");
    }
    else if (goalPoints == 0)
    {
-      AddLogEntry (LOG_WARNING, "You didn't set any Goal Point!");
+      AddLogEntry (LOG_MAKEWAYPOINT, "You didn't set any Goal Point!");
 	  haveError = true;
-	  if (g_sgdWaypoint)
-		  ChartPrint("[SgdWP] You didn't set any Goal Point!");
    }
 
    // perform DFS instead of floyd-warshall, this shit speedup this process in a bit
@@ -2316,15 +2319,13 @@ bool Waypoint::NodesValid (void)
    {
       if (!visited[i])
       {
-         AddLogEntry (LOG_WARNING, "Path broken from Waypoint #0 to Waypoint #%d!", i);
-         (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
+         AddLogEntry (LOG_MAKEWAYPOINT, "Path broken from Waypoint #0 to Waypoint #%d!", i);
+		 TeleportWaypoint(i);
 
          g_waypointOn = true;
          g_editNoclip = true;
 
 		 haveError = true;
-		 if (g_sgdWaypoint)
-			 ChartPrint("[SgdWP] Path broken from Waypoint #0 to Waypoint #%d!", i);
       }
    }
 
@@ -2376,15 +2377,13 @@ bool Waypoint::NodesValid (void)
    {
       if (!visited[i])
       {
-         AddLogEntry (LOG_WARNING, "Path broken from Waypoint #%d to Waypoint #0!", i);
-         (*g_engfuncs.pfnSetOrigin) (g_hostEntity, m_paths[i]->origin);
+         AddLogEntry (LOG_MAKEWAYPOINT, "Path broken from Waypoint #%d to Waypoint #0!", i);
+		 TeleportWaypoint(i);
 
          g_waypointOn = true;
          g_editNoclip = true;
 
 		 haveError = true;
-		 if (g_sgdWaypoint)
-			 ChartPrint("[SgdWP] Path broken from Waypoint #%d to Waypoint #0!", i);
       }
    }
 

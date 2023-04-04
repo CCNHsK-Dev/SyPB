@@ -97,12 +97,12 @@ enum GameVersion
 // log levels
 enum LogLevel
 {
-   LOG_DEFAULT = 1, // default log message
-   LOG_WARNING = 2, // warning log message
-   LOG_ERROR = 3, // error log message
-   LOG_IGNORE = 4, // additional flag
-   LOG_FATAL = 5  // fatal error log message (terminate the game!)
-
+	LOG_MAKEWAYPOINT = 0, 
+	LOG_DEFAULT = 1, // default log message
+	LOG_WARNING = 2, // warning log message
+	LOG_ERROR = 3, // error log message
+	LOG_IGNORE = 4, // additional flag
+	LOG_FATAL = 5  // fatal error log message (terminate the game!)
 };
 
 // chat types id's
@@ -549,6 +549,16 @@ struct WaypointHeader
    int32 pointNumber;
    char mapName[32];
    char author[32];
+   //unsigned int date;
+};
+
+struct WaypointHeaderOld
+{
+	char header[8];
+	int32 fileVersion;
+	int32 pointNumber;
+	char mapName[32];
+	char author[32];
 };
 
 // define general waypoint structure
@@ -1280,7 +1290,7 @@ public:
 
    void DeleteFlags(void);
 
-   void TeleportWaypoint (void);
+   void TeleportWaypoint (int waypointId);
    void SgdWp_Set (const char *modset);
 
    float GetTravelTime (float maxSpeed, Vector src, Vector origin);

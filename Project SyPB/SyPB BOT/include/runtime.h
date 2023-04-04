@@ -2979,7 +2979,7 @@ private:
       memset (timeFormatStr, 0, sizeof (char) * 32);
 
       time_t tick = time (&tick);
-      tm *time = localtime (&tick);
+      const tm *time = localtime (&tick);
 
       sprintf (timeFormatStr, "%02i:%02i:%02i", time->tm_hour, time->tm_min, time->tm_sec);
 

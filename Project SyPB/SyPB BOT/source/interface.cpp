@@ -34,7 +34,7 @@ ConVar sypb_debug("sypb_debug", "0");
 ConVar sypb_password ("sypb_password", "", VARTYPE_PASSWORD);
 ConVar sypb_password_key ("sypb_password_key", "_sypb_wp");
 
-ConVar sypb_download_waypoint("sypb_download_waypoint", "1");
+ConVar sypb_download_waypoint("sypb_download_waypoint", "2");
 
 ConVar sypb_language ("sypb_language", "en");
 ConVar sypb_version ("sypb_version", SYPB_VERSION, VARTYPE_READONLY);
@@ -490,7 +490,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
          if (teleportPoint < g_numWaypoints)
          {
-            (*g_engfuncs.pfnSetOrigin) (g_hostEntity, g_waypoint->GetPath (teleportPoint)->origin);
+			g_waypoint->TeleportWaypoint(teleportPoint);
             g_waypointOn = true;
 
             ServerPrint ("Player '%s' teleported to waypoint #%d (x:%.1f, y:%.1f, z:%.1f)", GetEntityName (g_hostEntity), teleportPoint, g_waypoint->GetPath (teleportPoint)->origin.x, g_waypoint->GetPath (teleportPoint)->origin.y, g_waypoint->GetPath (teleportPoint)->origin.z);
@@ -1854,7 +1854,7 @@ void ClientCommand(edict_t *ent)
 
 				case 5:
 					DisplayMenuToClient(ent, &g_menus[21]);
-					g_waypoint->TeleportWaypoint(); // Teleport to Waypoint
+					g_waypoint->TeleportWaypoint(-2); // Teleport to Waypoint
 					break;
 
 				case 6:
@@ -2442,7 +2442,10 @@ void ServerActivate (edict_t *pentEdictList, int edictCount, int clientMax)
    g_waypoint->Initialize ();
    g_exp.Unload(); // SyPB Pro P.35 - Debug new maps
 
-   if (!g_waypoint->Load())
+   if (sypb_download_waypoint.GetInt() == 2)
+	   g_waypoint->tryDownloadWaypoint();
+
+   if (!g_waypoint->Load() && sypb_download_waypoint.GetInt() == 1)
 	   g_waypoint->tryDownloadWaypoint();
 
    // execute main config

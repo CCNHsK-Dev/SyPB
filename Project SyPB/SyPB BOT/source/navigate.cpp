@@ -446,7 +446,7 @@ bool Bot::DoWaypointNav (void)
 
 		   m_jumpFinished = true;
 		   m_checkTerrain = false;
-		   m_desiredVelocity = nullvec;
+		   //m_desiredVelocity = nullvec;
 	   }
    }
 
@@ -2299,83 +2299,58 @@ int Bot::GetCampAimingWaypoint(void)
 
 void Bot::CheckFall(void)
 {
-	// SyPB Pro P.40 - Fall Ai
+	const bool onFloor = IsOnFloor();
 	if (!m_checkFall)
 	{
-		if (!IsOnFloor() && !IsOnLadder() && !IsInWater())
+		if (onFloor)
+		{
+			m_checkFallPoint[0] = m_iOrigin;
+
+			if (!FNullEnt(m_enemy))
+				m_checkFallPoint[1] = GetEntityOrigin(m_enemy);
+			else if (m_currentWaypointIndex != -1)
+				m_checkFallPoint[1] = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
+			else
+				m_checkFallPoint[1] = nullvec;
+		}
+		else if (!IsOnLadder() && !IsInWater())
 		{
 			if (m_checkFallPoint[0] != nullvec && m_checkFallPoint[1] != nullvec)
 				m_checkFall = true;
 		}
-		else if (IsOnFloor())
-		{
-			if (!FNullEnt(m_enemy))
-			{
-				m_checkFallPoint[0] = m_iOrigin;
-				m_checkFallPoint[1] = GetEntityOrigin(m_enemy);
-			}
-			else
-			{
-				if (m_prevWptIndex != -1)
-					m_checkFallPoint[0] = g_waypoint->GetPath(m_prevWptIndex)->origin;
-				else
-					m_checkFallPoint[0] = m_iOrigin;
-
-				if (m_currentWaypointIndex != -1)
-					m_checkFallPoint[1] = g_waypoint->GetPath(m_currentWaypointIndex)->origin;
-				else if (&m_navNode[0] != null)
-					m_checkFallPoint[1] = g_waypoint->GetPath(m_navNode->index)->origin;
-			}
-		}
 	}
-	else
+
+	if (!m_checkFall || !onFloor)
+		return;
+
+	m_checkFall = false;
+	bool fixFall = false;
+
+	if (m_iOrigin.z + 128.0f < m_checkFallPoint[1].z && m_iOrigin.z + 128.0f < m_checkFallPoint[0].z)
+		fixFall = true;
+	else if (m_currentWaypointIndex != -1)
 	{
-		if (IsOnLadder() || IsInWater())
-		{
-			m_checkFallPoint[0] = nullvec;
-			m_checkFallPoint[1] = nullvec;
-			m_checkFall = false;
-		}
-		else if (IsOnFloor())
-		{
-			bool fixFall = false;
-
-			const float baseDistance = (m_checkFallPoint[0] - m_checkFallPoint[1]).GetLength();
-			const float nowDistance = (m_iOrigin - m_checkFallPoint[1]).GetLength();
-
-			if (nowDistance > baseDistance &&
-				(nowDistance > baseDistance * 1.2 || nowDistance > baseDistance + 200.0f) &&
-				baseDistance >= 80.0f && nowDistance >= 100.0f)
-				fixFall = true;
-			else if (m_iOrigin.z + 128.0f < m_checkFallPoint[1].z && m_iOrigin.z + 128.0f < m_checkFallPoint[0].z)
-				fixFall = true;
-			else if (m_currentWaypointIndex != -1)
-			{
-				const float distance2D = (m_iOrigin - m_checkFallPoint[1]).GetLength();
-				if (distance2D <= 32.0f && m_iOrigin.z + 16.0f < m_checkFallPoint[1].z)
-					fixFall = true;
-			}
-
-			m_checkFallPoint[0] = nullvec;
-			m_checkFallPoint[1] = nullvec;
-			m_checkFall = false;
-
-			if (fixFall)
-			{
-				// SyPB Pro P.42 - Fall Ai improve
-				SetEntityWaypoint(m_iEntity,
-					(FNullEnt (m_moveTargetEntity)) ? -2 : GetEntityWaypoint (m_moveTargetEntity));
-				m_currentWaypointIndex = -1;
-				GetValidWaypoint();
-
-				// SyPB Pro P.39 - Fall Ai improve
-				if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
-					m_enemyUpdateTime = engine->GetTime();
-
-				m_checkTerrain = false;
-			}
-		}
+		if ((m_iOrigin - m_checkFallPoint[1]).GetLength() <= 32.0f && m_iOrigin.z + 64.0f < m_checkFallPoint[1].z)
+			fixFall = true;
 	}
+
+	if (!fixFall)
+		return;
+
+	// SyPB Pro P.42 - Fall Ai improve
+	SetEntityWaypoint(m_iEntity,
+		(FNullEnt(m_moveTargetEntity)) ? -2 : GetEntityWaypoint(m_moveTargetEntity));
+	m_currentWaypointIndex = -1;
+	GetValidWaypoint();
+
+	// SyPB Pro P.39 - Fall Ai improve
+	if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
+		m_enemyUpdateTime = engine->GetTime();
+
+	m_checkTerrain = false;
+
+	if (m_buttonFlags & IN_JUMP)
+		m_buttonFlags &= ~IN_JUMP;
 }
 
 void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
@@ -2650,7 +2625,11 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				{
 					if (IsInWater() || !m_isZombieBot || m_damageTime < engine->GetTime() ||
 						m_currentTravelFlags & PATHFLAG_JUMP)
+					{
+						if (m_desiredVelocity != nullvec)
+							pev->velocity = m_desiredVelocity;
 						m_buttonFlags |= IN_JUMP;
+					}
 				}
 				break;
 
