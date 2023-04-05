@@ -3350,6 +3350,7 @@ void Bot::Think(void)
 	{
 		MoveAction();
 		BotDebugModeMsg();
+
 	}
 
 	RunPlayerMovement();
@@ -3359,7 +3360,6 @@ void Bot::ThinkFrame(void)
 {
    pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
 
-   m_oldButtonFlags = m_buttonFlags;
    m_buttonFlags = 0;
 
    m_moveSpeed = 0.0f;
@@ -5998,18 +5998,22 @@ void Bot::RunPlayerMovement(void)
 	// SyPB Pro P.41 - Run Player Move
 	m_frameInterval = engine->GetTime() - m_lastCommandTime;
 
-	uint8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
-	if (pev->flags & FL_FROZEN)
-		msecVal = 0;
-	else if(msecVal > 255)
-		msecVal = 255;
+	if (m_playerFps > engine->GetTime())
+	{
+		if (!(m_buttonFlags & IN_JUMP))
+			return;
+	}
+	else
+		m_playerFps = engine->GetTime() + (1.0f / 145.0f);
 
+	const uint8 msecVal = static_cast <uint8> ((engine->GetTime() - m_lastCommandTime) * 1000.0f);
 	m_lastCommandTime = engine->GetTime();
 
 	(*g_engfuncs.pfnRunPlayerMove) (m_iEntity, m_moveAngles, m_moveSpeed, m_strafeSpeed, 0.0f,
 		m_buttonFlags, static_cast <uint8> (pev->impulse), msecVal);
-}
 
+	m_oldButtonFlags = m_buttonFlags;
+}
 
 void Bot::CheckBurstMode (float distance)
 {

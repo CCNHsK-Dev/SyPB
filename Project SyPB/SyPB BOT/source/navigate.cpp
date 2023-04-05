@@ -1037,7 +1037,7 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
 
          // calculate the F value as F = G + H
 		 const float g = astar[currentIndex].g + gcalc (self, currentIndex, m_team, offset);
-		 const float h = hcalc (srcIndex, destIndex);
+		 const float h = hcalc (self, destIndex); // Thank EfeDursun125 :)
 		 const float f = g + h;
 
          if (astar[self].state == NEW || astar[self].f > f)

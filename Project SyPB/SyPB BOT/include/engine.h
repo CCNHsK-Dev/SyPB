@@ -3285,6 +3285,7 @@ public:
 
    int GetMaxClients (void);
 
+
    void PrintAllClients (PrintType printType, const char *format, ...);
 
    const Entity &GetEntityByIndex (int index);

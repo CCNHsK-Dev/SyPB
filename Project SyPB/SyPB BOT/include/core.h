@@ -961,6 +961,7 @@ public:
    float m_fearLevel; // dynamic fear level (in game)
    float m_nextEmotionUpdate; // next time to sanitize emotions
    float m_thinkFps; // skip some frames in bot thinking 
+   float m_playerFps;
    float m_thinkInterval; // interval between frames
    bool m_escapeEnemyAction;
 
