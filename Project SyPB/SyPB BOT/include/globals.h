@@ -29,6 +29,8 @@
 #ifndef GLOBALS_INCLUDED
 #define GLOBALS_INCLUDED
 
+extern uint16 g_sypbbV16[4];
+
 // SyPB Pro P.31 - AMXX API
 extern float API_Version;
 extern float amxxDLL_Version;
@@ -45,7 +47,6 @@ extern bool g_bombSayString;
 extern bool g_roundEnded;
 extern bool g_waypointOn;
 extern bool g_waypointsChanged;
-extern bool g_autoWaypoint;
 extern bool g_botsCanPause; 
 extern bool g_editNoclip;
 extern bool g_isMetamod;

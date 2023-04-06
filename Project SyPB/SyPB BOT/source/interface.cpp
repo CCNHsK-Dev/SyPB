@@ -52,29 +52,7 @@ ConVar sypb_showwp("sypb_showwp", "0");
 // SyPB Pro P.47 - SyPB Version MSG
 void SyPBVersionMSG(edict_t *entity = null)
 {
-	const int buildVersion[4] = { SYPB_VERSION_DWORD };
-	const uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-	const uint16 amxxbV16[4] = { amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3] };
-	const uint16 swnpcbV16[4] = { SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3] };
-	/*
-	if (amxxDLL_Version == -1.0)
-	{
-		amxxbV16[0] = 0;
-		amxxbV16[1] = 0;
-		amxxbV16[2] = 0;
-		amxxbV16[3] = 0;
-	}
-	
-	if (SwNPC_Version == -1.0)
-	{
-		swnpcbV16[0] = 0;
-		swnpcbV16[1] = 0;
-		swnpcbV16[2] = 0;
-		swnpcbV16[3] = 0;
-	}
-	*/
-	char versionData[1024];
-	sprintf(versionData, 
+	const char* versionData = FormatBuffer(
 		"------------------------------------------------\n"
 		"%s %s\n"
 		"Build: %u.%u.%u.%u\n"
@@ -95,21 +73,20 @@ void SyPBVersionMSG(edict_t *entity = null)
 		"Meta-Interface Version: %s\n"
 		"------------------------------------------------",
 		SYPB_NAME, SYPB_VERSION,
-		bV16[0], bV16[1], bV16[2], bV16[3],
-		float(SYPBAPI_VERSION_F),
-		float(SWNPC_VERSION_F),
+		g_sypbbV16[0], g_sypbbV16[1], g_sypbbV16[2], g_sypbbV16[3],
+		float{ SYPBAPI_VERSION_F }, float{ SWNPC_VERSION_F },
 		//API_Version, 
-		(amxxDLL_Version == -1.0 || amxxDLL_Version != float(SYPBAPI_VERSION_F)) ? "FAIL" : "RUNNING",
+		(amxxDLL_Version == -1.0 || amxxDLL_Version != float{ SYPBAPI_VERSION_F }) ? "FAIL" : "RUNNING",
 		(amxxDLL_Version == -1.0) ? 0.00 : amxxDLL_Version,
-		amxxbV16[0], amxxbV16[1], amxxbV16[2], amxxbV16[3],
-		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float(SYPBAPI_VERSION_F) ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float(SYPBAPI_VERSION_F) ? "You can upgarde your SyPB AMXX API Version\n" : "")),
+		amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3],
+		(amxxDLL_Version == -1.0) ? "You can install SyPB AMXX API\n" : (amxxDLL_Version > float{ SYPBAPI_VERSION_F } ? "You can upgarde your SyPB Version\n" : (amxxDLL_Version < float{ SYPBAPI_VERSION_F } ? "You can upgarde your SyPB AMXX API Version\n" : "")),
 		// SwNPC
-		(SwNPC_Version == -1.0 || SwNPC_Version != float(SWNPC_VERSION_F)) ? "FAIL" : "RUNNING",
+		(SwNPC_Version == -1.0 || SwNPC_Version != float{ SWNPC_VERSION_F }) ? "FAIL" : "RUNNING",
 		(SwNPC_Version == -1.0) ? 0.00 : SwNPC_Version,
-		swnpcbV16[0], swnpcbV16[1], swnpcbV16[2], swnpcbV16[3],
-		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float(SWNPC_VERSION_F) ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float(SWNPC_VERSION_F) ? "You can upgarde your SwNPC Version\n" : "")),
+		SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3],
+		(SwNPC_Version == -1.0) ? "You can install SwNPC\n" : (SwNPC_Version > float{ SWNPC_VERSION_F } ? "You can upgarde your SyPB Version\n" : (SwNPC_Version < float{ SWNPC_VERSION_F } ? "You can upgarde your SwNPC Version\n" : "")),
 		PRODUCT_AUTHOR, PRODUCT_URL, __DATE__, __TIME__, META_INTERFACE_VERSION);
-
+	
 	if (IsValidPlayer (entity))
 		ClientPrint(entity, print_console, versionData);
 	else
@@ -536,27 +513,6 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       // sets auto path maximum distance
       else if (stricmp (arg1, "autodistance") == 0)
          DisplayMenuToClient (g_hostEntity, &g_menus[19]);
-   }
-
-   // automatic waypoint handling (supported only on listen server)
-   else if (stricmp (arg0, "autowaypoint") == 0 || stricmp (arg0, "autowp") == 0)
-   {
-      if (IsDedicatedServer () || FNullEnt (g_hostEntity))
-         return 2;
-
-      // enable autowaypointing
-      if (stricmp (arg1, "on") == 0)
-      {
-         g_autoWaypoint = true;
-         g_waypointOn = true; // turn this on just in case
-      }
-
-      // disable autowaypointing
-      else if (stricmp (arg1, "off") == 0)
-         g_autoWaypoint = false;
-
-      // display status
-      ServerPrint ("Auto-Waypoint %s", g_autoWaypoint ? "Enabled" : "Disabled");
    }
 
    // SyPB Pro P.12
@@ -1540,14 +1496,6 @@ void ClientCommand(edict_t *ent)
 				}
 					break;
 
-				case 2:
-					g_waypointOn = true;
-					g_autoWaypoint &= 1;
-					g_autoWaypoint ^= 1;
-
-					CenterPrint("Auto-Waypoint %s", g_autoWaypoint ? "Enabled" : "Disabled");
-					break;
-
 				case 3:
 					g_waypointOn = true;
 					DisplayMenuToClient(ent, &g_menus[13]);
@@ -2442,6 +2390,12 @@ void ServerActivate (edict_t *pentEdictList, int edictCount, int clientMax)
    g_waypoint->Initialize ();
    g_exp.Unload(); // SyPB Pro P.35 - Debug new maps
 
+   const int buildVersion[4] = { SYPB_VERSION_DWORD };
+   g_sypbbV16[0] = (uint16)buildVersion[0];
+   g_sypbbV16[1] = (uint16)buildVersion[1];
+   g_sypbbV16[2] = (uint16)buildVersion[2];
+   g_sypbbV16[3] = (uint16)buildVersion[3];
+
    if (sypb_download_waypoint.GetInt() == 2)
 	   g_waypoint->tryDownloadWaypoint();
 
@@ -2648,6 +2602,9 @@ void StartFrame (void)
 	{
 		if (g_waypointOn)
 		{
+			if (sypb_showwp.GetBool() == true)
+				sypb_showwp.SetInt(0);
+
 			// SyPB Pro P.30 - small change
 			bool hasBot = false;
 			for (int i = 0; i < engine->GetMaxClients(); i++)
@@ -2662,9 +2619,6 @@ void StartFrame (void)
 
 			if (!hasBot)
 				g_waypoint->Think();
-
-			if (sypb_showwp.GetBool() == true)
-				sypb_showwp.SetInt(0);
 		}
 		// SyPB Pro P.38 - Show Waypoint Msg
 		else if (sypb_showwp.GetBool() == true)
@@ -2684,10 +2638,6 @@ void StartFrame (void)
 		g_secondTime = engine->GetTime() + 1.0f;
 
 		SetGameMode(sypb_gamemod.GetInt());
-
-		extern ConVar sypb_dangerfactor;
-		if (sypb_dangerfactor.GetFloat() >= 4096.0f)
-			sypb_dangerfactor.SetFloat(4096.0f);
 
 		if (g_bombPlanted)
 			g_waypoint->SetBombPosition();
@@ -3493,7 +3443,7 @@ export void Meta_Init (void)
 // SyPB Pro P.30 - AMXX API
 C_DLLEXPORT bool Amxx_RunSypb(void)
 {
-	API_Version = float(SYPBAPI_VERSION_F); // SyPB API_P
+	API_Version = float{ SYPBAPI_VERSION_F }; // SyPB API_P
 	API_TestMSG("Amxx_RunSypb Checking - Done");
 	return true;
 }
@@ -3907,7 +3857,7 @@ C_DLLEXPORT void SwNPC_GetHostEntity(edict_t **hostEntity)
 
 C_DLLEXPORT float SwNPC_SyPBSupportVersion(void)
 {
-	return float(SWNPC_VERSION_F);
+	return float{ SWNPC_VERSION_F };
 }
 
 C_DLLEXPORT void SwNPC_CheckBuild(float version, int bu1, int bu2, int bu3, int bu4)

@@ -852,22 +852,9 @@ inline const float GF_CostNoHostageDist (int index, int parent, int, float offse
    return GF_CostDist (index, parent, TEAM_COUNTER, offset);
 }
 
-inline const float HF_PathDist (int start, int goal)
-{
-	const Path *pathStart = g_waypoint->GetPath (start);
-	const Path *pathGoal = g_waypoint->GetPath (goal);
-
-   return fabsf (pathGoal->origin.x - pathStart->origin.x) + fabsf (pathGoal->origin.y - pathStart->origin.y) + fabsf (pathGoal->origin.z - pathStart->origin.z);
-}
-
-inline const float HF_NumberNodes (int start, int goal)
-{
-   return HF_PathDist (start, goal) / 128.0f * g_exp.GetKillHistory ();
-}
-
 inline const float HF_None (int start, int goal)
 {
-   return HF_PathDist (start, goal) / (128.0f * 100.0f);
+	return (g_waypoint->GetPath(start)->origin - g_waypoint->GetPath(goal)->origin).GetLengthSquared();
 }
 
 // SyPB Pro P.42 - Zombie Waypoint improve
@@ -889,7 +876,7 @@ inline const float GF_CostZM(int index, int parent, int team, float offset)
 					for (int j = 0; j < Const_MaxPathIndex; j++)
 					{
 						if (g_waypoint->GetPath(index)->index[j] == g_clients[i].wpIndex)
-							baseCost += pathDist * 2.0f;
+							baseCost += pathDist * 3.0f;
 					}
 				}
 			}
@@ -902,36 +889,10 @@ inline const float GF_CostZM(int index, int parent, int team, float offset)
 	return pathDist + (baseCost * (sypb_dangerfactor.GetFloat() * 2.3f / offset));
 }
 
-inline const float HF_ZB(int start, int goal)
-{
-	const Path *pathStart = g_waypoint->GetPath(start);
-	const Path *pathGoal = g_waypoint->GetPath(goal);
-
-	const float xDist = fabsf(pathStart->origin.x - pathGoal->origin.x);
-	const float yDist = fabsf(pathStart->origin.y - pathGoal->origin.y);
-	const float zDist = fabsf(pathStart->origin.z - pathGoal->origin.z);
-
-	if (xDist > yDist)
-		return 1.4f * yDist + (xDist - yDist) + zDist;
-
-	return 1.4f * xDist + (yDist - xDist) + zDist;
-}
-
 void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
 {
    // this function finds a path from srcIndex to destIndex
 
-   if (srcIndex > g_numWaypoints - 1 || srcIndex < 0)
-   {
-      AddLogEntry (LOG_ERROR, "Pathfinder source path index not valid (%d)", srcIndex);
-      return;
-   }
-
-   if (destIndex > g_numWaypoints - 1 || destIndex < 0)
-   {
-      AddLogEntry (LOG_ERROR, "Pathfinder destination path index not valid (%d)", destIndex);
-      return;
-   }
    DeleteSearchNodes ();
 
    m_chosenGoalIndex = srcIndex;
@@ -964,23 +925,21 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
 
    float offset = 1.0f;
 
+   hcalc = HF_None;
    // SyPB Pro P.42 - Zombie Waypoint improve
    if (m_isZombieBot || IsZombieMode ())
    {
 	   gcalc = GF_CostZM;
-	   hcalc = HF_ZB;
 	   offset = static_cast <float> (m_skill / 20);
    }
    else if (pathType == 1 || (!FNullEnt (m_lastEnemy) && IsZombieEntity (m_lastEnemy)))
    {
       gcalc = HasHostage () ? GF_CostNoHostageDist : GF_CostDist;
-      hcalc = HF_NumberNodes;
       offset = static_cast <float> (m_skill / 25);
    }
    else
    {
       gcalc = HasHostage () ? GF_CostNoHostage : GF_Cost;
-      hcalc = HF_None;
       offset = static_cast <float> (m_skill / 20);
    }
 
@@ -1021,56 +980,56 @@ void Bot::FindPath (int srcIndex, int destIndex, uint8_t pathType)
          return;
       }
 
-      if (astar[currentIndex].state != OPEN)
-         continue;
+	  if (astar[currentIndex].state != OPEN)
+		  continue;
 
-      // put current node into CLOSED list
-      astar[currentIndex].state = CLOSED;
+	  // put current node into CLOSED list
+	  astar[currentIndex].state = CLOSED;
 
-      // now expand the current node
-      for (int i = 0; i < Const_MaxPathIndex; i++)
-      {
-         int self = g_waypoint->GetPath (currentIndex)->index[i];
+	  // now expand the current node
+	  for (int i = 0; i < Const_MaxPathIndex; i++)
+	  {
+		  int self = g_waypoint->GetPath(currentIndex)->index[i];
 
-         if (self == -1)
-            continue;
+		  if (self == -1)
+			  continue;
 
-         // calculate the F value as F = G + H
-		 const float g = astar[currentIndex].g + gcalc (self, currentIndex, m_team, offset);
-		 const float h = hcalc (self, destIndex); // Thank EfeDursun125 :)
-		 const float f = g + h;
+		  // calculate the F value as F = G + H
+		  const float g = astar[currentIndex].g + gcalc(self, currentIndex, m_team, offset);
+		  const float h = hcalc(self, destIndex); // Thank EfeDursun125 :)
+		  const float f = g + h;
 
-         if (astar[self].state == NEW || astar[self].f > f)
-         {
-            // put the current child into open list
-            astar[self].parent = currentIndex;
-            astar[self].state = OPEN;
+		  if (astar[self].state == NEW || astar[self].f > f)
+		  {
+			  // put the current child into open list
+			  astar[self].parent = currentIndex;
+			  astar[self].state = OPEN;
 
-            astar[self].g = g;
-            astar[self].f = f;
+			  astar[self].g = g;
+			  astar[self].f = f;
 
-            openList.Insert (self, g);
-         }
-      }
+			  openList.Insert(self, g);
+		  }
+	  }
    }
-   FindShortestPath (srcIndex, destIndex); // A* found no path, try floyd pathfinder instead
+   FindShortestPath(srcIndex, destIndex); // A* found no path, try floyd pathfinder instead
 }
 
-void Bot::DeleteSearchNodes (void)
+void Bot::DeleteSearchNodes(void)
 {
-   PathNode *deletingNode = null;
-   PathNode *node = m_navNodeStart;
+	PathNode* deletingNode = null;
+	PathNode* node = m_navNodeStart;
 
-   while (node != null)
-   {
-      deletingNode = node->next;
-      delete node;
+	while (node != null)
+	{
+		deletingNode = node->next;
+		delete node;
 
-      node = deletingNode;
-   }
-   m_navNodeStart = null;
-   m_navNode = null;
-   m_chosenGoalIndex = -1;
+		node = deletingNode;
+	}
+	m_navNodeStart = null;
+	m_navNode = null;
+	m_chosenGoalIndex = -1;
 }
 
 void Bot::CheckWeaponData(int state, int weaponId, int clip)
@@ -1096,10 +1055,10 @@ void Bot::CheckWeaponData(int state, int weaponId, int clip)
 }
 
 // SyPB Pro P.38 - Breakable improve 
-void Bot::CheckTouchEntity(edict_t *entity)
+void Bot::CheckTouchEntity(edict_t* entity)
 {
 	// SyPB Pro P.40 - Touch Entity Attack Action
-	if (m_currentWeapon == WEAPON_KNIFE && 
+	if (m_currentWeapon == WEAPON_KNIFE &&
 		(entity == m_enemy || entity == m_lastEnemy || entity == m_moveTargetEntity || entity == m_breakableEntity))
 		KnifeAttack((m_iOrigin - GetEntityOrigin(entity)).GetLength() + 0.1f);
 
@@ -2377,7 +2336,17 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		else
 			m_campButtons = m_buttonFlags & IN_DUCK;
 
-		PushTask(TASK_DESTROYBREAKABLE, TASKPRI_SHOOTBREAKABLE, -1, 0.0, false);
+		float taskpri = TASKPRI_SHOOTBREAKABLE;
+		if (!FNullEnt(m_lastEnemy))
+		{
+			taskpri -= 5.0f;
+			if (m_lastEnemy->v.health <= 80 || (m_lastEnemyOrigin - m_iOrigin).GetLength() < 200.0f)
+				taskpri -= 10.0f;
+
+			if (m_breakableEntity->v.health <= 30)
+				taskpri += 5.0f;
+		}
+		PushTask(TASK_DESTROYBREAKABLE, taskpri, -1, 0.0, false);
 		return;
 	}
 

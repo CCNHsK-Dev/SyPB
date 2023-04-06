@@ -336,7 +336,6 @@ void Waypoint::SgdWp_Set (const char *modset)
 		ServerCommand ("mp_freezetime 0");
 
 		g_waypointOn = true;
-		g_autoWaypoint = false;
 		g_sgdWaypoint = true;
 		g_sautoWaypoint = false;
 
@@ -459,8 +458,7 @@ void Waypoint::Add (int flags, Vector waypointOrigin)
             placeNew = false;
             path = m_paths[index];
 
-            if (flags == 9)
-               path->origin = (path->origin + m_learnPosition) / 2;
+			path->origin = (path->origin + m_learnPosition) / 2;
          }
       }
       else
@@ -470,7 +468,7 @@ void Waypoint::Add (int flags, Vector waypointOrigin)
    case 10:
       index = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
 
-      if (index != -1)
+      if (index != -1 && index != m_lastJumpWaypoint)
       {
          distance = (m_paths[index]->origin - GetEntityOrigin (g_hostEntity)).GetLength ();
 
@@ -811,7 +809,6 @@ void Waypoint::ToggleFlags (int toggleFlag)
 				m_paths[index]->flags |= toggleFlag;
 				m_paths[index]->campStartX = forward.x;
 				m_paths[index]->campStartY = forward.y;
-				ChartPrint("[SgdWP] Pls Set Camp Flags Again to set camp End!");
 			}
 			else
 			{
@@ -1747,10 +1744,7 @@ void Waypoint::Think(void)
 	// SyPB Pro P.20 - SgdWP
 	if (g_sgdWaypoint)
 	{
-		if (g_autoWaypoint)
-			g_autoWaypoint = false;
-
-		g_hostEntity->v.health = fabsf(static_cast <float> (255.0));
+		g_hostEntity->v.health = 255.0f;
 
 		if (g_hostEntity->v.button & IN_USE && (g_hostEntity->v.flags & FL_ONGROUND))
 		{
@@ -1767,30 +1761,8 @@ void Waypoint::Think(void)
 
 		if (g_sautoWaypoint)
 		{
-			if (!m_ladderPoint)
-			{
-				if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
-				{
-					if (FindNearest(GetEntityOrigin(g_hostEntity), 50.0f, WAYPOINT_LADDER) == -1)
-					{
-						Add(3);
-						SetRadius(0);
-					}
-
-					m_ladderPoint = true;
-				}
-			}
-			else
-			{
-				if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
-				{
-					if (FindNearest(GetEntityOrigin(g_hostEntity), 50.0f, WAYPOINT_LADDER) == -1)
-					{
-						Add(3);
-						SetRadius(0);
-					}
-				}
-			}
+			if ((g_hostEntity->v.movetype == MOVETYPE_FLY) && !(g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
+				m_ladderPoint = true;
 
 			if (g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND))
 			{
@@ -1807,7 +1779,7 @@ void Waypoint::Think(void)
 					if (m_fallPosition.z > (GetEntityOrigin(g_hostEntity).z + 150.0f))
 					{
 						Add(102, m_fallPosition);
-						SetRadius(g_sautoRadius);
+						SetRadius(0);
 						Add(103);
 						SetRadius(g_sautoRadius);
 					}
@@ -1831,11 +1803,9 @@ void Waypoint::Think(void)
 					m_timeCampWaypoint = 0.0f;
 
 				float distance = (m_lastWaypoint - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
-				int newWaypointDistance = (g_numWaypoints >= 800) ? 16384 : 12000;
-
-				// SyPB Pro P.37 - SgdWP
-				if (g_waypoint->GetPath(g_waypoint->FindNearest(m_lastWaypoint, 10.0f))->radius == 0.0f)
-					newWaypointDistance = 10000;
+				float newWaypointDistance = 16384.0f;
+				if (g_numWaypoints >= 800)
+					newWaypointDistance *= 1.5f;
 
 				if (distance > newWaypointDistance)
 				{
@@ -1864,32 +1834,6 @@ void Waypoint::Think(void)
 				m_learnJumpWaypoint = false;
 			else
 				m_fallPoint = true;
-		}
-	}
-
-	// check if it's a autowaypoint mode enabled
-	if (g_autoWaypoint && (g_hostEntity->v.flags & (FL_ONGROUND | FL_PARTIALGROUND)))
-	{
-		// find the distance from the last used waypoint
-		float distance = (m_lastWaypoint - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
-
-		if (distance > 16384)
-		{
-			// check that no other reachable waypoints are nearby...
-			for (int i = 0; i < g_numWaypoints; i++)
-			{
-				if (IsNodeReachable(GetEntityOrigin(g_hostEntity), m_paths[i]->origin))
-				{
-					distance = (m_paths[i]->origin - GetEntityOrigin(g_hostEntity)).GetLengthSquared();
-
-					if (distance < nearestDistance)
-						nearestDistance = distance;
-				}
-			}
-
-			// make sure nearest waypoint is far enough away...
-			if (nearestDistance >= 16384)
-				Add(0);  // place a waypoint here
 		}
 	}
 
@@ -2558,7 +2502,7 @@ void Waypoint::CreateBasic (void)
    while (!FNullEnt (ent = FIND_ENTITY_BY_CLASSNAME (ent, "func_ladder")))
    {
       Vector ladderLeft = ent->v.absmin;
-      Vector ladderRight = ent->v.absmax;
+      const Vector ladderRight = ent->v.absmax;
       ladderLeft.z = ladderRight.z;
 
       TraceResult tr;

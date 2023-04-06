@@ -1277,27 +1277,29 @@ void Bot::CheckMessageQueue (void)
 
 bool Bot::IsRestricted (int weaponIndex)
 {
-   // this function checks for weapon restrictions.
+	// this function checks for weapon restrictions.
 
-   if (IsNullString (sypb_restrictweapons.GetString ()))
-      //return false; // no banned weapons
-	  return IsRestrictedAMX (weaponIndex); // SyPB Pro P.24 - Buy Ai
+	if (g_gameMode != MODE_BASE && g_gameMode != MODE_DM)
+		return false;
 
-   Array <String> bannedWeapons = String (sypb_restrictweapons.GetString ()).Split (";");
+	if (IsNullString(sypb_restrictweapons.GetString()))
+		return IsRestrictedAMX(weaponIndex); // SyPB Pro P.24 - Buy Ai
 
-   ITERATE_ARRAY (bannedWeapons, i)
-   {
-      const char *banned = STRING (GetWeaponReturn (true, null, weaponIndex));
+	Array <String> bannedWeapons = String(sypb_restrictweapons.GetString()).Split(";");
 
-      // check is this weapon is banned
-      if (strncmp (bannedWeapons[i], banned, bannedWeapons[i].GetLength ()) == 0)
-         return true;
-   }
+	ITERATE_ARRAY(bannedWeapons, i)
+	{
+		const char* banned = STRING(GetWeaponReturn(true, null, weaponIndex));
 
-   if (m_buyingFinished)
-      return false;
+		// check is this weapon is banned
+		if (strncmp(bannedWeapons[i], banned, bannedWeapons[i].GetLength()) == 0)
+			return true;
+	}
 
-   return IsRestrictedAMX (weaponIndex);
+	if (m_buyingFinished)
+		return false;
+
+	return IsRestrictedAMX(weaponIndex);
 }
 
 bool Bot::IsRestrictedAMX (int weaponIndex)

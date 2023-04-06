@@ -1163,44 +1163,51 @@ void Bot::FocusEnemy (void)
 
 void Bot::ActionForEnemy(void)
 {
-	if (FNullEnt(m_lastEnemy) || GetTeam(m_lastEnemy) == m_team || !IsAlive(m_lastEnemy) || m_lastEnemyOrigin == nullvec || 
-		(!m_escapeEnemyAction && m_isStuck))
+	if (FNullEnt(m_lastEnemy) || GetTeam(m_lastEnemy) == m_team || !IsAlive(m_lastEnemy) || m_lastEnemyOrigin == nullvec)
 	{
 		RemoveCertainTask(TASK_ACTIONFORENEMY);
 		m_prevGoalIndex = -1;
 		m_escapeEnemyAction = false;
 		return;
 	}
-	int destIndex = -1;
 
+	if (DoWaypointNav() || (m_isStuck && !m_escapeEnemyAction)) 
+	{
+		RemoveCertainTask(TASK_ACTIONFORENEMY);
+		m_prevGoalIndex = -1;
+		m_escapeEnemyAction = false;
+
+		SetLastEnemy(null);
+		return;
+	}
+
+	int destIndex = -1;
 	if (m_escapeEnemyAction)
 	{
 		m_checkTerrain = true;
 		bool loadNewWaypoint = !(GoalIsValid());
-		if (DoWaypointNav())
-		{
-			DeleteSearchNodes();
+		
+		if (m_isStuck)
 			loadNewWaypoint = true;
-		}
-
 		if (!loadNewWaypoint && &m_navNode[0] != null)
 		{
-			if (m_navNode->next == null)
-				loadNewWaypoint = true;
-			else
+			const int enemyWaypoint = GetEntityWaypoint(m_lastEnemy);
+			PathNode* node = m_navNode;
+			while (node->next != null && !loadNewWaypoint)
 			{
-				const int enemyWaypoint = GetEntityWaypoint(m_lastEnemy);
-				PathNode* node = m_navNode;
-				while (node->next != null && !loadNewWaypoint)
+				node = node->next;
+				if (node->index == enemyWaypoint)
+					loadNewWaypoint = true;
+				else
 				{
-					node = node->next;
-					if (node->index == enemyWaypoint)
-						loadNewWaypoint = true;
-					else if ((g_waypoint->GetPath(node->index)->origin - m_lastEnemyOrigin).GetLength() < 200.0f)
-						loadNewWaypoint = true;
+					for (int j = 0; (!loadNewWaypoint && j < Const_MaxPathIndex); j++)
+					{
+						if (g_waypoint->GetPath(enemyWaypoint)->index[j] == node->index)
+							loadNewWaypoint = true;
+					}
 				}
 			}
-		}
+		} 
 
 		if (loadNewWaypoint) // do we need to calculate a new path?
 		{
@@ -1232,7 +1239,13 @@ void Bot::ActionForEnemy(void)
 				SetWaypointOrigin();
 			}
 
-			destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 500.0f);
+			if (IsZombieMode ())
+				destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 500.0f);
+			else
+				destIndex = FindCoverWaypoint(512.0f);
+
+			if (destIndex < 0 || destIndex >= g_numWaypoints)
+				destIndex = g_waypoint->FindFarest(m_iOrigin, 512.0f);
 
 			// remember index
 			m_prevGoalIndex = destIndex;
@@ -1257,21 +1270,11 @@ void Bot::ActionForEnemy(void)
 		return;
 	}
 
-	if (DoWaypointNav()) // reached final cover waypoint?
-	{
-		TaskComplete();
-		m_prevGoalIndex = -1;
-
-		SetLastEnemy(null);
-	}
-	else if (!GoalIsValid()) // we didn't choose a cover waypoint yet or lost it due to an attack?
+	if (!GoalIsValid()) // we didn't choose a cover waypoint yet or lost it due to an attack?
 	{
 		DeleteSearchNodes();
 
-		// SyPB Pro P.38 - Zombie Mode Camp improve
-		if (IsZombieMode() && !m_isZombieBot && !g_waypoint->m_zmHmPoints.IsEmpty())
-			destIndex = FindGoal();
-		else if (GetCurrentTask()->data != -1)
+		if (GetCurrentTask()->data != -1)
 			destIndex = GetCurrentTask()->data;
 		else
 			destIndex = FindCoverWaypoint(1024.0f);

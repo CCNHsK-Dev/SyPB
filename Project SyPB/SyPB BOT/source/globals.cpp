@@ -28,6 +28,8 @@
 
 #include <core.h>
 
+uint16 g_sypbbV16[4];
+
 // SyPB Pro P.31 - AMXX API
 float API_Version;
 float amxxDLL_Version = -1.0;
@@ -51,7 +53,6 @@ bool g_waypointsChanged = true;
 bool g_bLearnJumpWaypoint = false;
 bool g_leaderChoosen[2] = {false, false};
 
-bool g_autoWaypoint = false;
 bool g_sgdWaypoint = false;
 bool g_sautoWaypoint = false;
 int g_sautoRadius = 32;
@@ -403,7 +404,7 @@ MenuText g_menus[26] =
 		0x3ff,
 		"\\yWaypoint Operations (Page 2)\\w\v\v"
 		"1. Waypoint stats\v"
-		"2. Autowaypoint on/off\v"
+		"2. N/A\v"
 		"3. Set flags\v"
 		"4. Save waypoints\v"
 		"5. Save without checking\v"

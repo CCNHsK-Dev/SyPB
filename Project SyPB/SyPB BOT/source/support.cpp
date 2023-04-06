@@ -1325,30 +1325,23 @@ void CheckWelcomeMessage(void)
 	}
 
 	if (receiveTime > 0.0f && receiveTime < engine->GetTime())
-	{   
-		int buildVersion[4] = { SYPB_VERSION_DWORD };
-		uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
+	{
 		ChartPrint("----- [%s %s] by' %s -----", SYPB_NAME, SYPB_VERSION, PRODUCT_AUTHOR);
-		ChartPrint("***** Build: (%u.%u.%u.%u) *****", bV16[0], bV16[1], bV16[2], bV16[3]);
+		ChartPrint("***** Build: (%u.%u.%u.%u) *****", g_sypbbV16[0], g_sypbbV16[1], g_sypbbV16[2], g_sypbbV16[3]);
 		ChartPrint("***** Support API Version:%.2f | SwNPC Version:%.2f *****",
-			float(SYPBAPI_VERSION_F), float(SWNPC_VERSION_F));
+			float{ SYPBAPI_VERSION_F }, float{ SWNPC_VERSION_F });
 
-		if (amxxDLL_Version != -1.0 && amxxDLL_Version == float(SYPBAPI_VERSION_F))
+		if (amxxDLL_Version != -1.0 && amxxDLL_Version == float{ SYPBAPI_VERSION_F })
 		{
 			ChartPrint("***** SyPB API: Running - Version:%.2f (%u.%u.%u.%u)",
 				amxxDLL_Version, amxxDLL_bV16[0], amxxDLL_bV16[1], amxxDLL_bV16[2], amxxDLL_bV16[3]);
 		}
-		else
-			ChartPrint("***** SyPB API: FAIL *****");
 
-		if (SwNPC_Version != -1.0 && SwNPC_Version == float(SWNPC_VERSION_F))
+		if (SwNPC_Version != -1.0 && SwNPC_Version == float{ SWNPC_VERSION_F })
 		{
 			ChartPrint("***** SwNPC: Running - Version:%.2f (%u.%u.%u.%u)",
 				SwNPC_Version, SwNPC_Build[0], SwNPC_Build[1], SwNPC_Build[2], SwNPC_Build[3]);
 		}
-		else
-			ChartPrint("***** SwNPC: FAIL *****");
 
 		receiveTime = 0.0f;
 	}
@@ -1448,16 +1441,15 @@ void AddLogEntry (int logLevel, const char *format, ...)
    }
 }
 
-void MOD_AddLogEntry(int mod, char *format)
+void MOD_AddLogEntry(int mod, char* format)
 {
-	char modName[32], logLine[1024] = { 0, }, buildVersionName[64];
-	uint16 mod_bV16[4];
+	char modName[10];
+	uint16 mod_bV16[4] = {0, 0, 0, 0};
 	if (mod == -1)
 	{
 		sprintf(modName, "SyPB");
-		int buildVersion[4] = { SYPB_VERSION_DWORD };
 		for (int i = 0; i < 4; i++)
-			mod_bV16[i] = (uint16)buildVersion[i];
+			mod_bV16[i] = g_sypbbV16[i];
 	}
 	else if (mod == 0)
 	{
@@ -1474,18 +1466,16 @@ void MOD_AddLogEntry(int mod, char *format)
 
 	ServerPrintNoTag("[%s Log] %s", modName, format);
 
-	sprintf(buildVersionName, "%s_build_%u_%u_%u_%u.txt", modName, 
-		mod_bV16[0], mod_bV16[1], mod_bV16[2], mod_bV16[3]);
-
-	File checkLogFP(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "rb");
-	File fp(FormatBuffer("%s/addons/sypb/logs/%s", GetModName(), buildVersionName), "at");
-
+	File checkLogFP(FormatBuffer("%s/addons/sypb/logs/%s_build_%u_%u_%u_%u.txt", GetModName(),
+		modName, mod_bV16[0], mod_bV16[1], mod_bV16[2], mod_bV16[3]), "rb");
+	File fp(FormatBuffer("%s/addons/sypb/logs/%s_build_%u_%u_%u_%u.txt", GetModName(),
+		modName, mod_bV16[0], mod_bV16[1], mod_bV16[2], mod_bV16[3]), "at");
 
 	if (!checkLogFP.IsValid())
 	{
 		fp.Print("---------- %s Log \n", modName);
 		fp.Print("---------- %s Version: %u.%u  \n", modName, mod_bV16[0], mod_bV16[1]);
-		fp.Print("---------- %s Build: %u.%u.%u.%u  \n", modName, 
+		fp.Print("---------- %s Build: %u.%u.%u.%u  \n", modName,
 			mod_bV16[0], mod_bV16[1], mod_bV16[2], mod_bV16[3]);
 		fp.Print("----------------------------- \n\n");
 	}
@@ -1495,16 +1485,12 @@ void MOD_AddLogEntry(int mod, char *format)
 	if (!fp.IsValid())
 		return;
 
-	time_t tickTime = time(&tickTime);
-	const tm *time = localtime(&tickTime);
+	const time_t tickTime = time(null);
+	const tm* time = localtime(&tickTime);
 
-	int buildVersion[4] = { SYPB_VERSION_DWORD };
-	uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-	sprintf(logLine, "[%02d:%02d:%02d] %s", time->tm_hour, time->tm_min, time->tm_sec, format);
-	fp.Print("%s\n", logLine);
+	fp.Print("[%02d:%02d:%02d] %s\n", time->tm_hour, time->tm_min, time->tm_sec, format);
 	if (mod != -1)
-		fp.Print("SyPB Build: %u.%u.%u.%u  \n", bV16[0], bV16[1], bV16[2], bV16[3]);
+		fp.Print("SyPB Build: %u.%u.%u.%u  \n", g_sypbbV16[0], g_sypbbV16[1], g_sypbbV16[2], g_sypbbV16[3]);
 	fp.Print("----------------------------- \n");
 	fp.Close();
 }
