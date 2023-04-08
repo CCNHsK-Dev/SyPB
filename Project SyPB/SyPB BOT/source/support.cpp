@@ -608,7 +608,7 @@ void RoundInit (void)
 	   g_botManager->CheckTeamEconomics(TEAM_COUNTER);
    }
 
-   for (int i = 0; i < engine->GetMaxClients (); i++)
+   for (int i = 0; i < g_maxClients; i++)
    {
       if (g_botManager->GetBot (i))
          g_botManager->GetBot (i)->NewRound ();
@@ -635,7 +635,7 @@ void RoundInit (void)
    AutoLoadGameMode();
 
    // calculate the round mid/end in world time
-   g_timeRoundStart = engine->GetTime () + engine->GetFreezeTime ();
+   g_timeRoundStart = g_gameTime + engine->GetFreezeTime ();
    g_timeRoundMid = g_timeRoundStart + engine->GetRoundTime () * 60 / 2;
    g_timeRoundEnd = g_timeRoundStart + engine->GetRoundTime () * 60;
 }
@@ -679,7 +679,7 @@ void AutoLoadGameMode(bool reset)
 		SetGameMode(MODE_ZP);
 		extern ConVar sypb_zmdelay_time;
 		sypb_zmdelay_time.SetFloat(zmDelayTime);
-		g_gameStartTime = engine->GetTime() + sypb_zmdelay_time.GetFloat();
+		g_gameStartTime = g_gameTime + sypb_zmdelay_time.GetFloat();
 
 		goto lastly;
 	}
@@ -876,7 +876,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		needCheckNewWaypoint = true;
 	else if (mode != -1)
 		needCheckNewWaypoint = true;
-	else if (traceCheckTime >= engine->GetTime())
+	else if (traceCheckTime >= g_gameTime)
 		needCheckNewWaypoint = false;
 	else
 	{
@@ -888,16 +888,16 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 			distance = (g_waypoint->GetPath(wpIndex)->origin - origin).GetLength();
 			float wpRadius = g_waypoint->GetPath(wpIndex)->radius;
 
-			if (distance > wpRadius && traceCheckTime + 1.2f <= engine->GetTime())
+			if (distance > wpRadius && traceCheckTime + 1.2f <= g_gameTime)
 				needCheckNewWaypoint = true;
-			else if (traceCheckTime + 3.0f <= engine->GetTime())
+			else if (traceCheckTime + 3.0f <= g_gameTime)
 			{
 				if (!g_waypoint->Reachable(ent, wpIndex))
 					needCheckNewWaypoint = true;
 				else if (isPlayer)
-					g_clients[i].getWPTime = engine->GetTime() + 1.0f;
+					g_clients[i].getWPTime = g_gameTime + 1.0f;
 				else
-					g_entityGetWpTime[i] = engine->GetTime() + 1.2f;
+					g_entityGetWpTime[i] = g_gameTime + 1.2f;
 			}
 		}
 	}
@@ -916,14 +916,14 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	{
 		g_entityWpIndex[i] = (wpIndex2 == -1) ? wpIndex : wpIndex2;
 		g_entityGetWpOrigin[i] = origin;
-		g_entityGetWpTime[i] = engine->GetTime() + 1.5f;
+		g_entityGetWpTime[i] = g_gameTime + 1.5f;
 	}
 	else
 	{
 		g_clients[i].wpIndex = wpIndex;
 		g_clients[i].wpIndex2 = wpIndex2;
 		g_clients[i].getWpOrigin = origin;
-		g_clients[i].getWPTime = engine->GetTime() + 1.5f;
+		g_clients[i].getWPTime = g_gameTime + 1.5f;
 	}
 
 	return wpIndex;
@@ -963,7 +963,7 @@ int GetEntityWaypoint(edict_t *ent)
 
 	// SyPB Pro P.42 - Base Waypoint improve
 	int client = ENTINDEX(ent) - 1;
-	if (g_clients[client].getWPTime < engine->GetTime() || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
+	if (g_clients[client].getWPTime < g_gameTime || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
 		SetEntityWaypoint(ent);
 
 	return g_clients[client].wpIndex;
@@ -1068,41 +1068,6 @@ bool TryFileOpen (char *fileName)
    return false;
 }
 
-/*
-void HudMessage (edict_t *ent, bool toCenter, const Color &rgb, char *format, ...)
-{
-   if (!IsValidPlayer (ent) || IsValidBot (ent))
-      return;
-
-   va_list ap;
-   char buffer[1024];
-
-   va_start (ap, format);
-   vsprintf (buffer, format, ap);
-   va_end (ap);
-
-   MESSAGE_BEGIN (MSG_ONE, SVC_TEMPENTITY, null, ent);
-      WRITE_BYTE (TE_TEXTMESSAGE);
-      WRITE_BYTE (1);
-      WRITE_SHORT (FixedSigned16 (-1.0f, 13.0f));
-      WRITE_SHORT (FixedSigned16 (toCenter ? -1.0f : 0.0f, 13.0f));
-      WRITE_BYTE (2);
-      WRITE_BYTE (static_cast <int> (rgb.red));
-      WRITE_BYTE (static_cast <int> (rgb.green));
-      WRITE_BYTE (static_cast <int> (rgb.blue));
-      WRITE_BYTE (0);
-      WRITE_BYTE (engine->RandomInt (230, 255));
-      WRITE_BYTE (engine->RandomInt (230, 255));
-      WRITE_BYTE (engine->RandomInt (230, 255));
-      WRITE_BYTE (200);
-      WRITE_SHORT (FixedUnsigned16 (0.0078125, 8.0f));
-      WRITE_SHORT (FixedUnsigned16 (2.0f, 8.0f));
-      WRITE_SHORT (FixedUnsigned16 (6.0f, 8.0f));
-      WRITE_SHORT (FixedUnsigned16 (0.1f, 8.0f));
-      WRITE_STRING (const_cast <const char *> (&buffer[0]));
-   MESSAGE_END ();
-}
-*/
 void ServerPrint (const char *format, ...)
 {
    va_list ap;
@@ -1321,10 +1286,10 @@ void CheckWelcomeMessage(void)
 	if (receiveTime == -1.0f && IsAlive(g_hostEntity))
 	{
 		if (sypb_welcomemsg.GetInt() != 0)
-			receiveTime = engine->GetTime() + 10.0f;
+			receiveTime = g_gameTime + 10.0f;
 	}
 
-	if (receiveTime > 0.0f && receiveTime < engine->GetTime())
+	if (receiveTime > 0.0f && receiveTime < g_gameTime)
 	{
 		ChartPrint("----- [%s %s] by' %s -----", SYPB_NAME, SYPB_VERSION, PRODUCT_AUTHOR);
 		ChartPrint("***** Build: (%u.%u.%u.%u) *****", g_sypbbV16[0], g_sypbbV16[1], g_sypbbV16[2], g_sypbbV16[3]);
@@ -1495,6 +1460,48 @@ void MOD_AddLogEntry(int mod, char* format)
 	fp.Close();
 }
 
+int GetRandomInt(int min, int max)
+{
+	if (min >= max)
+		return min;
+
+	srand((unsigned)(time(null)));
+	return (rand() % (max - min + 1)) + min;
+}
+
+float GetRandomFloat(float min, float max)
+{
+	if (min >= max)
+		return min;
+
+	srand((unsigned)(time(null)));
+	return (max - min) * rand() / (RAND_MAX + 1.0f) + min;
+}
+
+float Q_sqrt(float number)
+{
+	long i;
+	float x2, y;
+	x2 = number * 0.5f;
+	y = number;
+	i = *(long*)&y;
+	i = 0x5f3759df - (i >> 1);
+	y = *(float*)&i;
+	return y * number;
+}
+
+float Q_rsqrt(float number)
+{
+	long i;
+	float x2, y;
+	x2 = number * 0.5f;
+	y = number;
+	i = *(long*)&y;
+	i = 0x5f3759df - (i >> 1);
+	y = *(float*)&i;
+	return y;
+}
+
 // SyPB Pro P.49 - Debugs Msg
 void DebugModeMsg(void)
 {
@@ -1601,12 +1608,12 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
    Vector origin = GetEntityOrigin (ent);
    int index = ENTINDEX (ent) - 1;
 
-   if (index < 0 || index >= engine->GetMaxClients ())
+   if (index < 0 || index >= g_maxClients)
    {
       float nearestDistance = FLT_MAX;
 
       // loop through all players
-      for (int i = 0; i < engine->GetMaxClients (); i++)
+      for (int i = 0; i < g_maxClients; i++)
       {
          if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
             continue;
@@ -1623,56 +1630,56 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
    }
 
    // SyPB Pro P.29 - Debug (player plug-in/maps bug)
-   if (index < 0 || index >= engine->GetMaxClients())
+   if (index < 0 || index >= g_maxClients)
 	   return;
 
    if (strncmp ("player/bhit_flesh", sample, 17) == 0 || strncmp ("player/headshot", sample, 15) == 0)
    {
       // hit/fall sound?
       g_clients[index].hearingDistance = 768.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 0.5f;
+      g_clients[index].timeSoundLasting = g_gameTime + 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("items/gunpickup", sample, 15) == 0)
    {
       // weapon pickup?
       g_clients[index].hearingDistance = 768.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 0.5f;
+      g_clients[index].timeSoundLasting = g_gameTime + 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("weapons/zoom", sample, 12) == 0)
    {
       // sniper zooming?
       g_clients[index].hearingDistance = 512.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 0.1f;
+      g_clients[index].timeSoundLasting = g_gameTime + 0.1f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("items/9mmclip", sample, 13) == 0)
    {
       // ammo pickup?
       g_clients[index].hearingDistance = 512.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 0.1f;
+      g_clients[index].timeSoundLasting = g_gameTime + 0.1f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("hostage/hos", sample, 11) == 0)
    {
       // CT used hostage?
       g_clients[index].hearingDistance = 1024.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 5.0f;
+      g_clients[index].timeSoundLasting = g_gameTime + 5.0f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("debris/bustmetal", sample, 16) == 0 || strncmp ("debris/bustglass", sample, 16) == 0)
    {
       // broke something?
       g_clients[index].hearingDistance = 1024.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 2.0f;
+      g_clients[index].timeSoundLasting = g_gameTime + 2.0f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("doors/doormove", sample, 14) == 0)
    {
       // someone opened a door
       g_clients[index].hearingDistance = 1024.0f * volume;
-      g_clients[index].timeSoundLasting = engine->GetTime () + 3.0f;
+      g_clients[index].timeSoundLasting = g_gameTime + 3.0f;
       g_clients[index].soundPosition = origin;
    }
 }
@@ -1683,9 +1690,9 @@ void SoundSimulateUpdate (int playerIndex)
    // captured through server sound hooking
 
    InternalAssert (playerIndex >= 0);
-   InternalAssert (playerIndex < engine->GetMaxClients ());
+   InternalAssert (playerIndex < g_maxClients);
 
-   if (playerIndex < 0 || playerIndex >= engine->GetMaxClients ())
+   if (playerIndex < 0 || playerIndex >= g_maxClients)
       return; // reliability check
 
    edict_t *player = g_clients[playerIndex].ent;
@@ -1698,19 +1705,19 @@ void SoundSimulateUpdate (int playerIndex)
    if (player->v.oldbuttons & IN_ATTACK) // pressed attack button?
    {
       hearDistance = 3072.0f;
-      timeSound = engine->GetTime () + 0.3f;
+      timeSound = g_gameTime + 0.3f;
       timeMaxSound = 0.3f;
    }
    else if (player->v.oldbuttons & IN_USE) // pressed used button?
    {
       hearDistance = 512.0f;
-      timeSound = engine->GetTime () + 0.5f;
+      timeSound = g_gameTime + 0.5f;
       timeMaxSound = 0.5f;
    }
    else if (player->v.oldbuttons & IN_RELOAD) // pressed reload button?
    {
       hearDistance = 512.0f;
-      timeSound = engine->GetTime () + 0.5f;
+      timeSound = g_gameTime + 0.5f;
       timeMaxSound = 0.5f;
    }
    else if (player->v.movetype == MOVETYPE_FLY) // uses ladder?
@@ -1718,7 +1725,7 @@ void SoundSimulateUpdate (int playerIndex)
       if (fabs (player->v.velocity.z) > 50.0f)
       {
          hearDistance = 1024.0f;
-         timeSound = engine->GetTime () + 0.3f;
+         timeSound = g_gameTime + 0.3f;
          timeMaxSound = 0.3f;
       }
    }
@@ -1728,7 +1735,7 @@ void SoundSimulateUpdate (int playerIndex)
       {
          // moves fast enough?
          hearDistance = 1280.0f * (velocity / 240);
-         timeSound = engine->GetTime () + 0.3f;
+         timeSound = g_gameTime + 0.3f;
          timeMaxSound = 0.3f;
       }
    }
@@ -1737,7 +1744,7 @@ void SoundSimulateUpdate (int playerIndex)
       return; // didn't issue sound?
 
    // some sound already associated
-   if (g_clients[playerIndex].timeSoundLasting > engine->GetTime ())
+   if (g_clients[playerIndex].timeSoundLasting > g_gameTime)
    {
       if (g_clients[playerIndex].hearingDistance <= hearDistance)
       {

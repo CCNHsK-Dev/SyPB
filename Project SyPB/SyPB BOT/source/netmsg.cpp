@@ -325,9 +325,9 @@ void NetworkMsg::Execute (void *p)
          {
             g_bombPlanted = true;
             g_bombSayString = true;
-            g_timeBombPlanted = engine->GetTime ();
+            g_timeBombPlanted = g_gameTime;
 
-            for (int i = 0; i < engine->GetMaxClients (); i++)
+            for (int i = 0; i < g_maxClients; i++)
             {
                Bot *bot = g_botManager->GetBot (i);
 

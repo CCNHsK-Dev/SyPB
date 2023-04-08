@@ -68,6 +68,8 @@ extern float g_timeNextBombUpdate;
 extern float g_timeRoundStart;
 extern float g_lastRadioTime[2];
 
+extern int g_maxClients;
+extern float g_gameTime;
 extern float g_secondTime;
 extern float g_gameStartTime;
 

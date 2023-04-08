@@ -1253,11 +1253,6 @@ bool Waypoint::Load(void)
 	}
 
 	fp.Read(&header, sizeof(header));
-	//if (header.date == null)
-	//{
-	//	fp.Rewind();
-	//	fp.Read(&header, sizeof(WaypointHeaderOld));
-	//}
 
 	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) == 0)
 	{
@@ -1713,6 +1708,8 @@ void Waypoint::Think(void)
 	if (FNullEnt(g_hostEntity))
 		return; // this function is only valid on listenserver, and in waypoint enabled mode.
 
+	g_gameTime = engine->GetTime();
+
 	float nearestDistance = FLT_MAX;
 
 	// SyPB Pro P.37 - new save jump point
@@ -1723,7 +1720,7 @@ void Waypoint::Think(void)
 			if (g_hostEntity->v.button & IN_JUMP)
 			{ 
 				Add(9);
-				m_timeJumpStarted = engine->GetTime();
+				m_timeJumpStarted = g_gameTime;
 				m_endJumpPoint = true;
 			}
 			else
@@ -1732,7 +1729,7 @@ void Waypoint::Think(void)
 				m_learnPosition = GetEntityOrigin(g_hostEntity);
 			}
 		}
-		else if (((g_hostEntity->v.flags & FL_ONGROUND) || g_hostEntity->v.movetype == MOVETYPE_FLY) && m_timeJumpStarted + 0.1 < engine->GetTime())
+		else if (((g_hostEntity->v.flags & FL_ONGROUND) || g_hostEntity->v.movetype == MOVETYPE_FLY) && m_timeJumpStarted + 0.1 < g_gameTime)
 		{
 			Add(10);
 
@@ -1749,8 +1746,8 @@ void Waypoint::Think(void)
 		if (g_hostEntity->v.button & IN_USE && (g_hostEntity->v.flags & FL_ONGROUND))
 		{
 			if (m_timeGetProTarGet == 0.0f)
-				m_timeGetProTarGet = engine->GetTime();
-			else if (m_timeGetProTarGet + 1.0 < engine->GetTime())
+				m_timeGetProTarGet = g_gameTime;
+			else if (m_timeGetProTarGet + 1.0 < g_gameTime)
 			{
 				DisplayMenuToClient(g_hostEntity, &g_menus[21]);
 				m_timeGetProTarGet = 0.0f;
@@ -1791,8 +1788,8 @@ void Waypoint::Think(void)
 				if (g_hostEntity->v.button & IN_DUCK)
 				{
 					if (m_timeCampWaypoint == 0.0f)
-						m_timeCampWaypoint = engine->GetTime();
-					else if (m_timeCampWaypoint + 2.5 < engine->GetTime())
+						m_timeCampWaypoint = g_gameTime;
+					else if (m_timeCampWaypoint + 2.5 < g_gameTime)
 					{
 						// SyPB Pro P.37 - SgdWP
 						m_timeCampWaypoint = 0.0f;
@@ -1867,7 +1864,7 @@ void Waypoint::ShowWaypointMsg(void)
 				nearestDistance = distance;
 			}
 
-			if (m_waypointDisplayTime[i] + 1.0f < engine->GetTime())
+			if (m_waypointDisplayTime[i] + 1.0f < g_gameTime)
 			{
 				const float nodeHeight = (m_paths[i]->flags & WAYPOINT_CROUCH) ? 36.0f : 72.0f; // check the node height
 				const float nodeHalfHeight = nodeHeight * 0.5f;
@@ -1916,7 +1913,7 @@ void Waypoint::ShowWaypointMsg(void)
 					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight), m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), nodeColor, 14, 0, 0, 10); // draw basic path
 					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), m_paths[i]->origin + Vector(0.0f, 0.0f, nodeHalfHeight), nodeFlagColor, 14, 0, 0, 10); // draw additional path
 				}
-				m_waypointDisplayTime[i] = engine->GetTime();
+				m_waypointDisplayTime[i] = g_gameTime;
 			}
 		}
 	}
@@ -1928,7 +1925,7 @@ void Waypoint::ShowWaypointMsg(void)
 	if ((m_findWPIndex != -1 && m_findWPIndex < g_numWaypoints) || (m_cacheWaypointIndex != -1 && m_cacheWaypointIndex < g_numWaypoints) || (m_facingAtIndex != -1 && m_facingAtIndex < g_numWaypoints))
 	{
 		// check for drawing code
-		if (m_arrowDisplayTime + 0.5 < engine->GetTime())
+		if (m_arrowDisplayTime + 0.5 < g_gameTime)
 		{
 			// finding waypoint - pink arrow
 			if (m_findWPIndex != -1)
@@ -1942,7 +1939,7 @@ void Waypoint::ShowWaypointMsg(void)
 			if (m_facingAtIndex != -1)
 				engine->DrawLine(g_hostEntity, GetEntityOrigin(g_hostEntity), m_paths[m_facingAtIndex]->origin, Color(255, 255, 255, 200), 10, 0, 0, 5, LINE_ARROW);
 
-			m_arrowDisplayTime = engine->GetTime();
+			m_arrowDisplayTime = g_gameTime;
 		}
 	}
 
@@ -1950,9 +1947,9 @@ void Waypoint::ShowWaypointMsg(void)
 	Path *path = m_paths[nearestIndex];
 
 	// draw a paths, camplines and danger directions for nearest waypoint
-	if (nearestDistance < 4096 && m_pathDisplayTime <= engine->GetTime())
+	if (nearestDistance < 4096 && m_pathDisplayTime <= g_gameTime)
 	{
-		m_pathDisplayTime = engine->GetTime() + 1.0f;
+		m_pathDisplayTime = g_gameTime + 1.0f;
 
 		// draw the camplines
 		if (path->flags & WAYPOINT_CAMP)
@@ -1991,7 +1988,7 @@ void Waypoint::ShowWaypointMsg(void)
 		// if radius is nonzero, draw a full circle
 		if (path->radius > 0.0f)
 		{
-			const float root = sqrtf(path->radius * path->radius * 0.5f);
+			const float root = Q_sqrt(path->radius * path->radius * 0.5f);
 			const Color &def = Color(0, 0, 255, 200);
 
 			engine->DrawLine(g_hostEntity, origin + Vector(path->radius, 0.0f, 0.0f), origin + Vector(root, -root, 0), def, 5, 0, 0, 10);
@@ -2008,7 +2005,7 @@ void Waypoint::ShowWaypointMsg(void)
 		}
 		else
 		{
-			const float root = sqrtf(32.0f);
+			const float root = Q_sqrt(32.0f);
 			const Color &def = Color(255, 0, 0, 200);
 
 			engine->DrawLine(g_hostEntity, origin + Vector(root, -root, 0), origin + Vector(-root, root, 0), def, 5, 0, 0, 10);
@@ -2784,7 +2781,7 @@ int Waypoint::AddGoalScore (int index, int other[4])
    }
 
    if (left.IsEmpty ())
-      index = other[engine->RandomInt (0, 3)];
+      index = other[GetRandomInt(0, 3)];
    else
       index = left.GetRandomElement ();
 

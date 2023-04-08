@@ -77,10 +77,10 @@ int Bot::FindGoal(void)
 			// SyPB Pro P.43 - Zombie improve
 			int checkPoint[3];
 			for (int i = 0; i < 3; i++)
-				checkPoint[i] = engine->RandomInt(0, g_numWaypoints - 1);
+				checkPoint[i] = GetRandomInt(0, g_numWaypoints - 1);
 
 			int movePoint = checkPoint[0];
-			if (engine->RandomInt(1, 5) <= 2)
+			if (GetRandomInt(1, 5) <= 2)
 			{
 				int maxEnemyNum = 0;
 				for (int i = 0; i < 3; i++)
@@ -111,11 +111,11 @@ int Bot::FindGoal(void)
 			return m_chosenGoalIndex = movePoint;
 		}
 		else
-			return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+			return m_chosenGoalIndex = GetRandomInt(0, g_numWaypoints - 1);
 	}
 	// SyPB Pro P.40 - Goal Point change
 	else
-		return m_chosenGoalIndex = engine->RandomInt(0, g_numWaypoints - 1);
+		return m_chosenGoalIndex = GetRandomInt(0, g_numWaypoints - 1);
 
    // terrorist carrying the C4?
    if (pev->weapons & (1 << WEAPON_C4) || m_isVIP)
@@ -188,7 +188,7 @@ int Bot::FindGoal(void)
 
 			   ITERATE_ARRAY(g_waypoint->m_goalPoints, i)
 			   {
-				   const float realPathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, g_waypoint->m_goalPoints[i]) + engine->RandomFloat(0.0, 128.0f);
+				   const float realPathDistance = g_waypoint->GetPathDistanceFloat(m_currentWaypointIndex, g_waypoint->m_goalPoints[i]) + GetRandomFloat(0.0, 128.0f);
 
 				   if (leastPathDistance > realPathDistance)
 				   {
@@ -223,14 +223,14 @@ int Bot::FindGoal(void)
 	   }
    }
 
-   goalDesire = engine->RandomInt (0, 70) + offensive;
-   forwardDesire = engine->RandomInt (0, 50) + offensive;
-   campDesire = engine->RandomInt (0, 70) + defensive;
-   backoffDesire = engine->RandomInt (0, 50) + defensive;
+   goalDesire = GetRandomInt (0, 70) + offensive;
+   forwardDesire = GetRandomInt (0, 50) + offensive;
+   campDesire = GetRandomInt (0, 70) + defensive;
+   backoffDesire = GetRandomInt (0, 50) + defensive;
 
    if (UsesSniper () || ((g_mapType & MAP_DE) && m_team == TEAM_COUNTER && !g_bombPlanted) &&
 	   (g_gameMode == MODE_BASE || g_gameMode == MODE_DM))
-      campDesire = static_cast <int> (engine->RandomFloat (1.5f, 2.5f) * static_cast <float> (campDesire));
+      campDesire = static_cast <int> (GetRandomFloat (1.5f, 2.5f) * static_cast <float> (campDesire));
 
    tacticChoice = backoffDesire;
    tactic = 0;
@@ -317,7 +317,7 @@ TacticChoosen:
          }
       }
       else if (pev->weapons & (1 << WEAPON_C4))
-         return m_chosenGoalIndex = goalChoices[engine->RandomInt (0, closerIndex - 1)];
+         return m_chosenGoalIndex = goalChoices[GetRandomInt (0, closerIndex - 1)];
    }
    
    // SyPB Pro P.30 - Zombie Mode Human Camp
@@ -362,12 +362,12 @@ TacticChoosen:
 	   GetValidWaypoint();
 
    if (goalChoices[0] == -1)
-      return m_chosenGoalIndex = engine->RandomInt (0, g_numWaypoints - 1);
+      return m_chosenGoalIndex = GetRandomInt (0, g_numWaypoints - 1);
 
    // rusher bots does not care any danger (idea from pbmm)
    if (m_personality == PERSONALITY_RUSHER)
    {
-      const int randomGoal = goalChoices[engine->RandomInt (0, 3)];
+      const int randomGoal = goalChoices[GetRandomInt (0, 3)];
 
       if (randomGoal >= 0 && randomGoal < g_numWaypoints)
           return m_chosenGoalIndex = randomGoal;
@@ -431,7 +431,7 @@ bool Bot::DoWaypointNav (void)
    {
       GetValidWaypoint ();
 
-      m_navTimeset = engine->GetTime ();
+      m_navTimeset = g_gameTime;
    }
 
    m_destOrigin = m_waypointOrigin + pev->view_ofs;
@@ -446,7 +446,6 @@ bool Bot::DoWaypointNav (void)
 
 		   m_jumpFinished = true;
 		   m_checkTerrain = false;
-		   //m_desiredVelocity = nullvec;
 	   }
    }
 
@@ -499,17 +498,17 @@ bool Bot::DoWaypointNav (void)
 				   m_pickupItem = button;
 				   m_pickupType = PICKTYPE_BUTTON;
 
-				   m_navTimeset = engine->GetTime();
+				   m_navTimeset = g_gameTime;
 			   }
 		   }
 
 		   // if bot hits the door, then it opens, so wait a bit to let it open safely
-		   if (pev->velocity.GetLength2D() < 2 && m_timeDoorOpen < engine->GetTime())
+		   if (pev->velocity.GetLength2D() < 2 && m_timeDoorOpen < g_gameTime)
 		   {
-			   PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1.0f, false);
+			   PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, g_gameTime + 1.0f, false);
 
 			   m_doorOpenAttempt++;
-			   m_timeDoorOpen = engine->GetTime() + 1.0f; // retry in 1 sec until door is open
+			   m_timeDoorOpen = g_gameTime + 1.0f; // retry in 1 sec until door is open
 
 			   edict_t *ent = nullptr;
 
@@ -521,7 +520,7 @@ bool Bot::DoWaypointNav (void)
 					   {
 						   if (IsShootableThruObstacle(ent))
 						   {
-							   m_seeEnemyTime = engine->GetTime() - 0.5f;
+							   m_seeEnemyTime = g_gameTime - 0.5f;
 
 							   m_states |= STATE_SEEINGENEMY;
 							   m_aimFlags |= AIM_ENEMY;
@@ -865,7 +864,7 @@ inline const float GF_CostZM(int index, int parent, int team, float offset)
 
 	if (IsZombieMode() && team == TEAM_COUNTER)
 	{
-		for (int i = 0; i < engine->GetMaxClients(); i++)
+		for (int i = 0; i < g_maxClients; i++)
 		{
 			if (g_clients[i].wpIndex != -1 && IsZombieEntity(INDEXENT(i + 1)))
 			{
@@ -1049,7 +1048,7 @@ void Bot::CheckWeaponData(int state, int weaponId, int clip)
 		return;
 
 	if (m_ammoInClip[weaponId] > clip)
-		m_timeLastFired = engine->GetTime(); // remember the last bullet time
+		m_timeLastFired = g_gameTime; // remember the last bullet time
 
 	m_ammoInClip[weaponId] = clip;
 }
@@ -1225,7 +1224,7 @@ void Bot::SetWaypointOrigin(void)
 	const float radius = g_waypoint->GetPath(m_currentWaypointIndex)->radius;
 	if (radius > 0)
 	{
-		MakeVectors(Vector(pev->angles.x, AngleNormalize(pev->angles.y + engine->RandomFloat(-90.0f, 90.0f)), 0.0f));
+		MakeVectors(Vector(pev->angles.x, AngleNormalize(pev->angles.y + GetRandomFloat(-90.0f, 90.0f)), 0.0f));
 		int sPoint = -1;
 
 		if (&m_navNode[0] != null && m_navNode->next != null)
@@ -1234,7 +1233,7 @@ void Bot::SetWaypointOrigin(void)
 			for (int i = 0; i < 5; i++)
 			{
 				waypointOrigin[i] = m_waypointOrigin;
-				waypointOrigin[i] += Vector(engine->RandomFloat(-radius, radius), engine->RandomFloat(-radius, radius), 0.0f);
+				waypointOrigin[i] += Vector(GetRandomFloat(-radius, radius), GetRandomFloat(-radius, radius), 0.0f);
 			}
 
 			int destIndex = m_navNode->next->index;
@@ -1258,7 +1257,7 @@ void Bot::SetWaypointOrigin(void)
 		}
 
 		if (sPoint == -1)
-			m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * engine->RandomFloat(0, radius);
+			m_waypointOrigin = m_waypointOrigin + g_pGlobals->v_forward * GetRandomFloat(0, radius);
 	}
 
 	if (IsOnLadder())
@@ -1279,7 +1278,7 @@ void Bot::GetValidWaypoint(void)
 	bool needFindWaypont = false;
 	if (m_currentWaypointIndex < 0 || m_currentWaypointIndex >= g_numWaypoints)
 		needFindWaypont = true;
-	else if ((m_navTimeset + GetEstimatedReachTime()) < engine->GetTime())
+	else if ((m_navTimeset + GetEstimatedReachTime()) < g_gameTime)
 		needFindWaypont = true;
 	else
 	{
@@ -1311,9 +1310,6 @@ void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, b
 	if (howardNew)
 		goto lastly;
 
-	if (g_clients[i].getWPTime == engine->GetTime())
-		return;
-
 	if (preWaypointIndex == -1 || nextWaypointIndex == -1)
 		return;
 
@@ -1324,7 +1320,7 @@ void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, b
 lastly:
 	g_clients[i].wpIndex = newWaypointIndex;
 	g_clients[i].getWpOrigin = m_iOrigin;
-	g_clients[i].getWPTime = engine->GetTime() + 1.5f;
+	g_clients[i].getWPTime = g_gameTime + 1.5f;
 }
 
 void Bot::ChangeWptIndex (int waypointIndex)
@@ -1343,7 +1339,7 @@ void Bot::ChangeWptIndex (int waypointIndex)
 		m_prevWptIndex = m_currentWaypointIndex;
 
    m_currentWaypointIndex = waypointIndex;
-   m_navTimeset = engine->GetTime ();
+   m_navTimeset = g_gameTime;
 
    // get the current waypoint flags
    if (m_currentWaypointIndex != -1)
@@ -1357,7 +1353,7 @@ int Bot::ChooseBombWaypoint (void)
    // this function finds the best goal (bomb) waypoint for CTs when searching for a planted bomb.
 
    if (g_waypoint->m_goalPoints.IsEmpty ())
-      return engine->RandomInt (0, g_numWaypoints - 1); // reliability check
+      return GetRandomInt (0, g_numWaypoints - 1); // reliability check
 
    Vector bombOrigin = CheckBombAudible ();
 
@@ -1421,7 +1417,7 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
 
    // some of points not found, return random one
    if (srcIndex == -1 || posIndex == -1)
-      return engine->RandomInt (0, g_numWaypoints - 1);
+      return GetRandomInt (0, g_numWaypoints - 1);
 
    for (int i = 0; i < g_numWaypoints; i++) // find the best waypoint now
    {
@@ -1500,7 +1496,7 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
    g_waypoint->FindInRadius (found, 512, origin);
 
    if (found.IsEmpty ())
-      return engine->RandomInt (0, g_numWaypoints - 1); // most worst case, since there a evil error in waypoints
+      return GetRandomInt (0, g_numWaypoints - 1); // most worst case, since there a evil error in waypoints
 
    return found.GetRandomElement ();
 }
@@ -1702,7 +1698,7 @@ void Bot::HeadTowardWaypoint (void)
 				   int kills = g_exp.GetDamage(waypoint, waypoint, m_team);
 
 				   // if damage done higher than one
-				   if (kills > 1 && g_timeRoundMid > engine->GetTime() && g_killHistory > 0)
+				   if (kills > 1 && g_timeRoundMid > g_gameTime && g_killHistory > 0)
 				   {
 					   kills = (kills * 100) / g_killHistory;
 					   kills /= 100;
@@ -1720,7 +1716,7 @@ void Bot::HeadTowardWaypoint (void)
 
 					   if (m_baseAgressionLevel < static_cast <float> (kills))
 					   {
-						   PushTask(TASK_CAMP, TASKPRI_CAMP, -1, engine->GetTime() + (m_fearLevel * (g_timeRoundMid - engine->GetTime()) * 0.5f), true); // push camp task on to stack
+						   PushTask(TASK_CAMP, TASKPRI_CAMP, -1, g_gameTime + (m_fearLevel * (g_timeRoundMid - g_gameTime) * 0.5f), true); // push camp task on to stack
 						   PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint(g_waypoint->GetPath(waypoint)->origin, waypoint), 0.0f, true);
 
 						   m_campButtons |= IN_DUCK;
@@ -1730,7 +1726,7 @@ void Bot::HeadTowardWaypoint (void)
 				   {
 					   if (static_cast <float> (kills) == m_baseAgressionLevel)
 						   m_campButtons |= IN_DUCK;
-					   else if (engine->RandomInt(1, 100) > (m_skill + engine->RandomInt(1, 20)))
+					   else if (GetRandomInt(1, 100) > (m_skill + GetRandomInt(1, 20)))
 						   m_minSpeed = GetWalkSpeed();
 				   }
 			   }
@@ -1798,7 +1794,7 @@ void Bot::HeadTowardWaypoint (void)
 			if (!IsAntiBlock(m_iEntity) && !IsOnLadder () &&
 				g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER)
 			{
-				for (int c = 0; c < engine->GetMaxClients(); c++)
+				for (int c = 0; c < g_maxClients; c++)
 				{
 					Bot* otherBot = g_botManager->GetBot(c);
 					if (otherBot == null || otherBot == this || !otherBot->m_isAlive ||
@@ -1807,7 +1803,7 @@ void Bot::HeadTowardWaypoint (void)
 
 					if (otherBot->m_currentWaypointIndex == destIndex)
 					{
-						PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, engine->GetTime() + 1.2f, false);
+						PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, g_gameTime + 1.2f, false);
 						return;
 					}
 				}
@@ -1822,7 +1818,7 @@ void Bot::HeadTowardWaypoint (void)
 
    SetWaypointOrigin();
 
-   m_navTimeset = engine->GetTime ();
+   m_navTimeset = g_gameTime;
 
    return;
 }
@@ -2139,14 +2135,14 @@ const Vector botPos = m_iOrigin;
 // SyPB Pro P.47 - Base improve
 void Bot::CheckCloseAvoidance(const Vector &dirNormal)
 {
-	if (m_seeEnemyTime + 1.5f < engine->GetTime ())
+	if (m_seeEnemyTime + 1.5f < g_gameTime)
 		return;
 
 	edict_t *nearest = null;
 	float nearestDist = 99999.0f;
 	int playerCount = 0;
 
-	for (int i = 0; i < engine->GetMaxClients (); i++)
+	for (int i = 0; i < g_maxClients; i++)
 	{
 		if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || 
 			g_clients[i].ent == m_iEntity || m_team != GetTeam (g_clients[i].ent))
@@ -2202,7 +2198,7 @@ int Bot::GetCampAimingWaypoint(void)
 	uint16 visibility[3];
 
 	if (m_currentWaypointIndex == -1)
-		return engine->RandomInt(0, g_numWaypoints - 1);
+		return GetRandomInt(0, g_numWaypoints - 1);
 
 	for (int i = 0; i < g_numWaypoints; i++)
 	{
@@ -2240,7 +2236,7 @@ int Bot::GetCampAimingWaypoint(void)
 	count--;
 
 	if (count >= 0)
-		return indeces[engine->RandomInt(0, count)];
+		return indeces[GetRandomInt(0, count)];
 
 	// SyPB Pro P.49 - Camp Look At improve
 	Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
@@ -2249,11 +2245,11 @@ int Bot::GetCampAimingWaypoint(void)
 		if (path->index[i] == -1)
 			continue;
 
-		if (engine->RandomInt (0, 1) == 1)
+		if (GetRandomInt (0, 1) == 1)
 			return path->index[i];
 	}
 
-   return engine->RandomInt (0, g_numWaypoints - 1);
+   return GetRandomInt (0, g_numWaypoints - 1);
 }
 
 void Bot::CheckFall(void)
@@ -2304,7 +2300,7 @@ void Bot::CheckFall(void)
 
 	// SyPB Pro P.39 - Fall Ai improve
 	if (!FNullEnt(m_enemy) || !FNullEnt(m_moveTargetEntity))
-		m_enemyUpdateTime = engine->GetTime();
+		m_enemyUpdateTime = g_gameTime;
 
 	m_checkTerrain = false;
 
@@ -2356,10 +2352,10 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 	CheckCloseAvoidance(directionNormal);
 
 	// SyPB Pro P.42 - Bot Stuck improve
-	if ((m_moveSpeed >= 10 || m_strafeSpeed >= 10) && m_lastCollTime < engine->GetTime())
+	if ((m_moveSpeed >= 10 || m_strafeSpeed >= 10) && m_lastCollTime < g_gameTime)
 	{
 		// SyPB Pro P.38 - Get Stuck improve
-		if (m_damageTime >= engine->GetTime() && m_isZombieBot)
+		if (m_damageTime >= g_gameTime && m_isZombieBot)
 		{
 			m_lastCollTime = m_damageTime + 0.1f;
 			m_firstCollideTime = 0.0f;
@@ -2368,11 +2364,11 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		{
 			if (movedDistance < 2.0f && m_prevSpeed >= 1.0f)
 			{
-				m_prevTime = engine->GetTime();
+				m_prevTime = g_gameTime;
 				m_isStuck = true;
 
 				if (m_firstCollideTime == 0.0f)
-					m_firstCollideTime = engine->GetTime();
+					m_firstCollideTime = g_gameTime;
 			}
 			else
 			{
@@ -2380,8 +2376,8 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 				if (!IsOnLadder() && CantMoveForward(directionNormal, &tr))
 				{
 					if (m_firstCollideTime == 0.0f)
-						m_firstCollideTime = engine->GetTime();
-					else if (m_firstCollideTime + 0.3f <= engine->GetTime())
+						m_firstCollideTime = g_gameTime;
+					else if (m_firstCollideTime + 0.3f <= g_gameTime)
 						m_isStuck = true;
 				}
 				else
@@ -2398,7 +2394,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 
 	if (!m_isStuck) // not stuck?
 	{
-		if (m_probeTime + 0.5f < engine->GetTime())
+		if (m_probeTime + 0.5f < g_gameTime)
 			ResetCollideState(); // reset collision memory if not being stuck for 0.5 secs
 		else
 		{
@@ -2420,7 +2416,7 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		else if (IsInWater())
 			bits |= (COPROBE_JUMP | COPROBE_STRAFE);
 		else
-			bits |= (COPROBE_STRAFE | (engine->RandomInt(0, 10) > 7 ? COPROBE_JUMP : 0));
+			bits |= (COPROBE_STRAFE | (GetRandomInt(0, 10) > 7 ? COPROBE_JUMP : 0));
 
 		int state[8];
 		int i = 0;
@@ -2566,21 +2562,21 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 		for (i = 0; i < 3; i++)
 			m_collideMoves[i] = state[i];
 
-		m_probeTime = engine->GetTime() + 0.5f;
+		m_probeTime = g_gameTime + 0.5f;
 		m_collisionState = COSTATE_PROBING;
 		m_collStateIndex = 0;
 	}
 
 	if (m_collisionState == COSTATE_PROBING)
 	{
-		if (m_probeTime < engine->GetTime())
+		if (m_probeTime < g_gameTime)
 		{
 			m_collStateIndex++;
-			m_probeTime = engine->GetTime() + 0.5f;
+			m_probeTime = g_gameTime + 0.5f;
 
 			if (m_collStateIndex > 3)
 			{
-				m_navTimeset = engine->GetTime() - 5.0f;
+				m_navTimeset = g_gameTime - 5.0f;
 				ResetCollideState();
 			}
 		}
@@ -2592,13 +2588,9 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 			case COSTATE_JUMP:
 				if (IsOnFloor() || IsInWater())
 				{
-					if (IsInWater() || !m_isZombieBot || m_damageTime < engine->GetTime() ||
+					if (IsInWater() || !m_isZombieBot || m_damageTime < g_gameTime ||
 						m_currentTravelFlags & PATHFLAG_JUMP)
-					{
-						if (m_desiredVelocity != nullvec)
-							pev->velocity = m_desiredVelocity;
 						m_buttonFlags |= IN_JUMP;
-					}
 				}
 				break;
 
@@ -2660,7 +2652,7 @@ void Bot::FacePosition(void)
 
 		if (m_aimFlags & (AIM_ENEMY | AIM_ENTITY | AIM_GRENADE | AIM_LASTENEMY) || GetCurrentTask()->taskID == TASK_DESTROYBREAKABLE)
 		{
-			m_playerTargetTime = engine->GetTime();
+			m_playerTargetTime = g_gameTime;
 			m_randomizedIdealAngles = m_idealAngles;
 
 			//if (IsValidPlayer(m_enemy))
@@ -2687,20 +2679,20 @@ void Bot::FacePosition(void)
 		else
 		{
 			// is it time for bot to randomize the aim direction again (more often where moving) ?
-			if (m_randomizeAnglesTime < engine->GetTime() && ((pev->velocity.GetLength() > 1.0f && m_angularDeviation.GetLength() < 5.0f) || m_angularDeviation.GetLength() < 1.0f))
+			if (m_randomizeAnglesTime < g_gameTime && ((pev->velocity.GetLength() > 1.0f && m_angularDeviation.GetLength() < 5.0f) || m_angularDeviation.GetLength() < 1.0f))
 			{
 				// randomize targeted location a bit (slightly towards the ground)
 				m_randomizedIdealAngles = m_idealAngles;
 
 				// set next time to do this
-				m_randomizeAnglesTime = engine->GetTime() + engine->RandomFloat(0.4f, 0.5f);
+				m_randomizeAnglesTime = g_gameTime + GetRandomFloat(0.4f, 0.5f);
 			}
 			float stiffnessMultiplier = 0.35f;
 
 			// take in account whether the bot was targeting someone in the last N seconds
-			if (engine->GetTime() - (m_playerTargetTime + 0.5f) < 2.0f)
+			if (g_gameTime - (m_playerTargetTime + 0.5f) < 2.0f)
 			{
-				stiffnessMultiplier = 1.0f - (engine->GetTime() - m_timeLastFired) * 0.1f;
+				stiffnessMultiplier = 1.0f - (g_gameTime - m_timeLastFired) * 0.1f;
 
 				// don't allow that stiffness multiplier less than zero
 				if (stiffnessMultiplier < 0.0f)
@@ -2775,7 +2767,7 @@ int Bot::FindHostage(void)
 	for (int hostages = 0; hostages < Const_MaxHostages; hostages++)
 	{
 		bool canF = true;
-		for (int i = 0; i < engine->GetMaxClients(); i++)
+		for (int i = 0; i < g_maxClients; i++)
 		{
 			Bot *bot;
 			if ((bot = g_botManager->GetBot(i)) != null && bot->m_isAlive)
@@ -2805,7 +2797,7 @@ bool Bot::IsWaypointUsed (int index)
 	   return false;
 
    // SyPB Pro P.48 - Small improve
-   for (int i = 0; i < engine->GetMaxClients(); i++)
+   for (int i = 0; i < g_maxClients; i++)
    {
 	   edict_t *player = INDEXENT(i + 1);
 	   if (!IsAlive(player) || IsAntiBlock(player) || player == m_iEntity)

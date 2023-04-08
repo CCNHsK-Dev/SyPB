@@ -123,7 +123,7 @@ void BotExperience::UpdateGlobalKnowledge (void)
       for (int t = 0; t < TEAM_COUNT; t++)
       {
          for (int i = 0; i < g_numWaypoints; i++)
-            SetDamage (i, i, static_cast <int> (GetDamage (i, i, t) / (engine->GetMaxClients () * 0.5f)), t);
+            SetDamage (i, i, static_cast <int> (GetDamage (i, i, t) / (g_maxClients * 0.5f)), t);
       }
       m_history = 1;
    }

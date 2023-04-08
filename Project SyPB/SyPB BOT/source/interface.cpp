@@ -140,7 +140,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
    // swap counter-terrorist and terrorist teams
    else if (stricmp (arg0, "swaptteams") == 0 || stricmp (arg0, "swap") == 0)
    {
-      for (int i = 0; i < engine->GetMaxClients (); i++)
+      for (int i = 0; i < g_maxClients; i++)
       {
          if (!(g_clients[i].flags & CFLAG_USED))
             continue;
@@ -172,7 +172,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
          const int nominatedMap = atoi (arg1);
 
          // loop through all players
-         for (int i = 0; i < engine->GetMaxClients (); i++)
+         for (int i = 0; i < g_maxClients; i++)
          {
             if (g_botManager->GetBot (i) != null)
                g_botManager->GetBot (i)->m_voteMap = nominatedMap;
@@ -284,7 +284,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       {
          ClientPrint (ent, print_withtag, "Bot health is set to %d%%", atoi (arg1));
 
-         for (int i = 0; i < engine->GetMaxClients (); i++)
+         for (int i = 0; i < g_maxClients; i++)
          {
             if (g_botManager->GetBot (i) != null)
                g_botManager->GetBot (i)->pev->health = fabsf (static_cast <float> (atof (arg1)));
@@ -314,7 +314,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
       if (stricmp (arg0, "randgen") == 0)
       {
          for (int i = 0; i < 500; i++)
-            ServerPrintNoTag ("Result Range[0 - 100]: %d", engine->RandomInt (0, 100));
+            ServerPrintNoTag ("Result Range[0 - 100]: %d", GetRandomInt (0, 100));
       }
    }
 
@@ -1691,7 +1691,7 @@ void ClientCommand(edict_t *ent)
 								bot->m_doubleJumpOrigin = GetEntityOrigin(client->ent);
 								bot->m_doubleJumpEntity = client->ent;
 
-								bot->PushTask(TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, engine->GetTime(), true);
+								bot->PushTask(TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, g_gameTime, true);
 								bot->ChatSay (true, FormatBuffer("Ok %s, i will help you!", GetEntityName (ent)));
 							}
 							else if (selection == 2)
@@ -1984,23 +1984,23 @@ void ClientCommand(edict_t *ent)
 				switch (selection)
 				{
 				case 1:
-					g_storeAddbotVars[0] = engine->RandomInt(0, 20);
+					g_storeAddbotVars[0] = GetRandomInt(0, 20);
 					break;
 
 				case 2:
-					g_storeAddbotVars[0] = engine->RandomInt(20, 40);
+					g_storeAddbotVars[0] = GetRandomInt(20, 40);
 					break;
 
 				case 3:
-					g_storeAddbotVars[0] = engine->RandomInt(40, 60);
+					g_storeAddbotVars[0] = GetRandomInt(40, 60);
 					break;
 
 				case 4:
-					g_storeAddbotVars[0] = engine->RandomInt(60, 80);
+					g_storeAddbotVars[0] = GetRandomInt(60, 80);
 					break;
 
 				case 5:
-					g_storeAddbotVars[0] = engine->RandomInt(80, 99);
+					g_storeAddbotVars[0] = GetRandomInt(80, 99);
 					break;
 
 				case 6:
@@ -2309,7 +2309,7 @@ void ClientCommand(edict_t *ent)
 		if (FStrEq(command, "say_team"))
 			team = GetTeam(ent);
 
-		for (int i = 0; i < engine->GetMaxClients(); i++)
+		for (int i = 0; i < g_maxClients; i++)
 		{
 			if (!(g_clients[i].flags & CFLAG_USED) || (team != -1 && team != g_clients[i].team) || isAlive != IsAlive(g_clients[i].ent))
 				continue;
@@ -2324,7 +2324,7 @@ void ClientCommand(edict_t *ent)
 					continue;
 
 				strcpy(iter->m_sayTextBuffer.sayText, CMD_ARGS());
-				iter->m_sayTextBuffer.timeNextChat = engine->GetTime() + iter->m_sayTextBuffer.chatDelay;
+				iter->m_sayTextBuffer.timeNextChat = g_gameTime + iter->m_sayTextBuffer.chatDelay;
 			}
 		}
 	}
@@ -2341,7 +2341,7 @@ void ClientCommand(edict_t *ent)
 
 			if (radioCommand != Radio_Affirmative && radioCommand != Radio_Negative && radioCommand != Radio_ReportingIn)
 			{
-				for (int i = 0; i < engine->GetMaxClients(); i++)
+				for (int i = 0; i < g_maxClients; i++)
 				{
 					Bot *bot = g_botManager->GetBot(i);
 
@@ -2361,7 +2361,7 @@ void ClientCommand(edict_t *ent)
 
 			// SyPB Pro P.42 - Fixed 
 			if (g_clients[clientIndex].team == 0 || g_clients[clientIndex].team == 1)
-				g_lastRadioTime[g_clients[clientIndex].team] = engine->GetTime();
+				g_lastRadioTime[g_clients[clientIndex].team] = g_gameTime;
 		}
 		g_radioSelect[clientIndex] = 0;
 	}
@@ -2463,97 +2463,96 @@ void LoadEntityData(void)
 	edict_t *entity = null;
 	int i;
 
-	for (i = 0; i < engine->GetMaxClients(); i++)
+	for (i = 0; i < g_maxClients; i++)
 	{
+		Client_old* player = &g_clients[i];
 		entity = INDEXENT(i + 1);
+		player->ent = entity;
 
 		if (FNullEnt(entity) || !(entity->v.flags & FL_CLIENT))
 		{
-			g_clients[i].flags &= ~(CFLAG_USED | CFLAG_ALIVE);
-			g_clients[i].ent = null;
-			g_clients[i].wpIndex = -1;
-			g_clients[i].wpIndex2 = -1;
-			g_clients[i].getWpOrigin = nullvec;
-			g_clients[i].getWPTime = 0.0f;
-			g_clients[i].team = TEAM_COUNT;
+			player->flags &= ~(CFLAG_USED | CFLAG_ALIVE);
+			player->wpIndex = -1;
+			player->wpIndex2 = -1;
+			player->getWpOrigin = nullvec;
+			player->getWPTime = 0.0f;
+			player->team = TEAM_COUNT;
 
-			g_clients[i].isZombiePlayerAPI = -1;
+			player->isZombiePlayerAPI = -1;
 			continue;
 		}
-
-		g_clients[i].ent = entity;
-		g_clients[i].flags |= CFLAG_USED;
-
-		if (IsAlive(entity))
-			g_clients[i].flags |= CFLAG_ALIVE;
-		else
-			g_clients[i].flags &= ~CFLAG_ALIVE;
 
 		if (g_gameMode == MODE_DM)
-			g_clients[i].team = i + 10;
+			player->team = i + 10;
 		else if (g_gameMode == MODE_ZP)
 		{
-			if (g_gameStartTime > engine->GetTime())
-				g_clients[i].team = TEAM_COUNTER;
+			if (g_gameStartTime > g_gameTime)
+				player->team = TEAM_COUNTER;
 			else if (g_roundEnded)
-				g_clients[i].team = TEAM_TERRORIST;
+				player->team = TEAM_TERRORIST;
 			else
-				g_clients[i].team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
+				player->team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
 		}
 		else if (g_gameMode == MODE_NOTEAM)
-			g_clients[i].team = TEAM_COUNT;
+			player->team = TEAM_COUNT;
 		else
-			g_clients[i].team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
+			player->team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
 
-		if (g_clients[i].flags & CFLAG_ALIVE)
+		if (!IsAlive(entity))
 		{
-			// keep the clipping mode enabled, or it can be turned off after new round has started
-			if (g_hostEntity == entity && g_editNoclip && g_waypointOn)  // SyPB Pro P.12
-				g_hostEntity->v.movetype = MOVETYPE_NOCLIP;
+			player->wpIndex = -1;
+			player->wpIndex2 = -1;
+			player->getWpOrigin = nullvec;
+			player->getWPTime = 0.0f;
 
-			g_clients[i].origin = GetEntityOrigin(entity);
+			player->headHitBoxes = -1;
+			player->headOrigin = nullvec;
 
-			void *pmodel = GET_MODEL_PTR(entity);
-			studiohdr_t *pstudiohdr = (studiohdr_t *)pmodel;
-			if (pmodel != null && pstudiohdr != null)
-			{
-				mstudiobbox_t* var_c = (mstudiobbox_t*)(((uint8_t*)pstudiohdr) + pstudiohdr->hitboxindex);
-
-				for (int h = 0; h < pstudiohdr->numhitboxes; h++)
-				{
-					if (var_c[h].group == 1)
-					{
-						Vector headOrigin, headAngles;
-						(*g_engfuncs.pfnGetBonePosition) (entity, var_c[h].bone, headOrigin, headAngles);
-						g_clients[i].headOrigin = headOrigin;
-						g_clients[i].headOrigin.z = headOrigin.z + 0.6f;
-					}
-				}
-			}
-
-			// SyPB Pro P.41 - Get Waypoint improve
-			if ((g_clients[i].wpIndex == -1 && g_clients[i].wpIndex2 == -1) || 
-				g_clients[i].getWPTime < engine->GetTime())
-				SetEntityWaypoint(entity);
-
-			SoundSimulateUpdate(i);
+			player->isZombiePlayerAPI = -1;
+			player->flags &= ~CFLAG_ALIVE;
 			continue;
 		}
 
-		g_clients[i].wpIndex = -1;
-		g_clients[i].wpIndex2 = -1;
-		g_clients[i].getWpOrigin = nullvec;
-		g_clients[i].getWPTime = 0.0f;
+		player->flags |= CFLAG_ALIVE;
+		// keep the clipping mode enabled, or it can be turned off after new round has started
+		if (g_hostEntity == entity && g_editNoclip && g_waypointOn)  // SyPB Pro P.12
+			g_hostEntity->v.movetype = MOVETYPE_NOCLIP;
 
-		g_clients[i].headOrigin = nullvec;
+		player->origin = GetEntityOrigin(entity);
 
-		g_clients[i].isZombiePlayerAPI = -1;
+		void* pmodel = GET_MODEL_PTR(entity);
+		studiohdr_t* pstudiohdr = (studiohdr_t*)pmodel;
+		if (pmodel != null && pstudiohdr != null)
+		{
+			mstudiobbox_t* var_c = (mstudiobbox_t*)(((uint8_t*)pstudiohdr) + pstudiohdr->hitboxindex);
+			if (player->headHitBoxes != -1 && var_c[player->headHitBoxes].group != 1)
+				player->headHitBoxes = -1;
+
+			for (int h = 0; (player->headHitBoxes == -1 && h < pstudiohdr->numhitboxes); h++)
+			{
+				if (var_c[h].group == 1)
+					player->headHitBoxes = h;
+			}
+
+			if (player->headHitBoxes != -1)
+			{
+				(*g_engfuncs.pfnGetBonePosition) (entity, var_c[player->headHitBoxes].bone, player->headOrigin, null);
+				player->headOrigin.z += 1.0f;
+			}
+		}
+
+		// SyPB Pro P.41 - Get Waypoint improve
+		if ((player->wpIndex == -1 && player->wpIndex2 == -1) ||
+			player->getWPTime < g_gameTime)
+			SetEntityWaypoint(entity);
+
+		SoundSimulateUpdate(i);
 	}
 
 	// SyPB Pro P.43 - Entity Action 
-	if (g_checkEntityDataTime <= engine->GetTime())
+	if (g_checkEntityDataTime <= g_gameTime)
 	{
-		g_checkEntityDataTime = engine->GetTime() + 1.0f;
+		g_checkEntityDataTime = g_gameTime + 1.0f;
 		for (i = 0; i < entityNum; i++)
 		{
 			if (g_entityId[i] == -1)
@@ -2566,7 +2565,7 @@ void LoadEntityData(void)
 				continue;
 			}
 
-			if (g_entityGetWpTime[i] < engine->GetTime() || g_entityWpIndex[i] == -1)
+			if (g_entityGetWpTime[i] < g_gameTime || g_entityWpIndex[i] == -1)
 				SetEntityWaypoint(entity);
 		}
 
@@ -2596,6 +2595,8 @@ void StartFrame (void)
    // for example if a new player joins the server, we should disconnect a bot, and if the
    // player population decreases, we should fill the server with other bots.
 
+	g_maxClients = engine->GetMaxClients();
+	g_gameTime = engine->GetTime();
 	LoadEntityData();
 
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
@@ -2607,7 +2608,7 @@ void StartFrame (void)
 
 			// SyPB Pro P.30 - small change
 			bool hasBot = false;
-			for (int i = 0; i < engine->GetMaxClients(); i++)
+			for (int i = 0; i < g_maxClients; i++)
 			{
 				if (g_botManager->GetBot(i))
 				{
@@ -2633,9 +2634,9 @@ void StartFrame (void)
 
 	g_botActionStop = sypb_stopbots.GetBool();
 	g_ignoreEnemies = sypb_ignore_enemies.GetBool();
-	if (g_secondTime < engine->GetTime())
+	if (g_secondTime < g_gameTime)
 	{
-		g_secondTime = engine->GetTime() + 1.0f;
+		g_secondTime = g_gameTime + 1.0f;
 
 		SetGameMode(sypb_gamemod.GetInt());
 
@@ -2655,7 +2656,7 @@ void StartFrame (void)
 			}
 		}
 
-		for (int i = 0; i < engine->GetMaxClients(); i++)
+		for (int i = 0; i < g_maxClients; i++)
 		{
 			edict_t *player = INDEXENT(i + 1);
 
@@ -2908,7 +2909,7 @@ void pfnMessageBegin (int msgDest, int msgType, const float *origin, edict_t *ed
 
       if (msgType == SVC_INTERMISSION)
       {
-         for (int i = 0; i < engine->GetMaxClients (); i++)
+         for (int i = 0; i < g_maxClients; i++)
          {
             Bot *bot = g_botManager->GetBot (i);
 
@@ -3200,7 +3201,7 @@ void pfnAlertMessage (ALERT_TYPE alertType, char *format, ...)
    if (strstr (buffer, "_Defuse_") != null)
    {
       // notify all terrorists that CT is starting bomb defusing
-      for (int i = 0; i < engine->GetMaxClients (); i++)
+      for (int i = 0; i < g_maxClients; i++)
       {
          Bot *bot = g_botManager->GetBot (i);
 
@@ -3502,7 +3503,7 @@ C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.
 	edict_t *targetEnt = INDEXENT(target);
 	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
 	{
-		bot->m_blockCheckEnemyTime = engine->GetTime();
+		bot->m_blockCheckEnemyTime = g_gameTime;
 		bot->m_enemyAPI = null;
 		API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
 			"Not target", blockCheckTime);
@@ -3510,7 +3511,7 @@ C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.
 		return -1;
 	}
 
-	bot->m_blockCheckEnemyTime = engine->GetTime() + blockCheckTime;
+	bot->m_blockCheckEnemyTime = g_gameTime + blockCheckTime;
 	bot->m_enemyAPI = targetEnt;
 	API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
 		GetEntityName(targetEnt), blockCheckTime);
@@ -3828,7 +3829,7 @@ C_DLLEXPORT int Amxx_ZombieModGameStart(int input) // 1.50
 		return -1;
 
 	if (input == -1)
-		return (!g_roundEnded && g_gameStartTime <= engine->GetTime());
+		return (!g_roundEnded && g_gameStartTime <= g_gameTime);
 
 	if (input == 1)
 	{
@@ -3837,7 +3838,7 @@ C_DLLEXPORT int Amxx_ZombieModGameStart(int input) // 1.50
 		return 1;
 	}
 
-	g_gameStartTime = engine->GetTime() + (CVAR_GET_FLOAT("mp_roundtime") * 60);
+	g_gameStartTime = g_gameTime + (CVAR_GET_FLOAT("mp_roundtime") * 60);
 	AutoLoadGameMode(true);
 	return 0;
 }
@@ -3956,7 +3957,7 @@ C_DLLEXPORT void SwNPCAPI_SetNPCNewWaypointPoint(edict_t* entity, int waypointPo
 
 		g_entityWpIndex[i] = waypointPoint;
 		g_entityGetWpOrigin[i] = entity->v.origin;
-		g_entityGetWpTime[i] = engine->GetTime() + 1.5f;
+		g_entityGetWpTime[i] = g_gameTime + 1.5f;
 
 		break;
 	}

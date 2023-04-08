@@ -43,6 +43,8 @@
 
 #include <urlmon.h>
 #pragma comment(lib, "Urlmon.lib")
+extern float Q_sqrt(float number);
+extern float Q_rsqrt(float number);
 
 #include <engine.h>
 
@@ -495,6 +497,7 @@ struct Client_old
    float hearingDistance; // distance this sound is heared
    float timeSoundLasting; // time sound is played/heared
 
+   int headHitBoxes;
    Vector headOrigin; //  
 
    // SyPB Pro P.41 - Get Waypoint improve
@@ -550,15 +553,6 @@ struct WaypointHeader
    char mapName[32];
    char author[32];
    //unsigned int date;
-};
-
-struct WaypointHeaderOld
-{
-	char header[8];
-	int32 fileVersion;
-	int32 pointNumber;
-	char mapName[32];
-	char author[32];
 };
 
 // define general waypoint structure
@@ -721,6 +715,7 @@ private:
    float m_buttonPushTime; // time to push the button
 
    Vector m_moveAngles; // bot move angles
+   Vector m_moveAnglesLast;
    bool m_moveToGoal; // bot currently moving to goal??
 
    Vector m_idealAngles; // angle wanted
@@ -1408,6 +1403,9 @@ extern void API_TestMSG(const char *format, ...);
 
 extern void AddLogEntry (int logLevel, const char *format, ...);
 extern void MOD_AddLogEntry(int mode, char *format);
+
+extern int GetRandomInt(int min, int max);
+extern float GetRandomFloat(float min, float max);
 
 extern void DisplayMenuToClient (edict_t *ent, MenuText *menu);
 extern void DecalTrace (entvars_t *pev, TraceResult *trace, int logotypeIndex);

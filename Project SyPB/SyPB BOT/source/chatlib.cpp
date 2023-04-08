@@ -111,14 +111,14 @@ char *HumanizeName (char *name)
    strcpy (outputName, name); // copy name to new buffer
 
    // drop tag marks, 80 percent of time
-   if (engine->RandomInt (1, 100) < 80)
+   if (GetRandomInt (1, 100) < 80)
       StripTags (outputName);
    else
       strtrim (outputName);
 
    // sometimes switch name to lower characters
    // note: since we're using russian names written in english, we reduce this shit to 6 percent
-   if (engine->RandomInt (1, 100) <= 6)
+   if (GetRandomInt (1, 100) <= 6)
    {
       for (int i = 0; i < static_cast <int> (strlen (outputName)); i++)
          outputName[i] = static_cast <char> (tolower (outputName[i])); // to lower case
@@ -135,7 +135,7 @@ void HumanizeChat (char *buffer)
 
    // sometimes switch text to lowercase
    // note: since we're using russian chat written in english, we reduce this shit to 4 percent
-   if (engine->RandomInt (1, 100) <= 4)
+   if (GetRandomInt (1, 100) <= 4)
    {
       for (i = 0; i < length; i++)
          buffer[i] = static_cast <char> (tolower (buffer[i])); // switch to lowercase
@@ -144,9 +144,9 @@ void HumanizeChat (char *buffer)
    if (length > 15)
    {
       // "length / 2" percent of time drop a character
-      if (engine->RandomInt (1, 100) < (length / 2))
+      if (GetRandomInt (1, 100) < (length / 2))
       {
-         int pos = engine->RandomInt ((length / 8), length - (length / 8)); // chose random position in string
+         int pos = GetRandomInt ((length / 8), length - (length / 8)); // chose random position in string
 
          for (i = pos; i < length - 1; i++)
             buffer[i] = buffer[i + 1]; // overwrite the buffer with stripped string
@@ -156,9 +156,9 @@ void HumanizeChat (char *buffer)
       }
 
       // "length" / 4 precent of time swap character
-      if (engine->RandomInt (1, 100) < (length / 4))
+      if (GetRandomInt (1, 100) < (length / 4))
       {
-         int pos = engine->RandomInt ((length / 8), ((3 * length) / 8)); // choose random position in string
+         int pos = GetRandomInt ((length / 8), ((3 * length) / 8)); // choose random position in string
          char ch = buffer[pos]; // swap characters
 
          buffer[pos] = buffer[pos + 1];
@@ -202,7 +202,7 @@ void Bot::PrepareChatMessage (char *text)
             int highestFrags = -9000; // just pick some start value
             int index = 0;
 
-            for (int i = 0; i < engine->GetMaxClients (); i++)
+            for (int i = 0; i < g_maxClients; i++)
             {
                if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == m_iEntity)
                   continue;
@@ -226,7 +226,7 @@ void Bot::PrepareChatMessage (char *text)
          // roundtime?
          else if (*pattern == 'r')
          {
-            int time = static_cast <int> (g_timeRoundEnd - engine->GetTime ());
+            int time = static_cast <int> (g_timeRoundEnd - g_gameTime);
             strcat (m_tempStrings, FormatBuffer ("%02d:%02d", time / 60, time % 60));
          }
          // chat reply?
@@ -242,7 +242,7 @@ void Bot::PrepareChatMessage (char *text)
          {
             int i;
 
-            for (i = 0; i < engine->GetMaxClients (); i++)
+            for (i = 0; i < g_maxClients; i++)
             {
                if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team != m_team) || (g_clients[i].ent == m_iEntity))
                   continue;
@@ -250,7 +250,7 @@ void Bot::PrepareChatMessage (char *text)
                break;
             }
 
-            if (i < engine->GetMaxClients ())
+            if (i < g_maxClients)
             {
                if (!FNullEnt (pev->dmg_inflictor) && (m_team == GetTeam (pev->dmg_inflictor)))
                   talkEntity = pev->dmg_inflictor;
@@ -262,7 +262,7 @@ void Bot::PrepareChatMessage (char *text)
             }
             else // no teammates alive...
             {
-               for (i = 0; i < engine->GetMaxClients (); i++)
+               for (i = 0; i < g_maxClients; i++)
                {
                   if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team != m_team) || (g_clients[i].ent == m_iEntity))
                      continue;
@@ -270,7 +270,7 @@ void Bot::PrepareChatMessage (char *text)
                   break;
                }
 
-               if (i < engine->GetMaxClients ())
+               if (i < g_maxClients)
                {
                   talkEntity = g_clients[i].ent;
 
@@ -283,14 +283,14 @@ void Bot::PrepareChatMessage (char *text)
          {
             int i;
 
-            for (i = 0; i < engine->GetMaxClients (); i++)
+            for (i = 0; i < g_maxClients; i++)
             {
                if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE) || (g_clients[i].team == m_team) || (g_clients[i].ent == m_iEntity))
                   continue;
                break;
             }
 
-            if (i < engine->GetMaxClients ())
+            if (i < g_maxClients)
             {
                talkEntity = g_clients[i].ent;
 
@@ -299,13 +299,13 @@ void Bot::PrepareChatMessage (char *text)
             }
             else // no teammates alive...
             {
-               for (i = 0; i < engine->GetMaxClients (); i++)
+               for (i = 0; i < g_maxClients; i++)
                {
                   if (!(g_clients[i].flags & CFLAG_USED) || (g_clients[i].team == m_team) || (g_clients[i].ent == m_iEntity))
                      continue;
                   break;
                }
-               if (i < engine->GetMaxClients ())
+               if (i < g_maxClients)
                {
                   talkEntity = g_clients[i].ent;
 
@@ -318,18 +318,18 @@ void Bot::PrepareChatMessage (char *text)
          {
             if (g_gameVersion == CSVER_CZERO)
             {
-               if (engine->RandomInt (1, 100) < 30)
+               if (GetRandomInt (1, 100) < 30)
                   strcat (m_tempStrings, "CZ");
-               else if (engine->RandomInt (1, 100) < 80)
+               else if (GetRandomInt (1, 100) < 80)
                   strcat (m_tempStrings, "KoHTpa K3");
                else
                   strcat (m_tempStrings, "Condition Zero");
             }
             else if ((g_gameVersion == CSVER_CSTRIKE) || (g_gameVersion == CSVER_VERYOLD))
             {
-               if (engine->RandomInt (1, 100) < 30)
+               if (GetRandomInt (1, 100) < 30)
                   strcat (m_tempStrings, "CS");
-               else if (engine->RandomInt (1, 100) < 80)
+               else if (GetRandomInt (1, 100) < 80)
                   strcat (m_tempStrings, "KoHTpa");
                else
                   strcat (m_tempStrings, "Counter-Strike");
@@ -389,7 +389,7 @@ bool CheckKeywords (char *tempMessage, char *reply)
    }
 
    // didn't find a keyword? 70% of the time use some universal reply
-   if (engine->RandomInt (1, 100) < 70 && !g_chatFactory[CHAT_NOKW].IsEmpty ())
+   if (GetRandomInt (1, 100) < 70 && !g_chatFactory[CHAT_NOKW].IsEmpty ())
    {
       strcpy (reply, g_chatFactory[CHAT_NOKW].GetRandomElement ());
       return true;
@@ -420,16 +420,16 @@ bool Bot::RepliesToPlayer (void)
       char text[256];
 
       // check is time to chat is good
-      if (m_sayTextBuffer.timeNextChat < engine->GetTime ())
+      if (m_sayTextBuffer.timeNextChat < g_gameTime)
       {
-         if (engine->RandomInt (1, 100) < m_sayTextBuffer.chatProbability + engine->RandomInt (2, 10) && ParseChat (text))
+         if (GetRandomInt (1, 100) < m_sayTextBuffer.chatProbability + GetRandomInt (2, 10) && ParseChat (text))
          {
             PrepareChatMessage (text);
             PushMessageQueue (CMENU_SAY);
 
             m_sayTextBuffer.entityIndex = -1;
             m_sayTextBuffer.sayText[0] = 0x0;
-            m_sayTextBuffer.timeNextChat = engine->GetTime () + m_sayTextBuffer.chatDelay;
+            m_sayTextBuffer.timeNextChat = g_gameTime + m_sayTextBuffer.chatDelay;
 
             return true;
          }
@@ -459,7 +459,7 @@ void Bot::ChatSay(bool teamSay, const char *text)
     strcpy(botName, GetEntityName(m_iEntity));
 
 
-    for (int i = 0; i < engine->GetMaxClients(); i++)
+    for (int i = 0; i < g_maxClients; i++)
     {
         if (!(g_clients[i].flags & CFLAG_USED) || g_clients[i].ent == m_iEntity || g_clients[i].flags & FL_FAKECLIENT)
             continue;

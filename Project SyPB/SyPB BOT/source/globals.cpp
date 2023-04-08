@@ -67,6 +67,8 @@ float g_timeBombPlanted = 0.0f;
 float g_lastRadioTime[2] = {0.0f, 0.0f};
 float g_autoPathDistance = 250.0f;
 
+int g_maxClients = -1;
+float g_gameTime = 0.0f;
 float g_secondTime = 0.0f;
 float g_gameStartTime = 0.0f;
 
