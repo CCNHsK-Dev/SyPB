@@ -715,7 +715,6 @@ private:
    float m_buttonPushTime; // time to push the button
 
    Vector m_moveAngles; // bot move angles
-   Vector m_moveAnglesLast;
    bool m_moveToGoal; // bot currently moving to goal??
 
    Vector m_idealAngles; // angle wanted
@@ -741,7 +740,6 @@ private:
    float m_checkEnemyDistance[checkEnemyNum];
 
    void BotAI (void);
-   void FunBotAI(void);
    void BotDebugModeMsg(void);
    void MoveAction(void);
    bool IsMorePowerfulWeaponCanBeBought (void);
@@ -835,7 +833,7 @@ private:
    void RunPlayerMovement (void);
    void GetValidWaypoint (void);
    void ChangeWptIndex (int waypointIndex);
-   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex, bool howardNew = false);
+   void ChangeBotEntityWaypoint (int preWaypointIndex, int nextWaypointIndex);
    bool IsDeadlyDrop (Vector targetOriginPos);
    bool OutOfBombTimer (void);
    void SelectLeaderEachTeam (int team);

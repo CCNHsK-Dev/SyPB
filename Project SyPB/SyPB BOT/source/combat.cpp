@@ -1020,7 +1020,7 @@ bool Bot::KnifeAttack(float attackDistance)
 		if (IsOnAttackDistance(entity, (m_knifeDistance1API <= 0) ? 96.0f : m_knifeDistance1API))
 			kaMode = 1;
 		if (IsOnAttackDistance(entity, (m_knifeDistance2API <= 0) ? 96.0f : m_knifeDistance2API))
-			kaMode += 2;
+			kaMode = 2;
 	}
 
 	if (kaMode > 0)
@@ -1239,8 +1239,24 @@ void Bot::ActionForEnemy(void)
 				SetWaypointOrigin();
 			}
 
-			if (IsZombieMode ())
-				destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 500.0f);
+			if (IsZombieMode())
+			{
+				// Don't move to corner
+				const int farestIndex = destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 500.0f);
+				int farestIndexPathCount = 0;
+
+				for (int i = 0; i < Const_MaxPathIndex; i++)
+				{
+					if (g_waypoint->GetPath(farestIndex)->index[i] == -1)
+						continue;
+
+					farestIndexPathCount++;
+					destIndex = g_waypoint->GetPath(farestIndex)->index[i];
+				}
+
+				if (farestIndexPathCount >= 2)
+					destIndex = farestIndex;
+			}
 			else
 				destIndex = FindCoverWaypoint(512.0f);
 

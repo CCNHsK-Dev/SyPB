@@ -471,6 +471,8 @@ void BotControl::MaintainBotQuota(void)
 	if (m_maintainTime < g_gameTime)
 		g_botManager->CheckBotNum();
 
+	//AddLogEntry(LOG_WARNING, "MaintainBotQuota Run : %.2f", g_gameTime);
+
 	if (m_maintainTime < g_gameTime && !m_creationTab.IsEmpty())
 	{
 		CreateItem last = m_creationTab.Pop();
@@ -515,12 +517,14 @@ void BotControl::MaintainBotQuota(void)
 
 void BotControl::InitQuota (void)
 {
-   m_maintainTime = g_gameTime + 2.0f;
-   m_creationTab.RemoveAll ();
+	g_maxClients = engine->GetMaxClients();
+	g_gameTime = engine->GetTime();
+	m_maintainTime = g_gameTime + 2.0f;
+	m_creationTab.RemoveAll();
 
-   // SyPB Pro P.42 - Entity Action - Reset
-   for (int i = 0; i < entityNum; i++)
-	   SetEntityActionData(i);
+	// SyPB Pro P.42 - Entity Action - Reset
+	for (int i = 0; i < entityNum; i++)
+		SetEntityActionData(i);
 }
 
 void BotControl::FillServer (int selection, int personality, int skill, int numToAdd)

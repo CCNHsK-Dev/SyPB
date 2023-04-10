@@ -827,13 +827,8 @@ void Bot::FindItem(void)
 			const int secondaryWeaponCarried = GetBestSecondaryWeaponCarried();
 
 			// SyPB Pro P.45 - AMXX API improve
-			int weaponAmmoMax = m_weaponClipAPI;
-			int secondaryWeaponAmmoMax = m_weaponClipAPI;
-			if (m_weaponClipAPI <= 0)
-			{
-				secondaryWeaponAmmoMax = g_weaponDefs[g_weaponSelect[secondaryWeaponCarried].id].ammo1Max;
-				weaponAmmoMax = g_weaponDefs[g_weaponSelect[weaponCarried].id].ammo1Max;
-			}
+			const int secondaryWeaponAmmoMax = (m_weaponClipAPI <= 0) ? g_weaponDefs[g_weaponSelect[secondaryWeaponCarried].id].ammo1Max : m_weaponClipAPI;
+			const int weaponAmmoMax = (m_weaponClipAPI <= 0) ? g_weaponDefs[g_weaponSelect[weaponCarried].id].ammo1Max : m_weaponClipAPI;
 
 			if (secondaryWeaponCarried < 7 && 
 				(m_ammo[g_weaponSelect[secondaryWeaponCarried].id] > 0.3 * secondaryWeaponAmmoMax) &&
@@ -2270,62 +2265,6 @@ void Bot::RemoveCertainTask (BotTask taskID)
 	}
 
 	m_tasks = prev;
-
-	/*
-   // this function removes one task from the bot task stack.
-
-   if (m_tasks == null || (m_tasks != null && m_tasks->taskID == TASK_NORMAL))
-      return; // since normal task can be only once on the stack, don't remove it...
-
-   bool checkPriorities = false;
-
-   Task *task = m_tasks;
-   Task *oldTask = m_tasks;
-   Task *oldPrevTask = task->prev;
-   Task *oldNextTask = task->next;
-
-   while (task->prev != null)
-      task = task->prev;
-
-   while (task != null)
-   {
-      Task *next = task->next;
-      Task *prev = task->prev;
-
-      if (task->taskID == taskID)
-      {
-         if (prev != null)
-            prev->next = next;
-
-         if (next != null)
-            next->prev = prev;
-
-         if (task == oldTask)
-            oldTask = null;
-         else if (task == oldPrevTask)
-            oldPrevTask = null;
-         else if (task == oldNextTask)
-            oldNextTask = null;
-
-         delete task;
-
-         checkPriorities = true;
-         break;
-      }
-      task = next;
-   }
-
-   if (oldTask != null)
-      m_tasks = oldTask;
-   else if (oldPrevTask != null)
-      m_tasks = oldPrevTask;
-   else if (oldNextTask != null)
-      m_tasks = oldNextTask;
-   else
-      GetCurrentTask ();
-
-   if (checkPriorities)
-      CheckTasksPriorities (); */
 }
 
 void Bot::TaskComplete (void)
@@ -3236,7 +3175,6 @@ float Bot::GetWalkSpeed(void)
 	return static_cast <float> ((static_cast <int> (m_iMaxSpeed) * 0.5f) + (static_cast <int> (m_iMaxSpeed) / 50)) - 18;
 }
 
-
 void Bot::ChooseAimDirection (void)
 {
    unsigned int flags = m_aimFlags;
@@ -3333,7 +3271,6 @@ void Bot::Think(void)
 
 	if (m_playerFps <= g_gameTime)
 	{
-		m_moveAngles = nullvec;
 		if (m_thinkFps <= g_gameTime)
 		{
 			ThinkFrame();
@@ -3347,10 +3284,10 @@ void Bot::Think(void)
 		}
 
 		MoveAction();
-		BotDebugModeMsg();
 
 		RunPlayerMovement();
 		m_playerFps = g_gameTime + 1.0f / 60.0f;
+		BotDebugModeMsg();
 	} 
 }
 
@@ -3359,6 +3296,7 @@ void Bot::ThinkFrame(void)
    pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
 
    m_buttonFlags = 0;
+   m_moveAngles = nullvec;
 
    m_moveSpeed = 0.0f;
    m_strafeSpeed = 0.0f;
@@ -3387,8 +3325,6 @@ void Bot::ThinkFrame(void)
       if (sypb_chat.GetBool () && !RepliesToPlayer () && m_lastChatTime + 10.0f < g_gameTime && 
 		  g_lastChatTime + 5.0f < g_gameTime) // bot chatting turned on?
       {
-         // say a text every now and then
-         //if (GetRandomInt (1, 1500) < 2)
 		  // SyPB Pro P.43 - Small Fixed
 		  if (GetRandomInt (1, 1500) < 2 && !g_chatFactory[CHAT_DEAD].IsEmpty ())
          {
@@ -3437,14 +3373,7 @@ void Bot::ThinkFrame(void)
 
    // SyPB Pro P.30 - Start Think 
    if (!g_botActionStop && m_botMovement)
-   {
-	   // SyPB Pro P.37 - Game Mode Ai
-	   if (g_gameMode == MODE_BASE || g_gameMode == MODE_DM || g_gameMode == MODE_NOTEAM ||
-		   g_gameMode == MODE_ZP || g_gameMode == MODE_ZH)
-		   BotAI();
-	   else
-		   FunBotAI();
-   }
+	   BotAI();
 }
 
 void Bot::SecondThink (void)
@@ -3482,28 +3411,21 @@ void Bot::MoveAction(void)
 	else if (m_strafeSpeed < 0)
 		m_buttonFlags |= IN_MOVELEFT;
 
+	if (m_jumpTime > g_gameTime)
+	{
+		m_buttonFlags |= IN_DUCK;
+
+		if (!m_jumpFinished && (IsOnFloor () || IsOnLadder() || IsInWater()))
+			m_jumpTime = g_gameTime;
+	}
 	if (m_buttonFlags & IN_JUMP)
 	{
-		if (m_buttonFlags & IN_DUCK)
-		{
-			m_buttonFlags &= ~IN_DUCK;
-			m_duckTime = g_gameTime + 0.1f;
-		}
+		m_buttonFlags &= ~IN_DUCK;
+		m_jumpTime = g_gameTime + 0.65f;
 	}
 
 	if (m_sniperFire && m_buttonFlags & IN_ATTACK)
 		m_sniperFire = false;
-
-	if (m_moveAngles == nullvec)
-	{
-		const Vector directionOld = m_destOrigin - (m_iOrigin + pev->velocity * m_frameInterval);
-		m_moveAnglesLast = directionOld.ToAngles();
-
-		m_moveAnglesLast.ClampAngles();
-		m_moveAnglesLast.x *= -1.0f;
-	}
-	else
-		m_moveAnglesLast = m_moveAngles;
 }
 
 void Bot::RunTask (void)
@@ -5363,23 +5285,12 @@ void Bot::BotDebugModeMsg(void)
 			engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
 				Color(0, 255, 255, 100), 15, 0, 8, 1, LINE_SIMPLE);
 		}
-
-		const float root = Q_sqrt(32.0f);
-		src = g_clients[GetIndex() - 1].headOrigin;
-		engine->DrawLine(g_hostEntity, src + Vector(root, -root, 0), src + Vector(-root, root, 0), Color(255, 0, 0, 100), 10, 0, 0, 10);
-		engine->DrawLine(g_hostEntity, src + Vector(-root, -root, 0), src + Vector(root, root, 0), Color(255, 0, 0, 100), 10, 0, 0, 10);
 	}
-}
-
-void Bot::FunBotAI(void)
-{
-	// Other Mode Bot Ai Here !!!!!
 }
 
 void Bot::BotAI(void)
 {
 	// this function gets called each frame and is the core of all bot ai. from here all other subroutines are called
-
 	float movedDistance = 2.0f; // length of different vector (distance bot moved)
 
 	// SyPB Pro P.49 - Base improve about knife move
@@ -5513,11 +5424,9 @@ void Bot::BotAI(void)
    // SyPB Pro P.34 - Base Ai
    const Vector directionOld = m_destOrigin - (m_iOrigin + pev->velocity * m_frameInterval);
    Vector directionNormal = directionOld.Normalize ();
-   //Vector direction = directionNormal;
    directionNormal.z = 0.0f;
 
    m_moveAngles = directionOld.ToAngles ();
-
    m_moveAngles.ClampAngles ();
    m_moveAngles.x *= -1.0f; // invert for engine
 
@@ -5630,15 +5539,6 @@ void Bot::BotAI(void)
    }
    else if (m_duckTime > g_gameTime)
 	   m_buttonFlags |= IN_DUCK;
-
-   if (m_buttonFlags & IN_JUMP)
-	   m_jumpTime = g_gameTime;
-
-   if (m_jumpTime + 0.3f > g_gameTime)
-   {
-	   if (!IsOnFloor() && !IsInWater())
-		   m_buttonFlags |= IN_DUCK;
-   }
 
    // save the previous speed (for checking if stuck)
    m_prevSpeed = fabsf (m_moveSpeed);
@@ -6010,12 +5910,9 @@ void Bot::RunPlayerMovement(void)
 	m_frameInterval = g_gameTime - m_lastCommandTime;
 
 	byte msecVal = byte((g_gameTime - m_lastCommandTime) * 1000);
-	if (msecVal > 255)
-		msecVal = 255;
-
 	m_lastCommandTime = g_gameTime;
 
-	(*g_engfuncs.pfnRunPlayerMove) (m_iEntity, m_moveAnglesLast, m_moveSpeed, m_strafeSpeed, 0.0f,
+	(*g_engfuncs.pfnRunPlayerMove) (m_iEntity, m_moveAngles, m_moveSpeed, m_strafeSpeed, 0.0f,
 		m_buttonFlags, static_cast <uint8> (pev->impulse), msecVal);
 
 	m_oldButtonFlags = m_buttonFlags;

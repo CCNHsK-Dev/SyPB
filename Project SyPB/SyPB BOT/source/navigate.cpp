@@ -436,20 +436,20 @@ bool Bot::DoWaypointNav (void)
 
    m_destOrigin = m_waypointOrigin + pev->view_ofs;
 
-   // this waypoint has additional travel flags - care about them
    if (m_currentTravelFlags & PATHFLAG_JUMP)
    {
-	   if (!m_jumpFinished && (IsOnFloor() || IsOnLadder()))
+	   if (!m_jumpFinished)
 	   {
-		   pev->velocity = m_desiredVelocity;
+		   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
 		   m_buttonFlags |= IN_JUMP;
 
 		   m_jumpFinished = true;
 		   m_checkTerrain = false;
+		   m_desiredVelocity = nullvec;
 	   }
    }
-
-   const float waypointDistance = (m_iOrigin - m_waypointOrigin).GetLength ();
+   
+   const float waypointDistance = (m_iOrigin - m_waypointOrigin).GetLength();
 
    if (g_waypoint->GetPath(m_currentWaypointIndex)->flags & WAYPOINT_LADDER)
    {
@@ -565,23 +565,14 @@ bool Bot::DoWaypointNav (void)
          break;
       }
    }
-
-   if (desiredDistance < 22.0f && waypointDistance < 30.0f && 
+   
+   if (desiredDistance < 22.0f && waypointDistance < 30.0f &&
 	   (m_iOrigin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() >= waypointDistance)
-	   desiredDistance = waypointDistance + 1.0f;
-   else if (!(m_currentTravelFlags & PATHFLAG_JUMP) && 
-	   (m_waypointOrigin - m_iOrigin).GetLength2D() <= 8.0f && m_waypointOrigin.z <= m_iOrigin.z + 32.0f)
-   {
-	   if (m_navNode == null ||
-		   (m_navNode->next != null && g_waypoint->Reachable(m_iEntity, m_navNode->next->index)))
-		   desiredDistance = waypointDistance + 1.0f;
-   }
+	   desiredDistance = waypointDistance + 1.0f; 
 
    // SyPB Pro P.42 - AMXX API
    if (m_waypointGoalAPI != -1 && m_currentWaypointIndex == m_waypointGoalAPI)
 	   m_waypointGoalAPI = -1;
-
-   ChangeBotEntityWaypoint(m_prevWptIndex, m_currentWaypointIndex);
 
    if (waypointDistance < desiredDistance)
    {
@@ -1303,22 +1294,11 @@ void Bot::GetValidWaypoint(void)
 }
 
 // SyPB Pro P.49 - Base Waypoint improve
-void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex, bool howardNew)
+void Bot::ChangeBotEntityWaypoint(int preWaypointIndex, int nextWaypointIndex)
 {
 	const int i = GetIndex() - 1;
-	int newWaypointIndex = preWaypointIndex;
-	if (howardNew)
-		goto lastly;
-
-	if (preWaypointIndex == -1 || nextWaypointIndex == -1)
-		return;
-
-	if ((g_waypoint->GetPath(nextWaypointIndex)->origin - m_iOrigin).GetLength() <=
-		(g_waypoint->GetPath(preWaypointIndex)->origin - m_iOrigin).GetLength())
-		newWaypointIndex = nextWaypointIndex;
-
-lastly:
-	g_clients[i].wpIndex = newWaypointIndex;
+	g_clients[i].wpIndex = nextWaypointIndex;
+	g_clients[i].wpIndex2 = preWaypointIndex;
 	g_clients[i].getWpOrigin = m_iOrigin;
 	g_clients[i].getWPTime = g_gameTime + 1.5f;
 }
@@ -1663,164 +1643,156 @@ bool Bot::GetBestNextWaypoint (void)
    return false;
 }
 
-void Bot::HeadTowardWaypoint (void)
+void Bot::HeadTowardWaypoint(void)
 {
-   // advances in our pathfinding list and sets the appropiate destination origins for this bot
+	// advances in our pathfinding list and sets the appropiate destination origins for this bot
 
-   GetValidWaypoint (); // check if old waypoints is still reliable
+	GetValidWaypoint(); // check if old waypoints is still reliable
 
-   // no waypoints from pathfinding?
-   if (m_navNode == null)
-      return;
+	// no waypoints from pathfinding?
+	if (m_navNode == null)
+		return;
 
-   m_navNode = m_navNode->next; // advance in list
-   m_currentTravelFlags = 0; // reset travel flags (jumping etc)
+	m_navNode = m_navNode->next; // advance in list
+	m_currentTravelFlags = 0; // reset travel flags (jumping etc)
 
-   // we're not at the end of the list?
-   if (m_navNode != null)
-   {
-	   if (m_navNode->next != null)
-	   {
-		   if (m_navNodeStart != m_navNode)
-		   {
-			   GetBestNextWaypoint();
-			   int taskID = GetCurrentTask()->taskID;
-
-			   m_minSpeed = m_iMaxSpeed;
-
-			   // only if we in normal task and bomb is not planted
-			   if (g_gameMode == MODE_BASE && taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER &&
-				   !(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && m_team == TEAM_TERRORIST))
-			   {
-				   m_campButtons = 0;
-
-				   const int waypoint = m_navNode->next->index;
-				   int kills = g_exp.GetDamage(waypoint, waypoint, m_team);
-
-				   // if damage done higher than one
-				   if (kills > 1 && g_timeRoundMid > g_gameTime && g_killHistory > 0)
-				   {
-					   kills = (kills * 100) / g_killHistory;
-					   kills /= 100;
-
-					   switch (m_personality)
-					   {
-					   case PERSONALITY_NORMAL:
-						   kills /= 3;
-						   break;
-
-					   default:
-						   kills /= 2;
-						   break;
-					   }
-
-					   if (m_baseAgressionLevel < static_cast <float> (kills))
-					   {
-						   PushTask(TASK_CAMP, TASKPRI_CAMP, -1, g_gameTime + (m_fearLevel * (g_timeRoundMid - g_gameTime) * 0.5f), true); // push camp task on to stack
-						   PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint(g_waypoint->GetPath(waypoint)->origin, waypoint), 0.0f, true);
-
-						   m_campButtons |= IN_DUCK;
-					   }
-				   }
-				   else if (g_botsCanPause && !IsOnLadder() && !IsInWater() && !m_currentTravelFlags && IsOnFloor())
-				   {
-					   if (static_cast <float> (kills) == m_baseAgressionLevel)
-						   m_campButtons |= IN_DUCK;
-					   else if (GetRandomInt(1, 100) > (m_skill + GetRandomInt(1, 20)))
-						   m_minSpeed = GetWalkSpeed();
-				   }
-			   }
-		   }
-	   }
-
-      if (m_navNode != null)
-      {
-		 const int destIndex = m_navNode->index;
-
-         // find out about connection flags
-         if (m_currentWaypointIndex != -1)
-         {
-			 const Path *path = g_waypoint->GetPath(m_currentWaypointIndex);
-
-			 if (m_jumpFinished && m_currentWeapon == WEAPON_KNIFE)
-				 SelectBestWeapon();
-
-			 for (int i = 0; i < Const_MaxPathIndex; i++)
-			 {
-				 if (path->index[i] == destIndex)
-				 {
-					 m_currentTravelFlags = path->connectionFlags[i];
-					 m_desiredVelocity = path->connectionVelocity[i];
-
-					 if (IsOnFloor() || IsOnLadder())
-						 m_jumpFinished = false;
-
-					 break;
-				 }
-			 }
-
-			 // check if bot is going to jump
-			 bool willJump = false;
-			 float jumpDistance = 0.0f;
-
-			 Vector src = nullvec;
-			 Vector destination = nullvec;
-
-			 // try to find out about future connection flags
-			 if (m_navNode->next != null)
-			 {
-				 for (int i = 0; i < Const_MaxPathIndex; i++)
-				 {
-					 if (g_waypoint->GetPath(destIndex)->index[i] == m_navNode->next->index && (g_waypoint->GetPath(destIndex)->connectionFlags[i] & PATHFLAG_JUMP))
-					 {
-						 src = g_waypoint->GetPath(destIndex)->origin;
-						 destination = g_waypoint->GetPath(m_navNode->next->index)->origin;
-
-						 jumpDistance = (g_waypoint->GetPath(destIndex)->origin - g_waypoint->GetPath(m_navNode->next->index)->origin).GetLength();
-						 willJump = true;
-
-						 break;
-					 }
-				 }
-			 }
-
-			 // SyPB Pro P.48 - Jump improve 
-			 if (willJump && !(m_states & STATE_SEEINGENEMY) && FNullEnt (m_lastEnemy) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading &&
-				 (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || m_iMaxSpeed <= 210))
-				 // SyPB Pro P.49 - Jump Fixed
-				 SelectWeaponByName("weapon_knife");
-
-			// SyPB Pro P.42 - Ladder improve
-			if (!IsAntiBlock(m_iEntity) && !IsOnLadder () &&
-				g_waypoint->GetPath (destIndex)->flags & WAYPOINT_LADDER)
+	// we're not at the end of the list?
+	if (m_navNode != null)
+	{
+		if (m_navNode->next != null)
+		{
+			if (m_navNodeStart != m_navNode)
 			{
-				for (int c = 0; c < g_maxClients; c++)
-				{
-					Bot* otherBot = g_botManager->GetBot(c);
-					if (otherBot == null || otherBot == this || !otherBot->m_isAlive ||
-						IsAntiBlock(otherBot->m_iEntity))
-						continue;
+				GetBestNextWaypoint();
+				int taskID = GetCurrentTask()->taskID;
 
-					if (otherBot->m_currentWaypointIndex == destIndex)
+				m_minSpeed = m_iMaxSpeed;
+
+				// only if we in normal task and bomb is not planted
+				if (g_gameMode == MODE_BASE && taskID == TASK_NORMAL && !g_bombPlanted && m_personality != PERSONALITY_RUSHER &&
+					!(pev->weapons & (1 << WEAPON_C4)) && !m_isVIP && (m_loosedBombWptIndex == -1 && m_team == TEAM_TERRORIST))
+				{
+					m_campButtons = 0;
+
+					const int waypoint = m_navNode->next->index;
+					int kills = g_exp.GetDamage(waypoint, waypoint, m_team);
+
+					// if damage done higher than one
+					if (kills > 1 && g_timeRoundMid > g_gameTime && g_killHistory > 0)
 					{
-						PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, g_gameTime + 1.2f, false);
-						return;
+						kills = (kills * 100) / g_killHistory;
+						kills /= 100;
+
+						switch (m_personality)
+						{
+						case PERSONALITY_NORMAL:
+							kills /= 3;
+							break;
+
+						default:
+							kills /= 2;
+							break;
+						}
+
+						if (m_baseAgressionLevel < static_cast <float> (kills))
+						{
+							PushTask(TASK_CAMP, TASKPRI_CAMP, -1, g_gameTime + (m_fearLevel * (g_timeRoundMid - g_gameTime) * 0.5f), true); // push camp task on to stack
+							PushTask(TASK_MOVETOPOSITION, TASKPRI_MOVETOPOSITION, FindDefendWaypoint(g_waypoint->GetPath(waypoint)->origin, waypoint), 0.0f, true);
+
+							m_campButtons |= IN_DUCK;
+						}
+					}
+					else if (g_botsCanPause && !IsOnLadder() && !IsInWater() && !m_currentTravelFlags && IsOnFloor())
+					{
+						if (static_cast <float> (kills) == m_baseAgressionLevel)
+							m_campButtons |= IN_DUCK;
+						else if (GetRandomInt(1, 100) > (m_skill + GetRandomInt(1, 20)))
+							m_minSpeed = GetWalkSpeed();
 					}
 				}
 			}
-         }
+		}
 
-         ChangeWptIndex (destIndex);
-		 // SyPB Pro P.49 - Base Waypoint improve
-		 ChangeBotEntityWaypoint(m_prevWptIndex, -1, true);
-      }
-   }
+		if (m_navNode != null)
+		{
+			const int destIndex = m_navNode->index;
 
-   SetWaypointOrigin();
+			// find out about connection flags
+			if (m_currentWaypointIndex != -1)
+			{
+				const Path* path = g_waypoint->GetPath(m_currentWaypointIndex);
 
-   m_navTimeset = g_gameTime;
+				if (m_jumpFinished && m_currentWeapon == WEAPON_KNIFE)
+					SelectBestWeapon();
 
-   return;
+				for (int i = 0; i < Const_MaxPathIndex; i++)
+				{
+					if (path->index[i] == destIndex)
+					{
+						m_currentTravelFlags = path->connectionFlags[i];
+						m_desiredVelocity = path->connectionVelocity[i];
+						m_jumpFinished = false;
+
+						break;
+					}
+				}
+
+				// check if bot is going to jump
+				bool willJump = false;
+				float jumpDistance = 0.0f;
+
+				Vector src = nullvec;
+				Vector destination = nullvec;
+
+				// try to find out about future connection flags
+				if (m_navNode->next != null)
+				{
+					for (int i = 0; i < Const_MaxPathIndex; i++)
+					{
+						if (g_waypoint->GetPath(destIndex)->index[i] == m_navNode->next->index && (g_waypoint->GetPath(destIndex)->connectionFlags[i] & PATHFLAG_JUMP))
+						{
+							src = g_waypoint->GetPath(destIndex)->origin;
+							destination = g_waypoint->GetPath(m_navNode->next->index)->origin;
+
+							jumpDistance = (g_waypoint->GetPath(destIndex)->origin - g_waypoint->GetPath(m_navNode->next->index)->origin).GetLength();
+							willJump = true;
+
+							break;
+						}
+					}
+				}
+
+				if (willJump && (jumpDistance > 210 || (destination.z + 32.0f > src.z && jumpDistance > 150) || ((destination - src).GetLength2D() < 50 && jumpDistance > 60) || pev->maxspeed <= 210) && !(m_states & STATE_SEEINGENEMY) && m_currentWeapon != WEAPON_KNIFE && !m_isReloading)
+					SelectWeaponByName("weapon_knife"); // draw out the knife if we needed
+
+				// SyPB Pro P.42 - Ladder improve
+				if (!IsAntiBlock(m_iEntity) && !IsOnLadder() &&
+					g_waypoint->GetPath(destIndex)->flags & WAYPOINT_LADDER)
+				{
+					for (int c = 0; c < g_maxClients; c++)
+					{
+						Bot* otherBot = g_botManager->GetBot(c);
+						if (otherBot == null || otherBot == this || !otherBot->m_isAlive ||
+							IsAntiBlock(otherBot->m_iEntity))
+							continue;
+
+						if (otherBot->m_currentWaypointIndex == destIndex)
+						{
+							PushTask(TASK_PAUSE, TASKPRI_PAUSE, -1, g_gameTime + 1.2f, false);
+							return;
+						}
+					}
+				}
+			}
+
+			ChangeWptIndex(destIndex);
+			ChangeBotEntityWaypoint(m_prevWptIndex, m_currentWaypointIndex);
+		}
+	}
+
+	SetWaypointOrigin();
+
+	m_navTimeset = g_gameTime;
 }
 
 bool Bot::CantMoveForward (Vector normal, TraceResult *tr)
@@ -2087,7 +2059,7 @@ bool Bot::IsDeadlyDrop (Vector targetOriginPos)
 {
    // this function eturns if given location would hurt Bot with falling damage
 
-const Vector botPos = m_iOrigin;
+   const Vector botPos = m_iOrigin;
    TraceResult tr;
 
    const Vector move ((targetOriginPos - botPos).ToYaw (), 0.0f, 0.0f);
@@ -2313,13 +2285,8 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 	if (m_moveAIAPI) // SyPB Pro P.30 - AMXX API
 		m_checkTerrain = false;
 
-	if (!m_checkTerrain)
-		return;
-
 	m_isStuck = false;
-
-	// SyPB Pro P.49 - Base improve
-	if (!IsOnFloor() && !IsOnLadder() && !IsInWater())
+	if (!m_checkTerrain)
 		return;
 
 	if (FNullEnt (m_breakableEntity) && !FNullEnt(m_breakableEntity = FindBreakable()))
@@ -2574,9 +2541,9 @@ void Bot::CheckTerrain(Vector directionNormal, float movedDistance)
 			m_collStateIndex++;
 			m_probeTime = g_gameTime + 0.5f;
 
-			if (m_collStateIndex > 3)
+			if (m_collStateIndex > 4)
 			{
-				m_navTimeset = g_gameTime - 5.0f;
+				m_navTimeset = g_gameTime - 8.0f;
 				ResetCollideState();
 			}
 		}
@@ -2621,10 +2588,10 @@ void Bot::FacePosition(void)
 	Vector direction = (m_lookAt - EyePosition ()).ToAngles() + pev->punchangle;
 	direction.x *= -1.0f; // invert for engine
 
-	Vector deviation = (direction - pev->v_angle);
+	//Vector deviation = (direction - pev->v_angle);
 
 	direction.ClampAngles();
-	deviation.ClampAngles();
+	//deviation.ClampAngles();
 
 	if ((m_wantsToFire || m_buttonFlags & IN_ATTACK) &&
 		(m_isZombieBot || m_skill >= 70 || UsesSniper () || IsZombieEntity (m_enemy)))
@@ -2655,7 +2622,6 @@ void Bot::FacePosition(void)
 			m_playerTargetTime = g_gameTime;
 			m_randomizedIdealAngles = m_idealAngles;
 
-			//if (IsValidPlayer(m_enemy))
 			// SyPB Pro P.40 - NPC Fixed
 			if (!FNullEnt (m_enemy)) 
 			{
