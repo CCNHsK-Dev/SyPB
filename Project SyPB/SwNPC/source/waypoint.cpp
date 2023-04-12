@@ -14,7 +14,7 @@ Waypoint::Waypoint(void)
 	m_distMatrix = null;
 }
 
-void Waypoint::LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance)
+void Waypoint::LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance, Vector **cnVelocity)
 {
 	int i, j, k;
 
@@ -29,6 +29,7 @@ void Waypoint::LoadWaypointData(Vector *origin, int32 *flags, float *radius, int
 			g_wpConnectionIndex[i][j] = cnIndex[i][j];
 			g_wpConnectionFlags[i][j] = cnFlags[i][j];
 			g_wpConnectionDistance[i][j] = cnDistance[i][j];
+			g_wpConnectionVelocity[i][j] = cnVelocity[i][j];
 		}
 	}
 

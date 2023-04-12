@@ -2537,7 +2537,7 @@ void LoadEntityData(void)
 			if (player->headHitBoxes != -1)
 			{
 				(*g_engfuncs.pfnGetBonePosition) (entity, var_c[player->headHitBoxes].bone, player->headOrigin, null);
-				player->headOrigin.z += 1.0f;
+				player->headOrigin.z += 0.8f;
 			}
 		}
 
@@ -3875,7 +3875,7 @@ C_DLLEXPORT void SwNPC_AddLog(char *logText)
 	MOD_AddLogEntry(1, logText);
 }
 
-C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance)
+C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance, Vector ***cnVelocity)
 {
 	int numWaypoints = 0;
 	Vector wpOrigin[Const_MaxWaypoints];
@@ -3884,6 +3884,7 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 	int16 wpCnIndex[Const_MaxWaypoints][Const_MaxPathIndex];
 	uint16 wpCnFlags[Const_MaxWaypoints][Const_MaxPathIndex];
 	int32 wpCnDistance[Const_MaxWaypoints][Const_MaxPathIndex];
+	Vector wpCnVelocity[Const_MaxWaypoints][Const_MaxPathIndex];
 
 	for (int i = 0; i < Const_MaxWaypoints; i++)
 	{
@@ -3898,6 +3899,7 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 				wpCnIndex[i][j] = g_waypoint->GetPath(i)->index[j];
 				wpCnFlags[i][j] = g_waypoint->GetPath(i)->connectionFlags[j];
 				wpCnDistance[i][j] = g_waypoint->GetPath(i)->distances[j];
+				wpCnVelocity[i][j] = g_waypoint->GetPath(i)->connectionVelocity[j];
 			}
 
 			numWaypoints++;
@@ -3913,6 +3915,7 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 			wpCnIndex[i][j] = -1;
 			wpCnFlags[i][j] = 0;
 			wpCnDistance[i][j] = 9999999;
+			wpCnVelocity[i][j] = nullvec;
 		}
 	}
 
@@ -3923,17 +3926,20 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 	int16 *wpCnIndexRam[Const_MaxWaypoints];
 	uint16 *wpCnFlagsRam[Const_MaxWaypoints];
 	int32 *wpCnDistanceRam[Const_MaxWaypoints];
+	Vector *wpCnVelocityRam[Const_MaxWaypoints];
 
 	for (int i = 0; i < Const_MaxWaypoints; i++)
 	{
 		wpCnIndexRam[i] = wpCnIndex[i];
 		wpCnFlagsRam[i] = wpCnFlags[i];
 		wpCnDistanceRam[i] = wpCnDistance[i];
+		wpCnVelocityRam[i] = wpCnVelocity[i];
 	}
 
 	*index = wpCnIndexRam;
 	*cnFlags = wpCnFlagsRam;
 	*cnDistance = wpCnDistanceRam;
+	*cnVelocity = wpCnVelocityRam;
 
 	return numWaypoints;
 }

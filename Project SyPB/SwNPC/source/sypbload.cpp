@@ -13,7 +13,7 @@ _SwNPCBuild SwNPCAPI_SwNPCBuild;
 typedef void(*_SwNPCLogFile) (char *);
 _SwNPCLogFile SwNPCAPI_SwNPCLogFile;
 
-typedef int(*_SyPBGetWaypointData) (Vector **, float **, int32 **, int16 ***, uint16 ***, int32 ***);
+typedef int(*_SyPBGetWaypointData) (Vector **, float **, int32 **, int16 ***, uint16 ***, int32 ***, Vector ***);
 _SyPBGetWaypointData SwNPCAPI_SyPBGetWaypointData;
 
 typedef int(*_SyPBSetEntityAction) (int, int, int);
@@ -137,9 +137,10 @@ void GetWaypointData(void)
 	int16 **index;
 	uint16 **cnFlags;
 	int32 **cnDistance;
+	Vector **cnVelocity;
 
-	g_numWaypoints = SwNPCAPI_SyPBGetWaypointData(&origin, &radius, &flags, &index, &cnFlags, &cnDistance);
-	g_waypoint->LoadWaypointData(origin, flags, radius, index, cnFlags, cnDistance);
+	g_numWaypoints = SwNPCAPI_SyPBGetWaypointData(&origin, &radius, &flags, &index, &cnFlags, &cnDistance, &cnVelocity);
+	g_waypoint->LoadWaypointData(origin, flags, radius, index, cnFlags, cnDistance, cnVelocity);
 }
 
 void SetEntityAction(int index, int team, int action)
@@ -162,39 +163,17 @@ void SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint)
 	SwNPCAPI_SyPBSetNPCNewWaypointPoint(entity, waypointPoint);
 }
 
-int LogToFile(char *szLogText, ...)
+int LogToFile(char* szLogText, ...)
 {
+	va_list vArgptr;
+	char szText[1024];
+
+	va_start(vArgptr, szLogText);
+	vsprintf(szText, szLogText, vArgptr);
+	va_end(vArgptr);
+
 	if (SwNPCAPI_SwNPCLogFile)
-	{
-		SwNPCAPI_SwNPCLogFile(szLogText);
-		return 1;
-	}
+		SwNPCAPI_SwNPCLogFile(szText);
 
-	const int buildVersion[4] = { SWNPC_VERSION_DWORD };
-	const uint16 bV16[4] = { (uint16)buildVersion[0], (uint16)buildVersion[1], (uint16)buildVersion[2], (uint16)buildVersion[3] };
-
-	char buildVersionName[64];
-	sprintf(buildVersionName, "swnpc_%u_%u_%u_%u.txt", bV16[0], bV16[1], bV16[2], bV16[3]);
-
-	char fileHere[512];
-	sprintf(fileHere, "%s", buildVersionName);
-
-	FILE* fp;
-
-	fp = fopen(fileHere, "a");
-	if (fp)
-	{
-		va_list vArgptr;
-		char szText[1024];
-
-		va_start(vArgptr, szLogText);
-		vsprintf(szText, szLogText, vArgptr);
-		va_end(vArgptr);
-
-		fprintf(fp, " %s\n", szText);
-		fclose(fp);
-		return 1;
-	}
-
-	return 0;
+	return 1;
 }

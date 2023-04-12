@@ -471,8 +471,6 @@ void BotControl::MaintainBotQuota(void)
 	if (m_maintainTime < g_gameTime)
 		g_botManager->CheckBotNum();
 
-	//AddLogEntry(LOG_WARNING, "MaintainBotQuota Run : %.2f", g_gameTime);
-
 	if (m_maintainTime < g_gameTime && !m_creationTab.IsEmpty())
 	{
 		CreateItem last = m_creationTab.Pop();

@@ -1243,18 +1243,19 @@ void Bot::ActionForEnemy(void)
 			{
 				// Don't move to corner
 				const int farestIndex = destIndex = g_waypoint->FindFarest(m_lastEnemyOrigin, 500.0f);
-				int farestIndexPathCount = 0;
 
 				for (int i = 0; i < Const_MaxPathIndex; i++)
 				{
-					if (g_waypoint->GetPath(farestIndex)->index[i] == -1)
+					destIndex = g_waypoint->GetPath(farestIndex)->index[i];
+					if (destIndex == -1)
 						continue;
 
-					farestIndexPathCount++;
-					destIndex = g_waypoint->GetPath(farestIndex)->index[i];
+					if (g_waypoint->GetPathDistance(m_currentWaypointIndex, destIndex) <
+						g_waypoint->GetPathDistance(m_currentWaypointIndex, farestIndex))
+						break;
 				}
 
-				if (farestIndexPathCount >= 2)
+				if (destIndex == -1)
 					destIndex = farestIndex;
 			}
 			else
@@ -1315,9 +1316,6 @@ void Bot::ActionForEnemy(void)
 void Bot::CombatFight(void)
 {
 	if (FNullEnt(m_enemy))
-		return;
-
-	if (m_escapeEnemyAction)
 		return;
 
 	m_destOrigin = GetEntityOrigin(m_enemy);
@@ -1397,12 +1395,15 @@ void Bot::CombatFight(void)
 				if (distance <= baseDistance)
 				{
 					if (enemyIsZombie)
+					{
 						m_escapeEnemyAction = true;
+						return;
+					}
 
 					m_moveSpeed = -m_iMaxSpeed;
 					setStrafe = true;
 				}
-				else if (distance >= (baseDistance + 100.0f))
+				else
 				{
 					m_moveSpeed = 0.0f;
 					m_lastFightStyleCheck = g_gameTime;
@@ -1413,6 +1414,9 @@ void Bot::CombatFight(void)
 				m_lastFightStyleCheck = g_gameTime;
 				m_moveSpeed = m_iMaxSpeed;
 			}
+
+			if (m_escapeEnemyAction)
+				return;
 		}
 		else if (g_gameMode == MODE_DM)
 			m_moveSpeed = 0.0f;
@@ -1439,20 +1443,19 @@ void Bot::CombatFight(void)
 			if (approach < 20 && !g_bombPlanted &&
 				(m_isVIP || ::IsInViewCone(GetEntityOrigin (m_enemy), m_iEntity)))
 			{
-				setStrafe = true;
-				m_moveSpeed = -m_iMaxSpeed;
+				//setStrafe = true;
+				//m_moveSpeed = -m_iMaxSpeed;
 
 				GetCurrentTask()->taskID = TASK_ACTIONFORENEMY;
 				GetCurrentTask()->canContinue = true;
 				GetCurrentTask()->desire = TASKPRI_ACTIONFORENEMY;
+				return;
 			}
+
+			if (approach >= 50 && (!(m_buttonFlags & IN_ATTACK) || UsesBadPrimary()))
+				m_moveSpeed = m_iMaxSpeed;
 			else
-			{
-				if (approach >= 50 && (!(m_buttonFlags & IN_ATTACK) || UsesBadPrimary()))
-					m_moveSpeed = m_iMaxSpeed;
-				else
-					m_moveSpeed = 0.0f;
-			}
+				m_moveSpeed = 0.0f;
 
 			// SyPB Pro P.35 - Base mode Weapon Ai Improve
 			if (distance < 96 && !UsesSniper())
@@ -1596,12 +1599,12 @@ void Bot::CombatFight(void)
 		else if (m_moveSpeed < 0.0f)
 			m_moveSpeed = -GetWalkSpeed();
 	}
-
+	/*
 	if (m_isReloading)
 	{
 		m_moveSpeed = -m_iMaxSpeed;
 		m_duckTime = g_gameTime - (m_frameInterval * 4.0f);
-	}
+	} */
 
 	if (!IsInWater() && !IsOnLadder())
 	{

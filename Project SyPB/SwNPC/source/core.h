@@ -103,6 +103,7 @@ private:
 	int m_oldNavIndex;
 	int m_currentWaypointIndex;
 	Vector m_waypointOrigin;
+	Vector m_desiredVelocity;
 	int m_goalWaypoint;
 	float m_waitLadderTime;
 
@@ -139,8 +140,7 @@ private:
 	Vector GetBaseSizeOrigin(void);
 
 	bool IsEnemyViewable(edict_t *entity);
-	bool IsOnAttackDistance(edict_t *targetEntity, float distance);
-	bool AttackAction(void);
+	void AttackAction(void);
 
 	void ChangeAnim(void);
 
@@ -231,8 +231,7 @@ public:
 	void DebugModeMsg(void);
 
 	void Think(void);
-	void FrameThink(void);
-	void DeadThink(void);
+
 	void NPCAi(void);
 	void NPCAction(void);
 
@@ -348,9 +347,10 @@ public:
 
 	int16 g_wpConnectionIndex[Const_MaxWaypoints][Const_MaxPathIndex];
 	uint16 g_wpConnectionFlags[Const_MaxWaypoints][Const_MaxPathIndex];
+	Vector g_wpConnectionVelocity[Const_MaxWaypoints][Const_MaxPathIndex];
 	int32 g_wpConnectionDistance[Const_MaxWaypoints][Const_MaxPathIndex];
 
-	void LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance);
+	void LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance, Vector ** cnVelocity);
 
 	int *m_pathMatrix;
 	int *m_distMatrix;
@@ -468,6 +468,7 @@ extern int __fastcall HookTraceAttack(void *pthis, int i, entvars_t *pevAttacker
 extern int __fastcall HookTakeDamage(void *pthis, int i, entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamage);
 
 // For check Distanace
+extern float Q_sqrt(float number);
 extern float GetDistance(Vector origin1, Vector origin2 = nullvec);
 extern float GetDistance2D(Vector origin, Vector origin2 = nullvec);
 
@@ -475,7 +476,6 @@ extern void TraceLine(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONST
 extern void TraceLine(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, edict_t* pentIgnore, TraceResult* ptr);
 extern void TraceHull(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, int hullNumber, edict_t* pentIgnore, TraceResult* ptr);
 extern void TraceHull(const Vector& vecStart, const Vector& vecEnd, IGNORE_MONSTERS igmon, IGNORE_GLASS ignoreGlass, int hullNumber, edict_t* pentIgnore, TraceResult* ptr);
-
 
 extern char* memfgets(byte* pMemFile, int fileSize, int& filePos, char* pBuffer, int bufferSize);
 

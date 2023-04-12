@@ -1082,7 +1082,6 @@ void Bot::SetEnemy(edict_t *entity)
 	if (m_enemy != entity)
 	{
 		m_enemyReachableTimer = 0.0f;
-		m_escapeEnemyAction = false;
 		SetEntityWaypoint(m_iEntity, GetEntityWaypoint(entity));
 	}
 

@@ -159,9 +159,6 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 			damage = 0.0f;
 	}
 
-	if (damage <= 0.0f)
-		return;
-
 	switch (ptr->iHitgroup)
 	{
 	case HITGROUP_GENERIC:
@@ -185,6 +182,9 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 	default:
 		break;
 	}
+
+	if (damage <= 0.0f)
+		return;
 
 	if (IsValidPlayer (victim))
 	{
@@ -249,6 +249,9 @@ void TraceAttack(edict_t *victim, edict_t *attacker, float damage, Vector vecDir
 
 void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vector endPos, Vector vecDir)
 {
+	if (FNullEnt(victim) || !IsAlive(victim) || victim->v.takedamage == DAMAGE_NO)
+		return;
+
 	NPC *attackNPC = g_npcManager->IsSwNPC(attacker);
 	NPC *victimNPC = g_npcManager->IsSwNPC(victim);
 
@@ -277,14 +280,11 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 			{
 				float flNew = 0.5 * damage;
 				float flArmor = (damage - flNew) * 0.5;
+				if (flArmor < 0)
+					flArmor = 1;
 
 				if (flArmor <= victim->v.armorvalue)
-				{
-					if (flArmor < 0)
-						flArmor = 1;
-
 					victim->v.armorvalue -= flArmor;
-				}
 				else
 				{
 					flNew = damage - victim->v.armorvalue;
@@ -331,16 +331,15 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 		}
 	}
 
-	if (damage < victim->v.health)
+	if (victim->v.health < damage)
 	{
-		victim->v.health -= damage;
 		MF_ExecuteForward(g_callTakeDamage_Post, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
+		KillAction(victim, attacker);
 	}
 	else
 	{
-		victim->v.health = 1;
+		victim->v.health -= damage;
 		MF_ExecuteForward(g_callTakeDamage_Post, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
-		KillAction(victim, attacker);
 	}
 }
 
@@ -413,6 +412,7 @@ void KillAction(edict_t *victim, edict_t *killer, bool canBlock)
 		SwNPC->m_lookAt = GetEntityOrigin(killer);
 
 	SwNPC->pev->deadflag = DEAD_DYING;
+	SwNPC->pev->nextthink = gpGlobals->time;
 	MF_ExecuteForward(g_callKill_Post, (cell)ENTINDEX(victim), (cell)killerId);
 }
 
@@ -826,7 +826,7 @@ float GetDistance(Vector origin1, Vector origin2)
 	if (origin2 == nullvec)
 		forDistance = origin1;
 
-	return sqrtf(forDistance.x * forDistance.x + forDistance.y * forDistance.y + forDistance.z * forDistance.z);
+	return Q_sqrt(forDistance.x * forDistance.x + forDistance.y * forDistance.y + forDistance.z * forDistance.z);
 }
 
 float GetDistance2D(Vector origin1, Vector origin2)
@@ -835,7 +835,19 @@ float GetDistance2D(Vector origin1, Vector origin2)
 	if (origin2 == nullvec)
 		forDistance = origin1;
 
-	return sqrtf(forDistance.x * forDistance.x + forDistance.y * forDistance.y);
+	return Q_sqrt(forDistance.x * forDistance.x + forDistance.y * forDistance.y);
+}
+
+float Q_sqrt(float number)
+{
+	long i;
+	float x2, y;
+	x2 = number * 0.5f;
+	y = number;
+	i = *(long*)&y;
+	i = 0x5f3759df - (i >> 1);
+	y = *(float*)&i;
+	return y * number;
 }
 
 void EMIT_SOUND_DYN(edict_t *entity, int channel, const char *sample, float volume, float attenuation,

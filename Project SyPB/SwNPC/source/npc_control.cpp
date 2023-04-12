@@ -26,12 +26,7 @@ void NPCControl::Think(void)
 			continue;
 
 		if (!g_swnpcRun || m_npcs[i]->m_needRemove)
-		{
 			RemoveNPC(m_npcs[i]);
-			continue;
-		}
-
-		m_npcs[i]->FrameThink();
 	}
 }
 

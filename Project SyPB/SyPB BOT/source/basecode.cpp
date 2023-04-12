@@ -1869,13 +1869,10 @@ void Bot::SetConditions (void)
 
    if (IsZombieEntity(m_lastEnemy))
    {
-	   if (GetCurrentTask()->taskID == TASK_CAMP && m_zhCampPointIndex != -1)
-		   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
-	   else
-	   {
+	   if (m_escapeEnemyAction)
 		   g_taskFilters[TASK_ACTIONFORENEMY].desire = TASKPRI_ACTIONFORENEMY;
-		   m_escapeEnemyAction = (!FNullEnt (m_enemy)) ? true : false;
-	   }
+	   else
+		   g_taskFilters[TASK_ACTIONFORENEMY].desire = 0.0f;
    }
    else if (!m_isZombieBot && !FNullEnt (m_lastEnemy) && m_lastEnemyOrigin != nullvec)
    {
@@ -5435,6 +5432,9 @@ void Bot::BotAI(void)
 	   (m_skill >= 60 || m_isZombieBot ||
 	   (m_isEnemyReachable && (IsZombieEntity(m_enemy) || !IsValidPlayer(m_enemy)))))
    {
+	   if (!FNullEnt(m_enemy))
+		   CombatFight();
+	   
 	   if (!m_escapeEnemyAction)
 	   {
 		   m_moveToGoal = false; // don't move to goal
@@ -5445,9 +5445,6 @@ void Bot::BotAI(void)
 		   m_moveToGoal = true;
 		   m_checkTerrain = true;
 	   }
-
-	   if (!FNullEnt(m_enemy))
-		   CombatFight();
    }
 
    // SyPB Pro P.49 - Miss C4 Action improve
