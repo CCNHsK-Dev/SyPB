@@ -173,6 +173,9 @@ bool Waypoint::IsZBCampPoint(int pointID)
 
 int Waypoint::FindNearest(Vector origin, float minDistance, int flags, edict_t *entity, int *findWaypointPoint, int mode)
 {
+	if (origin == nullvec)
+		return -1;
+
 	constexpr int checkPoint = 20;
 
 	// SyPB Pro P.41 - Base Change for Waypoint OS
@@ -1487,7 +1490,7 @@ bool Waypoint::Reachable(edict_t *entity, int index)
 	else
 		TraceHull(src, dest, true, head_hull, entity, &tr);
 
-	return tr.flFraction == 1.0f;
+	return (tr.flFraction == 1.0f && !tr.fAllSolid && !tr.fStartSolid);
 }
 
 bool Waypoint::IsNodeReachable (Vector src, Vector destination)
@@ -1707,8 +1710,6 @@ void Waypoint::Think(void)
 	if (FNullEnt(g_hostEntity))
 		return; // this function is only valid on listenserver, and in waypoint enabled mode.
 
-	g_gameTime = engine->GetTime();
-
 	float nearestDistance = FLT_MAX;
 
 	// SyPB Pro P.37 - new save jump point
@@ -1719,7 +1720,7 @@ void Waypoint::Think(void)
 			if (g_hostEntity->v.button & IN_JUMP)
 			{ 
 				Add(9);
-				m_timeJumpStarted = g_gameTime;
+				m_timeJumpStarted = g_pGlobals->time;
 				m_endJumpPoint = true;
 			}
 			else
@@ -1728,7 +1729,7 @@ void Waypoint::Think(void)
 				m_learnPosition = GetEntityOrigin(g_hostEntity);
 			}
 		}
-		else if (((g_hostEntity->v.flags & FL_ONGROUND) || g_hostEntity->v.movetype == MOVETYPE_FLY) && m_timeJumpStarted + 0.1 < g_gameTime)
+		else if (((g_hostEntity->v.flags & FL_ONGROUND) || g_hostEntity->v.movetype == MOVETYPE_FLY) && m_timeJumpStarted + 0.1 < g_pGlobals->time)
 		{
 			Add(10);
 
@@ -1745,8 +1746,8 @@ void Waypoint::Think(void)
 		if (g_hostEntity->v.button & IN_USE && (g_hostEntity->v.flags & FL_ONGROUND))
 		{
 			if (m_timeGetProTarGet == 0.0f)
-				m_timeGetProTarGet = g_gameTime;
-			else if (m_timeGetProTarGet + 1.0 < g_gameTime)
+				m_timeGetProTarGet = g_pGlobals->time;
+			else if (m_timeGetProTarGet + 1.0 < g_pGlobals->time)
 			{
 				DisplayMenuToClient(g_hostEntity, &g_menus[21]);
 				m_timeGetProTarGet = 0.0f;
@@ -1787,8 +1788,8 @@ void Waypoint::Think(void)
 				if (g_hostEntity->v.button & IN_DUCK)
 				{
 					if (m_timeCampWaypoint == 0.0f)
-						m_timeCampWaypoint = g_gameTime;
-					else if (m_timeCampWaypoint + 2.5 < g_gameTime)
+						m_timeCampWaypoint = g_pGlobals->time;
+					else if (m_timeCampWaypoint + 2.5 < g_pGlobals->time)
 					{
 						// SyPB Pro P.37 - SgdWP
 						m_timeCampWaypoint = 0.0f;
@@ -1863,7 +1864,7 @@ void Waypoint::ShowWaypointMsg(void)
 				nearestDistance = distance;
 			}
 
-			if (m_waypointDisplayTime[i] + 1.0f < g_gameTime)
+			if (m_waypointDisplayTime[i] + 1.0f < g_pGlobals->time)
 			{
 				const float nodeHeight = (m_paths[i]->flags & WAYPOINT_CROUCH) ? 36.0f : 72.0f; // check the node height
 				const float nodeHalfHeight = nodeHeight * 0.5f;
@@ -1912,7 +1913,7 @@ void Waypoint::ShowWaypointMsg(void)
 					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight), m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), nodeColor, 14, 0, 0, 10); // draw basic path
 					engine->DrawLine(g_hostEntity, m_paths[i]->origin - Vector(0.0f, 0.0f, nodeHalfHeight - nodeHeight * 0.75f), m_paths[i]->origin + Vector(0.0f, 0.0f, nodeHalfHeight), nodeFlagColor, 14, 0, 0, 10); // draw additional path
 				}
-				m_waypointDisplayTime[i] = g_gameTime;
+				m_waypointDisplayTime[i] = g_pGlobals->time;
 			}
 		}
 	}
@@ -1924,7 +1925,7 @@ void Waypoint::ShowWaypointMsg(void)
 	if ((m_findWPIndex != -1 && m_findWPIndex < g_numWaypoints) || (m_cacheWaypointIndex != -1 && m_cacheWaypointIndex < g_numWaypoints) || (m_facingAtIndex != -1 && m_facingAtIndex < g_numWaypoints))
 	{
 		// check for drawing code
-		if (m_arrowDisplayTime + 0.5 < g_gameTime)
+		if (m_arrowDisplayTime + 0.5 < g_pGlobals->time)
 		{
 			// finding waypoint - pink arrow
 			if (m_findWPIndex != -1)
@@ -1938,7 +1939,7 @@ void Waypoint::ShowWaypointMsg(void)
 			if (m_facingAtIndex != -1)
 				engine->DrawLine(g_hostEntity, GetEntityOrigin(g_hostEntity), m_paths[m_facingAtIndex]->origin, Color(255, 255, 255, 200), 10, 0, 0, 5, LINE_ARROW);
 
-			m_arrowDisplayTime = g_gameTime;
+			m_arrowDisplayTime = g_pGlobals->time;
 		}
 	}
 
@@ -1946,9 +1947,9 @@ void Waypoint::ShowWaypointMsg(void)
 	Path *path = m_paths[nearestIndex];
 
 	// draw a paths, camplines and danger directions for nearest waypoint
-	if (nearestDistance < 4096 && m_pathDisplayTime <= g_gameTime)
+	if (nearestDistance < 4096 && m_pathDisplayTime <= g_pGlobals->time)
 	{
-		m_pathDisplayTime = g_gameTime + 1.0f;
+		m_pathDisplayTime = g_pGlobals->time + 1.0f;
 
 		// draw the camplines
 		if (path->flags & WAYPOINT_CAMP)
@@ -2706,15 +2707,7 @@ int Waypoint::FindLoosedBomb(void)
 
 int Waypoint::GetBombPoint(void)
 {
-	const Vector bombOrigin = GetBombPosition();
-	static int bombPoint = -1;
-	if (bombOrigin == nullvec)
-		return bombPoint = -1;
-
-	if (bombPoint == -1)
-		bombPoint = FindNearest(bombOrigin, 9999.0f, -1, m_foundBomb);
-
-	return bombPoint;
+	return FindNearest(GetBombPosition(), 9999.0f, -1, m_foundBomb);
 }
 
 void Waypoint::SetBombPosition (bool shouldReset)

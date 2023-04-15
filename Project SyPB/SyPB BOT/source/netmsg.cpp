@@ -325,7 +325,7 @@ void NetworkMsg::Execute (void *p)
          {
             g_bombPlanted = true;
             g_bombSayString = true;
-            g_timeBombPlanted = g_gameTime;
+            g_timeBombPlanted = g_pGlobals->time;
 
             for (int i = 0; i < g_maxClients; i++)
             {

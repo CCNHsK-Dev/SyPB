@@ -195,7 +195,7 @@ void DisplayMenuToClient (edict_t *ent, MenuText *menu)
    if (!IsValidPlayer (ent))
       return;
 
-   int clientIndex = ENTINDEX (ent) - 1;
+   const int clientIndex = ENTINDEX (ent) - 1;
 
    if (menu != null)
    {
@@ -635,7 +635,7 @@ void RoundInit (void)
    AutoLoadGameMode();
 
    // calculate the round mid/end in world time
-   g_timeRoundStart = g_gameTime + engine->GetFreezeTime ();
+   g_timeRoundStart = g_pGlobals->time + engine->GetFreezeTime ();
    g_timeRoundMid = g_timeRoundStart + engine->GetRoundTime () * 60 / 2;
    g_timeRoundEnd = g_timeRoundStart + engine->GetRoundTime () * 60;
 }
@@ -679,7 +679,7 @@ void AutoLoadGameMode(bool reset)
 		SetGameMode(MODE_ZP);
 		extern ConVar sypb_zmdelay_time;
 		sypb_zmdelay_time.SetFloat(zmDelayTime);
-		g_gameStartTime = g_gameTime + sypb_zmdelay_time.GetFloat();
+		g_gameStartTime = g_pGlobals->time + sypb_zmdelay_time.GetFloat();
 
 		goto lastly;
 	}
@@ -830,8 +830,7 @@ int GetTeam (edict_t *ent)
 		return -1;
 	}
 
-	int client = ENTINDEX(ent) - 1;	
-	return g_clients[client].team;
+	return g_clients[ENTINDEX(ent) - 1].team;
 }
 
 // SyPB Pro P.42 - Base Waypoint improve
@@ -876,7 +875,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		needCheckNewWaypoint = true;
 	else if (mode != -1)
 		needCheckNewWaypoint = true;
-	else if (traceCheckTime >= g_gameTime)
+	else if (traceCheckTime >= g_pGlobals->time)
 		needCheckNewWaypoint = false;
 	else
 	{
@@ -888,16 +887,16 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 			distance = (g_waypoint->GetPath(wpIndex)->origin - origin).GetLength();
 			float wpRadius = g_waypoint->GetPath(wpIndex)->radius;
 
-			if (distance > wpRadius && traceCheckTime + 1.2f <= g_gameTime)
+			if (distance > wpRadius && traceCheckTime + 1.2f <= g_pGlobals->time)
 				needCheckNewWaypoint = true;
-			else if (traceCheckTime + 3.0f <= g_gameTime)
+			else if (traceCheckTime + 3.0f <= g_pGlobals->time)
 			{
 				if (!g_waypoint->Reachable(ent, wpIndex))
 					needCheckNewWaypoint = true;
 				else if (isPlayer)
-					g_clients[i].getWPTime = g_gameTime + 1.0f;
+					g_clients[i].getWPTime = g_pGlobals->time + 1.0f;
 				else
-					g_entityGetWpTime[i] = g_gameTime + 1.2f;
+					g_entityGetWpTime[i] = g_pGlobals->time + 1.2f;
 			}
 		}
 	}
@@ -916,14 +915,14 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	{
 		g_entityWpIndex[i] = (wpIndex2 == -1) ? wpIndex : wpIndex2;
 		g_entityGetWpOrigin[i] = origin;
-		g_entityGetWpTime[i] = g_gameTime + 1.5f;
+		g_entityGetWpTime[i] = g_pGlobals->time + 1.5f;
 	}
 	else
 	{
 		g_clients[i].wpIndex = wpIndex;
 		g_clients[i].wpIndex2 = wpIndex2;
 		g_clients[i].getWpOrigin = origin;
-		g_clients[i].getWPTime = g_gameTime + 1.5f;
+		g_clients[i].getWPTime = g_pGlobals->time + 1.5f;
 	}
 
 	return wpIndex;
@@ -962,8 +961,8 @@ int GetEntityWaypoint(edict_t *ent)
 	}
 
 	// SyPB Pro P.42 - Base Waypoint improve
-	int client = ENTINDEX(ent) - 1;
-	if (g_clients[client].getWPTime < g_gameTime || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
+	const int client = ENTINDEX(ent) - 1;
+	if (g_clients[client].getWPTime < g_pGlobals->time || (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1))
 		SetEntityWaypoint(ent);
 
 	return g_clients[client].wpIndex;
@@ -979,7 +978,7 @@ bool IsZombieEntity(edict_t *ent)
 		return false;
 
 	// SyPB Pro P.38 - AMXX API
-	int playerId = ENTINDEX(ent) - 1;
+	const int playerId = ENTINDEX(ent) - 1;
 	if (g_clients[playerId].isZombiePlayerAPI != -1)
 		return (g_clients[playerId].isZombiePlayerAPI == 1) ? true : false;
 
@@ -1286,10 +1285,10 @@ void CheckWelcomeMessage(void)
 	if (receiveTime == -1.0f && IsAlive(g_hostEntity))
 	{
 		if (sypb_welcomemsg.GetInt() != 0)
-			receiveTime = g_gameTime + 10.0f;
+			receiveTime = g_pGlobals->time + 10.0f;
 	}
 
-	if (receiveTime > 0.0f && receiveTime < g_gameTime)
+	if (receiveTime > 0.0f && receiveTime < g_pGlobals->time)
 	{
 		ChartPrint("----- [%s %s] by' %s -----", SYPB_NAME, SYPB_VERSION, PRODUCT_AUTHOR);
 		ChartPrint("***** Build: (%u.%u.%u.%u) *****", g_sypbbV16[0], g_sypbbV16[1], g_sypbbV16[2], g_sypbbV16[3]);
@@ -1465,8 +1464,7 @@ int GetRandomInt(int min, int max)
 	if (min >= max)
 		return min;
 
-	srand((unsigned)(time(null)));
-	return (rand() % (max - min + 1)) + min;
+	return RANDOM_LONG(min, max);
 }
 
 float GetRandomFloat(float min, float max)
@@ -1474,8 +1472,7 @@ float GetRandomFloat(float min, float max)
 	if (min >= max)
 		return min;
 
-	srand((unsigned)(time(null)));
-	return (max - min) * rand() / (RAND_MAX + 1.0f) + min;
+	return RANDOM_FLOAT(min, max);
 }
 
 float Q_sqrt(float number)
@@ -1508,7 +1505,7 @@ void DebugModeMsg(void)
 	if (!IsAlive(g_hostEntity) || g_debugMode != DEBUG_PLAYER)
 		return;
 
-	int client = ENTINDEX(g_hostEntity) - 1;
+	const int client = ENTINDEX(g_hostEntity) - 1;
 	Vector src = nullvec;
 
 	if (g_clients[client].wpIndex != -1)
@@ -1517,14 +1514,6 @@ void DebugModeMsg(void)
 		engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
 			Color(255, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
 	}
-
-	if (g_clients[client].wpIndex2 != -1)
-	{
-		src = g_waypoint->GetPath(g_clients[client].wpIndex2)->origin;
-		engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
-			Color(0, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
-	}
-
 }
 
 char *Localizer::TranslateInput (const char *input)
@@ -1605,7 +1594,7 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
    if (FNullEnt (ent) || IsNullString (sample))
       return; // reliability check
 
-   Vector origin = GetEntityOrigin (ent);
+   const Vector origin = GetEntityOrigin (ent);
    int index = ENTINDEX (ent) - 1;
 
    if (index < 0 || index >= g_maxClients)
@@ -1637,49 +1626,49 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
    {
       // hit/fall sound?
       g_clients[index].hearingDistance = 768.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 0.5f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("items/gunpickup", sample, 15) == 0)
    {
       // weapon pickup?
       g_clients[index].hearingDistance = 768.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 0.5f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 0.5f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("weapons/zoom", sample, 12) == 0)
    {
       // sniper zooming?
       g_clients[index].hearingDistance = 512.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 0.1f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 0.1f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("items/9mmclip", sample, 13) == 0)
    {
       // ammo pickup?
       g_clients[index].hearingDistance = 512.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 0.1f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 0.1f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("hostage/hos", sample, 11) == 0)
    {
       // CT used hostage?
       g_clients[index].hearingDistance = 1024.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 5.0f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 5.0f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("debris/bustmetal", sample, 16) == 0 || strncmp ("debris/bustglass", sample, 16) == 0)
    {
       // broke something?
       g_clients[index].hearingDistance = 1024.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 2.0f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 2.0f;
       g_clients[index].soundPosition = origin;
    }
    else if (strncmp ("doors/doormove", sample, 14) == 0)
    {
       // someone opened a door
       g_clients[index].hearingDistance = 1024.0f * volume;
-      g_clients[index].timeSoundLasting = g_gameTime + 3.0f;
+      g_clients[index].timeSoundLasting = g_pGlobals->time + 3.0f;
       g_clients[index].soundPosition = origin;
    }
 }
@@ -1705,19 +1694,19 @@ void SoundSimulateUpdate (int playerIndex)
    if (player->v.oldbuttons & IN_ATTACK) // pressed attack button?
    {
       hearDistance = 3072.0f;
-      timeSound = g_gameTime + 0.3f;
+      timeSound = g_pGlobals->time + 0.3f;
       timeMaxSound = 0.3f;
    }
    else if (player->v.oldbuttons & IN_USE) // pressed used button?
    {
       hearDistance = 512.0f;
-      timeSound = g_gameTime + 0.5f;
+      timeSound = g_pGlobals->time + 0.5f;
       timeMaxSound = 0.5f;
    }
    else if (player->v.oldbuttons & IN_RELOAD) // pressed reload button?
    {
       hearDistance = 512.0f;
-      timeSound = g_gameTime + 0.5f;
+      timeSound = g_pGlobals->time + 0.5f;
       timeMaxSound = 0.5f;
    }
    else if (player->v.movetype == MOVETYPE_FLY) // uses ladder?
@@ -1725,7 +1714,7 @@ void SoundSimulateUpdate (int playerIndex)
       if (fabs (player->v.velocity.z) > 50.0f)
       {
          hearDistance = 1024.0f;
-         timeSound = g_gameTime + 0.3f;
+         timeSound = g_pGlobals->time + 0.3f;
          timeMaxSound = 0.3f;
       }
    }
@@ -1735,7 +1724,7 @@ void SoundSimulateUpdate (int playerIndex)
       {
          // moves fast enough?
          hearDistance = 1280.0f * (velocity / 240);
-         timeSound = g_gameTime + 0.3f;
+         timeSound = g_pGlobals->time + 0.3f;
          timeMaxSound = 0.3f;
       }
    }
@@ -1744,7 +1733,7 @@ void SoundSimulateUpdate (int playerIndex)
       return; // didn't issue sound?
 
    // some sound already associated
-   if (g_clients[playerIndex].timeSoundLasting > g_gameTime)
+   if (g_clients[playerIndex].timeSoundLasting > g_pGlobals->time)
    {
       if (g_clients[playerIndex].hearingDistance <= hearDistance)
       {

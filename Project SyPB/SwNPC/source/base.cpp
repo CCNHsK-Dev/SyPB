@@ -331,7 +331,7 @@ void TakeDamage(edict_t *victim, edict_t *attacker, float damage, int bits, Vect
 		}
 	}
 
-	if (victim->v.health < damage)
+	if (victim->v.health <= damage)
 	{
 		MF_ExecuteForward(g_callTakeDamage_Post, (cell)ENTINDEX(victim), (cell)attackId, int(damage));
 		KillAction(victim, attacker);

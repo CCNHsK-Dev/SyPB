@@ -1235,7 +1235,7 @@ void ClientUserInfoChanged (edict_t *ent, char *infobuffer)
       (*g_functionTable.pfnClientUserInfoChanged) (ent, infobuffer);
    }
 
-   int clientIndex = ENTINDEX (ent) - 1;
+   const int clientIndex = ENTINDEX (ent) - 1;
 
    if (strcmp (password, INFOKEY_VALUE (infobuffer, const_cast <char *> (passwordField))) == 0)
       g_clients[clientIndex].flags |= CFLAG_OWNER;
@@ -1691,7 +1691,7 @@ void ClientCommand(edict_t *ent)
 								bot->m_doubleJumpOrigin = GetEntityOrigin(client->ent);
 								bot->m_doubleJumpEntity = client->ent;
 
-								bot->PushTask(TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, g_gameTime, true);
+								bot->PushTask(TASK_DOUBLEJUMP, TASKPRI_DOUBLEJUMP, -1, g_pGlobals->time, true);
 								bot->ChatSay (true, FormatBuffer("Ok %s, i will help you!", GetEntityName (ent)));
 							}
 							else if (selection == 2)
@@ -2324,11 +2324,11 @@ void ClientCommand(edict_t *ent)
 					continue;
 
 				strcpy(iter->m_sayTextBuffer.sayText, CMD_ARGS());
-				iter->m_sayTextBuffer.timeNextChat = g_gameTime + iter->m_sayTextBuffer.chatDelay;
+				iter->m_sayTextBuffer.timeNextChat = g_pGlobals->time + iter->m_sayTextBuffer.chatDelay;
 			}
 		}
 	}
-	int clientIndex = ENTINDEX(ent) - 1;
+	const int clientIndex = ENTINDEX(ent) - 1;
 
 	// check if this player alive, and issue something
 	if ((g_clients[clientIndex].flags & CFLAG_ALIVE) && g_radioSelect[clientIndex] != 0 && strncmp(command, "menuselect", 10) == 0)
@@ -2361,7 +2361,7 @@ void ClientCommand(edict_t *ent)
 
 			// SyPB Pro P.42 - Fixed 
 			if (g_clients[clientIndex].team == 0 || g_clients[clientIndex].team == 1)
-				g_lastRadioTime[g_clients[clientIndex].team] = g_gameTime;
+				g_lastRadioTime[g_clients[clientIndex].team] = g_pGlobals->time;
 		}
 		g_radioSelect[clientIndex] = 0;
 	}
@@ -2471,32 +2471,24 @@ void LoadEntityData(void)
 
 		if (FNullEnt(entity) || !(entity->v.flags & FL_CLIENT))
 		{
-			player->flags &= ~(CFLAG_USED | CFLAG_ALIVE);
-			player->wpIndex = -1;
-			player->wpIndex2 = -1;
-			player->getWpOrigin = nullvec;
-			player->getWPTime = 0.0f;
+			player->flags &= ~CFLAG_USED;
 			player->team = TEAM_COUNT;
-
-			player->isZombiePlayerAPI = -1;
-			continue;
 		}
-
-		if (g_gameMode == MODE_DM)
-			player->team = i + 10;
-		else if (g_gameMode == MODE_ZP)
-		{
-			if (g_gameStartTime > g_gameTime)
-				player->team = TEAM_COUNTER;
-			else if (g_roundEnded)
-				player->team = TEAM_TERRORIST;
-			else
-				player->team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
-		}
-		else if (g_gameMode == MODE_NOTEAM)
-			player->team = TEAM_COUNT;
 		else
+		{
 			player->team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
+			if (g_gameMode == MODE_DM)
+				player->team = i + 10;
+			else if (g_gameMode == MODE_ZP)
+			{
+				if (g_gameStartTime > g_pGlobals->time)
+					player->team = TEAM_COUNTER;
+				else if (g_roundEnded)
+					player->team = TEAM_TERRORIST;
+			}
+			else if (g_gameMode == MODE_NOTEAM)
+				player->team = TEAM_COUNT;
+		}
 
 		if (!IsAlive(entity))
 		{
@@ -2530,29 +2522,34 @@ void LoadEntityData(void)
 
 			for (int h = 0; (player->headHitBoxes == -1 && h < pstudiohdr->numhitboxes); h++)
 			{
-				if (var_c[h].group == 1)
-					player->headHitBoxes = h;
+				if (var_c[h].group != 1)
+					continue;
+
+				player->headHitBoxes = h;
 			}
 
-			if (player->headHitBoxes != -1)
+			if (player->headHitBoxes == -1)
+				player->headOrigin = nullvec;
+			else
 			{
 				(*g_engfuncs.pfnGetBonePosition) (entity, var_c[player->headHitBoxes].bone, player->headOrigin, null);
-				player->headOrigin.z += 0.8f;
+				player->headOrigin.z += var_c[player->headHitBoxes].bbmax.z;
+				player->headOrigin = Vector(entity->v.origin.x, entity->v.origin.y, player->headOrigin.z);
 			}
 		}
 
 		// SyPB Pro P.41 - Get Waypoint improve
 		if ((player->wpIndex == -1 && player->wpIndex2 == -1) ||
-			player->getWPTime < g_gameTime)
+			player->getWPTime < g_pGlobals->time)
 			SetEntityWaypoint(entity);
 
 		SoundSimulateUpdate(i);
 	}
 
 	// SyPB Pro P.43 - Entity Action 
-	if (g_checkEntityDataTime <= g_gameTime)
+	if (g_checkEntityDataTime <= g_pGlobals->time)
 	{
-		g_checkEntityDataTime = g_gameTime + 1.0f;
+		g_checkEntityDataTime = g_pGlobals->time + 1.0f;
 		for (i = 0; i < entityNum; i++)
 		{
 			if (g_entityId[i] == -1)
@@ -2565,7 +2562,7 @@ void LoadEntityData(void)
 				continue;
 			}
 
-			if (g_entityGetWpTime[i] < g_gameTime || g_entityWpIndex[i] == -1)
+			if (g_entityGetWpTime[i] < g_pGlobals->time || g_entityWpIndex[i] == -1)
 				SetEntityWaypoint(entity);
 		}
 
@@ -2596,7 +2593,6 @@ void StartFrame (void)
    // player population decreases, we should fill the server with other bots.
 
 	g_maxClients = engine->GetMaxClients();
-	g_gameTime = engine->GetTime();
 	LoadEntityData();
 
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
@@ -2634,9 +2630,9 @@ void StartFrame (void)
 
 	g_botActionStop = sypb_stopbots.GetBool();
 	g_ignoreEnemies = sypb_ignore_enemies.GetBool();
-	if (g_secondTime < g_gameTime)
+	if (g_secondTime < g_pGlobals->time)
 	{
-		g_secondTime = g_gameTime + 1.0f;
+		g_secondTime = g_pGlobals->time + 1.0f;
 
 		SetGameMode(sypb_gamemod.GetInt());
 
@@ -3503,7 +3499,7 @@ C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.
 	edict_t *targetEnt = INDEXENT(target);
 	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
 	{
-		bot->m_blockCheckEnemyTime = g_gameTime;
+		bot->m_blockCheckEnemyTime = g_pGlobals->time;
 		bot->m_enemyAPI = null;
 		API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
 			"Not target", blockCheckTime);
@@ -3511,7 +3507,7 @@ C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.
 		return -1;
 	}
 
-	bot->m_blockCheckEnemyTime = g_gameTime + blockCheckTime;
+	bot->m_blockCheckEnemyTime = g_pGlobals->time + blockCheckTime;
 	bot->m_enemyAPI = targetEnt;
 	API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
 		GetEntityName(targetEnt), blockCheckTime);
@@ -3829,7 +3825,7 @@ C_DLLEXPORT int Amxx_ZombieModGameStart(int input) // 1.50
 		return -1;
 
 	if (input == -1)
-		return (!g_roundEnded && g_gameStartTime <= g_gameTime);
+		return (!g_roundEnded && g_gameStartTime <= g_pGlobals->time);
 
 	if (input == 1)
 	{
@@ -3838,7 +3834,7 @@ C_DLLEXPORT int Amxx_ZombieModGameStart(int input) // 1.50
 		return 1;
 	}
 
-	g_gameStartTime = g_gameTime + (CVAR_GET_FLOAT("mp_roundtime") * 60);
+	g_gameStartTime = g_pGlobals->time + (CVAR_GET_FLOAT("mp_roundtime") * 60);
 	AutoLoadGameMode(true);
 	return 0;
 }
@@ -3875,7 +3871,7 @@ C_DLLEXPORT void SwNPC_AddLog(char *logText)
 	MOD_AddLogEntry(1, logText);
 }
 
-C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance, Vector ***cnVelocity)
+C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **flags, int16 ***index, uint16 ***cnFlags, int32 ***cnDistance, Vector*** cnVelocity)
 {
 	int numWaypoints = 0;
 	Vector wpOrigin[Const_MaxWaypoints];
@@ -3919,14 +3915,10 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 		}
 	}
 
-	*origin = wpOrigin;
-	*radius = wpRadius;
-	*flags = wpFlags;
-
 	int16 *wpCnIndexRam[Const_MaxWaypoints];
 	uint16 *wpCnFlagsRam[Const_MaxWaypoints];
 	int32 *wpCnDistanceRam[Const_MaxWaypoints];
-	Vector *wpCnVelocityRam[Const_MaxWaypoints];
+	Vector* wpCnVelocityRam[Const_MaxWaypoints];
 
 	for (int i = 0; i < Const_MaxWaypoints; i++)
 	{
@@ -3936,6 +3928,9 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 		wpCnVelocityRam[i] = wpCnVelocity[i];
 	}
 
+	*origin = wpOrigin;
+	*radius = wpRadius;
+	*flags = wpFlags;
 	*index = wpCnIndexRam;
 	*cnFlags = wpCnFlagsRam;
 	*cnDistance = wpCnDistanceRam;
@@ -3963,7 +3958,7 @@ C_DLLEXPORT void SwNPCAPI_SetNPCNewWaypointPoint(edict_t* entity, int waypointPo
 
 		g_entityWpIndex[i] = waypointPoint;
 		g_entityGetWpOrigin[i] = entity->v.origin;
-		g_entityGetWpTime[i] = g_gameTime + 1.5f;
+		g_entityGetWpTime[i] = g_pGlobals->time + 1.5f;
 
 		break;
 	}

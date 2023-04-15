@@ -194,7 +194,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 		return -2;
 	}
 
-	int index = ENTINDEX(bot) - 1;
+	const int index = ENTINDEX(bot) - 1;
 
 	InternalAssert(index >= 0 && index <= 32); // check index
 	InternalAssert(m_bots[index] == null); // check bot slot
@@ -272,7 +272,6 @@ Bot *BotControl::FindOneValidAliveBot (void)
 // SyPB Pro P.45 - Bot think improve
 void BotControl::Think(void)
 {
-	g_gameTime = engine->GetTime();
 	for (int i = 0; i < g_maxClients; i++)
 	{
 		if (m_bots[i] != null)
@@ -457,7 +456,7 @@ int BotControl::AddBotAPI(const String &name, int skill, int team)
 		sypb_quota.SetInt(GetBotsNum());
 	}
 
-	m_maintainTime = g_gameTime + 0.2f;
+	m_maintainTime = g_pGlobals->time + 0.2f;
 
 	return resultOfCall;  // SyPB Pro P.34 - AMXX API
 }
@@ -468,10 +467,10 @@ void BotControl::MaintainBotQuota(void)
 	// while creation process in process.
 
 	// SyPB Pro P.43 - Base improve and New Cvar Setting
-	if (m_maintainTime < g_gameTime)
+	if (m_maintainTime < g_pGlobals->time)
 		g_botManager->CheckBotNum();
 
-	if (m_maintainTime < g_gameTime && !m_creationTab.IsEmpty())
+	if (m_maintainTime < g_pGlobals->time && !m_creationTab.IsEmpty())
 	{
 		CreateItem last = m_creationTab.Pop();
 
@@ -492,10 +491,10 @@ void BotControl::MaintainBotQuota(void)
 			sypb_quota.SetInt(GetBotsNum());
 		}
 
-		m_maintainTime = g_gameTime + 0.15f;
+		m_maintainTime = g_pGlobals->time + 0.15f;
 	}
 
-	if (m_maintainTime < g_gameTime)
+	if (m_maintainTime < g_pGlobals->time)
 	{
 		const int botNumber = GetBotsNum();
 
@@ -509,15 +508,14 @@ void BotControl::MaintainBotQuota(void)
 		else if (sypb_quota.GetInt() < 0)
 			sypb_quota.SetInt(0);
 
-		m_maintainTime = g_gameTime + 0.18f;
+		m_maintainTime = g_pGlobals->time + 0.18f;
 	}
 }
 
 void BotControl::InitQuota (void)
 {
 	g_maxClients = engine->GetMaxClients();
-	g_gameTime = engine->GetTime();
-	m_maintainTime = g_gameTime + 2.0f;
+	m_maintainTime = g_pGlobals->time + 2.0f;
 	m_creationTab.RemoveAll();
 
 	// SyPB Pro P.42 - Entity Action - Reset
@@ -959,8 +957,8 @@ Bot::Bot(edict_t* bot, int skill, int personality, int team, int member)
     m_skill = skill;
     m_weaponBurstMode = BURST_DISABLED;
 
-    m_lastCommandTime = g_gameTime - 0.1f;
-    m_frameInterval = g_gameTime;
+    m_lastCommandTime = g_pGlobals->time - 0.1f;
+    m_frameInterval = g_pGlobals->time;
 
     switch (personality)
     {
@@ -989,7 +987,7 @@ Bot::Bot(edict_t* bot, int skill, int personality, int team, int member)
     m_currentWeapon = 0; // current weapon is not assigned at start
     m_agressionLevel = m_baseAgressionLevel;
     m_fearLevel = m_baseFearLevel;
-    m_nextEmotionUpdate = g_gameTime + 0.5f;
+    m_nextEmotionUpdate = g_pGlobals->time + 0.5f;
 
     // just to be sure
     m_actMessageIndex = 0;
@@ -1025,7 +1023,7 @@ void Bot::NewRound (void)
 
    m_prevWptIndex = -1;
 
-   m_navTimeset = g_gameTime;
+   m_navTimeset = g_pGlobals->time;
 
    switch (m_personality)
    {
@@ -1056,8 +1054,8 @@ void Bot::NewRound (void)
    m_minSpeed = 260.0f;
    m_prevSpeed = 0.0f;
    m_prevOrigin = Vector (9999.0, 9999.0, 9999.0f);
-   m_prevTime = g_gameTime;
-   m_blindRecognizeTime = g_gameTime;
+   m_prevTime = g_pGlobals->time;
+   m_blindRecognizeTime = g_pGlobals->time;
 
    m_viewDistance = 4096.0f;
    m_maxViewDistance = 4096.0f;
@@ -1115,8 +1113,8 @@ void Bot::NewRound (void)
    m_preReloadAmmo = -1;
 
    m_reloadCheckTime = 0.0f;
-   m_shootTime = g_gameTime;
-   m_playerTargetTime = g_gameTime;
+   m_shootTime = g_pGlobals->time;
+   m_playerTargetTime = g_pGlobals->time;
    m_firePause = 0.0f;
    m_timeLastFired = 0.0f;
    m_sniperFire = false;
@@ -1130,7 +1128,7 @@ void Bot::NewRound (void)
    m_jumpFinished = false;
    m_isStuck = false;
 
-   m_sayTextBuffer.timeNextChat = g_gameTime;
+   m_sayTextBuffer.timeNextChat = g_pGlobals->time;
    m_sayTextBuffer.entityIndex = -1;
    m_sayTextBuffer.sayText[0] = 0x0;
 
@@ -1150,7 +1148,7 @@ void Bot::NewRound (void)
       m_currentWeapon = 0;
    }
 
-   m_nextBuyTime = g_gameTime + GetRandomFloat (0.6f, 1.2f);
+   m_nextBuyTime = g_pGlobals->time + GetRandomFloat (0.6f, 1.2f);
 
    m_buyPending = false;
    m_inBombZone = false;
@@ -1170,9 +1168,9 @@ void Bot::NewRound (void)
    m_radioOrder = 0;
    m_defendedBomb = false;
 
-   m_timeLogoSpray = g_gameTime + GetRandomFloat (0.5f, 2.0f);
-   m_spawnTime = g_gameTime;
-   m_lastChatTime = g_gameTime;
+   m_timeLogoSpray = g_pGlobals->time + GetRandomFloat (0.5f, 2.0f);
+   m_spawnTime = g_pGlobals->time;
+   m_lastChatTime = g_pGlobals->time;
    pev->v_angle.y = pev->ideal_yaw;
    m_buttonFlags = 0;
    m_oldButtonFlags = 0;
@@ -1183,7 +1181,7 @@ void Bot::NewRound (void)
    m_campButtons = 0;
 
    m_soundUpdateTime = 0.0f;
-   m_heardSoundTime = g_gameTime - 8.0f;
+   m_heardSoundTime = g_pGlobals->time - 8.0f;
 
    // clear its message queue
    for (i = 0; i < 32; i++)
@@ -1198,7 +1196,7 @@ void Bot::NewRound (void)
    m_lookAtAPI = nullvec;
    m_moveAIAPI = false;
    m_enemyAPI = null;
-   m_blockCheckEnemyTime = g_gameTime;
+   m_blockCheckEnemyTime = g_pGlobals->time;
 
    // SyPB Pro P.31 - AMXX API
    m_knifeDistance1API = 0;
@@ -1265,7 +1263,7 @@ void Bot::Kick (void)
 
 	ITERATE_ARRAY(g_botNames, j)
 	{
-		if (g_botNames[j].usedBy == GetIndex())
+		if (g_botNames[j].usedBy == ENTINDEX(m_iEntity))
 		{
 			g_botNames[j].usedBy = -1;
 			break;

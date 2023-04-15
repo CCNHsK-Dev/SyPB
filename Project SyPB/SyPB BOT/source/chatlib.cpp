@@ -226,7 +226,7 @@ void Bot::PrepareChatMessage (char *text)
          // roundtime?
          else if (*pattern == 'r')
          {
-            int time = static_cast <int> (g_timeRoundEnd - g_gameTime);
+            int time = static_cast <int> (g_timeRoundEnd - g_pGlobals->time);
             strcat (m_tempStrings, FormatBuffer ("%02d:%02d", time / 60, time % 60));
          }
          // chat reply?
@@ -420,7 +420,7 @@ bool Bot::RepliesToPlayer (void)
       char text[256];
 
       // check is time to chat is good
-      if (m_sayTextBuffer.timeNextChat < g_gameTime)
+      if (m_sayTextBuffer.timeNextChat < g_pGlobals->time)
       {
          if (GetRandomInt (1, 100) < m_sayTextBuffer.chatProbability + GetRandomInt (2, 10) && ParseChat (text))
          {
@@ -429,7 +429,7 @@ bool Bot::RepliesToPlayer (void)
 
             m_sayTextBuffer.entityIndex = -1;
             m_sayTextBuffer.sayText[0] = 0x0;
-            m_sayTextBuffer.timeNextChat = g_gameTime + m_sayTextBuffer.chatDelay;
+            m_sayTextBuffer.timeNextChat = g_pGlobals->time + m_sayTextBuffer.chatDelay;
 
             return true;
          }
@@ -478,7 +478,7 @@ void Bot::ChatSay(bool teamSay, const char *text)
         }
 
         MESSAGE_BEGIN(MSG_ONE, g_netMsg->GetId(NETMSG_SAYTEXT), null, g_clients[i].ent);
-        WRITE_BYTE(GetIndex());
+        WRITE_BYTE(ENTINDEX(m_iEntity));
         WRITE_STRING(tempMessage);
         MESSAGE_END();
     }

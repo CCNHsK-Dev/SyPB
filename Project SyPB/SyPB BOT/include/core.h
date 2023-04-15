@@ -586,7 +586,6 @@ private:
    Task *m_tasks; // pointer to active tasks/schedules
 
    edict_t* m_iEntity;
-   Vector m_iOrigin;
    int m_team;
    bool m_isZombieBot;
 
@@ -1017,11 +1016,10 @@ public:
 
    inline edict_t *GetEntity (void) { return ENT (pev); };
    inline EOFFSET GetOffset (void) { return OFFSET (pev); };
-   inline int GetIndex (void) { return ENTINDEX (GetEntity ()); };
 
    inline Vector Center (void) { return (pev->absmax + pev->absmin) * 0.5f; };
-   inline Vector EyePosition (void) { return m_iOrigin + pev->view_ofs; };
-   inline Vector EarPosition (void) { return m_iOrigin + pev->view_ofs; };
+   inline Vector EyePosition (void) { return pev->origin + pev->view_ofs; };
+   inline Vector EarPosition (void) { return pev->origin + pev->view_ofs; };
 
    void Think (void);
    void ThinkFrame(void);
