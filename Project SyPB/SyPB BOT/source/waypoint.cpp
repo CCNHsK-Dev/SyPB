@@ -1693,11 +1693,7 @@ char *Waypoint::GetWaypointInfo (int id)
    }
 
    static char messageBuffer[1024];
-   sprintf (messageBuffer, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s", (path->flags == 0 && !jumpPoint) ? " (none)" : "", path->flags & WAYPOINT_LIFT ? " LIFT" : "", path->flags & WAYPOINT_CROUCH ? " CROUCH" : "", path->flags & WAYPOINT_CROSSING ? " CROSSING" : "", path->flags & WAYPOINT_CAMP ? " CAMP" : "", path->flags & WAYPOINT_TERRORIST ? " TERRORIST" : "", path->flags & WAYPOINT_COUNTER ? " CT" : "", path->flags & WAYPOINT_SNIPER ? " SNIPER" : "", path->flags & WAYPOINT_GOAL ? " GOAL" : "", path->flags & WAYPOINT_LADDER ? " LADDER" : "", path->flags & WAYPOINT_RESCUE ? " RESCUE" : "", path->flags & WAYPOINT_DJUMP ? " JUMPHELP" : "", path->flags & WAYPOINT_NOHOSTAGE ? " NOHOSTAGE" : "", jumpPoint ? " JUMP" : "");
-
-   // SyPB Pro P.29 - Zombie Mode Hm Camp Waypoints
-   if (path->flags & WAYPOINT_ZMHMCAMP)
-	   sprintf(messageBuffer, "Zombie Mode Human Camp Waypoint");
+   sprintf (messageBuffer, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", (path->flags == 0 && !jumpPoint) ? " (none)" : "", path->flags & WAYPOINT_ZMHMCAMP ? " ZMCamp" : "", path->flags & WAYPOINT_LIFT ? " LIFT" : "", path->flags & WAYPOINT_CROUCH ? " CROUCH" : "", path->flags & WAYPOINT_CROSSING ? " CROSSING" : "", path->flags & WAYPOINT_CAMP ? " CAMP" : "", path->flags & WAYPOINT_TERRORIST ? " TERRORIST" : "", path->flags & WAYPOINT_COUNTER ? " CT" : "", path->flags & WAYPOINT_SNIPER ? " SNIPER" : "", path->flags & WAYPOINT_GOAL ? " GOAL" : "", path->flags & WAYPOINT_LADDER ? " LADDER" : "", path->flags & WAYPOINT_RESCUE ? " RESCUE" : "", path->flags & WAYPOINT_DJUMP ? " JUMPHELP" : "", path->flags & WAYPOINT_NOHOSTAGE ? " NOHOSTAGE" : "", jumpPoint ? " JUMP" : "");
 
    // return the message buffer
    return messageBuffer;
@@ -1816,7 +1812,7 @@ void Waypoint::Think(void)
 								nearestDistance = distance;
 						}
 					}
-
+					
 					if (nearestDistance >= newWaypointDistance)
 					{
 						Add(0);
@@ -1988,7 +1984,7 @@ void Waypoint::ShowWaypointMsg(void)
 		// if radius is nonzero, draw a full circle
 		if (path->radius > 0.0f)
 		{
-			const float root = Q_sqrt(path->radius * path->radius * 0.5f);
+			const float root = sqrtf(path->radius * path->radius * 0.5f);
 			const Color &def = Color(0, 0, 255, 200);
 
 			engine->DrawLine(g_hostEntity, origin + Vector(path->radius, 0.0f, 0.0f), origin + Vector(root, -root, 0), def, 5, 0, 0, 10);
@@ -2005,7 +2001,7 @@ void Waypoint::ShowWaypointMsg(void)
 		}
 		else
 		{
-			const float root = Q_sqrt(32.0f);
+			const float root = sqrtf(32.0f);
 			const Color &def = Color(255, 0, 0, 200);
 
 			engine->DrawLine(g_hostEntity, origin + Vector(root, -root, 0), origin + Vector(-root, root, 0), def, 5, 0, 0, 10);
@@ -2045,18 +2041,8 @@ void Waypoint::ShowWaypointMsg(void)
 		// SyPB Pro P.45 - SgdWP
 		if (g_sgdWaypoint)
 		{
-			length += sprintf(&tempMessage[length], "    Hold 'E' Call [SgdWP] Menu \n"
+			length += sprintf(&tempMessage[length], "\n    Hold 'E' Call [SgdWP] Menu \n"
 				"    [Auto Put Waypoint]:%s \n", g_sautoWaypoint ? "on" : "off");
-
-			if (!g_sautoWaypoint)
-				length += sprintf(&tempMessage[length], "    You Can true on [Auto put Waypoint] (menu>7) \n");
-			else
-			{
-				length += sprintf(&tempMessage[length], "    System will auto save Waypoint, you can move in the map now \n"
-					"    Complete, you will save Waypoint (menu>9) \n\n"
-					"    Hold 'IN_DUCK' Can make camp Waypoint \n"
-					"    System Can auto save 'Fall' and 'Jump' Waypoint \n\n");
-			}
 		}
 
 		// draw entire message

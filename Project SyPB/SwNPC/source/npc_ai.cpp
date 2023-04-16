@@ -155,6 +155,9 @@ void NPC::ResetNPC(void)
 
 void NPC::Think(void)
 {
+	if (!g_swnpcRun || g_changeWaypoint || g_numWaypoints == -1)
+		return;
+
 	if (!m_workNPC)
 		return;
 

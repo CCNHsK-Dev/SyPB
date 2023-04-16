@@ -5777,8 +5777,8 @@ Vector Bot::CheckToss (const Vector &start, Vector end)
    if ((midPoint.z < start.z) || (midPoint.z < end.z))
       return nullvec;
 
-   const float timeOne = Q_sqrt((midPoint.z - start.z) / (0.5f * gravity));
-   const float timeTwo = Q_sqrt((midPoint.z - end.z) / (0.5f * gravity));
+   const float timeOne = sqrtf((midPoint.z - start.z) / (0.5f * gravity));
+   const float timeTwo = sqrtf((midPoint.z - end.z) / (0.5f * gravity));
 
    if (timeOne < 0.1)
       return nullvec;

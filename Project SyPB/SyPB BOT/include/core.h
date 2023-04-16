@@ -43,8 +43,6 @@
 
 #include <urlmon.h>
 #pragma comment(lib, "Urlmon.lib")
-extern float Q_sqrt(float number);
-extern float Q_rsqrt(float number);
 
 #include <engine.h>
 

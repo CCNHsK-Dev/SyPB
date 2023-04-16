@@ -673,6 +673,7 @@ void AutoLoadGameMode(bool reset)
 
 	if (zmDelayTime != 0.0f)
 	{
+		zmDelayTime += 0.2f;
 		if (g_gameMode != MODE_ZP || checkShowTextTime == 1)
 			ServerPrint("*** SyPB Auto Game Mode Setting: Zombie Mode***");
 
@@ -1473,30 +1474,6 @@ float GetRandomFloat(float min, float max)
 		return min;
 
 	return RANDOM_FLOAT(min, max);
-}
-
-float Q_sqrt(float number)
-{
-	long i;
-	float x2, y;
-	x2 = number * 0.5f;
-	y = number;
-	i = *(long*)&y;
-	i = 0x5f3759df - (i >> 1);
-	y = *(float*)&i;
-	return y * number;
-}
-
-float Q_rsqrt(float number)
-{
-	long i;
-	float x2, y;
-	x2 = number * 0.5f;
-	y = number;
-	i = *(long*)&y;
-	i = 0x5f3759df - (i >> 1);
-	y = *(float*)&i;
-	return y;
 }
 
 // SyPB Pro P.49 - Debugs Msg

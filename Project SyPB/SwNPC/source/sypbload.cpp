@@ -19,13 +19,13 @@ _SyPBGetWaypointData SwNPCAPI_SyPBGetWaypointData;
 typedef int(*_SyPBSetEntityAction) (int, int, int);
 _SyPBSetEntityAction SwNPCAPI_SyPBSetEntityAction;
 
-typedef int(*_SyPBGetEntityWaypointPoint) (edict_t *);
+typedef int(*_SyPBGetEntityWaypointPoint) (edict_t *, bool *);
 _SyPBGetEntityWaypointPoint SwNPCAPI_SyPBGetEntityWaypointPoint;
 
-typedef void(*_SyPBLoadEntityWaypointPoint) (edict_t *, edict_t *);
+typedef void(*_SyPBLoadEntityWaypointPoint) (edict_t *, edict_t *, bool *);
 _SyPBLoadEntityWaypointPoint SwNPCAPI_SyPBLoadEntityWaypointPoint;
 
-typedef void(*_SyPBSetNPCNewWaypointPoint) (edict_t*, int);
+typedef void(*_SyPBSetNPCNewWaypointPoint) (edict_t*, int, bool *);
 _SyPBSetNPCNewWaypointPoint SwNPCAPI_SyPBSetNPCNewWaypointPoint;
 
 void SyPBDataLoad(void)
@@ -150,17 +150,19 @@ void SetEntityAction(int index, int team, int action)
 
 int GetEntityWaypointPoint(edict_t *entity)
 {
-	return SwNPCAPI_SyPBGetEntityWaypointPoint(entity);
+	const int wpId = SwNPCAPI_SyPBGetEntityWaypointPoint(entity, &g_changeWaypoint);
+
+	return wpId;
 }
 
 void LoadEntityWaypointPoint(edict_t *getEntity, edict_t *targetEntity)
 {
-	SwNPCAPI_SyPBLoadEntityWaypointPoint(getEntity, targetEntity);
+	SwNPCAPI_SyPBLoadEntityWaypointPoint(getEntity, targetEntity, &g_changeWaypoint);
 }
 
 void SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint)
 {
-	SwNPCAPI_SyPBSetNPCNewWaypointPoint(entity, waypointPoint);
+	SwNPCAPI_SyPBSetNPCNewWaypointPoint(entity, waypointPoint, &g_changeWaypoint);
 }
 
 int LogToFile(char* szLogText, ...)

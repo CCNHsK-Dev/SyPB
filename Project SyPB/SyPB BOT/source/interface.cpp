@@ -2599,7 +2599,7 @@ void StartFrame (void)
 	{
 		if (g_waypointOn)
 		{
-			if (sypb_showwp.GetBool() == true)
+			if (sypb_showwp.GetBool())
 				sypb_showwp.SetInt(0);
 
 			// SyPB Pro P.30 - small change
@@ -3939,18 +3939,30 @@ C_DLLEXPORT int SwNPC_GetWaypointData(Vector **origin, float **radius, int32 **f
 	return numWaypoints;
 }
 
-C_DLLEXPORT int SwNPC_GetEntityWaypointIndex(edict_t *entity)
+C_DLLEXPORT int SwNPC_GetEntityWaypointIndex(edict_t *entity, bool *changeWaypoint)
 {
+	*changeWaypoint = g_waypointOn;
+	if (g_waypointOn)
+		return -1;
+
 	return GetEntityWaypoint(entity);
 }
 
-C_DLLEXPORT void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEntity)
+C_DLLEXPORT void SwNPC_LoadEntityWaypointIndex(edict_t *getEntity, edict_t *targetEntity, bool* changeWaypoint)
 {
+	*changeWaypoint = g_waypointOn;
+	if (g_waypointOn)
+		return;
+
 	SetEntityWaypoint(getEntity, GetEntityWaypoint(targetEntity));
 }
 
-C_DLLEXPORT void SwNPCAPI_SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint)
+C_DLLEXPORT void SwNPCAPI_SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint, bool* changeWaypoint)
 {
+	*changeWaypoint = g_waypointOn;
+	if (g_waypointOn)
+		return;
+
 	for (int i = 0; i < entityNum; i++)
 	{
 		if (g_entityId[i] == -1 || entity != INDEXENT(g_entityId[i]))

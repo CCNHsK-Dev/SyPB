@@ -350,6 +350,7 @@ public:
 	Vector g_wpConnectionVelocity[Const_MaxWaypoints][Const_MaxPathIndex];
 	int32 g_wpConnectionDistance[Const_MaxWaypoints][Const_MaxPathIndex];
 
+	void RemoveWaypointData(void);
 	void LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance, Vector ** cnVelocity);
 
 	int *m_pathMatrix;
@@ -365,6 +366,7 @@ const int TakeDamageOffset = 12;
 
 // About Base NPC OS 
 extern bool g_swnpcRun;
+extern bool g_changeWaypoint;
 extern int g_numWaypoints;
 
 extern edict_t *g_hostEntity;
@@ -468,7 +470,6 @@ extern int __fastcall HookTraceAttack(void *pthis, int i, entvars_t *pevAttacker
 extern int __fastcall HookTakeDamage(void *pthis, int i, entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamage);
 
 // For check Distanace
-extern float Q_sqrt(float number);
 extern float GetDistance(Vector origin1, Vector origin2 = nullvec);
 extern float GetDistance2D(Vector origin, Vector origin2 = nullvec);
 

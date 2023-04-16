@@ -10,12 +10,12 @@
 #define SYPB_NAME "SyPB"
 #define SYPB_VERSION "Beta 1.50"
 #define SYPB_VERSION_F 1.50
-#define SYPB_VERSION_DWORD 1,50,20230415,808 // yyyy/mm/dd  
+#define SYPB_VERSION_DWORD 1,50,20230416,809 // yyyy/mm/dd  
 
 #define SWNPC_NAME "SwNPC"
 #define SWNPC_VERSION "Beta 1.50"
 #define SWNPC_VERSION_F 1.50
-#define SWNPC_VERSION_DWORD 1,50,20230415,149 // yyyy/mm/dd   
+#define SWNPC_VERSION_DWORD 1,50,20230416,150 // yyyy/mm/dd   
 
 #define SYPBAPI_NAME "SyPB AMXX API"
 #define SYPBAPI_VERSION "Beta 1.50"

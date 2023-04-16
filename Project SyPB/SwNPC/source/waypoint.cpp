@@ -14,6 +14,35 @@ Waypoint::Waypoint(void)
 	m_distMatrix = null;
 }
 
+void Waypoint::RemoveWaypointData(void)
+{
+	g_numWaypoints = -1;
+
+	for (int i = 0; i < Const_MaxWaypoints; i++)
+	{
+		g_waypointPointFlag[i] = -1;
+		g_waypointPointRadius[i] = -1.0f;
+		g_waypointPointOrigin[i] = nullvec;
+
+		for (int j = 0; j < Const_MaxPathIndex; j++)
+		{
+			g_wpConnectionIndex[i][j] = -1;
+			g_wpConnectionFlags[i][j] = 0;
+			g_wpConnectionDistance[i][j] = -1.0f;
+			g_wpConnectionVelocity[i][j] = nullvec;
+		}
+	}
+
+	if (m_pathMatrix != null)
+		delete[] m_pathMatrix;
+
+	if (m_distMatrix != null)
+		delete[] m_distMatrix;
+
+	m_pathMatrix = null;
+	m_distMatrix = null;
+}
+
 void Waypoint::LoadWaypointData(Vector *origin, int32 *flags, float *radius, int16 **cnIndex, uint16 **cnFlags, int32 **cnDistance, Vector **cnVelocity)
 {
 	int i, j, k;

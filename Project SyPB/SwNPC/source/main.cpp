@@ -2,6 +2,7 @@
 #include "core.h"
 
 bool g_swnpcRun = false;
+bool g_changeWaypoint = false;
 int g_numWaypoints = -1;
 
 edict_t *g_hostEntity = null;
@@ -142,11 +143,21 @@ BOOL FN_ClientConnect_Post(edict_t *ent, const char *name, const char *addr, cha
 void FN_StartFrame(void)
 {
 	// Pro P.45 - HLDS Fixed
-	if (g_swnpcRun && g_numWaypoints == -1)
+	if (g_swnpcRun)
 	{
-		GetWaypointData();
-		if (g_numWaypoints <= 0)
-			g_swnpcRun = false;
+		if (g_changeWaypoint)
+		{
+			GetEntityWaypointPoint(null);
+			
+			if (!g_changeWaypoint)
+				g_waypoint->RemoveWaypointData();
+		}
+		else if (g_numWaypoints == -1)
+		{
+			GetWaypointData();
+			if (g_numWaypoints <= 0)
+				g_swnpcRun = false;
+		}
 	}
 
 	apiBuffer = 0;

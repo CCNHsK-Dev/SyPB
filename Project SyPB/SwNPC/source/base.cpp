@@ -826,7 +826,7 @@ float GetDistance(Vector origin1, Vector origin2)
 	if (origin2 == nullvec)
 		forDistance = origin1;
 
-	return Q_sqrt(forDistance.x * forDistance.x + forDistance.y * forDistance.y + forDistance.z * forDistance.z);
+	return sqrtf(forDistance.x * forDistance.x + forDistance.y * forDistance.y + forDistance.z * forDistance.z);
 }
 
 float GetDistance2D(Vector origin1, Vector origin2)
@@ -835,19 +835,7 @@ float GetDistance2D(Vector origin1, Vector origin2)
 	if (origin2 == nullvec)
 		forDistance = origin1;
 
-	return Q_sqrt(forDistance.x * forDistance.x + forDistance.y * forDistance.y);
-}
-
-float Q_sqrt(float number)
-{
-	long i;
-	float x2, y;
-	x2 = number * 0.5f;
-	y = number;
-	i = *(long*)&y;
-	i = 0x5f3759df - (i >> 1);
-	y = *(float*)&i;
-	return y * number;
+	return sqrtf(forDistance.x * forDistance.x + forDistance.y * forDistance.y);
 }
 
 void EMIT_SOUND_DYN(edict_t *entity, int channel, const char *sample, float volume, float attenuation,

@@ -254,7 +254,7 @@ public:
 
    inline float Length (void) const
    {
-      return Q_sqrt(x * x + y * y);
+      return sqrtf(x * x + y * y);
    }
 
    inline Vector2D Normalize (void) const
@@ -348,7 +348,7 @@ public:
    }
    inline float Length (void) const
    {
-      return Q_sqrt(x * x + y * y + z * z);
+      return sqrtf(x * x + y * y + z * z);
    }
    operator   float *()
    {
@@ -387,7 +387,7 @@ public:
    }
    inline float Length2D (void) const
    {
-      return Q_sqrt(x * x + y * y);
+      return sqrtf(x * x + y * y);
    }
 
    // Members

@@ -582,7 +582,7 @@ bool Bot::IsFriendInLineOfFire (float distance)
 			continue;
 
 		const float friendDistance = (GetEntityOrigin(entity) - pev->origin).GetLength();
-		const float squareDistance = Q_sqrt(1089.0f + (friendDistance * friendDistance));
+		const float squareDistance = sqrtf(1089.0f + (friendDistance * friendDistance));
 
 		// SyPB Pro P.41 - VS LOG
 		if (friendDistance <= distance)

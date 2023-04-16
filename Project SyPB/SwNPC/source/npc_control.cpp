@@ -14,6 +14,12 @@ void NPCControl::Think(void)
 	if (g_SwNPCNum <= 0)
 		return;
 
+	if (!g_swnpcRun || g_changeWaypoint || g_numWaypoints == -1)
+	{
+		RemoveAll();
+		return;
+	}
+
 	g_gameMode = int(CVAR_GET_FLOAT("sypb_gamemod"));
 	g_debugNPC = null;
 
@@ -25,7 +31,7 @@ void NPCControl::Think(void)
 		if (m_npcs[i] == null)
 			continue;
 
-		if (!g_swnpcRun || m_npcs[i]->m_needRemove)
+		if (m_npcs[i]->m_needRemove)
 			RemoveNPC(m_npcs[i]);
 	}
 }
@@ -75,7 +81,13 @@ int NPCControl::AddNPC(const char *className, const char *modelName, float maxHe
 {
 	if (!g_swnpcRun)
 	{
-		LogToFile("Cannot Add Entity - SwNPC Have not Run");
+		LogToFile("Cannot Add Entity - SwNPC is not Running");
+		return -2;
+	}
+
+	if (g_changeWaypoint || g_numWaypoints == -1)
+	{
+		LogToFile("Cannot Add Entity - SyPB Waypoint is Changing");
 		return -2;
 	}
 
