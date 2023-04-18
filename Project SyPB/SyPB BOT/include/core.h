@@ -382,10 +382,6 @@ constexpr float TASKPRI_ESCAPEFROMBOMB = 100.0f;
 constexpr int Const_GrenadeTimer = 3;
 constexpr int Const_MaxHostages = 8;
 constexpr int Const_MaxPathIndex = 8;
-constexpr int Const_MaxDamageValue = 2040;
-constexpr int Const_MaxGoalValue = 2040;
-constexpr int Const_MaxKillHistory = 16;
-constexpr int Const_MaxRegMessages = 256;
 constexpr int Const_MaxWaypoints = 1024;
 constexpr int Const_MaxWeapons = 32;
 constexpr int Const_NumWeapons = 26;
@@ -853,7 +849,7 @@ private:
    bool KnifeAttack(float attackDistance = 0.0f);
 
    void SelectBestWeapon (void);
-   void SelectPistol (void);
+   //void SelectPistol (void);
    bool IsFriendInLineOfFire (float distance);
    bool IsGroupOfEnemies (Vector location, int numEnemies = 2, int radius = 600);
    bool IsShootableThruObstacle (edict_t *entity);

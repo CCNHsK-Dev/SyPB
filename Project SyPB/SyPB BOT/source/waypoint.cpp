@@ -349,16 +349,17 @@ void Waypoint::SgdWp_Set (const char *modset)
 	}
 	else if (stricmp (modset, "off") == 0)
 	{
+		DisplayMenuToClient(g_hostEntity, null);
 		g_sautoWaypoint = false;
 		g_sgdWaypoint = false;
 		g_waypointOn = false;
 	}
-	else if ((stricmp (modset, "save") == 0 || stricmp(modset, "save_non-check") == 0) &&
-		g_sgdWaypoint)
+	else if ((stricmp (modset, "save") == 0 || stricmp(modset, "save_non-check") == 0) && g_sgdWaypoint)
 	{
 		// SyPB Pro P.45 - SgdWP 
 		if (stricmp(modset, "save_non-check") == 0 || g_waypoint->NodesValid())
 		{
+			DisplayMenuToClient(g_hostEntity, null);
 			Save();
 			g_sautoWaypoint = false;
 			g_sgdWaypoint = false;

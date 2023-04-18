@@ -729,11 +729,22 @@ void Bot::FireWeapon(void)
 	edict_t *enemy = m_enemy;
 
 	int selectId = WEAPON_KNIFE, selectIndex = 0, chosenWeaponIndex = 0;
+
+	const bool inWater = IsInWater();
+	const int oldWeapons = pev->weapons;
+	if (inWater)
+		pev->weapons &= ~((1 << WEAPON_XM1014) | (1 << WEAPON_M3));
+
 	const int weapons = pev->weapons;
+
+	if (inWater)
+		pev->weapons = oldWeapons;
 
 	// SyPB Pro P.43 - Attack Ai improve
 	if (m_isZombieBot || sypb_knifemode.GetBool())
 		goto WeaponSelectEnd;
+	else if (inWater && (m_currentWeapon == WEAPON_M3 || m_currentWeapon == WEAPON_XM1014))
+		SelectBestWeapon();
 	else if (!FNullEnt(enemy) && m_skill >= 80 && !IsZombieEntity(enemy) && IsOnAttackDistance(enemy, 120.0f) &&
 		(enemy->v.health <= 30 || pev->health > enemy->v.health) && !IsOnLadder() && !IsGroupOfEnemies(pev->origin))
 		goto WeaponSelectEnd;
@@ -1718,19 +1729,21 @@ void Bot::SelectBestWeapon(void)
 	}
 
 	const WeaponSelect *selectTab = &g_weaponSelect[0];
+	const bool inWater = IsInWater();
 
 	int selectIndex = 0;
 	int chosenWeaponIndex = 0;
 
 	while (selectTab[selectIndex].id)
 	{
-		if (!(pev->weapons & (1 << selectTab[selectIndex].id)))
+		if (!(pev->weapons & (1 << selectTab[selectIndex].id)) || 
+			(inWater && (selectTab[selectIndex].id == WEAPON_M3 || selectTab[selectIndex].id == WEAPON_XM1014)))
 		{
 			selectIndex++;
 			continue;
 		}
 
-		int id = selectTab[selectIndex].id;
+		const int id = selectTab[selectIndex].id;
 		bool ammoLeft = false;
 
 		if (selectTab[selectIndex].id == m_currentWeapon && (GetAmmoInClip() < 0 || GetAmmoInClip() >= selectTab[selectIndex].minPrimaryAmmo))
@@ -1756,7 +1769,7 @@ void Bot::SelectBestWeapon(void)
 
 	SelectWeaponByName(selectTab[selectIndex].weaponName);
 }
-
+/*
 void Bot::SelectPistol (void)
 {
    const int oldWeapons = pev->weapons;
@@ -1766,7 +1779,7 @@ void Bot::SelectPistol (void)
 
    pev->weapons = oldWeapons;
 }
-
+*/
 int Bot::GetHighestWeapon (void)
 {
    WeaponSelect *selectTab = &g_weaponSelect[0];
