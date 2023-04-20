@@ -56,6 +56,12 @@
 #error "Can't configure export macros. Compiler unrecognized."
 #endif
 
+#ifdef PLATFORM_WIN32
+#include <urlmon.h>
+#pragma comment(lib, "Urlmon.lib")
+#endif
+
+
 // operating system specific macros, functions and typedefs
 #ifdef PLATFORM_WIN32
 
@@ -64,6 +70,8 @@
 #define DLL_ENTRYPOINT int STDCALL DllMain (void *, unsigned long dwReason, void *)
 #define DLL_DETACHING (dwReason == 0)
 #define DLL_RETENTRY return 1
+
+#define stricmp _stricmp
 
 #if defined (COMPILER_VISUALC)
 #define DLL_GIVEFNPTRSTODLL extern "C" void STDCALL
@@ -95,6 +103,8 @@ typedef void (*EntityPtr_t) (entvars_t *);
 #define DLL_RETENTRY return
 #define DLL_GIVEFNPTRSTODLL extern "C" void
 
+#define stricmp strcasecmp
+
 inline uint32 _lrotl (uint32 x, int r) { return (x << r) | (x >> (sizeof (x) * 8 - r));}
 
 typedef int (*EntityAPI_t) (DLL_FUNCTIONS *, int);
@@ -111,7 +121,11 @@ typedef void (*EntityPtr_t) (entvars_t *);
 class Library
 {
 private:
+#ifdef PLATFORM_WIN32
     HMODULE m_ptr;
+#else
+    void* m_ptr;
+#endif
 
 public:
 

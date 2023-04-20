@@ -41,9 +41,6 @@
 #include <stdio.h>
 #include <memory.h>
 
-#include <urlmon.h>
-#pragma comment(lib, "Urlmon.lib")
-
 #include <engine.h>
 
 using namespace Math;
@@ -1120,7 +1117,6 @@ public:
 
    void AddRandom (void) { AddBot ("", -1, -1, -1, -1); }
    void AddBot (const String &name, int skill, int personality, int team, int member);
-   void AddBot (const String &name, const String &skill, const String &personality, const String &team, const String &member);
    void FillServer (int selection, int personality = PERSONALITY_NORMAL, int skill = -1, int numToAdd = -1);
 
    void RemoveAll (void);
@@ -1289,7 +1285,9 @@ public:
    void Save (void);
    void SaveXML (void);
 
+#ifdef PLATFORM_WIN32
    void tryDownloadWaypoint (void);
+#endif
 
    bool Reachable(edict_t *entity, int index);
    bool IsNodeReachable (Vector src, Vector destination);

@@ -302,26 +302,6 @@ void BotControl::AddBot (const String &name, int skill, int personality, int tea
       sypb_quota.SetInt (GetBotsNum () + 1);
 }
 
-void BotControl::AddBot (const String &name, const String &skill, const String &personality, const String &team, const String &member)
-{
-   // this function is same as the function above, but accept as parameters string instead of integers
-
-   CreateItem queueID;
-   const String &any = "*";
-
-   queueID.name = (name.IsEmpty () || (name == any)) ?  String ("\0") : name;
-   queueID.skill = (skill.IsEmpty () || (skill == any)) ? -1 : skill;
-   queueID.team = (team.IsEmpty () || (team == any)) ? -1 : team;
-   queueID.member = (member.IsEmpty () || (member == any)) ? -1 : member;
-   queueID.personality = (personality.IsEmpty () || (personality == any)) ? -1 : personality;
-
-   m_creationTab.Push (queueID);
-
-   // keep quota number up to date
-   if (GetBotsNum () + 1 > sypb_quota.GetInt ())
-      sypb_quota.SetInt (GetBotsNum () + 1);
-}
-
 // SyPB Pro P.43 - New Cvar for auto sypb number
 // SyPB Pro P.47 - New Cvar to Save 'sypb_quota'
 void BotControl::CheckBotNum(void)

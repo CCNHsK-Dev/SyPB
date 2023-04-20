@@ -2590,7 +2590,6 @@ inline void STOP_SOUND (edict_t * entity, int channel, const char *sample)
 
    // removes linker warning when using msvcrt library
 #if defined ( _MSC_VER )
-#define stricmp _stricmp
 #define unlink _unlink
 #define mkdir _mkdir
 #endif

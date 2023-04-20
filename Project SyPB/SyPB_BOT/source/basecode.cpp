@@ -2508,23 +2508,30 @@ bool Bot::ReactOnEnemy(void)
 		return false;
 
 	if (m_enemyReachableTimer >= g_pGlobals->time)
-		goto lastly;
+	{
+		if (m_isEnemyReachable)
+		{
+			m_navTimeset = g_pGlobals->time; // override existing movement by attack movement
+			return true;
+		}
+		return false;
+	}
 
 	m_isEnemyReachable = false;
 
+	const int i = GetEntityWaypoint(m_iEntity);
+	const int enemyIndex = GetEntityWaypoint(m_enemy);
 	const float enemyDistance = (pev->origin - GetEntityOrigin(m_enemy)).GetLength();
 	if (m_isZombieBot || enemyDistance <= 120.0f)
 	{
 		m_isEnemyReachable = true;
-		goto upDateCheckTime;
+		goto lastly;
 	}
 
-	const int i = GetEntityWaypoint(m_iEntity);
-	const int enemyIndex = GetEntityWaypoint(m_enemy);
 	if (i == enemyIndex || m_currentWaypointIndex == enemyIndex)
 	{
 		m_isEnemyReachable = true;
-		goto upDateCheckTime;
+		goto lastly;
 	}
 
 	if (m_zhCampPointIndex != -1)
@@ -2544,7 +2551,7 @@ bool Bot::ReactOnEnemy(void)
 			}
 		}
 
-		goto upDateCheckTime;
+		goto lastly;
 	}
 
 	if (IsZombieEntity(m_enemy))
@@ -2571,20 +2578,17 @@ bool Bot::ReactOnEnemy(void)
 			}
 		}
 
-		goto upDateCheckTime;
+		goto lastly;
 	}
 
-	const float pathDist = g_waypoint->GetPathDistanceFloat(i, enemyIndex);
-	const float lineDist = (GetEntityOrigin(m_enemy) - pev->origin).GetLength();
-	if (pathDist - lineDist > 112.0f)
+	if (g_waypoint->GetPathDistanceFloat(i, enemyIndex) - (GetEntityOrigin(m_enemy) - pev->origin).GetLength() > 112.0f)
 		m_isEnemyReachable = false;
 	else
 		m_isEnemyReachable = true;
 
-upDateCheckTime:
+lastly:
 	m_enemyReachableTimer = g_pGlobals->time + 0.3f;
 
-lastly:
 	if (m_isEnemyReachable)
 	{
 		m_navTimeset = g_pGlobals->time; // override existing movement by attack movement
@@ -5904,7 +5908,7 @@ void Bot::RunPlayerMovement(void)
 	// SyPB Pro P.41 - Run Player Move
 	m_frameInterval = g_pGlobals->time - m_lastCommandTime;
 
-	byte msecVal = byte((g_pGlobals->time - m_lastCommandTime) * 1000);
+	uint8_t msecVal = uint8_t((g_pGlobals->time - m_lastCommandTime) * 1000);
 	m_lastCommandTime = g_pGlobals->time;
 
 	(*g_engfuncs.pfnRunPlayerMove) (m_iEntity, m_moveAngles, m_moveSpeed, m_strafeSpeed, 0.0f,

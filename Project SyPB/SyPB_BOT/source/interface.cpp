@@ -33,9 +33,9 @@ ConVar sypb_debug("sypb_debug", "0");
 
 ConVar sypb_password ("sypb_password", "", VARTYPE_PASSWORD);
 ConVar sypb_password_key ("sypb_password_key", "_sypb_wp");
-
+#ifdef PLATFORM_WIN32
 ConVar sypb_download_waypoint("sypb_download_waypoint", "2");
-
+#endif
 ConVar sypb_language ("sypb_language", "en");
 ConVar sypb_version ("sypb_version", SYPB_VERSION, VARTYPE_READONLY);
 
@@ -524,7 +524,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
 	   g_waypoint->SgdWp_Set (arg1);
    }
-
+#ifdef PLATFORM_WIN32
    else if (stricmp(arg0, "dlwp") == 0)
    {
 	   if (IsDedicatedServer() || FNullEnt(g_hostEntity))
@@ -532,7 +532,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 
 	   g_waypoint->tryDownloadWaypoint();
    }
-
+#endif
    // experience system handling (supported only on listen server)
    else if (stricmp (arg0, "experience") == 0 || stricmp (arg0, "exp") == 0)
    {
@@ -2396,11 +2396,13 @@ void ServerActivate (edict_t *pentEdictList, int edictCount, int clientMax)
    g_sypbbV16[2] = (uint16)buildVersion[2];
    g_sypbbV16[3] = (uint16)buildVersion[3];
 
+#ifdef PLATFORM_WIN32
    if (sypb_download_waypoint.GetInt() == 2)
 	   g_waypoint->tryDownloadWaypoint();
 
    if (!g_waypoint->Load() && sypb_download_waypoint.GetInt() == 1)
 	   g_waypoint->tryDownloadWaypoint();
+#endif
 
    // execute main config
    ServerCommand ("exec addons/sypb/sypb.cfg");

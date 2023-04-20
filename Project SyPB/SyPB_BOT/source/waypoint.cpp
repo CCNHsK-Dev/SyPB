@@ -1195,6 +1195,7 @@ void Waypoint::InitTypes (int mode)
 	}
 }
 
+#ifdef PLATFORM_WIN32
 void Waypoint::tryDownloadWaypoint(void)
 {
 	EraseFromHardDisk(false);
@@ -1241,7 +1242,7 @@ void Waypoint::tryDownloadWaypoint(void)
 	sprintf(m_infoBuffer, "Download %s.pwf on GitHub", GetMapName());
 	AddLogEntry(LOG_DEFAULT, m_infoBuffer);
 }
-
+#endif
 bool Waypoint::Load(void)
 {
 	WaypointHeader header;
