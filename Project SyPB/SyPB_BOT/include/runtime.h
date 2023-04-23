@@ -806,13 +806,14 @@ public:
    }
 };
 
+/*
 namespace Math
 {
    inline bool BBoxIntersects (const Vector &min1, const Vector &max1, const Vector &min2, const Vector &max2)
    {
       return min1.x < max2.x && max1.x > min2.x && min1.y < max2.y && max1.y > min2.y && min1.z < max2.z && max1.z > min2.z;
    }
-}
+} */
 
 //
 // Class: Array
@@ -1355,7 +1356,13 @@ public:
 	//
 	T &GetRandomElement(void) const
 	{
-		return m_elements[(*g_engfuncs.pfnRandomLong) (0, m_itemCount - 1)];
+#if defined (_WIN32)
+        return m_elements[(*g_engfuncs.pfnRandomLong) (0, m_itemCount - 1)];
+#else
+        srand(time(nullptr));
+        int val = rand() % ((m_itemCount - 1) + 1);
+        return m_elements[val];
+#endif
 	}
 
 	Array <T> &operator = (const Array <T> &other)
@@ -1690,7 +1697,7 @@ public:
    //
    bool Remove (const K &keyName)
    {
-      int hashID = Map::HashFunc <K> (keyName) % m_hashSize;
+      int hashID = Map::HashFunc < K(keyName) % m_hashSize;
       HashItem *hashItem = m_table[hashID], *nextHash = null;
 
       while (hashItem != null)
@@ -2233,15 +2240,15 @@ public:
       return strcmp (m_array, str);
    }
 
-   inline int CompareNoCase (const String &str) const
-   {
-      return stricmp (m_array, str.m_array);
-   }
+   //inline int CompareNoCase (const String &str) const
+   //{
+   //   return stricmp (m_array, str.m_array);
+   //}
 
-   inline int CompareNoCase(const char *str) const
-   {
-      return stricmp (m_array, str);
-   }
+   //inline int CompareNoCase(const char *str) const
+   //{
+   //   return stricmp (m_array, str);
+   //}
 
    inline bool Has (const String &other) const
    {

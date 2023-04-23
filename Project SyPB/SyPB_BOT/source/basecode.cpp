@@ -5173,7 +5173,7 @@ void Bot::BotDebugModeMsg(void)
 
 			const int client = ENTINDEX (m_iEntity) - 1;
 
-			char outputBuffer[512];
+			char outputBuffer[1024];
 			sprintf(outputBuffer, "\n\n\n\n\n\n\n Game Mode: %s"
 				"\n [%s] \n Task: %s  AimFlags:%s \n"
 				"Weapon: %s  Clip: %d   Ammo: %d \n"

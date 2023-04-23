@@ -525,7 +525,7 @@ int BotCommandHandler_O (edict_t *ent, const String &arg0, const String &arg1, c
 	   g_waypoint->SgdWp_Set (arg1);
    }
 #ifdef PLATFORM_WIN32
-   else if (stricmp(arg0, "dlwp") == 0)
+   else if (stricmp(arg0, "dlwp") == 0 || stricmp(arg0, "download_waypoint") == 0)
    {
 	   if (IsDedicatedServer() || FNullEnt(g_hostEntity))
 		   return 2;
@@ -2478,6 +2478,7 @@ void LoadEntityData(void)
 		}
 		else
 		{
+			player->flags |= CFLAG_USED;
 			player->team = *((int*)entity->pvPrivateData + OFFSET_TEAM) - 1;
 			if (g_gameMode == MODE_DM)
 				player->team = i + 10;
