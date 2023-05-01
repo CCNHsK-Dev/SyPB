@@ -1198,8 +1198,6 @@ void Bot::NewRound (void)
    PushTask (TASK_NORMAL, TASKPRI_NORMAL, -1, 0.0, true);
 
    m_secondThinkTimer = 0.0f;
-
-   m_thinkInterval = 1.0f / 20.0f;
 }
 
 void Bot::Kill (void)

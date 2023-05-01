@@ -434,13 +434,13 @@ bool Bot::DoWaypointNav (void)
       m_navTimeset = g_pGlobals->time;
    }
 
-   m_destOrigin = m_waypointOrigin + pev->view_ofs;
+   m_destOrigin = m_waypointOrigin;
 
    if (m_currentTravelFlags & PATHFLAG_JUMP)
    {
-	   if (!m_jumpFinished)
+	   if (!m_jumpFinished && (IsOnFloor () || IsOnLadder ()))
 	   {
-		   pev->velocity = m_desiredVelocity + m_desiredVelocity * 0.046f;
+		   pev->velocity = m_desiredVelocity;
 		   m_buttonFlags |= IN_JUMP;
 
 		   m_jumpFinished = true;
@@ -567,7 +567,7 @@ bool Bot::DoWaypointNav (void)
    }
    
    if (desiredDistance < 22.0f && waypointDistance < 30.0f &&
-	   (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLength() >= waypointDistance)
+	   (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLengthSquared() >= (waypointDistance*waypointDistance))
 	   desiredDistance = waypointDistance + 1.0f; 
 
    // SyPB Pro P.42 - AMXX API

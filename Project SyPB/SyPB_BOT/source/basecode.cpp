@@ -3272,11 +3272,10 @@ void Bot::Think(void)
 		if (m_thinkFps <= g_pGlobals->time)
 		{
 			ThinkFrame();
-			m_thinkFps = g_pGlobals->time + m_thinkInterval;
+			m_thinkFps = g_pGlobals->time + 1.0f / 20.0f;
 		}
 		else if (!g_botActionStop && m_botMovement)
 		{
-			DoWaypointNav();
 			ChooseAimDirection();
 			FacePosition();
 		}
