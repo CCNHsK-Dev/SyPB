@@ -1393,6 +1393,12 @@ void Bot::CombatFight(void)
 				if (!m_escapeEnemyAction || (m_buttonFlags & IN_RELOAD) || m_isReloading)
 					m_moveSpeed = 0.0f;
 
+				if (m_currentTravelFlags & PATHFLAG_JUMP)
+				{
+					m_moveSpeed = m_iMaxSpeed;
+					m_escapeEnemyAction = true;
+				}
+
 				return;
 			}
 		}

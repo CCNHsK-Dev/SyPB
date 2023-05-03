@@ -3278,16 +3278,16 @@ void Bot::Think(void)
 		}
 		else if (!g_botActionStop && m_botMovement)
 		{
-			m_buttonFlags &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP);
-
 			DoWaypointNav();
-
-			m_moveAngles = (m_destOrigin - (pev->origin + pev->velocity * m_frameInterval)).ToAngles();
-			m_moveAngles.ClampAngles();
-			m_moveAngles.x *= -1.0f;
-
 			ChooseAimDirection();
 			FacePosition();
+			
+			if (m_aimFlags & AIM_NAVPOINT && FNullEnt (m_breakableEntity) && FNullEnt (m_pickupItem) && !(m_aimFlags & AIM_ENTITY))
+			{
+				m_moveAngles = (m_destOrigin - (pev->origin + pev->velocity * m_frameInterval)).ToAngles();
+				m_moveAngles.ClampAngles();
+				m_moveAngles.x *= -1.0f;
+			}
 		}
 
 		MoveAction();
