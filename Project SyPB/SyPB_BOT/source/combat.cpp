@@ -392,10 +392,9 @@ bool Bot::LookupEnemy(void)
 				moveTotarget = false;
 			else
 			{
-				Path *path;
 				while (srcIndex != destIndex && movePoint <= 3 && srcIndex >= 0 && destIndex >= 0)
 				{
-					path = g_waypoint->GetPath(srcIndex);
+					const Path* path = g_waypoint->GetPath(srcIndex);
 					srcIndex = *(g_waypoint->m_pathMatrix + (srcIndex * g_numWaypoints) + destIndex);
 					if (srcIndex < 0)
 						continue;

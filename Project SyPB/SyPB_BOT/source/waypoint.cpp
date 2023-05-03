@@ -722,7 +722,7 @@ void Waypoint::Delete (void)
    if (g_botManager->GetBotsNum () > 0)
       g_botManager->RemoveAll ();
 
-   int index = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
+   const int index = FindNearest (GetEntityOrigin (g_hostEntity), 50.0f);
 
    if (index == -1)
       return;
@@ -779,7 +779,7 @@ void Waypoint::Delete (void)
 // SyPB Pro P.30 - SgdWP
 void Waypoint::DeleteFlags(void)
 {
-	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
+	const int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
 
 	if (index != -1)
 	{
@@ -792,7 +792,7 @@ void Waypoint::ToggleFlags (int toggleFlag)
 {
    // this function allow manually changing flags
 
-	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
+	const int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
 
 	if (index != -1)
 	{
@@ -843,7 +843,7 @@ void Waypoint::SetRadius(int radius)
 {
 	// this function allow manually setting the zone radius
 
-	int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
+	const int index = FindNearest(GetEntityOrigin(g_hostEntity), 50.0f);
 
 	// SyPB Pro P.37 - SgdWP
 	g_sautoRadius = radius;
@@ -1200,9 +1200,8 @@ void Waypoint::tryDownloadWaypoint(void)
 {
 	EraseFromHardDisk(false);
 
-	String saveFile = "", downloadURL = "";
-	saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
-	downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
+	const String saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
+	const String downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
 
 	ServerPrint("Try to Download Waypoint.....");
 	if (URLDownloadToFile(null, downloadURL, saveFile, 0, null) != S_OK)

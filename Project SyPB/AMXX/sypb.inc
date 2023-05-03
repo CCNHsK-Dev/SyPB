@@ -185,7 +185,7 @@ native sypb_get_bot_nav_pointid (index, navNum);
 	 index:		Entity id
 				-1 is del all entity action
 	 team:		Entity Team
-				0 = No Team, 1 = TR, 2 = CT
+				0 = TR, 1 = CT, other = No Team
 	 action:	Bot Action
 				1 = Enemy, Bot Will Attack Entity
 					(Work on Different teams, eg TR bot attack No Team and CT Team Entity)

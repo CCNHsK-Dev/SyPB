@@ -311,7 +311,7 @@ void Bot::ZombieModeAi(void)
 					entity = g_clients[i].ent;
 				else
 				{
-					Bot *bot = g_botManager->GetBot(i);
+					const Bot *bot = g_botManager->GetBot(i);
 					if (bot == null || bot == this || !bot->m_isAlive)
 						continue;
 
@@ -2905,7 +2905,7 @@ void Bot::CheckRadioCommands (void)
                      continue;
 
                   edict_t *enemy = g_clients[i].ent;
-                  float nowDistance = (GetEntityOrigin (m_radioEntity) - GetEntityOrigin (enemy)).GetLengthSquared ();
+                  const float nowDistance = (GetEntityOrigin (m_radioEntity) - GetEntityOrigin (enemy)).GetLengthSquared ();
 
                   if (nowDistance < nearestDistance)
                   {
@@ -2982,7 +2982,7 @@ void Bot::CheckRadioCommands (void)
                if (GetCurrentTask()->data == bombPoint)
                {
 				   GetCurrentTask()->data = -1;
-                  RadioMessage (Radio_Affirmative);
+				   RadioMessage (Radio_Affirmative);
                }
             }
          }
@@ -3260,6 +3260,7 @@ void Bot::ChooseAimDirection (void)
 
 void Bot::Think(void)
 {
+	pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
 	m_iEntity = GetEntity();
 
 	m_isAlive = IsAlive(m_iEntity);
@@ -3277,26 +3278,30 @@ void Bot::Think(void)
 		}
 		else if (!g_botActionStop && m_botMovement)
 		{
+			m_buttonFlags &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT | IN_JUMP);
+
 			DoWaypointNav();
-			ChooseAimDirection();
-			FacePosition();
 
 			m_moveAngles = (m_destOrigin - (pev->origin + pev->velocity * m_frameInterval)).ToAngles();
 			m_moveAngles.ClampAngles();
 			m_moveAngles.x *= -1.0f;
+
+			ChooseAimDirection();
+			FacePosition();
 		}
 
 		MoveAction();
 
 		RunPlayerMovement();
 		BotDebugModeMsg();
+
+		pev->button = m_buttonFlags;
+		pev->oldbuttons = m_oldButtonFlags;
 	} 
 }
 
 void Bot::ThinkFrame(void)
 {
-   pev->flags |= FL_FAKECLIENT; // restore fake client bit, if it were removed by some evil action =)
-
    m_buttonFlags = 0;
    m_moveAngles = nullvec;
 
@@ -3420,15 +3425,14 @@ void Bot::MoveAction(void)
 
 		if (!onFloor && !onLadder)
 			m_buttonFlags |= IN_DUCK;
+		else
+			m_buttonFlags &= ~IN_DUCK;
 
 		if (!m_jumpFinished && (onFloor || onLadder || IsInWater()))
 			m_jumpTime = g_pGlobals->time;
 	}
 	if (m_buttonFlags & IN_JUMP)
-	{
-		m_buttonFlags &= ~IN_DUCK;
 		m_jumpTime = g_pGlobals->time + 0.65f;
-	}
 
 	if (m_sniperFire && m_buttonFlags & IN_ATTACK)
 		m_sniperFire = false;
@@ -3458,7 +3462,7 @@ void Bot::RunTask (void)
 	  if ((g_mapType & MAP_CS) && m_team == TEAM_COUNTER)
 	  {
 		  // SyPB Pro P.38 - Base Mode Improve
-		  int hostageWptIndex = FindHostage();
+		  const int hostageWptIndex = FindHostage();
 		  if (hostageWptIndex != -1 && m_currentWaypointIndex != hostageWptIndex)
 			  GetCurrentTask()->data = hostageWptIndex;
 	  }
@@ -3474,7 +3478,7 @@ void Bot::RunTask (void)
          }
          else if (!m_defendedBomb)
          {
-			 int plantedBombWptIndex = g_waypoint->GetBombPoint();
+			 const int plantedBombWptIndex = g_waypoint->GetBombPoint();
 
 			 if (plantedBombWptIndex != -1 && m_currentWaypointIndex != plantedBombWptIndex)
 				 GetCurrentTask()->data = plantedBombWptIndex;
@@ -5916,7 +5920,7 @@ void Bot::RunPlayerMovement(void)
 	// SyPB Pro P.41 - Run Player Move
 	m_frameInterval = g_pGlobals->time - m_lastCommandTime;
 
-	uint8_t msecVal = uint8_t((g_pGlobals->time - m_lastCommandTime) * 1000);
+	const uint8_t msecVal = uint8_t((g_pGlobals->time - m_lastCommandTime) * 1000);
 	m_lastCommandTime = g_pGlobals->time;
 
 	(*g_engfuncs.pfnRunPlayerMove) (m_iEntity, m_moveAngles, m_moveSpeed, m_strafeSpeed, 0.0f,
@@ -6087,8 +6091,8 @@ void Bot::ReactOnSound (void)
 			g_clients[i].ent == m_iEntity || m_team == GetTeam (g_clients[i].ent))
 			continue;
 
-		float distance = (g_clients[i].soundPosition - pev->origin).GetLength();
-		float hearingDistance = g_clients[i].hearingDistance;
+		const float distance = (g_clients[i].soundPosition - pev->origin).GetLength();
+		const float hearingDistance = g_clients[i].hearingDistance;
 
 		if (distance > hearingDistance || hearingDistance >= 2048.0f)
 			continue;

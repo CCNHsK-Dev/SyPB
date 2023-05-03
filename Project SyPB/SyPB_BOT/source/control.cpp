@@ -452,7 +452,7 @@ void BotControl::MaintainBotQuota(void)
 
 	if (m_maintainTime < g_pGlobals->time && !m_creationTab.IsEmpty())
 	{
-		CreateItem last = m_creationTab.Pop();
+		const CreateItem last = m_creationTab.Pop();
 
 		const int resultOfCall = CreateBot(last.name, last.skill, last.personality, last.team, last.member);
 
@@ -518,7 +518,7 @@ void BotControl::FillServer (int selection, int personality, int skill, int numT
    else
       selection = 5;
 
-   char teamDescs[6][12] =
+   const char teamDescs[6][12] =
    {
       "",
       {"Terrorists"},
@@ -705,7 +705,7 @@ void BotControl::SetWeaponMode (int selection)
       {-1,-1,-1, 2, 2, 0, 1, 1, 1, 1, 1, 1, 0, 2, 0,-1, 1, 0, 1, 1, 0, 0,-1, 1, 1, 1}  // Standard
    };
 
-   char modeName[7][12] =
+   const char modeName[7][12] =
    {
       {"Knife"},
       {"Pistol"},

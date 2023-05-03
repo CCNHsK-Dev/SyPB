@@ -374,12 +374,12 @@ void FakeClientCommand(edict_t *fakeClient, const char *format, ...)
 	g_isFakeCommand = true;
 
 	int i, pos = 0;
-	int length = strlen(string);
+	const int length = strlen(string);
 	int stringIndex = 0;
 
 	while (pos < length)
 	{
-		int start = pos;
+		const int start = pos;
 		int stop = pos;
 
 		while (pos < length && string[pos] != ';')
@@ -867,7 +867,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		return -1;
 
 	bool needCheckNewWaypoint = false;
-	int wpIndex = isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
+	const int wpIndex = isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
 
 	const float traceCheckTime = isPlayer ? g_clients[i].getWPTime : g_entityGetWpTime[i];
 	const Vector getWpOrigin = isPlayer ? g_clients[i].getWpOrigin : g_entityGetWpOrigin[i];
@@ -886,7 +886,7 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 		else
 		{
 			distance = (g_waypoint->GetPath(wpIndex)->origin - origin).GetLength();
-			float wpRadius = g_waypoint->GetPath(wpIndex)->radius;
+			const float wpRadius = g_waypoint->GetPath(wpIndex)->radius;
 
 			if (distance > wpRadius && traceCheckTime + 1.2f <= g_pGlobals->time)
 				needCheckNewWaypoint = true;
@@ -905,22 +905,22 @@ int SetEntityWaypoint(edict_t *ent, int mode)
 	if (!needCheckNewWaypoint)
 		return isPlayer ? g_clients[i].wpIndex : g_entityWpIndex[i];
 
-	int wpIndex2 = -1;
+	int wpIndex1, wpIndex2 = -1;
 
 	if (mode == -1)
-		wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);
+		wpIndex1 = g_waypoint->FindNearest(origin, 9999.0f, -1, ent);
 	else
-		wpIndex = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex2, mode);
+		wpIndex1 = g_waypoint->FindNearest(origin, 9999.0f, -1, ent, &wpIndex2, mode);
 
 	if (!isPlayer)
 	{
-		g_entityWpIndex[i] = (wpIndex2 == -1) ? wpIndex : wpIndex2;
+		g_entityWpIndex[i] = (wpIndex2 == -1) ? wpIndex1 : wpIndex2;
 		g_entityGetWpOrigin[i] = origin;
 		g_entityGetWpTime[i] = g_pGlobals->time + 1.5f;
 	}
 	else
 	{
-		g_clients[i].wpIndex = wpIndex;
+		g_clients[i].wpIndex = wpIndex1;
 		g_clients[i].wpIndex2 = wpIndex2;
 		g_clients[i].getWpOrigin = origin;
 		g_clients[i].getWPTime = g_pGlobals->time + 1.5f;
@@ -1031,7 +1031,7 @@ int IsNotAttackLab(edict_t *entity, Vector attackOrigin)
 	// SyPB Pro P.29 - New Invisible get
 	if (entity->v.rendermode == kRenderTransAlpha)
 	{
-		float renderamt = entity->v.renderamt;
+		const float renderamt = entity->v.renderamt;
 
 		if (renderamt <= 30)
 			return true;
@@ -1039,7 +1039,7 @@ int IsNotAttackLab(edict_t *entity, Vector attackOrigin)
 		if (renderamt > 160)
 			return false;
 
-		float enemy_distance = (GetEntityOrigin(entity) - attackOrigin).GetLength();
+		const float enemy_distance = (GetEntityOrigin(entity) - attackOrigin).GetLength();
 		return (renderamt <= (enemy_distance / 5)) ? 2 : 0;
 	}
 
@@ -1483,11 +1483,10 @@ void DebugModeMsg(void)
 		return;
 
 	const int client = ENTINDEX(g_hostEntity) - 1;
-	Vector src = nullvec;
 
 	if (g_clients[client].wpIndex != -1)
 	{
-		src = g_waypoint->GetPath(g_clients[client].wpIndex)->origin;
+		const Vector src = g_waypoint->GetPath(g_clients[client].wpIndex)->origin;
 		engine->DrawLine(g_hostEntity, src, src + Vector(0.0f, 0.0f, 40.0f),
 			Color(255, 255, 0, 100), 15, 0, 8, 1, LINE_SIMPLE);
 	}
@@ -1542,7 +1541,7 @@ bool FindNearestPlayer (void **pvHolder, edict_t *to, float searchDistance, bool
       if ((sameTeam && GetTeam (ent) != GetTeam (to)) || (isAlive && !IsAlive (ent)) || (needBot && !IsValidBot (ent)) || (needDrawn && (ent->v.effects & EF_NODRAW)))
          continue; // filter players with parameters
 
-      float distance = (GetEntityOrigin (ent) - GetEntityOrigin (to)).GetLength ();
+      const float distance = (GetEntityOrigin (ent) - GetEntityOrigin (to)).GetLength ();
 
       if (distance < nearestPlayer)
       {
@@ -1584,7 +1583,7 @@ void SoundAttachToThreat (edict_t *ent, const char *sample, float volume)
          if (!(g_clients[i].flags & CFLAG_USED) || !(g_clients[i].flags & CFLAG_ALIVE))
             continue;
 
-         float distance = (GetEntityOrigin (g_clients[i].ent) - origin).GetLength ();
+         const float distance = (GetEntityOrigin (g_clients[i].ent) - origin).GetLength ();
 
          // now find nearest player
          if (distance < nearestDistance)
@@ -1663,7 +1662,7 @@ void SoundSimulateUpdate (int playerIndex)
 
    edict_t *player = g_clients[playerIndex].ent;
 
-   float velocity = player->v.velocity.GetLength2D ();
+   const float velocity = player->v.velocity.GetLength2D ();
    float hearDistance = 0.0f;
    float timeSound = 0.0f;
    float timeMaxSound = 0.5f;
@@ -1736,12 +1735,12 @@ int GetWeaponReturn (bool needString, const char *weaponAlias, int weaponID)
    // structure definition for weapon tab
    struct WeaponTab_t
    {
-      Weapon weaponID; // weapon id
+      const Weapon weaponID; // weapon id
       const char *alias; // weapon alias
    };
 
    // weapon enumeration
-   WeaponTab_t weaponTab[] =
+   const WeaponTab_t weaponTab[] =
    {
       {WEAPON_USP, "usp"}, // HK USP .45 Tactical
       {WEAPON_GLOCK18, "glock"}, // Glock18 Select Fire

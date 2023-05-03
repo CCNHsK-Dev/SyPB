@@ -198,8 +198,8 @@ void BotExperience::DrawText (int index, char storage[4096], int &length)
       return;
 
    // if waypoint is not changed display experience also
-   int dangerIndexCT = GetDangerIndex (index, index, TEAM_COUNTER);
-   int dangerIndexT = GetDangerIndex (index, index, TEAM_TERRORIST);
+   const int dangerIndexCT = GetDangerIndex (index, index, TEAM_COUNTER);
+   const int dangerIndexT = GetDangerIndex (index, index, TEAM_TERRORIST);
 
    length += sprintf (&storage[length],
       "      Experience Info:\n"
@@ -215,7 +215,7 @@ void BotExperience::DrawLines (int nearest, Path *path)
 
    for (int t = 0; t < TEAM_COUNT; t++)
    {
-      int index = GetDangerIndex (nearest, nearest, t);
+      const int index = GetDangerIndex (nearest, nearest, t);
 
       if (index != -1)
          engine->DrawLine (g_hostEntity, path->origin, g_waypoint->GetPath (index)->origin, Color (t == TEAM_COUNTER ? 0 : 255, 0, t == TEAM_COUNTER ? 255 : 0, 200), 15, 0, 0, 10, LINE_ARROW); // draw a arrow to this index's danger point
@@ -226,7 +226,7 @@ void BotExperience::CollectValidDamage (int index, int team)
 {
    SetDamage (index, index, GetDamage (index, index, team) + 100, team);
 
-   Path *path = g_waypoint->GetPath (index);
+   const Path *path = g_waypoint->GetPath (index);
 
    // affect nearby connected with victim waypoints
    for (int i = 0; i < Const_MaxPathIndex; i++)

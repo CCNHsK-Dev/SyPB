@@ -38,11 +38,11 @@ void StripTags (char *buffer)
    // this function strips 'clan' tags specified below in given string buffer
 
    // first three tags for Enhanced POD-Bot (e[POD], 3[POD], E[POD])
-   char *tagOpen[] = {"e[P", "3[P", "E[P", "-=", "-[", "-]", "-}", "-{", "<[", "<]", "[-", "]-", "{-", "}-", "[[", "[", "{", "]", "}", "<", ">", "-", "|", "=", "+"};
-   char *tagClose[] = {"]", "]", "]", "=-", "]-", "[-", "{-", "}-", "]>", "[>", "-]", "-[", "-}", "-{", "]]", "]", "}", "[", "{", ">", "<", "-", "|", "=", "+"};
+   const char *tagOpen[] = {"e[P", "3[P", "E[P", "-=", "-[", "-]", "-}", "-{", "<[", "<]", "[-", "]-", "{-", "}-", "[[", "[", "{", "]", "}", "<", ">", "-", "|", "=", "+"};
+   const char *tagClose[] = {"]", "]", "]", "=-", "]-", "[-", "{-", "}-", "]>", "[>", "-]", "-[", "-}", "-{", "]]", "]", "}", "[", "{", ">", "<", "-", "|", "=", "+"};
 
    int index, fieldStart, fieldStop, i;
-   int length = strlen (buffer); // get length of string
+   const int length = strlen (buffer); // get length of string
 
    // foreach known tag...
    for (index = 0; index < ARRAYSIZE_HLSDK (tagOpen); index++)
@@ -146,7 +146,7 @@ void HumanizeChat (char *buffer)
       // "length / 2" percent of time drop a character
       if (GetRandomInt (1, 100) < (length / 2))
       {
-         int pos = GetRandomInt ((length / 8), length - (length / 8)); // chose random position in string
+         const int pos = GetRandomInt ((length / 8), length - (length / 8)); // chose random position in string
 
          for (i = pos; i < length - 1; i++)
             buffer[i] = buffer[i + 1]; // overwrite the buffer with stripped string
@@ -158,8 +158,8 @@ void HumanizeChat (char *buffer)
       // "length" / 4 precent of time swap character
       if (GetRandomInt (1, 100) < (length / 4))
       {
-         int pos = GetRandomInt ((length / 8), ((3 * length) / 8)); // choose random position in string
-         char ch = buffer[pos]; // swap characters
+         const int pos = GetRandomInt ((length / 8), ((3 * length) / 8)); // choose random position in string
+         const char ch = buffer[pos]; // swap characters
 
          buffer[pos] = buffer[pos + 1];
          buffer[pos + 1] = ch;
@@ -177,8 +177,8 @@ void Bot::PrepareChatMessage (char *text)
 
    memset (&m_tempStrings, 0, sizeof (m_tempStrings));
 
-   char *textStart = text;
-   char *pattern = text;
+   const char *textStart = text;
+   const char *pattern = text;
 
    edict_t *talkEntity = null;
 

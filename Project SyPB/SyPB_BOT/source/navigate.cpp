@@ -469,7 +469,7 @@ bool Bot::DoWaypointNav (void)
    // SyPB Pro P.45 - Waypoint Door improve
    bool haveDoorEntity = false;
    edict_t *door_entity = null;
-   while (!FNullEnt(door_entity = FIND_ENTITY_IN_SPHERE(door_entity, pev->origin, waypointDistance)))
+   while (!FNullEnt(door_entity = FIND_ENTITY_IN_SPHERE(door_entity, pev->origin, 150.0f)))
    {
 	   if (strncmp(STRING(door_entity->v.classname), "func_door", 9) == 0)
 	   {
@@ -1234,7 +1234,7 @@ void Bot::SetWaypointOrigin(void)
 				waypointOrigin[i] += Vector(GetRandomFloat(-radius, radius), GetRandomFloat(-radius, radius), 0.0f);
 			}
 
-			int destIndex = m_navNode->next->index;
+			const int destIndex = m_navNode->next->index;
 
 			float sDistance = 9999.0f;
 			for (int i = 0; i < 5; i++)
@@ -1671,7 +1671,7 @@ void Bot::HeadTowardWaypoint(void)
 			if (m_navNodeStart != m_navNode)
 			{
 				GetBestNextWaypoint();
-				int taskID = GetCurrentTask()->taskID;
+				const int taskID = GetCurrentTask()->taskID;
 
 				m_minSpeed = m_iMaxSpeed;
 
