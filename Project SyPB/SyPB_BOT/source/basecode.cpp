@@ -3269,21 +3269,26 @@ void Bot::Think(void)
 
 	if (m_playerFps <= g_pGlobals->time)
 	{
+		m_playerFps = g_pGlobals->time + 1.0f / 60.0f;
 		if (m_thinkFps <= g_pGlobals->time)
 		{
-			ThinkFrame();
 			m_thinkFps = g_pGlobals->time + 1.0f / 20.0f;
+			ThinkFrame();
 		}
 		else if (!g_botActionStop && m_botMovement)
 		{
+			DoWaypointNav();
 			ChooseAimDirection();
 			FacePosition();
+
+			m_moveAngles = (m_destOrigin - (pev->origin + pev->velocity * m_frameInterval)).ToAngles();
+			m_moveAngles.ClampAngles();
+			m_moveAngles.x *= -1.0f;
 		}
 
 		MoveAction();
 
 		RunPlayerMovement();
-		m_playerFps = g_pGlobals->time + 1.0f / 60.0f;
 		BotDebugModeMsg();
 	} 
 }
@@ -3410,9 +3415,13 @@ void Bot::MoveAction(void)
 
 	if (m_jumpTime > g_pGlobals->time)
 	{
-		m_buttonFlags |= IN_DUCK;
+		const bool onFloor = IsOnFloor();
+		const bool onLadder = IsOnLadder();
 
-		if (!m_jumpFinished && (IsOnFloor () || IsOnLadder() || IsInWater()))
+		if (!onFloor && !onLadder)
+			m_buttonFlags |= IN_DUCK;
+
+		if (!m_jumpFinished && (onFloor || onLadder || IsInWater()))
 			m_jumpTime = g_pGlobals->time;
 	}
 	if (m_buttonFlags & IN_JUMP)
@@ -5482,7 +5491,7 @@ void Bot::BotAI(void)
 
          if (m_moveAngles.x > 60.0f)
 			 m_buttonFlags |= IN_DUCK;
-         else if (m_moveAngles.x < -60.0f)
+		 else if (m_moveAngles.x < -60.0f)
 			 m_buttonFlags |= IN_JUMP;
       }
    }
