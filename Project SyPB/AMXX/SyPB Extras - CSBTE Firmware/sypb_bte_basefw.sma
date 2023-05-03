@@ -3,39 +3,46 @@
  * SyPB Extras - CSBTE Base Firmware
  
  * Support Version
- *  SyPB Version: Beta 1.46 or new veriosn
- *  SyPB API Version: 1.42 or new veriosn
+ *  SyPB Version: Beta 1.50 or new veriosn
+ *  SyPB API Version: 1.50 or new veriosn
  *  CSBTE: N/A
  */
 
 #include <amxmodx>
-#include <sypb>
+#include <amxmisc>
 #include <fakemeta>
+#include <sypb>
 
 #define PLUGIN	"SyPB Extras - CSBTE Base Firmware"
-#define VERSION	"1.20"
+#define VERSION	"1.30"
 #define AUTHOR	"HsK-Dev Blog By'CCN"
-
-// SyPB API Version 
-new const Float:supportAPI = 1.42;
 
 // Base for Firmware
 new bool:g_runSyPB = false;
 new bool:g_baseFirmware = false;
 
+// Get BTE Data
+new g_weaponCount, g_weaponModel[1024][255], g_weaponClip[1024];
+new g_knifeCount, g_knifeModel[1024][255], g_knifeAttackDistance[1024][2];
+
 // BTE Weapon Data
-new g_weaponname[32][64];
+new m_weaponname[32][64];
+
+// CVAR
+new cvar_devmode;
 
 public plugin_init()
 {	
 	register_plugin(PLUGIN, VERSION, AUTHOR);
-	
+
+	cvar_devmode = register_cvar("sypbapi_bte_dev","0");
+
 	register_event("CurWeapon", "event_cur_weapon", "be", "1=1");
 	
-	// Check The OS has not run the SyPB
+	// Check SyPB Running
 	g_runSyPB = is_run_sypb ();
 
-	firmwareCheck ();
+	firmwareCheck ();	
 }
 
 public firmwareCheck ()
@@ -48,40 +55,80 @@ public firmwareCheck ()
 		server_print("*** [SyPB Extras] CSBTE Firmware Stop ***");
 		return;
 	}
-		
-	g_baseFirmware = true;
-	
-	checkMapWaypoint ();
-}
 
-public checkMapWaypoint ()
-{
-	// Check SyPB would not play in the map
-	new mapname[32];
-	get_mapname(mapname, charsmax(mapname));
+	g_weaponCount = 0;
 	
-	new buffer[100];
-	formatex(buffer, charsmax(buffer), "addons/sypb/wptdefault/%s.pwf", mapname);
-	if (!file_exists(buffer))
+	if (!LoadINIFile ())
 	{
-		g_baseFirmware = false;
-		server_print("*** [SyPB Extras] SyPB not support the map ***");
+		server_print("*** [SyPB Extras] Setting File Wrong ***");
 		server_print("*** [SyPB Extras] CSBTE Firmware Stop ***");
-		
 		return;
 	}
-	
-	if (sypb_api_version () < supportAPI)
-	{
-		g_baseFirmware = false;
-		server_print("*** [SyPB Extras] SyPB API is old ***");
-		server_print("*** [SyPB Extras] CSBTE Firmware Stop ***");
-		
-		return;
-	}
-	
+
+	g_baseFirmware = true;
 	server_print("*** [SyPB Extras] CSBTE Firmware Loading - Done ***");
 	server_print("*** [SyPB Extras] CSBTE Firmware Running ***");
+}
+
+LoadINIFile ()
+{
+	new path[64];
+	get_configsdir(path, charsmax(path));
+	format(path, charsmax(path), "%s/SyPB_BTESetting.ini", path);
+
+	if (!file_exists(path))
+		return false;
+
+	new file, linedata[1024], section = 0;
+	file = fopen(path, "rt");
+
+	while (file && !feof(file))
+	{
+		fgets(file, linedata, charsmax(linedata));
+		replace(linedata, charsmax(linedata), "^n", "");
+		trim(linedata);
+
+		if(!linedata[0] || linedata[0] == ';' || (linedata[0] == '/' && linedata[1] == '/')) continue;
+
+		if (linedata[0] == '[')
+		{
+			section += 1;
+			continue;
+		}
+
+		switch(section)
+		{
+			// Gun Data
+			case 1:
+			{
+				new weaponModel[255], weaponClip[4];
+				strtok(linedata, weaponModel, charsmax(weaponModel), weaponClip, charsmax(weaponClip), ',');
+				format(g_weaponModel[g_weaponCount], 254, "models/%s.mdl", weaponModel);
+				g_weaponClip[g_weaponCount] = str_to_num(weaponClip);
+				g_weaponCount++;
+			}
+			// Knife Data
+			case 2:
+			{
+				new weaponModel[255], attack1Distance[4], attack2Distance[4], value[255];
+				strtok(linedata, weaponModel, charsmax(weaponModel), value, charsmax(value), ',');
+				strtok(value, attack1Distance, charsmax(attack1Distance), attack2Distance, charsmax(attack2Distance), ',');
+				format(g_knifeModel[g_knifeCount], 254, "models/%s.mdl", weaponModel);
+				g_knifeAttackDistance[g_knifeCount][0] = str_to_num(attack1Distance);
+				g_knifeAttackDistance[g_knifeCount][1] = str_to_num(attack2Distance);
+				g_knifeCount++;
+			}
+		}
+	}
+	if (file) fclose(file)
+
+	if (g_weaponCount <= 0 && g_knifeCount <= 0)
+		return false;
+
+	server_print("*** [SyPB Extras] CSBTE Firmware Weapon Data: %d ***", g_weaponCount);
+	server_print("*** [SyPB Extras] CSBTE Firmware  Knife Data: %d ***", g_knifeCount);
+
+	return true;
 }
 
 public event_cur_weapon(id)
@@ -89,204 +136,66 @@ public event_cur_weapon(id)
 	if (!g_baseFirmware)
 		return;
 
-	if (!is_user_alive(id) || !is_user_sypb (id))
+	if (!is_user_alive(id))
 		return;
 	
 	new weap_id, weap_clip, weap_bpammo;
 	weap_id = get_user_weapon(id, weap_clip, weap_bpammo);
-	if ((1<<weap_id) & (((1<<CSW_HEGRENADE)|(1<<CSW_FLASHBANG)|(1<<CSW_SMOKEGRENADE)|(1<<CSW_C4)))
+	if ((1<<weap_id) & ((1<<CSW_HEGRENADE)|(1<<CSW_FLASHBANG)|(1<<CSW_SMOKEGRENADE)|(1<<CSW_C4)))
 		return;
 		
 	static weaponname[64];
 	pev(id, pev_viewmodel2, weaponname, 63);
-	
-	if (strcmp (weaponname, g_weaponname[id]) == 0)
+	if (strcmp (weaponname, m_weaponname[id]) == 0)
 		return;
-	
-	g_weaponname[id] = weaponname;
+
+	m_weaponname[id] = weaponname;
 	
 	// Knife Setting
-	if ((1<<weap_id) & (1<<CSW_KNIFE)))
+	if ((1<<weap_id) & (1<<CSW_KNIFE))
 	{
-		
+		new kad1 = 0, kad2 = 0;
+		for (new i = 0; i < g_knifeCount; i++)
+		{
+			if (strcmp (weaponname, g_knifeModel[i]) != 0)
+				continue;
+
+			kad1 = g_knifeAttackDistance[i][0];
+			kad2 = g_knifeAttackDistance[i][1];
+			break;
+		}
+
+		sypb_set_ka_distance (id, kad1, kad2);
+
+		if (!is_user_bot (id) && get_pcvar_num(cvar_devmode))
+		{
+			if (kad1 == 0 && kad2 == 0)
+				client_print(id, print_center, "knife model: %s | No Data", weaponname);
+			else
+				client_print(id, print_center, "knife model: %s | Kad: %d , %d", weaponname, kad1, kad2);
+		}
+
 		return;
 	}
-	
-	// Gun Setting
-	if (strcmp (weaponname, "models/v_railcannon.mdl") == 0)
-		sypb_set_weapon_clip (id, 12);
-	else if (strcmp (weaponname, "models/v_m1918bar.mdl") == 0)
-		sypb_set_weapon_clip (id, 20);
-	else if (strcmp (weaponname, "models/v_m1911a1.mdl") == 0)
-		sypb_set_weapon_clip (id, 8);
-	else if (strcmp (weaponname, "models/v_mauserc96.mdl") == 0)
-		sypb_set_weapon_clip (id, 10);
-	else if (strcmp (weaponname, "models/v_mg42.mdl") == 0)
-		sypb_set_weapon_clip (id, 95);
-	else if (strcmp (weaponname, "models/v_mp40.mdl") == 0)
-		sypb_set_weapon_clip (id, 32);
-	else if (strcmp (weaponname, "models/v_mosin.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_halo_smg.mdl") == 0)
-		sypb_set_weapon_clip (id, 60);
-	else if (strcmp (weaponname, "models/v_sfpistol.mdl") == 0)
-		sypb_set_weapon_clip (id, 50);
-	else if (strcmp (weaponname, "models/v_petrolboomer.mdl") == 0)
-		sypb_set_weapon_clip (id, 20);
-	else if (strcmp (weaponname, "models/v_cannon.mdl") == 0)
-		sypb_set_weapon_clip (id, 20);
-	else if (strcmp (weaponname, "models/v_gatling.mdl") == 0)
-		sypb_set_weapon_clip (id, 40);
-	else if (strcmp (weaponname, "models/v_crossbow.mdl") == 0)
-		sypb_set_weapon_clip (id, 50);
-	else if (strcmp (weaponname, "models/v_chainsaw.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_bow.mdl") == 0)
-		sypb_set_weapon_clip (id, 60);
-	else if (strcmp (weaponname, "models/v_drillgun.mdl") == 0)
-		sypb_set_weapon_clip (id, 1);
-	else if (strcmp (weaponname, "models/v_speargun.mdl") == 0)
-		sypb_set_weapon_clip (id, 30);
-	else if (strcmp (weaponname, "models/v_balrog1.mdl") == 0)
-		sypb_set_weapon_clip (id, 10);
-	else if (strcmp (weaponname, "models/v_balrog3.mdl") == 0)
-		sypb_set_weapon_clip (id, 30);
-	else if (strcmp (weaponname, "models/v_balrog5.mdl") == 0)
-		sypb_set_weapon_clip (id, 40);
-	else if (strcmp (weaponname, "models/v_balrog7.mdl") == 0)
-		sypb_set_weapon_clip (id, 120);
-	else if (strcmp (weaponname, "models/v_balrog11.mdl") == 0)
-		sypb_set_weapon_clip (id, 7);
-	else if (strcmp (weaponname, "models/v_skull1.mdl") == 0)
-		sypb_set_weapon_clip (id, 7);
-	else if (strcmp (weaponname, "models/v_skull3.mdl") == 0)
-		sypb_set_weapon_clip (id, 35);
-	else if (strcmp (weaponname, "models/v_skull3_2.mdl") == 0)
-		sypb_set_weapon_clip (id, 70);
-	else if (strcmp (weaponname, "models/v_skull4.mdl") == 0)
-		sypb_set_weapon_clip (id, 48);
-	else if (strcmp (weaponname, "models/v_skull5.mdl") == 0)
-		sypb_set_weapon_clip (id, 24);
-	else if (strcmp (weaponname, "models/v_skull6.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_m249ex.mdl") == 0)
-		sypb_set_weapon_clip (id, 120);
-	else if (strcmp (weaponname, "models/v_skull11.mdl") == 0)
-		sypb_set_weapon_clip (id, 28);
-	else if (strcmp (weaponname, "models/v_sfgun.mdl") == 0)
-		sypb_set_weapon_clip (id, 45);
-	else if (strcmp (weaponname, "models/v_sfsmg.mdl") == 0)
-		sypb_set_weapon_clip (id, 35);
-	else if (strcmp (weaponname, "models/v_sfmg.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_sfsniper.mdl") == 0)
-		sypb_set_weapon_clip (id, 20);
-	else if (strcmp (weaponname, "models/v_deaglered.mdl") == 0)
-		sypb_set_weapon_clip (id, 7);
-	else if (strcmp (weaponname, "models/v_glockred.mdl") == 0)
-		sypb_set_weapon_clip (id, 20);
-	else if (strcmp (weaponname, "models/v_at4ex.mdl") == 0)
-		sypb_set_weapon_clip (id, 1);
-	else if (strcmp (weaponname, "models/v_at4.mdl") == 0)
-		sypb_set_weapon_clip (id, 1);
-	else if (strcmp (weaponname, "models/v_bazooka.mdl") == 0)
-		sypb_set_weapon_clip (id, 20);
-	else if (strcmp (weaponname, "models/v_flamethrower.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_watercannon.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_infinitysr.mdl") == 0)
-		sypb_set_weapon_clip (id, 15);
-	else if (strcmp (weaponname, "models/v_luger.mdl") == 0)
-		sypb_set_weapon_clip (id, 8);
-	else if (strcmp (weaponname, "models/v_lugerg.mdl") == 0)
-		sypb_set_weapon_clip (id, 8);
-	else if (strcmp (weaponname, "models/v_lugers.mdl") == 0)
-		sypb_set_weapon_clip (id, 16);
-	else if (strcmp (weaponname, "models/v_waterpistol.mdl") == 0)
-		sypb_set_weapon_clip (id, 40);
-	else if (strcmp (weaponname, "models/v_tknife.mdl") == 0)
-		sypb_set_weapon_clip (id, 30);
-	else if (strcmp (weaponname, "models/v_tknifeex.mdl") == 0)
-		sypb_set_weapon_clip (id, 30);
-	else if (strcmp (weaponname, "models/v_tknifeex2.mdl") == 0)
-		sypb_set_weapon_clip (id, 30);
-	else if (strcmp (weaponname, "models/v_coilgun.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_mp7a160r.mdl") == 0)
-		sypb_set_weapon_clip (id, 60);
-	else if (strcmp (weaponname, "models/v_g11.mdl") == 0)
-		sypb_set_weapon_clip (id, 50);
-	else if (strcmp (weaponname, "models/v_m16a1ep.mdl") == 0)
-		sypb_set_weapon_clip (id, 31);
-	else if (strcmp (weaponname, "models/v_plasmagun.mdl") == 0)
-		sypb_set_weapon_clip (id, 45);
-	else if (strcmp (weaponname, "models/v_cheytaclrrs.mdl") == 0)
-		sypb_set_weapon_clip (id, 30);
-	else if (strcmp (weaponname, "models/v_wa2000.mdl") == 0)
-		sypb_set_weapon_clip (id, 12);
-	else if (strcmp (weaponname, "models/v_wa2000g.mdl") == 0)
-		sypb_set_weapon_clip (id, 12);
-	else if (strcmp (weaponname, "models/v_as50.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_as50g.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_psg1.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_xm2010.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_m95xmas.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_svd.mdl") == 0)
-		sypb_set_weapon_clip (id, 10);
-	else if (strcmp (weaponname, "models/v_sprifle.mdl") == 0)
-		sypb_set_weapon_clip (id, 7);
-	else if (strcmp (weaponname, "models/v_m2.mdl") == 0)
-		sypb_set_weapon_clip (id, 250);
-	else if (strcmp (weaponname, "models/v_mg3.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_mg3g.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_mg3_xmas.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_janus7.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_m134.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_m134ex.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_m134_xmas.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else if (strcmp (weaponname, "models/v_hk23.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_hk23g.mdl") == 0)
-		sypb_set_weapon_clip (id, 120);
-	else if (strcmp (weaponname, "models/v_mg36.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_mg36g.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_mg36_xmas.mdl") == 0)
-		sypb_set_weapon_clip (id, 100);
-	else if (strcmp (weaponname, "models/v_pkm.mdl") == 0)
-		sypb_set_weapon_clip (id, 150);
-	else if (strcmp (weaponname, "models/v_aw50.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_r93.mdl") == 0)
-		sypb_set_weapon_clip (id, 5);
-	else if (strcmp (weaponname, "models/v_ak47_long.mdl") == 0)
-		sypb_set_weapon_clip (id, 60);
-	else if (strcmp (weaponname, "models/v_dmp7a1.mdl") == 0)
-		sypb_set_weapon_clip (id, 80);
-	else if (strcmp (weaponname, "models/v_poisongun.mdl") == 0)
-		sypb_set_weapon_clip (id, 200);
-	else
-		sypb_set_weapon_clip (id, 0);
+
+	new weaponClip = 0;
+	for (new i = 0; i < g_weaponCount; i++)
+	{
+		if (strcmp (weaponname, g_weaponModel[i]) != 0)
+			continue;
+
+		weaponClip = g_weaponClip[i];
+		break;
+	}
+
+	if (is_user_sypb (id))
+		sypb_set_weapon_clip (id, weaponClip);
+
+	if (!is_user_bot (id) && get_pcvar_num(cvar_devmode))
+	{
+		if (weaponClip == 0)
+			client_print(id, print_center, "weapon model: %s | No Data", weaponname);
+		else
+			client_print(id, print_center, "weapon model: %s | Clip: %d", weaponname, weaponClip);
+	}
 }
-
-
-
-
-
-
-
-
