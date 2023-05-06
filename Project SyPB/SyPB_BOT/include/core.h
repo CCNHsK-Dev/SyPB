@@ -35,6 +35,7 @@
 // $Id:$
 //
 
+#pragma once
 #ifndef SyPB_INCLUDED
 #define SyPB_INCLUDED
 
@@ -352,8 +353,8 @@ enum FightStyle
 };
 
 // bot known file headers
-const char FH_WAYPOINT[] = "PODWAY!";
-const char FH_VISTABLE[] = "PODVIS!";
+constexpr char FH_WAYPOINT[] = "PODWAY!";
+constexpr char FH_VISTABLE[] = "PODVIS!";
 
 constexpr int FV_WAYPOINT = 7;
 
@@ -424,15 +425,15 @@ struct NameItem
 // language config structure definition
 struct LanguageItem
 {
-   char *original; // original string
-   char *translated; // string to replace for
+   const char *original; // original string
+   const char *translated; // string to replace for
 };
 
 struct WeaponSelect
 {
    int id; // the weapon id value
-   char *weaponName; // name of the weapon when selecting it
-   char *modelName; // model name to separate cs weapons
+   const char *weaponName; // name of the weapon when selecting it
+   const char *modelName; // model name to separate cs weapons
    int price; // price when buying
    int minPrimaryAmmo; // minimum primary ammo
    int teamStandard; // used by team (number) (standard map)
@@ -473,7 +474,7 @@ struct FireDelay
 struct MenuText
 {
    int validSlots; // ored together bits for valid keys
-   char *menuText; // ptr to actual string
+   const char *menuText; // ptr to actual string
 };
 
 // array of clients struct
@@ -1304,7 +1305,7 @@ public:
    float GetPathDistanceFloat (int srcIndex, int destIndex);
 
    Path *GetPath (int id);
-   char *GetWaypointInfo (int id);
+   const char *GetWaypointInfo (int id);
    char *GetInfo (void) { return m_infoBuffer; }
 
    int AddGoalScore (int index, int other[4]);
@@ -1349,7 +1350,7 @@ extern bool IsAlive (edict_t *ent);
 extern bool IsInViewCone (Vector origin, edict_t *ent);
 extern bool IsValidBot (edict_t *ent);
 extern bool IsValidPlayer (edict_t *ent);
-extern bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant = false);
+extern bool OpenConfig (const char *fileName, const char *errorIfNotExists, File *outFile, bool languageDependant = false);
 extern bool FindNearestPlayer (void **holder, edict_t *to, float searchDistance = 4096.0, bool sameTeam = false, bool needBot = false, bool needAlive = false, bool needDrawn = false);
 
 extern void AutoLoadGameMode(bool reset = false);
@@ -1371,7 +1372,7 @@ extern void FakeClientCommand (edict_t *fakeClient, const char *format, ...);
 extern void strtrim (char *string);
 extern void CreatePath (char *path);
 extern void ServerCommand (const char *format, ...);
-extern void RegisterCommand (char *command, void funcPtr (void));
+extern void RegisterCommand (const char *command, void funcPtr (void));
 extern void CheckWelcomeMessage (void);
 extern void DetectCSVersion (void);
 extern void PlaySound (edict_t *ent, const char *soundName);
@@ -1389,7 +1390,7 @@ extern void SetEntityActionData(int i, int index = -1, int team = -1, int action
 extern void API_TestMSG(const char *format, ...);
 
 extern void AddLogEntry (int logLevel, const char *format, ...);
-extern void MOD_AddLogEntry(int mode, char *format);
+extern void MOD_AddLogEntry(int mode, const char *format);
 
 extern int GetRandomInt(int min, int max);
 extern float GetRandomFloat(float min, float max);

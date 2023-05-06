@@ -207,9 +207,9 @@ const char *GetModName(void)
 	return &modName[0];
 }
 
-void ErrorWindows(char *text)
+void ErrorWindows(const char *text)
 {
-	int button = ::MessageBox(null, text, "SwNPC Error", MB_YESNO | MB_TOPMOST | MB_ICONINFORMATION);
+	const int button = ::MessageBox(null, text, "SwNPC Error", MB_YESNO | MB_TOPMOST | MB_ICONINFORMATION);
 	if (button == IDYES)
 		exit(1);
 }

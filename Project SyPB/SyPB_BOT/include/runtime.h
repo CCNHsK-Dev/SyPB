@@ -100,7 +100,7 @@ typedef unsigned short uint16_t;
 // Returns:
 //   Formatted buffer.
 //
-inline char *FormatBuffer (char *format, ...)
+inline char *FormatBuffer (const char *format, ...)
 {
    static char buffer[1024];
    va_list ap;
@@ -815,6 +815,63 @@ namespace Math
    }
 } */
 
+class Random : public Singleton <Random> {
+private:
+    uint64 div_{ static_cast <uint64> (1) << 32ull };
+    uint64 state_{ static_cast <uint64> (time(nullptr)) };
+
+public:
+    explicit Random() {
+        warmup();
+    }
+    ~Random() = default;
+
+private:
+    uint64 wyrand64() {
+        constexpr uint64 wyp0 = 0xa0761d6478bd642full, wyp1 = 0xe7037ed1a0b428dbull;
+        state_ += wyp0;
+
+        return mul(state_ ^ wyp1, state_);
+    }
+
+    uint32 wyrand32() {
+        return static_cast <uint32> (wyrand64());
+    }
+
+    void warmup() {
+        for (auto i = 0; i < 32; ++i) {
+            state_ ^= wyrand64();
+        }
+    }
+
+private:
+    uint64_t rotr(uint64 v, uint32 k) {
+        return (v >> k) | (v << (64 - k));
+    }
+
+    uint64 mul(uint64 a, uint64 b) {
+        const uint64 hh = (a >> 32) * (b >> 32);
+        const uint64 hl = (b >> 32) * static_cast <uint32> (b);
+
+        const uint64 lh = static_cast <uint32> (a) * (b >> 32);
+        const uint64 ll = static_cast <uint64> (static_cast <double> (a) * static_cast <double> (b));
+
+        return rotr(hl, 32) ^ rotr(lh, 32) ^ hh ^ ll;
+    }
+
+public:
+    int RandomNum(int min, int max)
+    {
+        return static_cast <int> (wyrand32() * (static_cast <double> (max) - static_cast <double> (min) + 1.0) / div_ + static_cast <double> (min));
+    }
+
+    float RandomNum(float min, float max)
+    {
+        return static_cast <float> (wyrand32() * (static_cast <double> (max) - static_cast <double> (min)) / (div_ - 1) + static_cast <double> (min));
+    }
+};
+#define g_random Random::GetObjectPtr ()
+
 //
 // Class: Array
 //  Universal template array container.
@@ -1347,23 +1404,10 @@ public:
 		return true;
 	}
 
-	//
-	// Function: GetRandomElement
-	//  Gets the random element from the array.
-	//
-	// Returns:
-	//  Random element reference.
-	//
-	T &GetRandomElement(void) const
-	{
-#if defined (_WIN32)
-        return m_elements[(*g_engfuncs.pfnRandomLong) (0, m_itemCount - 1)];
-#else
-        srand(time(nullptr));
-        int val = rand() % ((m_itemCount - 1) + 1);
-        return m_elements[val];
-#endif
-	}
+    T& GetRandomElement(void) const
+    {
+        return m_elements[g_random->RandomNum(0, m_itemCount - 1)];
+    }
 
 	Array <T> &operator = (const Array <T> &other)
 	{
@@ -3116,7 +3160,6 @@ template <typename T1, typename T2> inline Pair <T1, T2> MakePair (T1 first, T2 
 {
    return Pair <T1, T2> (first, second);
 }
-
 
 // @DEPRECATEME@
 #define ITERATE_ARRAY(arrayName, iteratorName) \

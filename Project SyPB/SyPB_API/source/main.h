@@ -13,9 +13,9 @@ extern AMX_NATIVE_INFO sypb_natives[];
 
 void SyPBDataLoad(void);
 
-void ErrorWindows(char *text);
+void ErrorWindows(const char *text);
 
 // Error Log
-int LogToFile(char *szLogText, ...);
+int LogToFile(const char *szLogText, ...);
 
 #endif // MAIN_H

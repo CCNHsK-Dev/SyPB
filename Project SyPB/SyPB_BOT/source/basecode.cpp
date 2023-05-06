@@ -3338,7 +3338,7 @@ void Bot::ThinkFrame(void)
             m_lastChatTime = g_pGlobals->time;
             g_lastChatTime = g_pGlobals->time;
 
-            char *pickedPhrase = g_chatFactory[CHAT_DEAD].GetRandomElement ();
+			char* pickedPhrase = g_chatFactory[CHAT_DEAD].GetRandomElement();
             bool sayBufferExists = false;
 
             // search for last messages, sayed
@@ -5704,7 +5704,7 @@ void Bot::ChatMessage (int type, bool isTeamSay)
    if (g_chatFactory[type].IsEmpty () || !sypb_chat.GetBool ())
       return;
 
-   const char *pickedPhrase = g_chatFactory[type].GetRandomElement ();
+   const char *pickedPhrase = g_chatFactory[type].GetRandomElement();
 
    if (IsNullString (pickedPhrase))
       return;
@@ -5953,10 +5953,10 @@ void Bot::CheckSilencer (void)
 {
    if ((m_currentWeapon == WEAPON_USP && m_skill < 90) || m_currentWeapon == WEAPON_M4A1 && !HasShield ())
    {
-      const int random = (m_personality == PERSONALITY_RUSHER ? 35 : 65);
+      const int randomNum = (m_personality == PERSONALITY_RUSHER ? 35 : 65);
 
       // aggressive bots don't like the silencer
-      if (GetRandomInt (1, 100) <= (m_currentWeapon == WEAPON_USP ? random / 3 : random))
+      if (GetRandomInt (1, 100) <= (m_currentWeapon == WEAPON_USP ? randomNum / 3 : randomNum))
       {
          if (pev->weaponanim > 6) // is the silencer not attached...
 			 m_buttonFlags |= IN_ATTACK2; // attach the silencer

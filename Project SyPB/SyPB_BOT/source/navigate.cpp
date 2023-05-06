@@ -255,7 +255,7 @@ TacticChoosen:
    {
       for (int i = 0; i < 4; i++)
       {
-         goalChoices[i] = defensiveWpts.GetRandomElement ();
+		  goalChoices[i] = defensiveWpts.GetRandomElement();
          InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
       }
    }
@@ -266,7 +266,7 @@ TacticChoosen:
       {
          for (int i = 0; i < 4; i++)
          {
-            goalChoices[i] = g_waypoint->m_sniperPoints.GetRandomElement ();
+			 goalChoices[i] = g_waypoint->m_sniperPoints.GetRandomElement();
             InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
          }
       }
@@ -274,8 +274,8 @@ TacticChoosen:
       {
          for (int i = 0; i < 4; i++)
          {
-            goalChoices[i] = g_waypoint->m_campPoints.GetRandomElement ();
-            InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
+			 goalChoices[i] = g_waypoint->m_campPoints.GetRandomElement();
+			 InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
          }
       }
    }
@@ -283,8 +283,8 @@ TacticChoosen:
    {
       for (int i = 0; i < 4; i++)
       {
-         goalChoices[i] = offensiveWpts.GetRandomElement ();
-         InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
+		  goalChoices[i] = offensiveWpts.GetRandomElement();
+		  InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
       }
    }
    else if (tactic == 3 && !g_waypoint->m_goalPoints.IsEmpty ()) // map goal waypoint
@@ -312,8 +312,8 @@ TacticChoosen:
       {
          for (int i = 0; i < 4; i++)
          {
-            goalChoices[i] = g_waypoint->m_goalPoints.GetRandomElement ();
-            InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
+			 goalChoices[i] = g_waypoint->m_goalPoints.GetRandomElement();
+			 InternalAssert (goalChoices[i] >= 0 && goalChoices[i] < g_numWaypoints);
          }
       }
       else if (pev->weapons & (1 << WEAPON_C4))
@@ -328,7 +328,7 @@ TacticChoosen:
 	   int targetWpIndex = -1;
 	   float distance = 9999.9f;
 	   
-	   for (int i = 0; i <= offensiveWpts.GetElementNumber(); i++)
+	   for (int i = 0; i < offensiveWpts.GetElementNumber(); i++)
 	   {
 		   int wpIndex;
 		   offensiveWpts.GetAt(i, wpIndex);
@@ -440,7 +440,9 @@ bool Bot::DoWaypointNav (void)
    {
 	   if (!m_jumpFinished && (IsOnFloor () || IsOnLadder ()))
 	   {
+		   ServerPrint("Jump: %.0f %.0f %.0f", m_desiredVelocity.x, m_desiredVelocity.y, m_desiredVelocity.z);
 		   pev->velocity = m_desiredVelocity;
+
 		   m_buttonFlags |= IN_JUMP;
 
 		   m_jumpFinished = true;
@@ -567,7 +569,7 @@ bool Bot::DoWaypointNav (void)
    }
    
    if (desiredDistance < 22.0f && waypointDistance < 30.0f &&
-	   (pev->origin + (pev->velocity * m_frameInterval) - m_waypointOrigin).GetLengthSquared() >= (waypointDistance*waypointDistance))
+	   (m_waypointOrigin - (pev->origin + pev->velocity * m_frameInterval)).GetLengthSquared() >= (waypointDistance*waypointDistance))
 	   desiredDistance = waypointDistance + 1.0f; 
 
    // SyPB Pro P.42 - AMXX API
@@ -1373,7 +1375,7 @@ int Bot::ChooseBombWaypoint (void)
       if (g_waypoint->m_goalPoints.GetElementNumber () == 1)
          goal = g_waypoint->m_goalPoints[0];
       else
-         goal = goals.GetRandomElement ();
+		  goal = goals.GetRandomElement();
 
       if (count++ >= goals.GetElementNumber ())
          break;
@@ -1485,7 +1487,7 @@ int Bot::FindDefendWaypoint (Vector origin, int posIndex)
    if (found.IsEmpty ())
       return GetRandomInt (0, g_numWaypoints - 1); // most worst case, since there a evil error in waypoints
 
-   return found.GetRandomElement ();
+   return found.GetRandomElement();
 }
 
 int Bot::FindCoverWaypoint (float maxDistance)

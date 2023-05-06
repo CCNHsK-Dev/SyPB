@@ -1295,9 +1295,6 @@ typedef enum
    GINFO_REALDLL_FULLPATH,
 } ginfo_t;
 
-
-
-
 typedef struct cvar_s
 {
    char *name;
@@ -1356,13 +1353,13 @@ typedef uint32 CRC32_t;
 // Engine hands this to DLLs for functionality callbacks
 typedef struct enginefuncs_s
 {
-   int (*pfnPrecacheModel) (char *s);
-   int (*pfnPrecacheSound) (char *s);
+   int (*pfnPrecacheModel) (const char *s);
+   int (*pfnPrecacheSound) (const char *s);
    void (*pfnSetModel) (edict_t * e, const char *m);
    int (*pfnModelIndex) (const char *m);
    int (*pfnModelFrames) (int modelIndex);
    void (*pfnSetSize) (edict_t * e, const float *rgflMin, const float *rgflMax);
-   void (*pfnChangeLevel) (char *s1, char *s2);
+   void (*pfnChangeLevel) (const char *s1, const char *s2);
    void (*pfnGetSpawnParms) (edict_t * ent);
    void (*pfnSaveSpawnParms) (edict_t * ent);
    float (*pfnVecToYaw) (const float *rgflVector);
@@ -1395,9 +1392,9 @@ typedef struct enginefuncs_s
    const char *(*pfnTraceTexture) (edict_t * pTextureEntity, const float *v1, const float *v2);
    void (*pfnTraceSphere) (const float *v1, const float *v2, int fNoMonsters, float radius, edict_t * pentToSkip, TraceResult * ptr);
    void (*pfnGetAimVector) (edict_t * ent, float speed, float *rgflReturn);
-   void (*pfnServerCommand) (char *str);
+   void (*pfnServerCommand) (const char *str);
    void (*pfnServerExecute) (void);
-   void (*pfnClientCommand) (edict_t * pentEdict, char *szFmt, ...);
+   void (*pfnClientCommand) (edict_t * pentEdict, const char *szFmt, ...);
    void (*pfnParticleEffect) (const float *org, const float *dir, float color, float count);
    void (*pfnLightStyle) (int style, char *val);
    int (*pfnDecalIndex) (const char *name);
@@ -1417,8 +1414,8 @@ typedef struct enginefuncs_s
    const char *(*pfnCVarGetString) (const char *szVarName);
    void (*pfnCVarSetFloat) (const char *szVarName, float flValue);
    void (*pfnCVarSetString) (const char *szVarName, const char *szValue);
-   void (*pfnAlertMessage) (ALERT_TYPE atype, char *szFmt, ...);
-   void (*pfnEngineFprintf) (void *pfile, char *szFmt, ...);
+   void (*pfnAlertMessage) (ALERT_TYPE atype, const char *szFmt, ...);
+   void (*pfnEngineFprintf) (void *pfile, const char *szFmt, ...);
    void *(*pfnPvAllocEntPrivateData) (edict_t * pentEdict, int32 cb);
    void *(*pfnPvEntPrivateData) (edict_t * pentEdict);
    void (*pfnFreeEntPrivateData) (edict_t * pentEdict);
@@ -1451,11 +1448,11 @@ typedef struct enginefuncs_s
    void (*pfnSetView) (const edict_t * pClient, const edict_t * pViewent);
    float (*pfnTime) (void);
    void (*pfnCrosshairAngle) (const edict_t * pClient, float pitch, float yaw);
-   uint8_t *(*pfnLoadFileForMe) (char *filename, int *pLength);
+   uint8_t *(*pfnLoadFileForMe) (const char *filename, int *pLength);
    void (*pfnFreeFile) (void *buffer);
    void (*pfnEndSection) (const char *pszSectionName);  // trigger_endsection
-   int (*pfnCompareFileTime) (char *filename1, char *filename2, int *iCompare);
-   void (*pfnGetGameDir) (char *szGetGameDir);
+   int (*pfnCompareFileTime) (const char *filename1, const char *filename2, int *iCompare);
+   void (*pfnGetGameDir) (const char *szGetGameDir);
    void (*pfnCvar_RegisterVariable) (cvar_t * variable);
    void (*pfnFadeClientVolume) (const edict_t * pentEdict, int fadePercent, int fadeOutSeconds, int holdTime, int fadeInSeconds);
    void (*pfnSetClientMaxspeed) (const edict_t * pentEdict, float fNewMaxspeed);
@@ -1465,19 +1462,19 @@ typedef struct enginefuncs_s
    //
    int (*pfnNumberOfEntities) (void);
    char *(*pfnGetInfoKeyBuffer) (edict_t * e);  // passing in null gets the serverinfo
-   char *(*pfnInfoKeyValue) (char *infobuffer, char *key);
-   void (*pfnSetKeyValue) (char *infobuffer, char *key, char *value);
-   void (*pfnSetClientKeyValue) (int clientIndex, char *infobuffer, char *key, char *value);
-   int (*pfnIsMapValid) (char *filename);
+   char *(*pfnInfoKeyValue) (const char *infobuffer, const char *key);
+   void (*pfnSetKeyValue) (const char *infobuffer, const char *key, const char *value);
+   void (*pfnSetClientKeyValue) (int clientIndex, const char *infobuffer, const char *key, const char *value);
+   int (*pfnIsMapValid) (const char *filename);
    void (*pfnStaticDecal) (const float *origin, int decalIndex, int entityIndex, int modelIndex);
-   int (*pfnPrecacheGeneric) (char *s);
+   int (*pfnPrecacheGeneric) (const char *s);
    int (*pfnGetPlayerUserId) (edict_t * e);     // returns the server assigned userid for this player.  useful for logging frags, etc.  returns -1 if the edict couldn't be found in the list of clients
    void (*pfnBuildSoundMsg) (edict_t * entity, int channel, const char *sample, float volume, float attenuation, int fFlags, int pitch, int msg_dest, int msg_type, const float *pOrigin, edict_t * ed);
    int (*pfnIsDedicatedServer) (void);  // is this a dedicated server?
    cvar_t *(*pfnCVarGetPointer) (const char *szVarName);
    unsigned int (*pfnGetPlayerWONId) (edict_t * e);     // returns the server assigned WONid for this player.  useful for logging frags, etc.  returns -1 if the edict couldn't be found in the list of clients
 
-   void (*pfnInfo_RemoveKey) (char *s, const char *key);
+   void (*pfnInfo_RemoveKey) (const char *s, const char *key);
    const char *(*pfnGetPhysicsKeyValue) (const edict_t * pClient, const char *key);
    void (*pfnSetPhysicsKeyValue) (const edict_t * pClient, const char *key, const char *value);
    const char *(*pfnGetPhysicsInfoString) (const edict_t * pClient);
@@ -1496,10 +1493,10 @@ typedef struct enginefuncs_s
    void (*pfnDeltaUnsetFieldByIndex) (struct delta_s * pFields, int fieldNumber);
    void (*pfnSetGroupMask) (int mask, int op);
    int (*pfnCreateInstancedBaseline) (int classname, struct entity_state_s * baseline);
-   void (*pfnCvar_DirectSet) (struct cvar_s * var, char *value);
+   void (*pfnCvar_DirectSet) (struct cvar_s * var, const char *value);
    void (*pfnForceUnmodified) (FORCE_TYPE type, float *mins, float *maxs, const char *filename);
    void (*pfnGetPlayerStats) (const edict_t * pClient, int *ping, int *packet_loss);
-   void (*pfnAddServerCommand) (char *cmd_name, void (*function) (void));
+   void (*pfnAddServerCommand) (const char *cmd_name, void (*function) (void));
 
     qboolean (*pfnVoice_GetClientListening) (int iReceiver, int iSender);
     qboolean (*pfnVoice_SetClientListening) (int iReceiver, int iSender, qboolean bListen);
@@ -1509,7 +1506,7 @@ typedef struct enginefuncs_s
    struct sequenceEntry_s *(*pfnSequenceGet) (const char *fileName, const char *entryName);
    struct sentenceEntry_s *(*pfnSequencePickSentence) (const char *groupName, int pickMethod, int *picked);
 
-   int (*pfnGetFileSize) (char *filename);
+   int (*pfnGetFileSize) (const char *filename);
    unsigned int (*pfnGetApproxWavePlayLen) (const char *filepath);
 
    int (*pfnIsCareerMatch) (void);
@@ -1527,9 +1524,9 @@ typedef struct enginefuncs_s
 // Passed to pfnKeyValue
 typedef struct KeyValueData_s
 {
-   char *szClassName;           // in: entity classname
-   char *szKeyName;             // in: name of key
-   char *szValue;               // in: value of key
+   const char *szClassName;           // in: entity classname
+   const char *szKeyName;             // in: name of key
+   const char *szValue;               // in: value of key
    int32 fHandled;              // out: DLL sets to true if key-value pair was understood
 } KeyValueData;
 
@@ -2083,13 +2080,13 @@ typedef struct
 
 typedef struct
 {
-   char *ifvers;
-   char *name;
-   char *version;
-   char *date;
-   char *author;
-   char *url;
-   char *logtag;
+   const char *ifvers;
+   const char *name;
+   const char *version;
+   const char *date;
+   const char *author;
+   const char *url;
+   const char *logtag;
    PLUG_LOADTIME loadable;
    PLUG_LOADTIME unloadable;
 } plugin_info_t;
@@ -2242,36 +2239,8 @@ C_DLLEXPORT int GetEngineFunctions_Post (enginefuncs_t * pengfuncsFromEngine, in
 #define MAKE_REQUESTID      (*gpMetaUtilFuncs->pfnMakeRequestID)
 #define GET_HOOK_TABLES    (*gpMetaUtilFuncs->pfnGetHookTables)
 
-
 // max buffer size for printed messages
 //#define MAX_LOGMSG_LEN  1024
-
-
-
-
-
-void inline UTIL_TraceLine (const Vector & start, const Vector & end, bool ignoreMonsters, bool ignoreGlass, edict_t * ignoreEntity, TraceResult * ptr)
-{
-
-   (*g_engfuncs.pfnTraceLine) (start, end, (ignoreMonsters ? 1 : 0) | (ignoreGlass ? 0x100 : 0), ignoreEntity, ptr);
-}
-
-void inline UTIL_TraceLine (const Vector & start, const Vector & end, bool ignoreMonsters, edict_t * ignoreEntity, TraceResult * ptr)
-{
-
-   (*g_engfuncs.pfnTraceLine) (start, end, ignoreMonsters ? 1 : 0, ignoreEntity, ptr);
-}
-
-void inline UTIL_TraceHull (const Vector & start, const Vector & end, bool ignoreMonsters, int hullNumber, edict_t * ignoreEntity, TraceResult * ptr)
-{
-
-   (*g_engfuncs.pfnTraceHull) (start, end, ignoreMonsters ? 1 : 0, hullNumber, ignoreEntity, ptr);
-}
-
-Vector UTIL_VecToAngles (const Vector & vec);
-
-
-
 
 #ifdef _WIN32
 #pragma once
@@ -2608,14 +2577,14 @@ inline void STOP_SOUND (edict_t * entity, int channel, const char *sample)
 
 inline char *ENTITY_KEYVALUE (edict_t * entity, char *key)
 {
-   char *ifbuf = GET_INFOKEYBUFFER (entity);
+   const char *ifbuf = GET_INFOKEYBUFFER (entity);
 
    return (INFOKEY_VALUE (ifbuf, key));
 }
 
 inline void ENTITY_SET_KEYVALUE (edict_t * entity, char *key, char *value)
 {
-   char *ifbuf = GET_INFOKEYBUFFER (entity);
+   const char *ifbuf = GET_INFOKEYBUFFER (entity);
 
    SET_CLIENT_KEYVALUE (ENTINDEX (entity), ifbuf, key, value);
 }
@@ -2630,7 +2599,7 @@ inline char *SERVERINFO (char *key)
 inline void SET_SERVERINFO (char *key, char *value)
 {
    edict_t *server = INDEXENT (0);
-   char *ifbuf = GET_INFOKEYBUFFER (server);
+   const char *ifbuf = GET_INFOKEYBUFFER (server);
 
    SET_SERVER_KEYVALUE (ifbuf, key, value);
 }
@@ -2645,7 +2614,7 @@ inline char *LOCALINFO (char *key)
 inline void SET_LOCALINFO (char *key, char *value)
 {
    edict_t *server = null;
-   char *ifbuf = GET_INFOKEYBUFFER (server);
+   const char *ifbuf = GET_INFOKEYBUFFER (server);
 
    SET_SERVER_KEYVALUE (ifbuf, key, value);
 }
@@ -2806,10 +2775,10 @@ public:
 
 class Entity
 {
-protected:
-   edict_t *m_ent;
 
 public:
+    edict_t* m_ent;
+
    inline Entity (void) : m_ent (null)
    {
       // nothing todo
@@ -3132,12 +3101,12 @@ public:
 
    inline bool operator == (const Entity &other) const
    {
-      return IsValid () && m_ent == other;
+      return IsValid () && m_ent == other.m_ent;
    }
 
    inline bool operator != (const Entity &other) const
    {
-      return m_ent != other;
+      return m_ent != other.m_ent;
    }
 
 public:

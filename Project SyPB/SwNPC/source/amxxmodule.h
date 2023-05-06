@@ -404,7 +404,7 @@ enum {
 // ***** declare functions *****
 
 #ifdef USE_METAMOD
-void UTIL_LogPrintf( char *fmt, ... );
+void UTIL_LogPrintf( const char *fmt, ... );
 void UTIL_HudMessage(CBaseEntity *pEntity, const hudtextparms_t &textparms, const char *pMessage);
 short FixedSigned16( float value, float scale );
 unsigned short FixedUnsigned16( float value, float scale );

@@ -76,7 +76,7 @@ typedef int(*_SetEntityAction) (int, int, int);
 _SetEntityAction Amxx_SetEntityAction;
 
 // API 1.42
-typedef void(*_AddLog) (char *);
+typedef void(*_AddLog) (const char *);
 _AddLog Amxx_AddLog;
 
 typedef int(*_SetBotGoal) (int, int);
@@ -97,7 +97,7 @@ float api_version = 0.0;
 
 void SyPBDataLoad (void)
 {
-	HMODULE dll = GetModuleHandle("sypb.dll");
+	const HMODULE dll = GetModuleHandle("sypb.dll");
 
 	if (!dll)
 	{
@@ -375,7 +375,7 @@ static cell AMX_NATIVE_CALL amxx_SetBotLookAt(AMX *amx, cell *params) // 1.30
 		return -2;
 
 	const int id = params[1];
-	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
+	const cell *cpVec1 = g_fn_GetAmxAddr(amx, params[2]);
 	const Vector lookAt = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 	
 	return Amxx_SetBotLookAt(id, lookAt);
@@ -472,7 +472,7 @@ static cell AMX_NATIVE_CALL amxx_GetOriginPoint(AMX *amx, cell *params) // 1.38
 	if (!Amxx_GetOriginPoint || api_version < float(1.38))
 		return -2;
 
-	cell *cpVec1 = g_fn_GetAmxAddr(amx, params[1]);
+	const cell *cpVec1 = g_fn_GetAmxAddr(amx, params[1]);
 	const Vector origin = Vector(amx_ctof((float)cpVec1[0]), amx_ctof((float)cpVec1[1]), amx_ctof((float)cpVec1[2]));
 
 	return Amxx_GetOriginPoint(origin);
@@ -610,7 +610,7 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ NULL, NULL },
 };
 
-int LogToFile(char *szLogText, ...)
+int LogToFile(const char *szLogText, ...)
 {
 	if (Amxx_AddLog)
 	{

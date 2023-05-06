@@ -11,8 +11,8 @@
 #include "extdll.h"
 
 // Error Log
-int LogToFile(char *szLogText, ...);
-void ErrorWindows(char *text);
+int LogToFile(const char *szLogText, ...);
+void ErrorWindows(const char *text);
 
 extern const char *GetModName(void);
 

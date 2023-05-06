@@ -367,7 +367,7 @@ bool CheckKeywords (char *tempMessage, char *reply)
                g_replyFactory[i].usedReplies.RemoveAll ();
 
             bool replyUsed = false;
-            const String &generatedReply = g_replyFactory[i].replies.GetRandomElement ();
+            const String& generatedReply = g_replyFactory[i].replies.GetRandomElement();
 
             // don't say this twice
             ITERATE_ARRAY (g_replyFactory[i].usedReplies, k)
@@ -391,8 +391,8 @@ bool CheckKeywords (char *tempMessage, char *reply)
    // didn't find a keyword? 70% of the time use some universal reply
    if (GetRandomInt (1, 100) < 70 && !g_chatFactory[CHAT_NOKW].IsEmpty ())
    {
-      strcpy (reply, g_chatFactory[CHAT_NOKW].GetRandomElement ());
-      return true;
+       strcpy(reply, g_chatFactory[CHAT_NOKW].GetRandomElement());
+       return true;
    }
    return false;
 }

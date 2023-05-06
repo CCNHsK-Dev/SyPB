@@ -4,7 +4,7 @@
 
 //#define NON_WORK_ON_NONPLAYER_ENTITY
 
-#define MAX_NPC 128
+constexpr int MAX_NPC = 128;
 
 #define null 0
 #define nullvec Vector (0.0f, 0.0f, 0.0f)
@@ -168,7 +168,7 @@ public:
 
 	int m_npcAS;
 	Vector m_npcSize[2];
-	char *m_ASName[AS_ALL][ASS_ALL];
+	const char *m_ASName[AS_ALL][ASS_ALL];
 
 	int m_actionSequence[AS_ALL][ASS_ALL];
 	float m_actionTime [AS_ALL][ASS_ALL];
@@ -361,8 +361,8 @@ public:
 	int FindNearest(Vector origin, float distance = 9999.0f);
 };
 
-const int TraceAttackOffset = 11;
-const int TakeDamageOffset = 12;
+constexpr int TraceAttackOffset = 11;
+constexpr int TakeDamageOffset = 12;
 
 // About Base NPC OS 
 extern bool g_swnpcRun;
@@ -405,23 +405,23 @@ extern int g_modelIndexArrow;
 // For char buffer....
 extern int apiBuffer;
 
-const int MAX_TEXTURES = 1024;
-const int MAX_TEXTURENAME_LENGHT = 17;   // only load first n chars of name
+constexpr int MAX_TEXTURES = 1024;
+constexpr int MAX_TEXTURENAME_LENGHT = 17;   // only load first n chars of name
 
 // Texture types
-const char CHAR_TEX_CONCRETE = 'C'; // Cinder block
-const char CHAR_TEX_METAL = 'M'; // Metal
-const char CHAR_TEX_DIRT = 'D';
-const char CHAR_TEX_VENT = 'V';
-const char CHAR_TEX_GRATE = 'G';
-const char CHAR_TEX_TILE = 'T'; // Ceiling tile
-const char CHAR_TEX_SLOSH = 'S';
-const char CHAR_TEX_WOOD = 'W';
-const char CHAR_TEX_COMPUTER = 'P';
-const char CHAR_TEX_GRASS = 'X';
-const char CHAR_TEX_GLASS = 'Y';
-const char CHAR_TEX_FLESH = 'F';
-const char CHAR_TEX_SNOW = 'N';
+constexpr char CHAR_TEX_CONCRETE = 'C'; // Cinder block
+constexpr char CHAR_TEX_METAL = 'M'; // Metal
+constexpr char CHAR_TEX_DIRT = 'D';
+constexpr char CHAR_TEX_VENT = 'V';
+constexpr char CHAR_TEX_GRATE = 'G';
+constexpr char CHAR_TEX_TILE = 'T'; // Ceiling tile
+constexpr char CHAR_TEX_SLOSH = 'S';
+constexpr char CHAR_TEX_WOOD = 'W';
+constexpr char CHAR_TEX_COMPUTER = 'P';
+constexpr char CHAR_TEX_GRASS = 'X';
+constexpr char CHAR_TEX_GLASS = 'Y';
+constexpr char CHAR_TEX_FLESH = 'F';
+constexpr char CHAR_TEX_SNOW = 'N';
 
 extern int gcTextures;
 extern bool fTextureTypeInit;

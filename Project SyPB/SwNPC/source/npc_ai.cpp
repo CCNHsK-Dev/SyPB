@@ -197,7 +197,7 @@ void NPC::Think(void)
 	{
 		NPCAi();
 
-		if (CVAR_GET_FLOAT("sypb_debug") >= DEBUG_SWNPC && IsValidPlayer(g_hostEntity) && g_npcManager->g_debugNPC == this)
+		if (static_cast<int>(CVAR_GET_FLOAT("sypb_debug")) >= DEBUG_SWNPC && IsValidPlayer(g_hostEntity) && g_npcManager->g_debugNPC == this)
 			DebugModeMsg();
 	}
 	NPCAction();
@@ -809,15 +809,13 @@ void NPC::AttackAction(void)
 		m_setFootStepSoundTime = gpGlobals->time + 2.0f;
 		PlayNPCSound(NS_ATTACK);
 
-		float x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
-		float y = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
-		Vector vecDir = gpGlobals->v_forward + x * 0.15 * gpGlobals->v_right + y * 0.15 * gpGlobals->v_up;
+		const Vector vecDir = gpGlobals->v_forward + RANDOM_FLOAT(-1, 1) * 0.15 * gpGlobals->v_right + RANDOM_FLOAT(-1, 1) * 0.15 * gpGlobals->v_up;
 
 		Vector vecAng;
 		VEC_TO_ANGLES(GetEntityOrigin(m_enemy) - pev->origin, vecAng);
 		vecAng.x *= -1.0f;
 		MakeVectors(vecAng);
-		Vector aimDest = pev->origin + gpGlobals->v_forward * (m_attackDistance + 1);
+		const Vector aimDest = pev->origin + gpGlobals->v_forward * (m_attackDistance + 1);
 
 		TraceLine(pev->origin, aimDest, dont_ignore_monsters, dont_ignore_glass, m_iEntity, &tr);
 		TraceAttack(tr.pHit, m_iEntity, m_attackDamage, vecDir, &tr, 0);
@@ -1256,10 +1254,8 @@ void NPC::PlayNPCSound(int soundClass)
 	else if(soundClass == NS_FOOTSTEP && pev->movetype != MOVETYPE_FLY)
 	{
 		const char *pTextureName;
-		Vector src, dest;
-		src = GetBottomOrigin(m_iEntity);
-		dest = GetBottomOrigin(m_iEntity);
-		dest.z -= 10.0f;
+		const Vector src = GetBottomOrigin(m_iEntity);
+		const Vector dest = src - Vector (0, 0, 10.0f);
 		pTextureName = (*g_engfuncs.pfnTraceTexture) (0, dest, src);
 		char szBuffer[64];
 		char chTextureType;
@@ -1586,13 +1582,13 @@ void NPC::SetWaypointOrigin(void)
 				waypointOrigin[i].y += RANDOM_FLOAT(-radius, radius);
 			}
 
-			int destIndex = m_navNode->next->index;
+			const int destIndex = m_navNode->next->index;
 
 			float sDistance = 9999.0f;
 			int sPoint = -1;
 			for (int i = 0; i < 5; i++)
 			{
-				float distance = GetDistance2D(pev->origin, waypointOrigin[i]) +
+				const float distance = GetDistance2D(pev->origin, waypointOrigin[i]) +
 					GetDistance2D(waypointOrigin[i], g_waypoint->g_waypointPointOrigin[destIndex]);
 
 				if (distance < sDistance)

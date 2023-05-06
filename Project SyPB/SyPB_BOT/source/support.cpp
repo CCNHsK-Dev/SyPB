@@ -720,55 +720,34 @@ void AutoLoadGameMode(bool reset)
 		goto lastly;
 	}
 
-	// CS:BTE Final Support 
-	if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_launcher.cfg", GetModName())))
+	// CS:BTE Final / CSSME Support 
+	if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/bte_config/bte_blockresource.txt", GetModName())))
 	{
 		g_gameVersion = CSVER_CZERO;
 
-		constexpr int Const_GameModes = 14;
-		const int bteGameModAi[Const_GameModes] =
+		constexpr int Const_GameModes = 17;
+		constexpr int bteGameModAi[Const_GameModes] =
 		{
-			MODE_BASE, //1
-			MODE_DM, //2
-			-1, //3
-			MODE_BASE, //4
-			-1, //5
-			MODE_BASE, //6
-			MODE_ZP, //7
-			MODE_ZP, //8
-			MODE_ZP, //9
-			MODE_ZP, //10
-			MODE_ZP, //11
-			MODE_ZP, //12
-			MODE_ZP //13
+			MODE_DM, MODE_NOTEAM, MODE_BASE, MODE_ZP, MODE_BASE,
+			MODE_BASE, MODE_ZP, MODE_ZP, MODE_ZP, MODE_ZP,
+			MODE_ZP, MODE_ZP, MODE_ZP, MODE_ZP, MODE_ZP,
+			MODE_ZP, MODE_ZP
 		};
 
-		char* const bteGameINI[Const_GameModes] =
+		constexpr const char* bteGameINI[Const_GameModes] =
 		{
-			"plugins-none", //1
-			"plugins-dm", //2
-			"plugins-dr", //3
-			"plugins-gd", //4
-			"plugins-ghost", //5
-			"plugins-td", //6
-			"plugins-z4e", //7
-			"plugins-zb1", //8
-			"plugins-zb3", //9
-			"plugins-zb4", //10
-			"plugins-zb5", //11
-			"plugins-ze", //12
-			"plugins-zse" //13
+			"dm", "dr", "gd", "ghost", "none",
+			"td", "z4e", "zb1", "zb2", "zb3",
+			"zb3r", "zb4", "zb5", "zbexter", "ze", 
+			"zg", "zse"
 		};
 
 		for (int i = 0; i < Const_GameModes; i++)
 		{
-			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/%s.ini", GetModName(), bteGameINI[i])))
+			if (TryFileOpen(FormatBuffer("%s/addons/amxmodx/configs/plugins-%s.ini", GetModName(), bteGameINI[i])))
 			{
 				if (g_gameMode != bteGameModAi[i] || checkShowTextTime == 1)
 					ServerPrint("*** SyPB Auto Game Mode Setting: CS:BTE [%s] [%d] ***", bteGameINI[i], bteGameModAi[i]);
-
-				if (bteGameModAi[i] == -1 && checkShowTextTime == 1)
-					ServerPrint("***** SyPB not support the mode now *****");
 
 				SetGameMode(bteGameModAi[i]);
 
@@ -1227,7 +1206,7 @@ const char *GetMapName (void)
    return &mapName[0]; // and return a pointer to it
 }
 
-bool OpenConfig (const char *fileName, char *errorIfNotExists, File *outFile, bool languageDependant)
+bool OpenConfig (const char *fileName, const char *errorIfNotExists, File *outFile, bool languageDependant)
 {
    if (outFile->IsValid ())
       outFile->Close ();
@@ -1265,7 +1244,7 @@ const char *GetWaypointDir (void)
 }
 
 
-void RegisterCommand (char *command, void funcPtr (void))
+void RegisterCommand (const char *command, void funcPtr (void))
 {
    // this function tells the engine that a new server command is being declared, in addition
    // to the standard ones, whose name is command_name. The engine is thus supposed to be aware
@@ -1406,7 +1385,7 @@ void AddLogEntry (int logLevel, const char *format, ...)
    }
 }
 
-void MOD_AddLogEntry(int mod, char* format)
+void MOD_AddLogEntry(int mod, const char* format)
 {
 	char modName[10];
 	uint16 mod_bV16[4] = {0, 0, 0, 0};
@@ -1465,7 +1444,7 @@ int GetRandomInt(int min, int max)
 	if (min >= max)
 		return min;
 
-	return RANDOM_LONG(min, max);
+	return g_random->RandomNum(min, max);
 }
 
 float GetRandomFloat(float min, float max)
@@ -1473,7 +1452,7 @@ float GetRandomFloat(float min, float max)
 	if (min >= max)
 		return min;
 
-	return RANDOM_FLOAT(min, max);
+	return g_random->RandomNum(min, max);
 }
 
 // SyPB Pro P.49 - Debugs Msg

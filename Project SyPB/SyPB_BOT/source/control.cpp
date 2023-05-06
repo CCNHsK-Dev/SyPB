@@ -170,7 +170,7 @@ int BotControl::CreateBot(String name, int skill, int personality, int team, int
 
 			while (nameUse)
 			{
-				nameId = (*g_engfuncs.pfnRandomLong) (0, g_botNames.GetElementNumber() - 1);
+				nameId = GetRandomInt(0, g_botNames.GetElementNumber() - 1);
 				if (g_botNames[nameId].usedBy == -1)
 				{
 					nameUse = false;
@@ -263,9 +263,9 @@ Bot *BotControl::FindOneValidAliveBot (void)
 		   foundBots.Push (i);
    }
 
-   if (!foundBots.IsEmpty ())
-      return m_bots[foundBots.GetRandomElement ()];
-
+   if (!foundBots.IsEmpty())
+	   return m_bots[foundBots.GetRandomElement()];
+   
    return null;
 }
 
@@ -1221,7 +1221,7 @@ void Bot::Kill (void)
 
    KeyValueData kv;
    kv.szClassName = const_cast <char *> (g_weaponDefs[m_currentWeapon].className);
-   kv.szKeyName = "damagetype";
+   kv.szKeyName = FormatBuffer("damagetype");
    kv.szValue = FormatBuffer ("%d", (1 << 4));
    kv.fHandled = false;
 

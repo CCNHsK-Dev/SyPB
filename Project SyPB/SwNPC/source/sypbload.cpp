@@ -30,7 +30,7 @@ _SyPBSetNPCNewWaypointPoint SwNPCAPI_SyPBSetNPCNewWaypointPoint;
 
 void SyPBDataLoad(void)
 {
-	HMODULE dll = GetModuleHandle("sypb.dll");
+	const HMODULE dll = GetModuleHandle("sypb.dll");
 	
 	if (!dll)
 	{
@@ -70,7 +70,7 @@ void SyPBDataLoad(void)
 		return;
 	}
 
-	float sypbSupportVersion = SwNPCAPI_SyPBSupportVersion();
+	const float sypbSupportVersion = SwNPCAPI_SyPBSupportVersion();
 	if (sypbSupportVersion != float(SWNPC_VERSION_F))
 	{
 		if (sypbSupportVersion < float(SWNPC_VERSION_F))
@@ -165,7 +165,7 @@ void SetNPCNewWaypointPoint(edict_t* entity, int waypointPoint)
 	SwNPCAPI_SyPBSetNPCNewWaypointPoint(entity, waypointPoint, &g_changeWaypoint);
 }
 
-int LogToFile(char* szLogText, ...)
+int LogToFile(const char* szLogText, ...)
 {
 	va_list vArgptr;
 	char szText[1024];

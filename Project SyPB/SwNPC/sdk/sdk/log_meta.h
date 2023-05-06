@@ -89,13 +89,13 @@ extern cvar_t meta_debug;
 // server.cfg.
 // NOTE: META_DEV has now been mostly obsoleted in the code.
 
-void META_CONS(char *fmt, ...);
-void META_DEV(char *fmt, ...);
-void META_INFO(char *fmt, ...);
-void META_WARNING(char *fmt, ...);
-void META_ERROR(char *fmt, ...);
-void META_LOG(char *fmt, ...);
-void META_CLIENT(edict_t *pEntity, char *fmt, ...);
+void META_CONS(const char *fmt, ...);
+void META_DEV(const char *fmt, ...);
+void META_INFO(const char *fmt, ...);
+void META_WARNING(const char *fmt, ...);
+void META_ERROR(const char *fmt, ...);
+void META_LOG(const char *fmt, ...);
+void META_CLIENT(edict_t *pEntity, const char *fmt, ...);
 
 void flush_ALERT_buffer(void);
 

@@ -165,7 +165,8 @@ extern mBOOL dlclose_handle_invalid;
 	char *str_GetLastError(void);
 	inline char* DLERROR(void) {
 		if (dlclose_handle_invalid)
-			return("Invalid handle.");
+			return (const_cast<char*>("Invalid handle."));
+
 		return(str_GetLastError());
 	}
 #endif /* _WIN32 */

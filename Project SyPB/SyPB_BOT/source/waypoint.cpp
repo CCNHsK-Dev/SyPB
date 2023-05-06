@@ -158,7 +158,7 @@ bool Waypoint::IsZBCampPoint(int pointID)
 	if (g_waypoint->m_zmHmPoints.IsEmpty())
 		return false;
 
-	for (int i = 0; i <= m_zmHmPoints.GetElementNumber(); i++)
+	for (int i = 0; i < m_zmHmPoints.GetElementNumber(); i++)
 	{
 		int wpIndex;
 		m_zmHmPoints.GetAt(i, wpIndex);
@@ -1278,18 +1278,7 @@ bool Waypoint::Load(void)
 
 		Initialize();
 		g_numWaypoints = header.pointNumber;
-		/*
-		if (header.date == null)
-		{
-			sprintf(m_infoBuffer, "The Waypoint Have not Date");
-			AddLogEntry(LOG_DEFAULT, m_infoBuffer);
-		}
-		else
-		{
-			sprintf(m_infoBuffer, "The Waypoint Date is %d", header.date);
-			AddLogEntry(LOG_DEFAULT, m_infoBuffer);
-		}
-		*/
+
 		for (int i = 0; i < g_numWaypoints; i++)
 		{
 			m_paths[i] = new Path;
@@ -1673,7 +1662,7 @@ bool Waypoint::IsStandVisible (int srcIndex, int destIndex)
 	return !((res & 1) == 1);
 }
 
-char *Waypoint::GetWaypointInfo (int id)
+const char *Waypoint::GetWaypointInfo (int id)
 {
    // this function returns path information for waypoint pointed by id.
 
@@ -2759,10 +2748,10 @@ int Waypoint::AddGoalScore (int index, int other[4])
          left.Push (other[i]);
    }
 
-   if (left.IsEmpty ())
-      index = other[GetRandomInt(0, 3)];
+   if (left.IsEmpty())
+	   index = other[GetRandomInt(0, 3)];
    else
-      index = left.GetRandomElement ();
+	   index = left.GetRandomElement();
 
    if (m_paths[index]->flags & WAYPOINT_GOAL)
       m_goalsScore[index] += 384.0f;

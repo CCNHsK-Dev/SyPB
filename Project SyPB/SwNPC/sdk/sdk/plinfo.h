@@ -63,13 +63,13 @@ typedef enum {
 
 // Information plugin provides about itself.
 typedef struct {
-	char *ifvers;				// meta_interface version
-	char *name;					// full name of plugin
-	char *version;				// version
-	char *date;					// date
-	char *author;				// author name/email
-	char *url;					// URL
-	char *logtag;				// log message prefix (unused right now)
+	const char *ifvers;				// meta_interface version
+	const char *name;					// full name of plugin
+	const char *version;				// version
+	const char *date;					// date
+	const char *author;				// author name/email
+	const char *url;					// URL
+	const char *logtag;				// log message prefix (unused right now)
 	PLUG_LOADTIME loadable;		// when loadable
 	PLUG_LOADTIME unloadable;	// when unloadable
 } plugin_info_t;

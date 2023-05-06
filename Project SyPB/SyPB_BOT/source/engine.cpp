@@ -57,24 +57,6 @@ uint32_t Engine::GetRandomBase (void)
    return m_rnd[0];
 }
 
-float Engine::RandomFloat (float low, float high)
-{
-   if (low >= high)
-      return low;
-
-   // SyPB Pro P.42 - Engine Small improve
-   return RANDOM_FLOAT(low, high);
-}
-
-int Engine::RandomInt (int low, int high)
-{
-   if (low >= high)
-      return low;
-
-   // SyPB Pro P.42 - Engine Small improve
-   return RANDOM_LONG(low, high);
-}
-
 void Engine::RegisterVariable (const char *variable, const char *value, VarType varType, ConVar *self)
 {
    VarPair newVariable;

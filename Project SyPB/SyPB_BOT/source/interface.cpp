@@ -2757,7 +2757,7 @@ void GameDLLInit_Post (void)
    RETURN_META (MRES_IGNORED);
 }
 
-void pfnChangeLevel (char *s1, char *s2)
+void pfnChangeLevel (const char *s1, const char *s2)
 {
    // the purpose of this function is to ask the engine to shutdown the server and restart a
    // new one running the map whose name is s1. It is used ONLY IN SINGLE PLAYER MODE and is
@@ -2809,7 +2809,7 @@ void pfnEmitSound (edict_t *entity, int channel, const char *sample, float volum
    (*g_engfuncs.pfnEmitSound) (entity, channel, sample, volume, attenuation, flags, pitch);
 }
 
-void pfnClientCommand (edict_t *ent, char *format, ...)
+void pfnClientCommand (edict_t *ent, const char *format, ...)
 {
    // this function forces the client whose player entity is ent to issue a client command.
    // How it works is that clients all have a g_xgv global string in their client DLL that
@@ -3188,7 +3188,7 @@ int pfnRegUserMsg(const char *name, int size)
    return message;
 }
 
-void pfnAlertMessage (ALERT_TYPE alertType, char *format, ...)
+void pfnAlertMessage (ALERT_TYPE alertType, const char *format, ...)
 {
    va_list ap;
    char buffer[1024];
@@ -3767,7 +3767,7 @@ C_DLLEXPORT int Amxx_SetEntityAction(int index, int team, int action) // 1.40
 }
 
 // SyPB Pro P.42 - AMXX API
-C_DLLEXPORT void Amxx_AddLog(char *logText) // 1.42 - Not API
+C_DLLEXPORT void Amxx_AddLog(const char *logText) // 1.42 - Not API
 {
 	MOD_AddLogEntry(0, logText);
 }

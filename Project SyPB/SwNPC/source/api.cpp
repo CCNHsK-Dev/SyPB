@@ -43,7 +43,7 @@ static cell AMX_NATIVE_CALL amxx_removeNPC(AMX *amx, cell *params) // 1.42
 static cell AMX_NATIVE_CALL amxx_getTeam(AMX* amx, cell* params) //1.42
 {
 	const int npcId = params[1];
-	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
+	NPC* const SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
 		return -1;
 
@@ -207,8 +207,8 @@ static cell AMX_NATIVE_CALL amxx_FakeTakeDamage(AMX* amx, cell* params) // 1.42
 	const int attackId = params[2];
 	const int damage = params[3];
 
-	edict_t* victim = INDEXENT(victimId);
-	edict_t* attack = INDEXENT(attackId);
+	edict_t* const victim = INDEXENT(victimId);
+	edict_t* const attack = INDEXENT(attackId);
 
 	if (FNullEnt(victim))
 		return -1;
@@ -223,12 +223,12 @@ static cell AMX_NATIVE_CALL amxx_FakeTakeDamage(AMX* amx, cell* params) // 1.42
 static cell AMX_NATIVE_CALL amxx_FakeKill(AMX* amx, cell* params)
 {
 	const int victimId = params[1];
-	edict_t* victim = INDEXENT(victimId);
+	edict_t* const victim = INDEXENT(victimId);
 	if (FNullEnt(victim) || g_npcManager->IsSwNPC(victim) == null)
 		return -2;
 
 	const int attackId = params[2];
-	edict_t* attack = INDEXENT(attackId);
+	edict_t* const attack = INDEXENT(attackId);
 
 	KillAction(victim, attack, false);
 	return 1;
@@ -275,7 +275,7 @@ static cell AMX_NATIVE_CALL amxx_getMoveTarget(AMX* amx, cell* params) // 1.42
 {
 	const int npcId = params[1];
 
-	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
+	NPC* const SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
 		return -2;
 
@@ -289,7 +289,7 @@ static cell AMX_NATIVE_CALL amxx_getEnemy(AMX* amx, cell* params) // 1.42
 {
 	const int npcId = params[1];
 
-	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
+	NPC* const SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
 		return -2;
 
@@ -311,7 +311,7 @@ static cell AMX_NATIVE_CALL amxx_getFollowEntity(AMX* amx, cell* params) // 1.48
 {
 	const int npcId = params[1];
 
-	NPC* SwNPC = g_npcManager->IsSwNPC(npcId);
+	NPC* const SwNPC = g_npcManager->IsSwNPC(npcId);
 	if (SwNPC == null)
 		return -2;
 
@@ -326,7 +326,7 @@ static cell AMX_NATIVE_CALL amxx_setFollowEntity(AMX *amx, cell *params) // 1.48
 	const int npcId = params[1];
 	const int entityId = params[2];
 
-	NPC *npc = g_npcManager->IsSwNPC(npcId);
+	NPC* const npc = g_npcManager->IsSwNPC(npcId);
 	if (npc == null)
 		return -2;
 

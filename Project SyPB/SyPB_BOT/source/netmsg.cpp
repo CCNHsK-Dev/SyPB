@@ -34,7 +34,7 @@ NetworkMsg::NetworkMsg (void)
     m_state = 0;
     m_bot = null;
 
-	for (register int i = 0; i < NETMSG_NUM; i++)  // SyPB Pro P.48 - Base improve
+	for (int i = 0; i < NETMSG_NUM; i++)  // SyPB Pro P.48 - Base improve
 		m_registerdMessages[i] = NETMSG_UNDEFINED;
 }
 
