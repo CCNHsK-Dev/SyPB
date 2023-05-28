@@ -440,7 +440,6 @@ bool Bot::DoWaypointNav (void)
    {
 	   if (!m_jumpFinished && (IsOnFloor () || IsOnLadder ()))
 	   {
-		   ServerPrint("Jump: %.0f %.0f %.0f", m_desiredVelocity.x, m_desiredVelocity.y, m_desiredVelocity.z);
 		   pev->velocity = m_desiredVelocity;
 
 		   m_buttonFlags |= IN_JUMP;
@@ -518,7 +517,7 @@ bool Bot::DoWaypointNav (void)
 			   {
 				   if (IsValidPlayer(ent) && IsAlive (ent))
 				   {
-					   if (!g_ignoreEnemies && m_team != GetTeam(ent))
+					   if (!g_ignoreEnemies && !m_ignoreEnemies && m_team != GetTeam(ent))
 					   {
 						   if (IsShootableThruObstacle(ent))
 						   {

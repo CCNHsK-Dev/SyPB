@@ -93,6 +93,9 @@ _GetEntityWaypointId Amxx_GetEntityWaypointId;
 typedef bool(*_ZombieModGameStart) (int);
 _ZombieModGameStart Amxx_ZombieModGameStart;
 
+typedef int(*_IgnoreEnemies) (int, int);
+_IgnoreEnemies Amxx_IgnoreEnemies;
+
 float api_version = 0.0;
 
 void SyPBDataLoad (void)
@@ -294,6 +297,10 @@ void SyPBDataLoad (void)
 	Amxx_ZombieModGameStart = (_ZombieModGameStart)GetProcAddress(dll, "Amxx_ZombieModGameStart");
 	if (!Amxx_ZombieModGameStart)
 		LogToFile("Load API::Amxx_ZombieModGameStart Failed");
+
+	Amxx_IgnoreEnemies = (_IgnoreEnemies)GetProcAddress(dll, "Amxx_IgnoreEnemies");
+	if (!Amxx_IgnoreEnemies)
+		LogToFile("Load API::Amxx_IgnoreEnemies Failed");
 }
 
 // Check SyPB Available
@@ -345,7 +352,7 @@ static cell AMX_NATIVE_CALL amxx_CheckMoveTarget(AMX *amx, cell *params) // 1.30
 }
 
 // Set up SyPB Bot - Enemy
-static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX *amx, cell *params) // 1.30
+static cell AMX_NATIVE_CALL amxx_SetEnemy(AMX* amx, cell* params) // 1.30
 {
 	if (!Amxx_SetEnemy || api_version < float(1.30))
 		return -2;
@@ -572,6 +579,17 @@ static cell AMX_NATIVE_CALL amxx_ZombieModGameStart(AMX* amx, cell* params) // 1
 	return Amxx_ZombieModGameStart(input);
 }
 
+static cell AMX_NATIVE_CALL amxx_IgnoreEnemies(AMX* amx, cell* params) // 1.50
+{
+	if (!Amxx_IgnoreEnemies || api_version < float(1.50))
+		return -2;
+
+	const int id = params[1];
+	const int ignoreEnemies = params[2];
+
+	return Amxx_IgnoreEnemies(id, ignoreEnemies);
+}
+
 AMX_NATIVE_INFO sypb_natives[] =
 {
 	{ "is_run_sypb", amxx_runSypb },
@@ -607,6 +625,7 @@ AMX_NATIVE_INFO sypb_natives[] =
 	{ "sypb_get_entity_point", amxx_GetEntityWaypointId}, 
 	// 1.50
 	{ "sypb_zombie_game_start", amxx_ZombieModGameStart }, 
+	{ "sypb_ignore_enemies", amxx_IgnoreEnemies }, 
 	{ NULL, NULL },
 };
 

@@ -975,6 +975,7 @@ public:
 
    edict_t *m_moveTargetEntity;
    float m_blockCheckEnemyTime;
+   bool m_ignoreEnemies;
 
    float m_seeEnemyTime; // time bot sees enemy
    float m_enemySurpriseTime; // time of surprise

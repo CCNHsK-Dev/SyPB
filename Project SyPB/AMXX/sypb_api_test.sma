@@ -2,12 +2,12 @@
 /*
 * This is SyPB API for AMXX
 * Version : 1.50
-* Support Build: 1.50.5337.50 or new
+* Support Build: 1.50.45440.55 or new
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.5337.769 or new
+* Support SyPB Build: 1.50.45440.818 or new
 *
-* Date: 26/4/2019
+* Date: 28/5/2023
 */
 
 #include <amxmodx>
@@ -15,7 +15,7 @@
 #include <sypb>
 
 #define PLUGIN	"[SyPB API] Demo"
-#define VERSION	"1.50.5337.50"
+#define VERSION	"1.50.45440.55"
 #define AUTHOR	"HsK-Dev Blog By'CCN"
 
 new bool:g_sypb_run;
@@ -39,6 +39,25 @@ public plugin_init()
 	register_clcmd("say /sypb_140_test", "sypb_testing_140");
 	register_clcmd("say /sypb_142_test", "sypb_testing_142");
 	register_clcmd("say /sypb_148_test", "sypb_testing_148");
+	register_clcmd("say /sypb_150_test", "sypb_testing_150");
+}
+
+public sypb_testing_150 ()
+{
+	if (!g_sypb_run)
+	{
+		client_print(0, print_chat, "Error: The Game has not run sypb");
+		server_print ("Error: The Game has not run sypb");
+		return;
+	}
+
+	for (new id = 1; id <= get_maxplayers(); id++)
+	{
+		if (!is_user_sypb(id))
+			continue;
+
+		
+	}
 }
 
 public sypb_testing_148 ()

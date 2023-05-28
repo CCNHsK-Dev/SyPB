@@ -3495,11 +3495,11 @@ C_DLLEXPORT int Amxx_CheckMoveTarget(int index) // 1.30
 C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.30
 {
 	index -= 1;
-	Bot *bot = g_botManager->GetBot(index);
+	Bot* bot = g_botManager->GetBot(index);
 	if (bot == null)
 		return -2;
 
-	edict_t *targetEnt = INDEXENT(target);
+	edict_t* targetEnt = INDEXENT(target);
 	if (target == -1 || FNullEnt(targetEnt) || !IsAlive(targetEnt))
 	{
 		bot->m_blockCheckEnemyTime = g_pGlobals->time;
@@ -3515,6 +3515,18 @@ C_DLLEXPORT int Amxx_SetEnemy(int index, int target, float blockCheckTime) // 1.
 	API_TestMSG("Amxx_SetEnemy Checking - targetName:%s | blockCheckTime:%.2f - Done",
 		GetEntityName(targetEnt), blockCheckTime);
 
+	return 1;
+}
+
+C_DLLEXPORT int Amxx_IgnoreEnemies(int index, int ignoreEnemy)
+{
+	index -= 1;
+	Bot* bot = g_botManager->GetBot(index);
+	if (bot == null)
+		return -2;
+	
+	bot->m_ignoreEnemies = (ignoreEnemy > 0) ? true : false;
+	API_TestMSG("Amxx_IgnoreEnemies Checking - %d - Done", bot->m_ignoreEnemies);
 	return 1;
 }
 

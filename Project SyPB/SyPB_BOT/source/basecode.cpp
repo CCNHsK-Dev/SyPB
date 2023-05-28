@@ -168,7 +168,7 @@ bool Bot::EntityWaypointVisible(edict_t *entity)
 // SyPB Pro P.41 - Look up enemy improve
 bool Bot::IsEnemyViewable(edict_t *entity, bool setEnemy, bool allCheck, bool checkOnly)
 {
-	if (g_ignoreEnemies || FNullEnt(entity) || !IsAlive (entity))
+	if (g_ignoreEnemies || m_ignoreEnemies || FNullEnt(entity) || !IsAlive (entity))
 		return false;
 
 	if (IsNotAttackLab(entity, pev->origin) == 2)
@@ -296,7 +296,7 @@ void Bot::ZombieModeAi(void)
 	edict_t *entity = null;
 	if (m_isZombieBot)
 	{
-		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity) && !m_isStuck && !g_ignoreEnemies)
+		if (FNullEnt(m_enemy) && FNullEnt(m_moveTargetEntity) && !m_isStuck && !g_ignoreEnemies && !m_ignoreEnemies)
 		{
 			edict_t *targetEnt = null;
 			float targetDistance = 9999.9f;
@@ -5600,7 +5600,10 @@ int Bot::GetAmmo (void)
 // SyPB Pro P.28 - New Damage Msg
 void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits)
 {
-	if (g_ignoreEnemies || FNullEnt(inflictor) || inflictor == m_iEntity)
+	if (g_ignoreEnemies || m_ignoreEnemies || FNullEnt(inflictor) || inflictor == m_iEntity)
+		return;
+
+	if (m_blockCheckEnemyTime > g_pGlobals->time)  // SyPB Pro P.30 - AMXX API
 		return;
 
 	if (m_blindTime > g_pGlobals->time) // SyPB Pro P.34 - Flash Fixed
@@ -5608,9 +5611,6 @@ void Bot::TakeDamage(edict_t *inflictor, int /*damage*/, int /*armor*/, int bits
 
 	// SyPB Pro P.28 - Msg Debug
 	if (!IsValidPlayer(inflictor))
-		return;
-
-	if (m_blockCheckEnemyTime > g_pGlobals->time)  // SyPB Pro P.30 - AMXX API
 		return;
 
 	// SyPB Pro P.23 - Bot Ai
@@ -6066,7 +6066,7 @@ bool Bot::OutOfBombTimer (void)
 // SyPB Pro P.48 - React Sound improve
 void Bot::ReactOnSound (void)
 {
-	if (g_ignoreEnemies || g_gameMode != MODE_BASE)
+	if (g_ignoreEnemies || m_ignoreEnemies || g_gameMode != MODE_BASE)
 		return;
 
 	// SyPB Pro P.30 - AMXX API

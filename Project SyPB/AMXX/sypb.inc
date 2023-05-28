@@ -2,12 +2,12 @@
 /*
 * This is SyPB API for AMXX
 * Version : 1.50
-* Support Build: 1.50.5340.51 or new
+* Support Build: 1.50.45440.55 or new
 * By ' HsK-Dev Blog By CCN
 *
-* Support SyPB Build: 1.50.5340.770 or new
+* Support SyPB Build: 1.50.45440.818 or new
 *
-* Date: 28/4/2019
+* Date: 28/5/2023
 */
 
 
@@ -54,6 +54,15 @@ native sypb_get_movetarget (index);
      API Verion: 1.00
 */
 native sypb_set_enemy (index, targetId, Float:blockCheckTime);
+
+/* -----------------------------------------------------------------------
+ sypb_ignore_enemies - set the SyPN Ignore Enemy
+                  (index = player id)
+				  (ignoreEnemies = 1 is ignore enemy)
+				  (void / not return)
+     API Verion: 1.50
+*/
+native sypb_ignore_enemies (index, ignoreEnemies);
 
 /* -----------------------------------------------------------------------
  sypb_set_move - Block the SyPB Move Ai (Bot will not move)

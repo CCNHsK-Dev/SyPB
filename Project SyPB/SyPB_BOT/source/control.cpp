@@ -1190,6 +1190,8 @@ void Bot::NewRound (void)
    m_waypointGoalAPI = -1;
    m_blockWeaponPickAPI = false;
 
+   m_ignoreEnemies = false;
+
    // SyPB Pro P.49 - Waypoint improve
    SetEntityWaypoint(m_iEntity);
 
