@@ -1199,18 +1199,17 @@ void Waypoint::InitTypes (int mode)
 void Waypoint::tryDownloadWaypoint(void)
 {
 	IStream* stream;
-	const String saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
 	const String downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
 
-	ServerPrint("Try to Download Waypoint.....");
+	ServerPrint("Try Download Waypoint.....");
 	if (URLOpenBlockingStream(null, downloadURL, &stream, 0, null) != S_OK)
 	{
 		ServerPrint("Don't Find Waypoint.");
+		sprintf(m_infoBuffer, "GitHub: Don't Find %s.pwf ", GetMapName());
+		AddLogEntry(LOG_WARNING, m_infoBuffer);
 		return;
 	}
 	ServerPrint("Download Waypoint.....");
-
-	EraseFromHardDisk(false);
 
 	WaypointHeader header;
 	DWORD readBytes = 0;
@@ -1226,9 +1225,13 @@ void Waypoint::tryDownloadWaypoint(void)
 		return;
 	} 
 
-	char szBuffer[0x1000];
+	EraseFromHardDisk(false);
+
+	const String saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
 	File fp(saveFile, "wb");
 	fp.Write(&header, sizeof(header), 1);
+
+	char szBuffer[0x1000];
 	do
 	{
 		stream->Read(szBuffer, sizeof(szBuffer) - 1, &readBytes);
