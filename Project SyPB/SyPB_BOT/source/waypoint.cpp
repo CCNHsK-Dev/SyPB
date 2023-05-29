@@ -1198,41 +1198,43 @@ void Waypoint::InitTypes (int mode)
 #ifdef PLATFORM_WIN32
 void Waypoint::tryDownloadWaypoint(void)
 {
-	EraseFromHardDisk(false);
-
+	IStream* stream;
 	const String saveFile = FormatBuffer("%s%s.pwf", GetWaypointDir(), GetMapName());
 	const String downloadURL = FormatBuffer("https://github.com/CCNHsK-Dev/SyPB_Waypoint/raw/main/Waypoints/%s.pwf", GetMapName());
 
 	ServerPrint("Try to Download Waypoint.....");
-	if (URLDownloadToFile(null, downloadURL, saveFile, 0, null) != S_OK)
+	if (URLOpenBlockingStream(null, downloadURL, &stream, 0, null) != S_OK)
 	{
 		ServerPrint("Don't Find Waypoint.");
 		return;
 	}
-
-	WaypointHeader header;
-	File fp(saveFile, "rb");
-	if (!fp.IsValid())
-	{
-		ServerPrint("Don't Find Waypoint.");
-		return;
-	}
-
 	ServerPrint("Download Waypoint.....");
 
-	fp.Read(&header, sizeof(header));
+	EraseFromHardDisk(false);
+
+	WaypointHeader header;
+	DWORD readBytes = 0;
+	
+	stream->Read(&header, sizeof(header), &readBytes);
 	if (strncmp(header.header, FH_WAYPOINT, strlen(FH_WAYPOINT)) != 0 ||
 		header.fileVersion != FV_WAYPOINT || stricmp(header.mapName, GetMapName()))
 	{
 		ServerPrint("On GitHub Waypoint is Error");
 		sprintf(m_infoBuffer, "GitHub: %s.pwf has the problem | header: %s | wpVersion: %i", GetMapName(), header.header, static_cast <int> (header.fileVersion));
 		AddLogEntry(LOG_WARNING, m_infoBuffer);
-
-		fp.Close();
-		unlink(saveFile);
-
+		stream->Release();
 		return;
-	}
+	} 
+
+	char szBuffer[0x1000];
+	File fp(saveFile, "wb");
+	fp.Write(&header, sizeof(header), 1);
+	do
+	{
+		stream->Read(szBuffer, sizeof(szBuffer) - 1, &readBytes);
+		fp.Write(szBuffer, readBytes);
+	} while (readBytes > 0);
+	stream->Release();
 	fp.Close();
 
 	Load();

@@ -56,7 +56,7 @@ public sypb_testing_150 ()
 		if (!is_user_sypb(id))
 			continue;
 
-		
+		sypb_ignore_enemies (id, 1);
 	}
 }
 
