@@ -2598,6 +2598,8 @@ void StartFrame (void)
 	g_maxClients = engine->GetMaxClients();
 	LoadEntityData();
 
+	int debugMode = DEBUG_NONE;
+
 	if (!IsDedicatedServer() && !FNullEnt(g_hostEntity))
 	{
 		if (g_waypointOn)
@@ -2605,7 +2607,6 @@ void StartFrame (void)
 			if (sypb_showwp.GetBool())
 				sypb_showwp.SetInt(0);
 
-			// SyPB Pro P.30 - small change
 			bool hasBot = false;
 			for (int i = 0; i < g_maxClients; i++)
 			{
@@ -2620,19 +2621,25 @@ void StartFrame (void)
 			if (!hasBot)
 				g_waypoint->Think();
 		}
-		// SyPB Pro P.38 - Show Waypoint Msg
-		else if (sypb_showwp.GetBool() == true)
+		else
+			debugMode = sypb_debug.GetInt();
+
+		if (g_waypointOn || sypb_showwp.GetBool())
 			g_waypoint->ShowWaypointMsg();
 
-		g_debugMode = sypb_debug.GetInt();
-		if (g_debugMode < DEBUG_NONE || g_debugMode > DEBUG_ALL)
-			sypb_debug.SetInt(DEBUG_NONE);
+		if (debugMode < DEBUG_NONE || debugMode > DEBUG_ALL)
+		{
+			debugMode = DEBUG_NONE;
+			sypb_debug.SetInt(debugMode);
+		}
 
 		CheckWelcomeMessage();
 	}
 
+	g_debugMode = debugMode;
 	g_botActionStop = sypb_stopbots.GetBool();
 	g_ignoreEnemies = sypb_ignore_enemies.GetBool();
+
 	if (g_secondTime < g_pGlobals->time)
 	{
 		g_secondTime = g_pGlobals->time + 1.0f;

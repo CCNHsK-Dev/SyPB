@@ -115,9 +115,9 @@ bool IsAlive (edict_t *ent)
 
 float GetShootingConeDeviation (edict_t *ent, Vector *position)
 {
-	const Vector &dir = (*position - (GetEntityOrigin(ent) + ent->v.view_ofs)).Normalize();
+	const Vector& dir = (*position - (GetEntityOrigin(ent) + ent->v.view_ofs)).Normalize();
 	MakeVectors(ent->v.v_angle);
-	
+
 	return g_pGlobals->v_forward | dir;
 }
 

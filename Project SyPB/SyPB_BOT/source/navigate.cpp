@@ -1168,7 +1168,7 @@ int Bot::GetAimingWaypoint (int targetWpIndex)
 	while (srcIndex != m_currentWaypointIndex)
 	{
 		if (srcIndex < 0)
-			continue;
+			break;
 
 		if (!g_waypoint->IsVisible(m_currentWaypointIndex, srcIndex))
 		{

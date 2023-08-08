@@ -372,7 +372,7 @@ void Waypoint::SgdWp_Set (const char *modset)
 		else
 		{
 			g_editNoclip = false;
-			ChartPrint("[SgdWP] Cannot Savev your waypoint, Your waypoint has the problem");
+			ChartPrint("[SgdWP] Cannot save your waypoint, Your waypoint has the problem");
 		}
 	}
 
@@ -1824,8 +1824,6 @@ void Waypoint::Think(void)
 				m_fallPoint = true;
 		}
 	}
-
-	ShowWaypointMsg();
 }
 
 // SyPB Pro P.38 - Show Waypoint Msg
@@ -2032,8 +2030,6 @@ void Waypoint::ShowWaypointMsg(void)
 				"      Flags: %s\n", m_facingAtIndex, g_numWaypoints, m_paths[m_facingAtIndex]->radius, GetWaypointInfo(m_facingAtIndex));
 		}
 
-		// SyPB Pro P.23 - SgdWP      
-		// SyPB Pro P.45 - SgdWP
 		if (g_sgdWaypoint)
 		{
 			length += sprintf(&tempMessage[length], "\n    Hold 'E' Call [SgdWP] Menu \n"
