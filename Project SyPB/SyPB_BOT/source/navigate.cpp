@@ -1078,7 +1078,7 @@ void Bot::CheckTouchEntity(edict_t* entity)
 // SyPB Pro P.47 - Base improve
 void Bot::SetEnemy(edict_t *entity)
 {
-	if (g_ignoreEnemies || FNullEnt(entity) || !IsAlive(entity))
+	if (m_enemy != entity && (g_ignoreEnemies || FNullEnt(entity) || !IsAlive(entity)))
 	{
 		SetEntityWaypoint(m_iEntity, -2);
 		m_enemy = null;
@@ -1282,9 +1282,6 @@ void Bot::GetValidWaypoint(void)
 	else
 	{
 		const int client = ENTINDEX(m_iEntity) - 1;
-		if (m_isStuck)
-			g_clients[client].wpIndex = g_clients[client].wpIndex2 = -1;
-
 		if (g_clients[client].wpIndex == -1 && g_clients[client].wpIndex2 == -1)
 			needFindWaypont = true;
 	}

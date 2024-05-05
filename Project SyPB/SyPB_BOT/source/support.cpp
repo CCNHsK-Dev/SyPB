@@ -815,7 +815,6 @@ int GetTeam (edict_t *ent)
 // SyPB Pro P.42 - Base Waypoint improve
 int SetEntityWaypoint(edict_t *ent, int mode)
 {
-	// Waypoint Edit now, Do now check it!
 	if (g_waypointOn || FNullEnt (ent) || !IsAlive (ent))
 		return -1;
 
