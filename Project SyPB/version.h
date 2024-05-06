@@ -10,7 +10,7 @@
 #define SYPB_NAME "SyPB"
 #define SYPB_VERSION "Beta 1.50"
 #define SYPB_VERSION_F 1.50
-#define SYPB_VERSION_DWORD 1,50,20240505,821 // yyyy/mm/dd  
+#define SYPB_VERSION_DWORD 1,50,20240506,822 // yyyy/mm/dd  
 
 #define SWNPC_NAME "SwNPC"
 #define SWNPC_VERSION "Beta 1.50"

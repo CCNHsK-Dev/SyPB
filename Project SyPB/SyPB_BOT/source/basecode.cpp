@@ -3273,7 +3273,7 @@ void Bot::Think(void)
 		m_playerFps = g_pGlobals->time + 1.0f / 60.0f;
 		if (m_thinkFps <= g_pGlobals->time)
 		{
-			m_thinkFps = g_pGlobals->time + 1.0f / 20.0f;
+			m_thinkFps = g_pGlobals->time + 1.0f / 15.0f;
 			ThinkFrame();
 		}
 		else if (!g_botActionStop && m_botMovement)

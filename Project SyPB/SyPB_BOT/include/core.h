@@ -791,6 +791,7 @@ private:
    int GetMessageQueue (void);
    bool GoalIsValid (void);
    void HeadTowardWaypoint (void);
+   void JumpAction(void);
    float InFieldOfView (Vector dest);
 
    bool IsBombDefusing (Vector bombOrigin);
